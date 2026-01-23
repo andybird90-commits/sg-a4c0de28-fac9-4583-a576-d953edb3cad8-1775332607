@@ -66,7 +66,7 @@ export default function LandingPage() {
           {/* Logo */}
           <div className="flex justify-center mb-12">
             <img
-              src="https://www.rdtax.co.uk/wp-content/uploads/2023/09/cropped-RD-TAX-logo-white-@2x.png"
+              src="/rdtax-logo.png"
               alt="RD TAX"
               className="h-32 w-auto object-contain"
             />

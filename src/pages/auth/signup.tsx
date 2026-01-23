@@ -125,10 +125,9 @@ export default function SignupPage() {
           {/* Logo */}
           <div className="flex justify-center mb-8">
             <img
-              src="https://www.rdtax.co.uk/wp-content/uploads/2023/09/cropped-RD-TAX-logo-white-@2x.png"
+              src="/rdtax-logo.png"
               alt="RD TAX Logo"
-              className="h-16 w-auto object-contain"
-              style={{ filter: 'invert(1)' }}
+              className="h-24 w-auto object-contain"
             />
           </div>
 
