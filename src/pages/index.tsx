@@ -10,76 +10,76 @@ import {
   Zap,
   Users,
   CheckCircle2,
-  ArrowRight,
-} from "lucide-react";
+  ArrowRight } from
+"lucide-react";
 
 export default function LandingPage() {
   const router = useRouter();
 
   const features = [
-    {
-      icon: Camera,
-      title: "Instant Capture",
-      description: "Snap photos of prototypes, tests, and experiments on the go.",
-    },
-    {
-      icon: FileText,
-      title: "Document Everything",
-      description: "Upload PDFs, spreadsheets, notes, and technical documents.",
-    },
-    {
-      icon: Cloud,
-      title: "Auto-Sync",
-      description: "Everything syncs automatically to your R&D team's system.",
-    },
-    {
-      icon: Shield,
-      title: "Secure & Private",
-      description: "Bank-level encryption and multi-tenant security.",
-    },
-    {
-      icon: Zap,
-      title: "Offline Mode",
-      description: "Capture evidence offline and sync when you're back online.",
-    },
-    {
-      icon: Users,
-      title: "Team Collaboration",
-      description: "Multiple users, multiple projects, one organized system.",
-    },
-  ];
+  {
+    icon: Camera,
+    title: "Instant Capture",
+    description: "Snap photos of prototypes, tests, and experiments on the go."
+  },
+  {
+    icon: FileText,
+    title: "Document Everything",
+    description: "Upload PDFs, spreadsheets, notes, and technical documents."
+  },
+  {
+    icon: Cloud,
+    title: "Auto-Sync",
+    description: "Everything syncs automatically to your R&D team's system."
+  },
+  {
+    icon: Shield,
+    title: "Secure & Private",
+    description: "Bank-level encryption and multi-tenant security."
+  },
+  {
+    icon: Zap,
+    title: "Offline Mode",
+    description: "Capture evidence offline and sync when you're back online."
+  },
+  {
+    icon: Users,
+    title: "Team Collaboration",
+    description: "Multiple users, multiple projects, one organized system."
+  }];
+
 
   const benefits = [
-    "Never lose track of R&D evidence",
-    "Capture the moment when innovation happens",
-    "Stay organized without extra effort",
-    "Speed up your R&D tax claim process",
-    "Access your evidence from anywhere",
-    "Collaborate seamlessly with your team",
-  ];
+  "Never lose track of R&D evidence",
+  "Capture the moment when innovation happens",
+  "Stay organized without extra effort",
+  "Speed up your R&D tax claim process",
+  "Access your evidence from anywhere",
+  "Collaborate seamlessly with your team"];
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-slate-50">
       {/* Hero Section */}
-      <div className="bg-rd-navy text-white">
+      <div className="bg-rd-navy text-white" style={{ backgroundColor: "#fafafa" }}>
         <div className="container mx-auto px-6 py-12">
           {/* Logo */}
           <div className="flex justify-center mb-12">
             <img
               src="/rdtax-logo.png"
               alt="RD TAX"
-              className="h-32 w-auto object-contain"
-            />
+              className="h-32 w-auto object-contain" />
+
           </div>
 
           {/* Hero Content */}
           <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight" style={{ color: "#05005c" }}>
               Your R&D Evidence,
               <br />
               <span className="text-rd-orange">Captured Effortlessly</span>
             </h1>
-            <p className="text-xl md:text-2xl text-slate-300 mb-8 leading-relaxed">
+            <p className="text-xl md:text-2xl text-slate-300 mb-8 leading-relaxed" style={{ color: "#525252" }}>
               RD Sidekick helps you capture, organize, and submit R&D tax evidence
               on the go. Never miss a claimable moment again.
             </p>
@@ -89,8 +89,8 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 className="bg-rd-orange hover:bg-rd-orange/90 text-white font-semibold text-lg px-8 py-6 rounded-xl"
-                onClick={() => router.push("/auth/signup")}
-              >
+                onClick={() => router.push("/auth/signup")}>
+
                 Get Started Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -98,8 +98,8 @@ export default function LandingPage() {
                 size="lg"
                 variant="outline"
                 className="border-2 border-white text-white hover:bg-white hover:text-rd-navy font-semibold text-lg px-8 py-6 rounded-xl"
-                onClick={() => router.push("/auth/login")}
-              >
+                onClick={() => router.push("/auth/login")}>
+
                 Log In
               </Button>
             </div>
@@ -107,7 +107,7 @@ export default function LandingPage() {
             {/* Social Proof */}
             <div className="flex items-center justify-center gap-2 text-slate-300">
               <CheckCircle2 className="h-5 w-5 text-rd-orange" />
-              <span className="text-sm">Trusted by R&D teams across the UK</span>
+              <span className="text-sm" style={{ color: "#525252" }}>Trusted by R&D teams across the UK</span>
             </div>
           </div>
         </div>
@@ -126,11 +126,11 @@ export default function LandingPage() {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => (
-            <Card
-              key={index}
-              className="p-8 hover:shadow-lg transition-shadow border-2 border-slate-100"
-            >
+          {features.map((feature, index) =>
+          <Card
+            key={index}
+            className="p-8 hover:shadow-lg transition-shadow border-2 border-slate-100">
+
               <div className="bg-rd-orange/10 w-14 h-14 rounded-xl flex items-center justify-center mb-4">
                 <feature.icon className="h-7 w-7 text-rd-orange" />
               </div>
@@ -141,7 +141,7 @@ export default function LandingPage() {
                 {feature.description}
               </p>
             </Card>
-          ))}
+          )}
         </div>
       </div>
 
@@ -211,12 +211,12 @@ export default function LandingPage() {
           </p>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {benefits.map((benefit, index) => (
-              <div key={index} className="flex items-start gap-3">
+            {benefits.map((benefit, index) =>
+            <div key={index} className="flex items-start gap-3">
                 <CheckCircle2 className="h-6 w-6 text-rd-orange flex-shrink-0 mt-1" />
                 <p className="text-lg text-slate-700">{benefit}</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -236,8 +236,8 @@ export default function LandingPage() {
             <Button
               size="lg"
               className="bg-rd-orange hover:bg-rd-orange/90 text-white font-semibold text-lg px-8 py-6 rounded-xl"
-              onClick={() => router.push("/auth/signup")}
-            >
+              onClick={() => router.push("/auth/signup")}>
+
               Start Capturing Evidence
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -245,8 +245,8 @@ export default function LandingPage() {
               size="lg"
               variant="outline"
               className="border-2 border-white text-white hover:bg-white hover:text-rd-navy font-semibold text-lg px-8 py-6 rounded-xl"
-              onClick={() => router.push("/auth/login")}
-            >
+              onClick={() => router.push("/auth/login")}>
+
               Already Have an Account?
             </Button>
           </div>
@@ -264,6 +264,6 @@ export default function LandingPage() {
           </p>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
