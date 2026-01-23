@@ -13,6 +13,7 @@ import { Loader2, Camera, Upload, X, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
+import { EmptyState } from "@/components/EmptyState";
 
 type Project = {
   id: string;
@@ -143,19 +144,19 @@ export default function CapturePage() {
           </Button>
         </div>
         <div className="flex-1 flex items-center justify-center px-6">
-          <div className="text-center space-y-4">
-            <div className="w-20 h-20 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center">
-              <Upload className="h-10 w-10 text-slate-400" />
-            </div>
-            <h2 className="text-xl font-bold text-rd-navy">No Projects Yet</h2>
-            <p className="text-slate-600">Your consultant will assign projects soon.</p>
-            <Button 
-              className="btn-primary mt-6"
-              onClick={() => router.push("/home")}
-            >
-              Back to Home
-            </Button>
-          </div>
+          <EmptyState
+            icon={Upload}
+            title="No Projects Yet"
+            description="Your consultant will assign projects soon."
+            action={
+              <Button 
+                className="btn-primary mt-6"
+                onClick={() => router.push("/home")}
+              >
+                Back to Home
+              </Button>
+            }
+          />
         </div>
       </div>
     );

@@ -7,6 +7,8 @@ import { Plus, Camera, Upload, FileText, Image, File, AlertCircle, Settings, Fol
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { EmptyState } from "@/components/EmptyState";
 import {
   Sheet,
   SheetContent,
@@ -93,6 +95,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <OfflineIndicator />
       <div className="sticky top-0 z-10 bg-white border-b border-slate-200 safe-top">
         <div className="px-6 py-4 flex items-center justify-between">
           <div className="flex-1">
@@ -170,15 +173,11 @@ export default function HomePage() {
             ))}
           </div>
         ) : evidence.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-slate-100 flex items-center justify-center">
-              <Camera className="h-12 w-12 text-slate-400" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-700 mb-2">No evidence yet</h3>
-            <p className="text-slate-500">
-              Start by adding something
-            </p>
-          </div>
+          <EmptyState
+            icon={Camera}
+            title="No evidence yet"
+            description="Start by adding your first piece of R&D evidence"
+          />
         ) : (
           <div className="space-y-8 pb-6">
             {Object.entries(groupedEvidence).map(([dateKey, items]) => (
