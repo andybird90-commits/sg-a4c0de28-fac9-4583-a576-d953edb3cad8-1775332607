@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { Layout } from "@/components/Layout";
 import { useApp } from "@/contexts/AppContext";
 import { evidenceService, type EvidenceWithFiles } from "@/services/evidenceService";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Camera, Upload, FileText, Image, File, Mic, Video, AlertCircle } from "lucide-react";
+import { Plus, Camera, Upload, FileText, Image, File, AlertCircle, Settings, Folder } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Sheet,
   SheetContent,
@@ -58,10 +57,6 @@ export default function HomePage() {
         return File;
       case "note":
         return FileText;
-      case "audio":
-        return Mic;
-      case "video":
-        return Video;
       default:
         return FileText;
     }
@@ -75,8 +70,8 @@ export default function HomePage() {
 
     if (diffDays === 0) return "Today";
     if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString();
+    if (diffDays < 7) return "This Week";
+    return "Older";
   };
 
   const groupByDate = (items: EvidenceWithFiles[]) => {
@@ -94,12 +89,33 @@ export default function HomePage() {
   }
 
   const groupedEvidence = groupByDate(evidence);
+  const initials = user.email?.substring(0, 2).toUpperCase() || "U";
 
   return (
-    <Layout title="Evidence Timeline">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-white">
+      <div className="sticky top-0 z-10 bg-white border-b border-slate-200 safe-top">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div className="flex-1">
+            <h1 className="text-xl font-bold text-rd-navy">{currentOrg.name}</h1>
+            <p className="text-sm text-slate-600">Your Evidence</p>
+          </div>
+          <Button
+            variant="ghost"
+            className="rounded-full w-10 h-10 p-0"
+            onClick={() => router.push("/settings")}
+          >
+            <Avatar className="w-10 h-10 bg-rd-navy">
+              <AvatarFallback className="bg-rd-navy text-white font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </div>
+      </div>
+
+      <div className="px-6 py-6 space-y-6">
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="rounded-xl">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
@@ -107,38 +123,38 @@ export default function HomePage() {
 
         <Sheet>
           <SheetTrigger asChild>
-            <Button size="lg" className="w-full shadow-lg">
-              <Plus className="mr-2 h-5 w-5" />
+            <Button className="w-full h-16 text-lg font-bold bg-rd-orange hover:bg-[#E67510] rounded-xl shadow-lg">
+              <Plus className="mr-2 h-6 w-6" strokeWidth={3} />
               Add Evidence
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="h-auto">
-            <SheetHeader>
-              <SheetTitle>Add Evidence</SheetTitle>
+          <SheetContent side="bottom" className="h-auto rounded-t-3xl">
+            <SheetHeader className="pb-6">
+              <SheetTitle className="text-xl font-bold text-rd-navy">Add Evidence</SheetTitle>
             </SheetHeader>
-            <div className="grid grid-cols-2 gap-3 mt-6 pb-6">
+            <div className="grid grid-cols-2 gap-4 pb-8">
               <Link href="/evidence/capture?type=photo">
-                <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                  <Camera className="h-8 w-8" />
-                  <span>Take Photo</span>
+                <Button variant="outline" className="w-full h-32 flex flex-col gap-3 rounded-xl border-2 hover:border-rd-orange hover:bg-orange-50">
+                  <Camera className="h-10 w-10 text-rd-orange" />
+                  <span className="font-semibold text-slate-700">Take Photo</span>
                 </Button>
               </Link>
               <Link href="/evidence/capture?type=upload-photo">
-                <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                  <Image className="h-8 w-8" />
-                  <span>Upload Photo</span>
+                <Button variant="outline" className="w-full h-32 flex flex-col gap-3 rounded-xl border-2 hover:border-rd-orange hover:bg-orange-50">
+                  <Image className="h-10 w-10 text-rd-orange" />
+                  <span className="font-semibold text-slate-700">Upload Photo</span>
                 </Button>
               </Link>
               <Link href="/evidence/capture?type=document">
-                <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                  <Upload className="h-8 w-8" />
-                  <span>Upload Document</span>
+                <Button variant="outline" className="w-full h-32 flex flex-col gap-3 rounded-xl border-2 hover:border-rd-orange hover:bg-orange-50">
+                  <Upload className="h-10 w-10 text-rd-orange" />
+                  <span className="font-semibold text-slate-700">Upload Document</span>
                 </Button>
               </Link>
               <Link href="/evidence/capture?type=note">
-                <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                  <FileText className="h-8 w-8" />
-                  <span>Add Note</span>
+                <Button variant="outline" className="w-full h-32 flex flex-col gap-3 rounded-xl border-2 hover:border-rd-orange hover:bg-orange-50">
+                  <FileText className="h-10 w-10 text-rd-orange" />
+                  <span className="font-semibold text-slate-700">Add Note</span>
                 </Button>
               </Link>
             </div>
@@ -148,28 +164,26 @@ export default function HomePage() {
         {loadingEvidence ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-4">
-                  <div className="h-20 bg-slate-200 dark:bg-slate-700 rounded" />
-                </CardContent>
-              </Card>
+              <div key={i} className="animate-pulse">
+                <div className="h-24 bg-slate-100 rounded-xl" />
+              </div>
             ))}
           </div>
         ) : evidence.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <Camera className="h-16 w-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No Evidence Yet</h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
-                Start capturing your R&D work by adding your first piece of evidence
-              </p>
-            </CardContent>
-          </Card>
+          <div className="py-16 text-center">
+            <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-slate-100 flex items-center justify-center">
+              <Camera className="h-12 w-12 text-slate-400" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-700 mb-2">No evidence yet</h3>
+            <p className="text-slate-500">
+              Start by adding something
+            </p>
+          </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8 pb-6">
             {Object.entries(groupedEvidence).map(([dateKey, items]) => (
               <div key={dateKey} className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 px-1">
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider px-1">
                   {dateKey}
                 </h3>
                 <div className="space-y-3">
@@ -177,37 +191,34 @@ export default function HomePage() {
                     const TypeIcon = getTypeIcon(item.type);
                     return (
                       <Link key={item.id} href={`/evidence/${item.id}`}>
-                        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                          <CardContent className="p-4">
-                            <div className="flex gap-4">
-                              <div className="flex-shrink-0">
-                                <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                                  <TypeIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                                </div>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1">
-                                    <p className="font-medium text-slate-900 dark:text-white truncate">
-                                      {item.description || `${item.type} evidence`}
-                                    </p>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                                      {item.project_name}
-                                    </p>
-                                  </div>
-                                  {item.tag && (
-                                    <span className="px-2 py-1 text-xs font-medium bg-slate-100 dark:bg-slate-800 rounded-full whitespace-nowrap">
-                                      {item.tag}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                                  {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </p>
+                        <div className="evidence-card p-4 hover:shadow-lg transition-all cursor-pointer">
+                          <div className="flex gap-4">
+                            <div className="flex-shrink-0">
+                              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rd-orange to-orange-400 flex items-center justify-center">
+                                <TypeIcon className="h-7 w-7 text-white" strokeWidth={2.5} />
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <p className="font-semibold text-rd-navy truncate text-base">
+                                  {item.description || `${item.type} evidence`}
+                                </p>
+                                {item.tag && (
+                                  <span className="px-3 py-1 text-xs font-bold bg-slate-100 text-slate-700 rounded-full whitespace-nowrap">
+                                    {item.tag}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <Folder className="h-4 w-4" />
+                                <span>{item.project_name}</span>
+                              </div>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </Link>
                     );
                   })}
@@ -217,6 +228,6 @@ export default function HomePage() {
           </div>
         )}
       </div>
-    </Layout>
+    </div>
   );
 }

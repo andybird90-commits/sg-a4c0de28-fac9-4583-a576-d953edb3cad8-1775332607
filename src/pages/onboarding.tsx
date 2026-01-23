@@ -1,29 +1,23 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Camera, Upload, FileText, CheckCircle } from "lucide-react";
+import { Camera, Upload, CheckCircle } from "lucide-react";
 
 const slides = [
   {
     icon: Camera,
-    title: "Capture Evidence On The Go",
-    description: "Take photos of prototypes, tests, and iterations as they happen. Never miss documenting your R&D work."
+    title: "Your R&D companion.",
+    description: "Capture evidence wherever you are."
   },
   {
     icon: Upload,
-    title: "Upload Documents Instantly",
-    description: "Share technical specs, test results, and research documents directly from your device."
-  },
-  {
-    icon: FileText,
-    title: "Add Context & Notes",
-    description: "Tag and describe your evidence to make it easy for your R&D team to process your claim."
+    title: "Snap, upload, done.",
+    description: "Photos, documents, and notes sync automatically."
   },
   {
     icon: CheckCircle,
-    title: "Everything Syncs Automatically",
-    description: "Your evidence is securely stored and ready for your R&D tax claim team to review."
+    title: "Stay organised effortlessly.",
+    description: "Everything feeds into your consultant's system."
   }
 ];
 
@@ -34,62 +28,70 @@ export default function OnboardingPage() {
   const handleNext = () => {
     if (currentSlide < slides.length - 1) {
       setCurrentSlide(currentSlide + 1);
-    } else {
-      router.push("/home");
     }
-  };
-
-  const handleSkip = () => {
-    router.push("/home");
   };
 
   const slide = slides[currentSlide];
   const Icon = slide.icon;
+  const isLastSlide = currentSlide === slides.length - 1;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardContent className="pt-12 pb-6">
-          <div className="flex flex-col items-center text-center space-y-6">
-            <div className="w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-              <Icon className="w-12 h-12 text-blue-600 dark:text-blue-400" />
-            </div>
-            
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-                {slide.title}
-              </h2>
-              <p className="text-slate-600 dark:text-slate-400">
-                {slide.description}
-              </p>
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              {slides.map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-2 rounded-full transition-all ${
-                    index === currentSlide
-                      ? "w-8 bg-blue-600"
-                      : "w-2 bg-slate-300 dark:bg-slate-600"
-                  }`}
-                />
-              ))}
-            </div>
-
-            <div className="w-full space-y-3 pt-6">
-              <Button className="w-full" size="lg" onClick={handleNext}>
-                {currentSlide === slides.length - 1 ? "Get Started" : "Next"}
-              </Button>
-              {currentSlide < slides.length - 1 && (
-                <Button variant="ghost" className="w-full" onClick={handleSkip}>
-                  Skip
-                </Button>
-              )}
-            </div>
+    <div className="min-h-screen bg-white flex flex-col">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+        <div className="w-full max-w-md space-y-12 text-center">
+          <div className="w-32 h-32 mx-auto rounded-3xl bg-gradient-to-br from-rd-orange to-orange-400 flex items-center justify-center shadow-lg">
+            <Icon className="w-16 h-16 text-white" strokeWidth={2.5} />
           </div>
-        </CardContent>
-      </Card>
+          
+          <div className="space-y-4">
+            <h1 className="text-4xl font-bold text-rd-navy leading-tight">
+              {slide.title}
+            </h1>
+            <p className="text-xl text-slate-600 leading-relaxed">
+              {slide.description}
+            </p>
+          </div>
+
+          <div className="flex gap-2 justify-center">
+            {slides.map((_, index) => (
+              <div
+                key={index}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  index === currentSlide
+                    ? "w-8 bg-rd-orange"
+                    : "w-2 bg-slate-300"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 space-y-3 safe-bottom">
+        {!isLastSlide ? (
+          <Button 
+            className="w-full h-14 text-lg font-semibold bg-rd-orange hover:bg-[#E67510] rounded-xl shadow-lg"
+            onClick={handleNext}
+          >
+            Next
+          </Button>
+        ) : (
+          <>
+            <Button 
+              className="w-full h-14 text-lg font-semibold bg-rd-orange hover:bg-[#E67510] rounded-xl shadow-lg"
+              onClick={() => router.push("/auth/login")}
+            >
+              Log in
+            </Button>
+            <Button 
+              className="w-full h-14 text-lg font-semibold bg-rd-navy hover:bg-[#1a3a5f] rounded-xl"
+              onClick={() => router.push("/auth/signup")}
+            >
+              Sign up
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
