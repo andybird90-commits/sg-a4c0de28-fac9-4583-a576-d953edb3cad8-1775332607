@@ -81,6 +81,16 @@ export default function LoginPage() {
 
       <div className="flex-1 flex flex-col justify-center px-6 pb-12">
         <div className="w-full max-w-md mx-auto space-y-8">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <img
+              src="https://www.rdtax.co.uk/wp-content/uploads/2023/09/cropped-RD-TAX-logo-white-@2x.png"
+              alt="RD TAX Logo"
+              className="h-16 w-auto object-contain"
+              style={{ filter: 'invert(1)' }}
+            />
+          </div>
+
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold text-rd-navy">Welcome back</h1>
             <p className="text-slate-600">Log in to RD Sidekick</p>
