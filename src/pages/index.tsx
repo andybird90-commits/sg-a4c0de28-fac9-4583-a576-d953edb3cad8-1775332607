@@ -67,9 +67,9 @@ export default function LandingPage() {
           <div className="flex justify-center mb-12">
             <img
               src="/rdtax-logo.png"
-              alt="RD TAX"
-              className="h-32 w-auto object-contain" />
-
+              alt="RD TAX Logo"
+              className="h-64 w-auto object-contain"
+            />
           </div>
 
           {/* Hero Content */}

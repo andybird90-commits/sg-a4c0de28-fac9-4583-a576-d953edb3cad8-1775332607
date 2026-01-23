@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -15,6 +15,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      org_invite_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          org_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          org_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_invite_codes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_users: {
         Row: {
           created_at: string
@@ -53,6 +91,7 @@ export type Database = {
           id: string
           name: string
           organisation_code: string
+          sidekick_enabled: boolean
           updated_at: string
         }
         Insert: {
@@ -60,6 +99,7 @@ export type Database = {
           id?: string
           name: string
           organisation_code: string
+          sidekick_enabled?: boolean
           updated_at?: string
         }
         Update: {
@@ -67,6 +107,7 @@ export type Database = {
           id?: string
           name?: string
           organisation_code?: string
+          sidekick_enabled?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -135,6 +176,60 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rd_claim_evidence: {
+        Row: {
+          attached_by: string | null
+          claim_id: string
+          created_at: string
+          description: string | null
+          id: string
+          org_id: string
+          project_id: string | null
+          sidekick_evidence_id: string
+          tag: string | null
+          type: string
+        }
+        Insert: {
+          attached_by?: string | null
+          claim_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          org_id: string
+          project_id?: string | null
+          sidekick_evidence_id: string
+          tag?: string | null
+          type: string
+        }
+        Update: {
+          attached_by?: string | null
+          claim_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          org_id?: string
+          project_id?: string | null
+          sidekick_evidence_id?: string
+          tag?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rd_claim_evidence_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rd_claim_evidence_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
