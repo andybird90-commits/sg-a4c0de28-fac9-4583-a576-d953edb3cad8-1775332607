@@ -1,9 +1,22 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type Organisation = Database["public"]["Tables"]["organisations"]["Row"];
-type OrganisationUser = Database["public"]["Tables"]["organisation_users"]["Row"];
-type Project = Database["public"]["Tables"]["projects"]["Row"];
+// Explicitly define types to avoid deep instantiation recursion
+export type Organisation = {
+  id: string;
+  name: string;
+  code: string;
+  created_at: string;
+};
+
+export type Project = {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean | null;
+  created_at: string;
+};
 
 export interface UserOrganisation extends Organisation {
   role: string;
@@ -18,7 +31,12 @@ export const organisationService = {
       .from("organisation_users")
       .select(`
         role,
-        organisations (*)
+        organisations (
+          id,
+          name,
+          code,
+          created_at
+        )
       `)
       .eq("user_id", user.id);
 
@@ -38,7 +56,7 @@ export const organisationService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as Organisation;
   },
 
   async getOrganisationByCode(code: string): Promise<Organisation | null> {
@@ -49,7 +67,7 @@ export const organisationService = {
       .single();
 
     if (error) return null;
-    return data;
+    return data as Organisation;
   },
 
   async joinOrganisation(orgId: string, role: string = "client"): Promise<void> {
@@ -81,6 +99,6 @@ export const organisationService = {
     const { data, error } = await query;
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as Project[];
   }
 };

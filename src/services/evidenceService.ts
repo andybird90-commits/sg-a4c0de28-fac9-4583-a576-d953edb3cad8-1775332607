@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { offlineQueue } from "@/lib/offlineQueue";
 
 // Define strict types based on the schema we created
 export type EvidenceItem = {
@@ -31,10 +32,10 @@ export interface EvidenceWithFiles extends EvidenceItem {
 
 export const evidenceService = {
   async getEvidenceList(orgId: string, projectId?: string, fromDate?: string, toDate?: string): Promise<EvidenceWithFiles[]> {
-    // Using any cast to bypass schema type restrictions while keeping runtime safety
-    let query = (supabase
+    // Cast supabase to any to bypass schema type restriction for 'sidekick'
+    let query = (supabase as any)
       .schema("sidekick")
-      .from("evidence_items") as any)
+      .from("evidence_items")
       .select(`
         *,
         evidence_files (*)
@@ -76,8 +77,8 @@ export const evidenceService = {
       projects = projectData || [];
     }
 
-    const profilesMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
-    const projectsMap = new Map(projects?.map(p => [p.id, p.name]) || []);
+    const profilesMap = new Map(profiles?.map((p: any) => [p.id, p.full_name]) || []);
+    const projectsMap = new Map(projects?.map((p: any) => [p.id, p.name]) || []);
 
     return evidenceData.map((item: any) => ({
       ...item,
@@ -87,9 +88,9 @@ export const evidenceService = {
   },
 
   async getEvidenceById(id: string): Promise<EvidenceWithFiles | null> {
-    const { data, error } = await (supabase
+    const { data, error } = await (supabase as any)
       .schema("sidekick")
-      .from("evidence_items") as any)
+      .from("evidence_items")
       .select(`
         *,
         evidence_files (*)
@@ -129,9 +130,29 @@ export const evidenceService = {
   },
 
   async createEvidence(evidence: Partial<EvidenceItem>): Promise<EvidenceItem> {
-    const { data, error } = await (supabase
+    // Check for offline status
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const offlineId = `offline_${crypto.randomUUID()}`;
+      const offlineItem = {
+        ...evidence,
+        id: offlineId,
+        created_at: new Date().toISOString()
+      } as EvidenceItem;
+
+      offlineQueue.addItem({
+        id: offlineId,
+        action: "create_evidence",
+        payload: evidence,
+        timestamp: Date.now()
+      });
+
+      // Return local optimistic version
+      return offlineItem;
+    }
+
+    const { data, error } = await (supabase as any)
       .schema("sidekick")
-      .from("evidence_items") as any)
+      .from("evidence_items")
       .insert(evidence)
       .select()
       .single();
@@ -141,9 +162,9 @@ export const evidenceService = {
   },
 
   async deleteEvidence(id: string): Promise<void> {
-    const { error } = await (supabase
+    const { error } = await (supabase as any)
       .schema("sidekick")
-      .from("evidence_items") as any)
+      .from("evidence_items")
       .delete()
       .eq("id", id);
 
@@ -155,6 +176,10 @@ export const evidenceService = {
     evidenceId: string,
     file: File
   ): Promise<EvidenceFile> {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new Error("Cannot upload files while offline. Please try again when connected.");
+    }
+
     const fileId = crypto.randomUUID();
     const extension = file.name.split(".").pop();
     const storagePath = `org/${orgId}/evidence/${evidenceId}/${fileId}.${extension}`;
@@ -165,9 +190,9 @@ export const evidenceService = {
 
     if (uploadError) throw uploadError;
 
-    const { data, error } = await (supabase
+    const { data, error } = await (supabase as any)
       .schema("sidekick")
-      .from("evidence_files") as any)
+      .from("evidence_files")
       .insert({
         evidence_id: evidenceId,
         org_id: orgId,
@@ -198,9 +223,9 @@ export const evidenceService = {
 
     if (storageError) throw storageError;
 
-    const { error } = await (supabase
+    const { error } = await (supabase as any)
       .schema("sidekick")
-      .from("evidence_files") as any)
+      .from("evidence_files")
       .delete()
       .eq("id", fileId);
 
