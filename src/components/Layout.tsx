@@ -1,151 +1,97 @@
 import React from "react";
-import { useApp } from "@/contexts/AppContext";
-import { Button } from "@/components/ui/button";
-import { Menu, Building2, LogOut, Home, Settings, Camera } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { supabase } from "@/integrations/supabase/client";
-import { OfflineIndicator } from "./OfflineIndicator";
+import { Home, Camera, Settings, LogOut, Building2 } from "lucide-react";
+import { useApp } from "@/contexts/AppContext";
+import { authService } from "@/services/authService";
+import { NotificationToast } from "./NotificationToast";
+import { OfflineBanner } from "./OfflineBanner";
+import { SyncIndicator } from "./SyncIndicator";
+import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 
 interface LayoutProps {
   children: React.ReactNode;
-  title?: string;
-  showOrgSelector?: boolean;
-  showHeader?: boolean;
+  showNav?: boolean;
 }
 
-export function Layout({ children, title, showOrgSelector = true, showHeader = true }: LayoutProps) {
-  const { currentOrg, organisations, setCurrentOrg, user } = useApp();
+export function Layout({ children, showNav = true }: LayoutProps) {
   const router = useRouter();
+  const { user, currentOrg } = useApp();
+  const { isOnline, syncingCount } = useOfflineQueue();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await authService.signOut();
     router.push("/auth/login");
   };
 
-  if (!showHeader) {
-    return (
-      <>
-        <OfflineIndicator />
-        {children}
-      </>
-    );
-  }
+  const navItems = [
+    { href: "/home", icon: Home, label: "Home" },
+    { href: "/evidence/capture", icon: Camera, label: "Add Evidence" },
+    { href: "/settings", icon: Settings, label: "Settings" }
+  ];
 
   return (
-    <div className="min-h-screen bg-white">
-      <OfflineIndicator />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <OfflineBanner isOnline={isOnline} />
       
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-sm safe-top">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-rd-navy">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[280px]">
-                <SheetHeader className="mb-6">
-                  <SheetTitle className="text-rd-navy text-xl font-bold">Menu</SheetTitle>
-                </SheetHeader>
-                <nav className="flex flex-col gap-2">
-                  <Link href="/home">
-                    <Button variant="ghost" className="w-full justify-start text-slate-700 hover:bg-slate-100">
-                      <Home className="mr-3 h-5 w-5" />
-                      Home
-                    </Button>
-                  </Link>
-                  <Link href="/evidence/capture">
-                    <Button variant="ghost" className="w-full justify-start text-slate-700 hover:bg-slate-100">
-                      <Camera className="mr-3 h-5 w-5" />
-                      Add Evidence
-                    </Button>
-                  </Link>
-                  <Link href="/settings">
-                    <Button variant="ghost" className="w-full justify-start text-slate-700 hover:bg-slate-100">
-                      <Settings className="mr-3 h-5 w-5" />
-                      Settings
-                    </Button>
-                  </Link>
-                  
-                  <div className="my-4 border-t border-slate-200" />
-                  
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700" 
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="mr-3 h-5 w-5" />
-                    Log Out
-                  </Button>
-                </nav>
-              </SheetContent>
-            </Sheet>
-            
-            <div>
-              <h1 className="text-lg font-bold text-rd-navy">
-                {title || "RD Sidekick"}
-              </h1>
-              {showOrgSelector && currentOrg && (
-                <p className="text-xs text-slate-600 flex items-center gap-1">
-                  <Building2 className="h-3 w-3" />
-                  {currentOrg.name}
-                </p>
-              )}
+      {showNav && user && (
+        <header className="bg-[#001F3F] text-white shadow-md">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Building2 size={24} />
+                <div>
+                  <h1 className="font-bold text-lg">RD Sidekick</h1>
+                  {currentOrg && (
+                    <p className="text-xs text-gray-300">{currentOrg.name}</p>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                aria-label="Log out"
+              >
+                <LogOut size={20} />
+              </button>
             </div>
           </div>
+        </header>
+      )}
 
-          {showOrgSelector && organisations.length > 1 && (
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="border-rd-navy text-rd-navy hover:bg-rd-navy hover:text-white">
-                  Switch Org
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[300px]">
-                <SheetHeader className="mb-6">
-                  <SheetTitle className="text-rd-navy text-xl font-bold">Switch Organisation</SheetTitle>
-                </SheetHeader>
-                <div className="flex flex-col gap-3">
-                  {organisations.map((org) => (
-                    <Button
-                      key={org.id}
-                      variant={currentOrg?.id === org.id ? "default" : "outline"}
-                      className={`w-full justify-start h-auto py-4 px-4 ${
-                        currentOrg?.id === org.id 
-                          ? "bg-rd-navy text-white hover:bg-rd-navy/90" 
-                          : "border-slate-200 hover:bg-slate-50"
-                      }`}
-                      onClick={() => {
-                        setCurrentOrg(org);
-                        router.push("/home");
-                      }}
-                    >
-                      <Building2 className="mr-3 h-5 w-5 flex-shrink-0" />
-                      <div className="text-left">
-                        <div className="font-semibold">{org.name}</div>
-                        <div className="text-xs opacity-70 capitalize">{org.role}</div>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              </SheetContent>
-            </Sheet>
-          )}
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-6 pb-safe">
+      <main className="flex-1 pb-20">
         {children}
       </main>
+
+      {showNav && user && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-30">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-around py-2">
+              {navItems.map((item) => {
+                const isActive = router.pathname === item.href;
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
+                      isActive
+                        ? "text-[#FF6B35]"
+                        : "text-gray-600 hover:text-[#001F3F]"
+                    }`}
+                  >
+                    <Icon size={24} />
+                    <span className="text-xs font-medium">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </nav>
+      )}
+
+      <SyncIndicator count={syncingCount} />
+      <NotificationToast />
     </div>
   );
 }
