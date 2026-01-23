@@ -1,11 +1,5 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-// Use service role client for API routes (bypasses RLS)
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+import { NextApiRequest, NextApiResponse } from "next";
+import { supabase } from "@/integrations/supabase/client";
 
 export default async function handler(
   req: NextApiRequest,
@@ -17,12 +11,12 @@ export default async function handler(
 
   const { org_id, project_id, from, to } = req.query;
 
-  if (!org_id || typeof org_id !== "string") {
+  if (!org_id) {
     return res.status(400).json({ error: "org_id is required" });
   }
 
   try {
-    let query = supabaseAdmin
+    let query = (supabase as any)
       .schema("sidekick")
       .from("evidence_items")
       .select(`
@@ -32,28 +26,25 @@ export default async function handler(
       .eq("org_id", org_id)
       .order("created_at", { ascending: false });
 
-    if (project_id && typeof project_id === "string") {
+    if (project_id) {
       query = query.eq("project_id", project_id);
     }
 
-    if (from && typeof from === "string") {
+    if (from) {
       query = query.gte("created_at", from);
     }
 
-    if (to && typeof to === "string") {
+    if (to) {
       query = query.lte("created_at", to);
     }
 
     const { data, error } = await query;
 
-    if (error) {
-      console.error("Error fetching evidence:", error);
-      return res.status(500).json({ error: "Failed to fetch evidence" });
-    }
+    if (error) throw error;
 
-    return res.status(200).json({ data });
+    return res.status(200).json(data || []);
   } catch (error) {
-    console.error("Unexpected error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Error fetching evidence:", error);
+    return res.status(500).json({ error: "Failed to fetch evidence" });
   }
 }

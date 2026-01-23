@@ -1,11 +1,5 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-// Use service role client for API routes (bypasses RLS)
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+import { NextApiRequest, NextApiResponse } from "next";
+import { supabase } from "@/integrations/supabase/client";
 
 export default async function handler(
   req: NextApiRequest,
@@ -18,12 +12,12 @@ export default async function handler(
   const { id } = req.query;
 
   if (!id || typeof id !== "string") {
-    return res.status(400).json({ error: "Evidence ID is required" });
+    return res.status(400).json({ error: "Invalid evidence ID" });
   }
 
   try {
-    // Fetch the evidence item with all files
-    const { data: evidence, error } = await supabaseAdmin
+    // Fetch evidence with files
+    const { data: evidence, error: evidenceError } = await (supabase as any)
       .schema("sidekick")
       .from("evidence_items")
       .select(`
@@ -33,44 +27,29 @@ export default async function handler(
       .eq("id", id)
       .single();
 
-    if (error) {
-      console.error("Error fetching evidence:", error);
-      return res.status(500).json({ error: "Failed to fetch evidence" });
-    }
+    if (evidenceError) throw evidenceError;
+    if (!evidence) return res.status(404).json({ error: "Evidence not found" });
 
-    if (!evidence) {
-      return res.status(404).json({ error: "Evidence not found" });
-    }
-
-    // Generate signed URLs for all files (valid for 1 hour)
+    // Generate signed URLs for all files
     const filesWithUrls = await Promise.all(
-      (evidence.evidence_files || []).map(async (file: any) => {
-        const { data: signedUrlData } = await supabaseAdmin.storage
+      evidence.evidence_files.map(async (file: any) => {
+        const { data: signedUrlData } = await supabase.storage
           .from("rd-sidekick")
           .createSignedUrl(file.storage_path, 3600);
 
         return {
           ...file,
-          signed_url: signedUrlData?.signedUrl || null
+          signed_url: signedUrlData?.signedUrl
         };
       })
     );
 
-    // Return the evidence record with signed URLs
-    // RD Pro can use these URLs to download and import the files
     return res.status(200).json({
-      message: "Evidence ready for export",
-      data: {
-        ...evidence,
-        evidence_files: filesWithUrls
-      },
-      export_instructions: {
-        note: "Use the signed_url field to download each file. URLs expire in 1 hour.",
-        next_steps: "RD Pro should download these files and import them into its own storage system."
-      }
+      ...evidence,
+      evidence_files: filesWithUrls
     });
   } catch (error) {
-    console.error("Unexpected error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Error exporting evidence:", error);
+    return res.status(500).json({ error: "Failed to export evidence" });
   }
 }

@@ -14,6 +14,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from "@/components/EmptyState";
+import { useOfflineQueue } from "@/hooks/useOfflineQueue";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 type Project = {
   id: string;
@@ -27,6 +29,8 @@ export default function CapturePage() {
   const { type } = router.query;
   const { user, currentOrg } = useApp();
   const { toast } = useToast();
+  const { isOnline, addToQueue } = useOfflineQueue();
+  const { notify } = useNotifications();
   const [projects, setProjects] = useState<Project[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -92,7 +96,43 @@ export default function CapturePage() {
     setError("");
 
     try {
-      // 1. Create evidence item
+      // Check if offline
+      if (!isOnline) {
+        // Convert file to base64 if present
+        let fileData: string | undefined;
+        let fileName: string | undefined;
+        let mimeType: string | undefined;
+
+        if (file) {
+          const reader = new FileReader();
+          const fileReadPromise = new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+          });
+          reader.readAsDataURL(file);
+          fileData = await fileReadPromise;
+          fileName = file.name;
+          mimeType = file.type;
+        }
+
+        // Add to offline queue
+        await addToQueue({
+          type: (type as any) || 'note',
+          org_id: currentOrg.id,
+          project_id: projectId || null,
+          description: description,
+          tag: tag,
+          claim_year: new Date().getFullYear(),
+          file_data: fileData,
+          file_name: fileName,
+          mime_type: mimeType
+        });
+
+        router.push("/home");
+        return;
+      }
+
+      // Online upload
       const evidence = await evidenceService.createEvidence({
         org_id: currentOrg.id,
         project_id: projectId || null,
@@ -103,19 +143,24 @@ export default function CapturePage() {
         claim_year: new Date().getFullYear()
       });
 
-      // 2. Upload file if present
       if (file) {
         await evidenceService.uploadFile(currentOrg.id, evidence.id, file);
       }
 
-      toast({
+      notify({
+        type: "success",
         title: "Evidence uploaded",
-        description: "Your evidence has been saved successfully",
+        message: "Your evidence has been saved successfully"
       });
 
       router.push("/home");
     } catch (err: any) {
       setError(err.message || "Failed to create evidence");
+      notify({
+        type: "error",
+        title: "Upload failed",
+        message: err.message || "Failed to create evidence"
+      });
     } finally {
       setUploading(false);
     }
@@ -321,7 +366,7 @@ export default function CapturePage() {
           {uploading ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Uploading...
+              {isOnline ? "Uploading..." : "Saving offline..."}
             </>
           ) : (
             "Save Evidence"
