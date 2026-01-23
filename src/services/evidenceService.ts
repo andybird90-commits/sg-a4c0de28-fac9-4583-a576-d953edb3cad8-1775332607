@@ -1,9 +1,28 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type EvidenceItem = Database["sidekick"]["Tables"]["evidence_items"]["Row"];
-type EvidenceItemInsert = Database["sidekick"]["Tables"]["evidence_items"]["Insert"];
-type EvidenceFile = Database["sidekick"]["Tables"]["evidence_files"]["Row"];
+// Define strict types based on the schema we created
+export type EvidenceItem = {
+  id: string;
+  org_id: string;
+  project_id: string | null;
+  created_by: string;
+  type: 'image' | 'document' | 'note' | 'audio' | 'video';
+  description: string | null;
+  tag: string | null;
+  claim_year: number | null;
+  created_at: string;
+};
+
+export type EvidenceFile = {
+  id: string;
+  evidence_id: string;
+  org_id: string;
+  storage_path: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: string;
+};
 
 export interface EvidenceWithFiles extends EvidenceItem {
   evidence_files: EvidenceFile[];
@@ -13,13 +32,13 @@ export interface EvidenceWithFiles extends EvidenceItem {
 
 export const evidenceService = {
   async getEvidenceList(orgId: string, projectId?: string, fromDate?: string, toDate?: string): Promise<EvidenceWithFiles[]> {
+    // We use the 'sidekick' schema explicitly
     let query = supabase
+      .schema("sidekick")
       .from("evidence_items")
       .select(`
         *,
-        evidence_files (*),
-        profiles!evidence_items_created_by_fkey (full_name),
-        projects (name)
+        evidence_files (*)
       `)
       .eq("org_id", orgId)
       .order("created_at", { ascending: false });
@@ -36,53 +55,99 @@ export const evidenceService = {
       query = query.lte("created_at", toDate);
     }
 
-    const { data, error } = await query;
+    const { data: evidenceData, error: evidenceError } = await query;
 
-    if (error) throw error;
+    if (evidenceError) throw evidenceError;
+    if (!evidenceData) return [];
 
-    return (data || []).map((item: any) => ({
+    // Fetch related public data separately to avoid complex cross-schema joins that trip up TypeScript
+    // 1. Get unique user IDs
+    const userIds = [...new Set(evidenceData.map((item: any) => item.created_by))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", userIds);
+    
+    // 2. Get unique project IDs
+    const projectIds = [...new Set(evidenceData.map((item: any) => item.project_id).filter(Boolean))];
+    let projects: any[] = [];
+    if (projectIds.length > 0) {
+      const { data: projectData } = await supabase
+        .from("projects")
+        .select("id, name")
+        .in("id", projectIds);
+      projects = projectData || [];
+    }
+
+    // Map the data together
+    const profilesMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+    const projectsMap = new Map(projects?.map(p => [p.id, p.name]) || []);
+
+    return evidenceData.map((item: any) => ({
       ...item,
-      creator_name: item.profiles?.full_name || "Unknown",
-      project_name: item.projects?.name || "No Project"
-    }));
+      creator_name: profilesMap.get(item.created_by) || "Unknown",
+      project_name: item.project_id ? (projectsMap.get(item.project_id) || "Unknown Project") : "No Project"
+    })) as EvidenceWithFiles[];
   },
 
   async getEvidenceById(id: string): Promise<EvidenceWithFiles | null> {
     const { data, error } = await supabase
+      .schema("sidekick")
       .from("evidence_items")
       .select(`
         *,
-        evidence_files (*),
-        profiles!evidence_items_created_by_fkey (full_name),
-        projects (name)
+        evidence_files (*)
       `)
       .eq("id", id)
       .single();
 
     if (error) throw error;
-
     if (!data) return null;
+
+    // Fetch related data
+    let creatorName = "Unknown";
+    let projectName = "No Project";
+
+    if (data.created_by) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", data.created_by)
+        .single();
+      if (profile) creatorName = profile.full_name || "Unknown";
+    }
+
+    if (data.project_id) {
+      const { data: project } = await supabase
+        .from("projects")
+        .select("name")
+        .eq("id", data.project_id)
+        .single();
+      if (project) projectName = project.name;
+    }
 
     return {
       ...data,
-      creator_name: data.profiles?.full_name || "Unknown",
-      project_name: data.projects?.name || "No Project"
-    };
+      creator_name: creatorName,
+      project_name: projectName
+    } as EvidenceWithFiles;
   },
 
-  async createEvidence(evidence: EvidenceItemInsert): Promise<EvidenceItem> {
+  async createEvidence(evidence: Partial<EvidenceItem>): Promise<EvidenceItem> {
     const { data, error } = await supabase
+      .schema("sidekick")
       .from("evidence_items")
       .insert(evidence)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return data as EvidenceItem;
   },
 
   async deleteEvidence(id: string): Promise<void> {
     const { error } = await supabase
+      .schema("sidekick")
       .from("evidence_items")
       .delete()
       .eq("id", id);
@@ -106,6 +171,7 @@ export const evidenceService = {
     if (uploadError) throw uploadError;
 
     const { data, error } = await supabase
+      .schema("sidekick")
       .from("evidence_files")
       .insert({
         evidence_id: evidenceId,
@@ -118,7 +184,7 @@ export const evidenceService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as EvidenceFile;
   },
 
   async getSignedUrl(storagePath: string): Promise<string> {
@@ -138,6 +204,7 @@ export const evidenceService = {
     if (storageError) throw storageError;
 
     const { error } = await supabase
+      .schema("sidekick")
       .from("evidence_files")
       .delete()
       .eq("id", fileId);
