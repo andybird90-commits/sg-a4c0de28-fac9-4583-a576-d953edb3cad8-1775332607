@@ -98,7 +98,7 @@ export default function LandingPage() {
                 size="lg"
                 variant="outline"
                 className="border-2 border-white text-white hover:bg-white hover:text-rd-navy font-semibold text-lg px-8 py-6 rounded-xl"
-                onClick={() => router.push("/auth/login")}>
+                onClick={() => router.push("/auth/login")} style={{ backgroundColor: "#525252" }}>
 
                 Log In
               </Button>
