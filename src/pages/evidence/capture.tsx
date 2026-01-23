@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useApp } from "@/contexts/AppContext";
-import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { evidenceService } from "@/services/evidenceService";
 import { organisationService } from "@/services/organisationService";
-import { Loader2, Camera, Upload, X } from "lucide-react";
+import { Loader2, Camera, Upload, X, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
+import { useToast } from "@/hooks/use-toast";
 
 type Project = {
   id: string;
@@ -25,8 +25,8 @@ export default function CapturePage() {
   const router = useRouter();
   const { type } = router.query;
   const { user, currentOrg } = useApp();
+  const { toast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   
@@ -107,6 +107,11 @@ export default function CapturePage() {
         await evidenceService.uploadFile(currentOrg.id, evidence.id, file);
       }
 
+      toast({
+        title: "Evidence uploaded",
+        description: "Your evidence has been saved successfully",
+      });
+
       router.push("/home");
     } catch (err: any) {
       setError(err.message || "Failed to create evidence");
@@ -125,9 +130,55 @@ export default function CapturePage() {
     }
   };
 
+  if (projects.length === 0 && !uploading) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col">
+        <div className="p-4 safe-top">
+          <Button
+            variant="ghost"
+            className="rounded-full w-10 h-10 p-0"
+            onClick={() => router.push("/home")}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="text-center space-y-4">
+            <div className="w-20 h-20 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center">
+              <Upload className="h-10 w-10 text-slate-400" />
+            </div>
+            <h2 className="text-xl font-bold text-rd-navy">No Projects Yet</h2>
+            <p className="text-slate-600">Your consultant will assign projects soon.</p>
+            <Button 
+              className="btn-primary mt-6"
+              onClick={() => router.push("/home")}
+            >
+              Back to Home
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Layout title={getPageTitle()}>
-      <div className="max-w-md mx-auto space-y-6">
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-white border-b border-slate-200 safe-top">
+        <div className="px-6 py-4 flex items-center gap-4">
+          <Button
+            variant="ghost"
+            className="rounded-full w-10 h-10 p-0 -ml-2"
+            onClick={() => router.push("/home")}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold text-rd-navy">{getPageTitle()}</h1>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 px-6 py-6 space-y-6">
         {/* Hidden inputs for file selection */}
         <input
           type="file"
@@ -139,22 +190,22 @@ export default function CapturePage() {
         />
         <input
           type="file"
-          accept={type === 'document' ? ".pdf,.doc,.docx,.xls,.xlsx" : "image/*"}
+          accept={type === 'document' ? ".pdf,.doc,.docx,.xls,.xlsx,.zip,.png,.jpg,.jpeg" : "image/*"}
           className="hidden"
           ref={fileInputRef}
           onChange={handleFileChange}
         />
 
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="rounded-xl">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* File Preview */}
           {(previewUrl || file) && (
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden evidence-card">
               <CardContent className="p-0 relative">
                 {previewUrl ? (
                   <div className="aspect-video relative">
@@ -166,8 +217,8 @@ export default function CapturePage() {
                     />
                   </div>
                 ) : (
-                  <div className="p-8 text-center bg-slate-50 dark:bg-slate-800">
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <div className="p-8 text-center bg-slate-50">
+                    <p className="text-sm text-slate-600 font-medium">
                       {file?.name}
                     </p>
                   </div>
@@ -175,13 +226,13 @@ export default function CapturePage() {
                 <Button
                   variant="destructive"
                   size="icon"
-                  className="absolute top-2 right-2 rounded-full"
+                  className="absolute top-3 right-3 rounded-full w-10 h-10 shadow-lg"
                   onClick={() => {
                     setFile(null);
                     setPreviewUrl(null);
                   }}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-5 w-5" />
                 </Button>
               </CardContent>
             </Card>
@@ -191,23 +242,29 @@ export default function CapturePage() {
           {!file && type !== 'note' && (
             <Button
               variant="outline"
-              className="w-full h-32 border-dashed border-2"
+              className="w-full h-40 border-dashed border-2 border-slate-300 hover:border-rd-orange hover:bg-orange-50 rounded-xl"
               onClick={() => {
                 if (type === 'photo') cameraInputRef.current?.click();
                 else fileInputRef.current?.click();
               }}
             >
-              <div className="flex flex-col items-center gap-2">
-                {type === 'photo' ? <Camera className="h-8 w-8" /> : <Upload className="h-8 w-8" />}
-                <span>{type === 'photo' ? 'Tap to take photo' : 'Tap to select file'}</span>
+              <div className="flex flex-col items-center gap-3">
+                {type === 'photo' ? (
+                  <Camera className="h-12 w-12 text-rd-orange" strokeWidth={2} />
+                ) : (
+                  <Upload className="h-12 w-12 text-rd-orange" strokeWidth={2} />
+                )}
+                <span className="font-semibold text-slate-700">
+                  {type === 'photo' ? 'Tap to take photo' : 'Tap to select file'}
+                </span>
               </div>
             </Button>
           )}
 
           <div className="space-y-2">
-            <Label>Project</Label>
+            <Label className="text-slate-700 font-semibold">Project</Label>
             <Select value={projectId} onValueChange={setProjectId}>
-              <SelectTrigger>
+              <SelectTrigger className="h-12 rounded-xl border-slate-300">
                 <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
@@ -221,48 +278,55 @@ export default function CapturePage() {
           </div>
 
           <div className="space-y-2">
-            <Label>Description</Label>
+            <Label className="text-slate-700 font-semibold">Description</Label>
             <Textarea
               placeholder="Describe what this is..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={3}
+              rows={4}
+              className="rounded-xl border-slate-300 resize-none"
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Tag</Label>
-            <Select value={tag} onValueChange={setTag}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TAGS.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-slate-700 font-semibold">Tag</Label>
+            <div className="flex flex-wrap gap-2">
+              {TAGS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTag(t)}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                    tag === t
+                      ? 'bg-rd-orange text-white shadow-md'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
-
-          <Button 
-            className="w-full" 
-            size="lg" 
-            onClick={handleSubmit}
-            disabled={uploading || (!description && !file)}
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              "Save Evidence"
-            )}
-          </Button>
         </div>
       </div>
-    </Layout>
+
+      {/* Footer Button */}
+      <div className="p-6 border-t border-slate-200 bg-white safe-bottom">
+        <Button 
+          className="btn-primary w-full h-14 text-lg"
+          onClick={handleSubmit}
+          disabled={uploading || (!description && !file)}
+        >
+          {uploading ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            "Save Evidence"
+          )}
+        </Button>
+      </div>
+    </div>
   );
 }
