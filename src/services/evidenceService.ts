@@ -61,13 +61,13 @@ export const evidenceService = {
     if (!evidenceData) return [];
 
     // Fetch related public data separately
-    const userIds = [...new Set(evidenceData.map((item: any) => item.created_by))];
+    const userIds = [...new Set(evidenceData.map((item: any) => item.created_by))] as string[];
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, full_name")
       .in("id", userIds);
     
-    const projectIds = [...new Set(evidenceData.map((item: any) => item.project_id).filter(Boolean))];
+    const projectIds = [...new Set(evidenceData.map((item: any) => item.project_id).filter(Boolean))] as string[];
     let projects: any[] = [];
     if (projectIds.length > 0) {
       const { data: projectData } = await supabase

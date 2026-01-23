@@ -5,7 +5,8 @@ import type { Database } from "@/integrations/supabase/types";
 export type Organisation = {
   id: string;
   name: string;
-  code: string;
+  // Based on error messages, the DB column is organisation_code
+  organisation_code: string;
   created_at: string;
 };
 
@@ -34,7 +35,7 @@ export const organisationService = {
         organisations (
           id,
           name,
-          code,
+          organisation_code,
           created_at
         )
       `)
@@ -42,10 +43,11 @@ export const organisationService = {
 
     if (error) throw error;
 
+    // Use any cast to avoid complex type inference issues with joined tables
     return (data || []).map((item: any) => ({
       ...item.organisations,
       role: item.role
-    }));
+    })) as UserOrganisation[];
   },
 
   async getOrganisationById(orgId: string): Promise<Organisation | null> {
@@ -63,7 +65,7 @@ export const organisationService = {
     const { data, error } = await supabase
       .from("organisations")
       .select("*")
-      .eq("code", code)
+      .eq("organisation_code", code)
       .single();
 
     if (error) return null;
