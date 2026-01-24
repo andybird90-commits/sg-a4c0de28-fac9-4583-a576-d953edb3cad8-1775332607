@@ -43,7 +43,10 @@ export default function SignupPage() {
       // Generate email from username if not an email
       const email = username.includes("@") ? username : `${username.toLowerCase().replace(/\s+/g, ".")}@temp.local`;
 
-      // Create user account
+      // Create user account with metadata
+      // The database trigger will automatically:
+      // 1. Create the profile with full_name
+      // 2. Link the user to the organisation
       const { data, error: signupError } = await supabase.auth.signUp({
         email: email,
         password,
@@ -58,17 +61,8 @@ export default function SignupPage() {
       if (signupError) throw signupError;
       if (!data.user) throw new Error("Failed to create user account");
 
-      // Create profile
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: data.user.id,
-        full_name: username,
-        email: email
-      });
-
-      if (profileError) throw profileError;
-
-      // Join organisation
-      await organisationService.joinOrganisation(org.id, "client");
+      // Wait a moment for the trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Redirect to home
       router.push("/home");
@@ -110,12 +104,25 @@ export default function SignupPage() {
 
           <div className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-slate-700 font-medium">Username</Label>
+              <Label htmlFor="username" className="text-slate-700 font-medium">Full Name</Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="Your name or email"
+                placeholder="Your name"
                 value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
+                className="h-12 rounded-xl border-slate-300"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-slate-700 font-medium">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your.email@company.com"
+                value={username.includes("@") ? username : ""}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={loading}
                 className="h-12 rounded-xl border-slate-300"
