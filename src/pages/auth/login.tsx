@@ -1,14 +1,15 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "@/integrations/supabase/client";
-import { useNotifications } from "@/contexts/NotificationContext";
+import { Layout } from "@/components/Layout";
+import { SEO } from "@/components/SEO";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Loader2, ArrowLeft, Mail } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import Link from "next/link";
+import { AlertCircle, Loader2, Mail, Lock, ArrowRight } from "lucide-react";
 import { authService } from "@/services/authService";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,195 +18,136 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
-    setNeedsConfirmation(false);
+    setLoading(true);
 
     try {
-      console.log("[Login] Attempting login for:", email);
-      const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (loginError) {
-        // Check if it's an email confirmation error
-        if (loginError.message.toLowerCase().includes("email not confirmed") || 
-            loginError.message.toLowerCase().includes("confirm")) {
-          setNeedsConfirmation(true);
-          setError("Please check your email and confirm your account before logging in.");
-        } else {
-          throw loginError;
-        }
-        return;
-      }
-
-      if (!data.user) throw new Error("Failed to log in");
-
-      console.log("[Login] Login successful, user:", data.user.email);
+      await authService.signIn(email, password);
+      
       notify({
         type: "success",
-        title: "Login successful",
-        message: "Welcome back!"
+        title: "Welcome back!",
+        message: "Successfully logged in"
       });
 
-      // Wait a moment for AppContext to load organisations
-      setTimeout(() => {
-        console.log("[Login] Redirecting to home");
-        router.push("/home");
-      }, 500);
-    } catch (err: any) {
-      console.error("[Login] Login failed:", err);
-      setError(err.message || "Failed to log in");
+      router.push("/home");
+    } catch (error: any) {
+      setError(error.message || "Failed to log in");
       notify({
         type: "error",
         title: "Login failed",
-        message: err.message || "Invalid email or password"
+        message: error.message || "Invalid credentials"
       });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendConfirmation = async () => {
-    if (!email) {
-      setError("Please enter your email address");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: email
-      });
-
-      if (error) throw error;
-
-      setError("");
-      alert("Confirmation email sent! Please check your inbox.");
-    } catch (err: any) {
-      setError(err.message || "Failed to resend confirmation email");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <div className="p-4 safe-top">
-        <Button
-          variant="ghost"
-          className="rounded-full w-10 h-10 p-0"
-          onClick={() => router.push("/")}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-      </div>
-
-      <div className="flex-1 flex flex-col justify-center px-6 pb-12">
-        <div className="w-full max-w-md mx-auto space-y-8">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <img
-              src="/rdtax-logo.png"
-              alt="RD TAX Logo"
-              className="h-24 w-auto object-contain"
-            />
-          </div>
-
-          <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-rd-navy">Welcome back</h1>
-            <p className="text-slate-600">Log in to RD Sidekick</p>
-          </div>
-
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700 font-medium">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-                className="h-12 rounded-xl border-slate-300"
-              />
+    <Layout showNav={false}>
+      <SEO title="Login - RD Sidekick" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          {/* Logo/Brand Section */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4 shadow-professional-lg">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700 font-medium">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && email && password && !loading) {
-                    handleLogin(e);
-                  }
-                }}
-                disabled={loading}
-                className="h-12 rounded-xl border-slate-300"
-              />
-            </div>
-
-            <Button
-              className="w-full h-14 text-lg font-semibold bg-rd-orange hover:bg-[#E67510] rounded-xl shadow-lg mt-6"
-              onClick={(e) => handleLogin(e)}
-              disabled={!email || !password || loading}
-            >
-              {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-              Log In
-            </Button>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
+            <p className="text-muted-foreground">Sign in to your RD Sidekick account</p>
           </div>
 
-          {error && (
-            <Alert variant={needsConfirmation ? "default" : "destructive"} className="rounded-xl">
-              {needsConfirmation ? <Mail className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-              <AlertDescription>
-                {error}
-                {needsConfirmation && (
-                  <Button
-                    variant="link"
-                    className="p-0 h-auto font-semibold text-rd-orange ml-2"
-                    onClick={handleResendConfirmation}
-                    disabled={loading}
-                  >
-                    Resend confirmation email
-                  </Button>
+          {/* Login Card */}
+          <Card className="border-0 shadow-professional-lg">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="text-2xl font-semibold">Sign In</CardTitle>
+              <CardDescription>Enter your credentials to access your account</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLogin} className="space-y-5">
+                {error && (
+                  <Alert variant="destructive" className="border-error/20 bg-error/5">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
-              </AlertDescription>
-            </Alert>
-          )}
 
-          {needsConfirmation && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-              <p className="font-semibold mb-2">📧 Email Confirmation Required</p>
-              <p>
-                For your security, you need to verify your email address before logging in. 
-                Check your inbox for the confirmation email or click the button above to resend it.
-              </p>
-              <p className="mt-2 text-xs text-blue-600">
-                <strong>Admin Note:</strong> To disable email confirmation for internal users, 
-                go to Database → Users → Auth Settings → Email and turn off "Confirm email".
-              </p>
-            </div>
-          )}
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="pl-10 h-11 border-slate-200 focus:border-primary focus:ring-primary"
+                    />
+                  </div>
+                </div>
 
-          <div className="text-center text-sm">
-            <span className="text-slate-600">New to RD Sidekick? </span>
-            <Link href="/auth/signup" className="text-rd-orange font-semibold hover:underline">
-              Sign up
-            </Link>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="pl-10 h-11 border-slate-200 focus:border-primary focus:ring-primary"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-11 gradient-primary text-white font-medium shadow-professional-md hover:shadow-professional-lg transition-professional"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Don't have an account?{" "}
+                  <button
+                    onClick={() => router.push("/auth/signup")}
+                    className="font-medium text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Sign up
+                  </button>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Footer */}
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            © {new Date().getFullYear()} RD Sidekick. All rights reserved.
+          </p>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

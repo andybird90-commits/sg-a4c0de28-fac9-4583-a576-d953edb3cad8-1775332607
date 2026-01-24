@@ -1,279 +1,415 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { Layout } from "@/components/Layout";
+import { SEO } from "@/components/SEO";
 import { useApp } from "@/contexts/AppContext";
-import { evidenceService, type EvidenceWithFiles } from "@/services/evidenceService";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Camera, Upload, FileText, Image, File, AlertCircle, Settings, Folder } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import Link from "next/link";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { OfflineIndicator } from "@/components/OfflineIndicator";
-import { EmptyState } from "@/components/EmptyState";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Camera, 
+  FolderOpen, 
+  Settings, 
+  TrendingUp, 
+  Calendar, 
+  Layers,
+  Activity,
+  Building2,
+  Shield,
+  Image,
+  FileText,
+  Mic,
+  Video,
+  StickyNote,
+  ArrowRight,
+  BarChart3,
+  Users,
+  Clock
+} from "lucide-react";
+import { evidenceService, type EvidenceItem } from "@/services/evidenceService";
+import { organisationService, type Project } from "@/services/organisationService";
 import { useNotifications } from "@/contexts/NotificationContext";
-import { supabase } from "@/integrations/supabase/client";
+
+const typeIcons: Record<string, any> = {
+  image: Image,
+  document: FileText,
+  audio: Mic,
+  video: Video,
+  note: StickyNote
+};
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, currentOrg, loading } = useApp();
-  const [evidence, setEvidence] = useState<EvidenceWithFiles[]>([]);
-  const [loadingEvidence, setLoadingEvidence] = useState(true);
-  const [error, setError] = useState("");
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const { user, currentOrg } = useApp();
+  const { notify } = useNotifications();
+  const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    thisMonth: 0,
+    activeProjects: 0,
+    recentActivity: 0
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/auth/login");
+    if (currentOrg) {
+      loadDashboardData();
     }
-  }, [user, loading, router]);
+  }, [currentOrg]);
 
-  useEffect(() => {
-    if (currentOrg && user) {
-      loadEvidence();
-      checkUserRole();
-    }
-  }, [currentOrg, user]);
-
-  const checkUserRole = async () => {
-    if (!currentOrg || !user) return;
-    
-    const { data } = await supabase
-      .from("organisation_users")
-      .select("role")
-      .eq("org_id", currentOrg.id)
-      .eq("user_id", user.id)
-      .single();
-    
-    setUserRole(data?.role || null);
-  };
-
-  const loadEvidence = async () => {
+  const loadDashboardData = async () => {
     if (!currentOrg) return;
 
-    setLoadingEvidence(true);
-    setError("");
+    setLoading(true);
     try {
-      const data = await evidenceService.getEvidence(currentOrg.id);
-      setEvidence(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to load evidence");
+      const [evidenceData, projectsData] = await Promise.all([
+        evidenceService.getEvidence(currentOrg.id),
+        organisationService.getProjects(currentOrg.id)
+      ]);
+
+      setEvidence(evidenceData);
+      setProjects(projectsData);
+
+      const now = new Date();
+      const thisMonth = evidenceData.filter(e => {
+        const created = new Date(e.created_at);
+        return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+      }).length;
+
+      const lastWeek = new Date();
+      lastWeek.setDate(lastWeek.getDate() - 7);
+      const recentActivity = evidenceData.filter(e => new Date(e.created_at) >= lastWeek).length;
+
+      setStats({
+        total: evidenceData.length,
+        thisMonth,
+        activeProjects: projectsData.filter(p => p.is_active).length,
+        recentActivity
+      });
+    } catch (error: any) {
+      console.error("Error loading dashboard data:", error);
+      notify({
+        type: "error",
+        title: "Load failed",
+        message: error.message || "Failed to load dashboard data"
+      });
     } finally {
-      setLoadingEvidence(false);
+      setLoading(false);
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "image":
-        return Image;
-      case "document":
-        return File;
-      case "note":
-        return FileText;
-      default:
-        return FileText;
-    }
-  };
+  const isAdmin = user?.email === "andy.bird@rdmande.uk";
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return "This Week";
-    return "Older";
-  };
-
-  const groupByDate = (items: EvidenceWithFiles[]) => {
-    const groups: { [key: string]: EvidenceWithFiles[] } = {};
-    items.forEach((item) => {
-      const dateKey = formatDate(item.created_at);
-      if (!groups[dateKey]) groups[dateKey] = [];
-      groups[dateKey].push(item);
-    });
-    return groups;
-  };
-
-  if (loading || !user || !currentOrg) {
-    return null;
+  if (!currentOrg) {
+    return (
+      <Layout>
+        <SEO title="Dashboard - RD Sidekick" />
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
+          <Card className="max-w-md shadow-professional-lg border-0">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <Building2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h2 className="text-2xl font-semibold text-foreground mb-2">No Organisation Selected</h2>
+                <p className="text-muted-foreground mb-6">Please select an organisation to continue.</p>
+                <Button onClick={() => router.push("/organisation-select")} className="gradient-primary">
+                  Select Organisation
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
   }
 
-  const groupedEvidence = groupByDate(evidence);
-  const initials = user.email?.substring(0, 2).toUpperCase() || "U";
-  const isAdmin = userRole === "admin";
-
   return (
-    <div className="min-h-screen bg-white">
-      <OfflineIndicator />
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-200 safe-top">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-rd-navy">{currentOrg.name}</h1>
-            <p className="text-sm text-slate-600">Your Evidence</p>
-          </div>
-          <Button
-            variant="ghost"
-            className="rounded-full w-10 h-10 p-0"
-            onClick={() => router.push("/settings")}
-          >
-            <Avatar className="w-10 h-10 bg-rd-navy">
-              <AvatarFallback className="bg-rd-navy text-white font-semibold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </Button>
-        </div>
-      </div>
-
-      <div className="px-6 py-6 space-y-6">
-        {error && (
-          <Alert variant="destructive" className="rounded-xl">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {isAdmin && (
-          <div className="bg-gradient-to-r from-[#001F3F] to-[#003366] rounded-xl p-4 text-white">
-            <h3 className="font-bold mb-2 flex items-center gap-2">
-              <Settings size={20} />
-              Admin Tools
-            </h3>
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push("/admin/organisations")}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
-                <Folder className="mr-2 h-4 w-4" />
-                Organisations
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push("/admin/sidekick-access")}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                Sidekick Access
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button className="w-full h-16 text-lg font-bold bg-rd-orange hover:bg-[#E67510] rounded-xl shadow-lg">
-              <Plus className="mr-2 h-6 w-6" strokeWidth={3} />
-              Add Evidence
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="h-auto rounded-t-3xl">
-            <SheetHeader className="pb-6">
-              <SheetTitle className="text-xl font-bold text-rd-navy">Add Evidence</SheetTitle>
-            </SheetHeader>
-            <div className="grid grid-cols-2 gap-4 pb-8">
-              <Link href="/evidence/capture?type=photo">
-                <Button variant="outline" className="w-full h-32 flex flex-col gap-3 rounded-xl border-2 hover:border-rd-orange hover:bg-orange-50">
-                  <Camera className="h-10 w-10 text-rd-orange" />
-                  <span className="font-semibold text-slate-700">Take Photo</span>
-                </Button>
-              </Link>
-              <Link href="/evidence/capture?type=upload-photo">
-                <Button variant="outline" className="w-full h-32 flex flex-col gap-3 rounded-xl border-2 hover:border-rd-orange hover:bg-orange-50">
-                  <Image className="h-10 w-10 text-rd-orange" />
-                  <span className="font-semibold text-slate-700">Upload Photo</span>
-                </Button>
-              </Link>
-              <Link href="/evidence/capture?type=document">
-                <Button variant="outline" className="w-full h-32 flex flex-col gap-3 rounded-xl border-2 hover:border-rd-orange hover:bg-orange-50">
-                  <Upload className="h-10 w-10 text-rd-orange" />
-                  <span className="font-semibold text-slate-700">Upload Document</span>
-                </Button>
-              </Link>
-              <Link href="/evidence/capture?type=note">
-                <Button variant="outline" className="w-full h-32 flex flex-col gap-3 rounded-xl border-2 hover:border-rd-orange hover:bg-orange-50">
-                  <FileText className="h-10 w-10 text-rd-orange" />
-                  <span className="font-semibold text-slate-700">Add Note</span>
-                </Button>
-              </Link>
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        {loadingEvidence ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="animate-pulse">
-                <div className="h-24 bg-slate-100 rounded-xl" />
-              </div>
-            ))}
-          </div>
-        ) : evidence.length === 0 ? (
-          <EmptyState
-            icon={Camera}
-            title="No evidence yet"
-            description="Start by adding your first piece of R&D evidence"
-          />
-        ) : (
-          <div className="space-y-8 pb-6">
-            {Object.entries(groupedEvidence).map(([dateKey, items]) => (
-              <div key={dateKey} className="space-y-3">
-                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider px-1">
-                  {dateKey}
-                </h3>
-                <div className="space-y-3">
-                  {items.map((item) => {
-                    const TypeIcon = getTypeIcon(item.type);
-                    return (
-                      <Link key={item.id} href={`/evidence/${item.id}`}>
-                        <div className="evidence-card p-4 hover:shadow-lg transition-all cursor-pointer">
-                          <div className="flex gap-4">
-                            <div className="flex-shrink-0">
-                              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rd-orange to-orange-400 flex items-center justify-center">
-                                <TypeIcon className="h-7 w-7 text-white" strokeWidth={2.5} />
-                              </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2 mb-1">
-                                <p className="font-semibold text-rd-navy truncate text-base">
-                                  {item.description || `${item.type} evidence`}
-                                </p>
-                                {item.tag && (
-                                  <span className="px-3 py-1 text-xs font-bold bg-slate-100 text-slate-700 rounded-full whitespace-nowrap">
-                                    {item.tag}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-slate-600">
-                                <Folder className="h-4 w-4" />
-                                <span>{item.project_name}</span>
-                              </div>
-                              <p className="text-xs text-slate-500 mt-1">
-                                {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
+    <Layout>
+      <SEO title="Dashboard - RD Sidekick" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          
+          {/* Header Section */}
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground mb-2">
+                  Welcome back, {user?.user_metadata?.full_name || user?.email?.split("@")[0]}
+                </h1>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Building2 className="h-4 w-4" />
+                  <span className="font-medium">{currentOrg.name}</span>
+                  {currentOrg.sidekick_enabled && (
+                    <Badge variant="secondary" className="ml-2 bg-success/10 text-success border-success/20">
+                      Sidekick Enabled
+                    </Badge>
+                  )}
                 </div>
               </div>
-            ))}
+              <Button 
+                onClick={() => router.push("/evidence/capture")} 
+                size="lg"
+                className="gradient-primary shadow-professional-md hover:shadow-professional-lg transition-professional"
+              >
+                <Camera className="mr-2 h-5 w-5" />
+                Capture Evidence
+              </Button>
+            </div>
           </div>
-        )}
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card className="border-0 shadow-professional-md hover:shadow-professional-lg transition-professional overflow-hidden">
+              <div className="gradient-info p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white/80 mb-1">Total Evidence</p>
+                    <p className="text-3xl font-bold text-white">{stats.total}</p>
+                  </div>
+                  <div className="bg-white/20 p-3 rounded-lg">
+                    <Layers className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="border-0 shadow-professional-md hover:shadow-professional-lg transition-professional overflow-hidden">
+              <div className="gradient-success p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white/80 mb-1">This Month</p>
+                    <p className="text-3xl font-bold text-white">{stats.thisMonth}</p>
+                  </div>
+                  <div className="bg-white/20 p-3 rounded-lg">
+                    <Calendar className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="border-0 shadow-professional-md hover:shadow-professional-lg transition-professional overflow-hidden">
+              <div className="gradient-secondary p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white/80 mb-1">Active Projects</p>
+                    <p className="text-3xl font-bold text-white">{stats.activeProjects}</p>
+                  </div>
+                  <div className="bg-white/20 p-3 rounded-lg">
+                    <FolderOpen className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="border-0 shadow-professional-md hover:shadow-professional-lg transition-professional overflow-hidden">
+              <div className="gradient-primary p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white/80 mb-1">Last 7 Days</p>
+                    <p className="text-3xl font-bold text-white">{stats.recentActivity}</p>
+                  </div>
+                  <div className="bg-white/20 p-3 rounded-lg">
+                    <TrendingUp className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Left Column - Quick Actions */}
+            <div className="space-y-6">
+              <Card className="border-0 shadow-professional-md">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary" />
+                    Quick Actions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button 
+                    onClick={() => router.push("/evidence/capture")} 
+                    variant="outline"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200"
+                  >
+                    <Camera className="mr-3 h-4 w-4" />
+                    Capture Evidence
+                  </Button>
+                  <Button 
+                    onClick={() => router.push("/home")} 
+                    variant="outline"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200"
+                  >
+                    <FolderOpen className="mr-3 h-4 w-4" />
+                    Browse Evidence
+                  </Button>
+                  <Button 
+                    onClick={() => router.push("/settings")} 
+                    variant="outline"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200"
+                  >
+                    <Settings className="mr-3 h-4 w-4" />
+                    Settings
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {isAdmin && (
+                <Card className="border-0 shadow-professional-md bg-gradient-to-br from-primary/5 to-primary/10">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-primary" />
+                      Admin Tools
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button 
+                      onClick={() => router.push("/admin/organisations")} 
+                      variant="outline"
+                      className="w-full justify-start bg-white hover:bg-primary hover:text-primary-foreground transition-professional"
+                    >
+                      <Building2 className="mr-3 h-4 w-4" />
+                      Organisations
+                    </Button>
+                    <Button 
+                      onClick={() => router.push("/admin/sidekick-access")} 
+                      variant="outline"
+                      className="w-full justify-start bg-white hover:bg-primary hover:text-primary-foreground transition-professional"
+                    >
+                      <Users className="mr-3 h-4 w-4" />
+                      Sidekick Access
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {projects.length > 0 && (
+                <Card className="border-0 shadow-professional-md">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                      Projects Overview
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {projects.slice(0, 5).map((project) => (
+                      <div 
+                        key={project.id}
+                        className="p-3 rounded-lg bg-muted/50 hover:bg-muted transition-professional cursor-pointer"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm text-foreground truncate">
+                              {project.name}
+                            </p>
+                            {project.description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                                {project.description}
+                              </p>
+                            )}
+                          </div>
+                          <Badge 
+                            variant={project.is_active ? "default" : "secondary"}
+                            className="ml-2 text-2xs"
+                          >
+                            {project.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Right Column - Recent Evidence */}
+            <div className="lg:col-span-2">
+              <Card className="border-0 shadow-professional-md h-full">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-primary" />
+                      Recent Evidence
+                    </CardTitle>
+                    {evidence.length > 0 && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => router.push("/home")}
+                        className="text-primary hover:text-primary hover:bg-primary/10"
+                      >
+                        View All
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : evidence.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="bg-muted rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                        <Camera className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground mb-2">No evidence yet</h3>
+                      <p className="text-muted-foreground text-sm mb-6">
+                        Start capturing evidence to build your R&D documentation
+                      </p>
+                      <Button 
+                        onClick={() => router.push("/evidence/capture")}
+                        className="gradient-primary"
+                      >
+                        <Camera className="mr-2 h-4 w-4" />
+                        Capture Your First Evidence
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {evidence.slice(0, 8).map((item) => {
+                        const Icon = typeIcons[item.type] || FileText;
+                        return (
+                          <div
+                            key={item.id}
+                            onClick={() => router.push(`/evidence/${item.id}`)}
+                            className="p-4 rounded-lg border border-slate-200 hover:border-primary hover:shadow-professional-md transition-professional cursor-pointer bg-white"
+                          >
+                            <div className="flex items-start gap-4">
+                              <div className="bg-primary/10 p-2.5 rounded-lg flex-shrink-0">
+                                <Icon className="h-5 w-5 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm text-foreground mb-1 line-clamp-2">
+                                  {item.description || "No description"}
+                                </p>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  {item.tag && (
+                                    <Badge variant="secondary" className="text-2xs">
+                                      {item.tag}
+                                    </Badge>
+                                  )}
+                                  <span className="text-xs text-muted-foreground flex items-center">
+                                    <Calendar className="h-3 w-3 mr-1" />
+                                    {new Date(item.created_at).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 }

@@ -52,13 +52,14 @@ export const authService = {
   },
 
   // Sign up with email and password
-  async signUp(email: string, password: string): Promise<{ user: AuthUser | null; error: AuthError | null }> {
+  async signUp(email: string, password: string, fullName?: string): Promise<{ user: AuthUser | null; error: AuthError | null }> {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${getURL()}auth/confirm-email`
+          emailRedirectTo: `${getURL()}auth/confirm-email`,
+          data: fullName ? { full_name: fullName } : undefined
         }
       });
 

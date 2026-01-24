@@ -5,7 +5,7 @@ const QUEUE_STORE = "evidence_queue";
 
 export type QueuedEvidence = {
   local_id: string;
-  type: "image" | "document" | "note" | "audio" | "video";
+  type: string;
   org_id: string;
   project_id: string | null;
   description: string | null;
@@ -18,6 +18,13 @@ export type QueuedEvidence = {
   status: "pending" | "uploading" | "failed" | "complete";
   error_message?: string;
 };
+
+export interface QueuedItem {
+  id?: number;
+  type: "image" | "video" | "audio" | "document" | "note" | "FILE_UPLOAD" | string;
+  payload: any;
+  file?: File | null; // For temporary storage before serialization
+}
 
 class IndexedDBQueue {
   private db: IDBDatabase | null = null;
