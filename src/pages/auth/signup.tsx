@@ -5,20 +5,16 @@ import { organisationService } from "@/services/organisationService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, Loader2, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 
 export default function SignupPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [orgCode, setOrgCode] = useState("");
-  const [otp, setOtp] = useState("");
-  const [step, setStep] = useState<"input" | "verify">("input");
-  const [method, setMethod] = useState<"email" | "phone">("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -27,82 +23,44 @@ export default function SignupPage() {
     setError("");
 
     try {
+      // Validate organisation code
       const org = await organisationService.getOrganisationByCode(orgCode);
       if (!org) {
         throw new Error("Invalid organisation code");
       }
 
-      if (method === "email") {
-        const { error } = await supabase.auth.signInWithOtp({ 
-          email,
-          options: {
-            data: {
-              full_name: name,
-              org_code: orgCode
-            }
-          }
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signInWithOtp({ 
-          phone,
-          options: {
-            data: {
-              full_name: name,
-              org_code: orgCode
-            }
-          }
-        });
-        if (error) throw error;
-      }
-      setStep("verify");
-    } catch (err: any) {
-      setError(err.message || "Failed to send verification code");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOTP = async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      let userId: string;
-      
-      if (method === "email") {
-        const { data, error } = await supabase.auth.verifyOtp({
-          email,
-          token: otp,
-          type: "email"
-        });
-        if (error) throw error;
-        userId = data.user!.id;
-      } else {
-        const { data, error } = await supabase.auth.verifyOtp({
-          phone,
-          token: otp,
-          type: "sms"
-        });
-        if (error) throw error;
-        userId = data.user!.id;
+      if (!org.sidekick_enabled) {
+        throw new Error("RD Sidekick access is not enabled for this organisation");
       }
 
-      await supabase.from("profiles").upsert({
-        id: userId,
-        full_name: name,
-        email: method === "email" ? email : null,
-        phone: method === "phone" ? phone : null
+      // Create user account
+      const { data, error: signupError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: username,
+            org_code: orgCode
+          }
+        }
       });
 
-      const org = await organisationService.getOrganisationByCode(orgCode);
-      if (org) {
-        await organisationService.joinOrganisation(org.id, "client");
-      }
+      if (signupError) throw signupError;
+      if (!data.user) throw new Error("Failed to create user account");
+
+      // Create profile
+      await supabase.from("profiles").upsert({
+        id: data.user.id,
+        full_name: username,
+        email: email
+      });
+
+      // Join organisation
+      await organisationService.joinOrganisation(org.id, "client");
 
       router.push("/home");
     } catch (err: any) {
-      setError(err.message || "Failed to complete signup");
+      setError(err.message || "Failed to sign up");
     } finally {
       setLoading(false);
     }
@@ -136,111 +94,70 @@ export default function SignupPage() {
             <p className="text-slate-600">Start capturing R&D evidence</p>
           </div>
 
-          {step === "input" ? (
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-slate-700 font-medium">Full Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  disabled={loading}
-                  className="h-12 rounded-xl border-slate-300"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="orgCode" className="text-slate-700 font-medium">Organisation Code</Label>
-                <Input
-                  id="orgCode"
-                  type="text"
-                  placeholder="ABC123"
-                  value={orgCode}
-                  onChange={(e) => setOrgCode(e.target.value.toUpperCase())}
-                  disabled={loading}
-                  className="h-12 rounded-xl border-slate-300 uppercase tracking-wider font-semibold"
-                />
-              </div>
-
-              <Tabs value={method} onValueChange={(v) => setMethod(v as "email" | "phone")} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-12 bg-slate-100 rounded-xl p-1">
-                  <TabsTrigger value="email" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Email</TabsTrigger>
-                  <TabsTrigger value="phone" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Phone</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="email" className="space-y-2 mt-4">
-                  <Label htmlFor="email" className="text-slate-700 font-medium">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={loading}
-                    className="h-12 rounded-xl border-slate-300"
-                  />
-                </TabsContent>
-                
-                <TabsContent value="phone" className="space-y-2 mt-4">
-                  <Label htmlFor="phone" className="text-slate-700 font-medium">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+44 7700 900000"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    disabled={loading}
-                    className="h-12 rounded-xl border-slate-300"
-                  />
-                </TabsContent>
-              </Tabs>
-
-              <Button
-                className="w-full h-14 text-lg font-semibold bg-rd-orange hover:bg-[#E67510] rounded-xl shadow-lg mt-6"
-                onClick={handleSignup}
-                disabled={!name || !orgCode || (method === "email" ? !email : !phone) || loading}
-              >
-                {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                Send Verification Code
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="otp" className="text-slate-700 font-medium">Enter 6-Digit Code</Label>
-                <Input
-                  id="otp"
-                  type="text"
-                  placeholder="000000"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  disabled={loading}
-                  maxLength={6}
-                  className="h-14 rounded-xl border-slate-300 text-center text-2xl tracking-widest font-semibold"
-                />
-              </div>
-              
-              <Button
-                className="w-full h-14 text-lg font-semibold bg-rd-orange hover:bg-[#E67510] rounded-xl shadow-lg"
-                onClick={handleVerifyOTP}
-                disabled={otp.length !== 6 || loading}
-              >
-                {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                Verify & Sign Up
-              </Button>
-              
-              <Button
-                variant="ghost"
-                className="w-full h-12 text-slate-600 rounded-xl"
-                onClick={() => setStep("input")}
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-slate-700 font-medium">Full Name</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="John Doe"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 disabled={loading}
-              >
-                Back
-              </Button>
+                className="h-12 rounded-xl border-slate-300"
+              />
             </div>
-          )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-slate-700 font-medium">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                className="h-12 rounded-xl border-slate-300"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-slate-700 font-medium">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                className="h-12 rounded-xl border-slate-300"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="orgCode" className="text-slate-700 font-medium">Organisation Code</Label>
+              <Input
+                id="orgCode"
+                type="text"
+                placeholder="8-letter code"
+                value={orgCode}
+                onChange={(e) => setOrgCode(e.target.value.toLowerCase())}
+                disabled={loading}
+                maxLength={8}
+                className="h-12 rounded-xl border-slate-300 lowercase tracking-wider font-semibold"
+              />
+              <p className="text-xs text-slate-500">Ask your administrator for your organisation code</p>
+            </div>
+
+            <Button
+              className="w-full h-14 text-lg font-semibold bg-rd-orange hover:bg-[#E67510] rounded-xl shadow-lg mt-6"
+              onClick={handleSignup}
+              disabled={!username || !email || !password || orgCode.length !== 8 || loading}
+            >
+              {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+              Sign Up
+            </Button>
+          </div>
 
           {error && (
             <Alert variant="destructive" className="rounded-xl">
