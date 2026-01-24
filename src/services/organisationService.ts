@@ -7,6 +7,7 @@ export type Organisation = {
   name: string;
   // Based on error messages, the DB column is organisation_code
   organisation_code: string;
+  sidekick_enabled: boolean;
   created_at: string;
 };
 
