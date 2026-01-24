@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Loader2, ArrowLeft } from "lucide-react";
+import { AlertCircle, Loader2, ArrowLeft, Mail } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 
@@ -12,12 +12,14 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState("");
   const [error, setError] = useState("");
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   const handleLogin = async () => {
     setLoading(true);
     setError("");
+    setNeedsConfirmation(false);
 
     try {
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
@@ -25,12 +27,47 @@ export default function LoginPage() {
         password
       });
 
-      if (loginError) throw loginError;
+      if (loginError) {
+        // Check if it's an email confirmation error
+        if (loginError.message.toLowerCase().includes("email not confirmed") || 
+            loginError.message.toLowerCase().includes("confirm")) {
+          setNeedsConfirmation(true);
+          setError("Please check your email and confirm your account before logging in.");
+        } else {
+          throw loginError;
+        }
+        return;
+      }
+
       if (!data.user) throw new Error("Failed to log in");
 
       router.push("/home");
     } catch (err: any) {
       setError(err.message || "Failed to log in");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      setError("Please enter your email address");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email
+      });
+
+      if (error) throw error;
+
+      setError("");
+      alert("Confirmation email sent! Please check your inbox.");
+    } catch (err: any) {
+      setError(err.message || "Failed to resend confirmation email");
     } finally {
       setLoading(false);
     }
@@ -42,7 +79,7 @@ export default function LoginPage() {
         <Button
           variant="ghost"
           className="rounded-full w-10 h-10 p-0"
-          onClick={() => router.push("/onboarding")}
+          onClick={() => router.push("/")}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -86,6 +123,11 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && email && password && !loading) {
+                    handleLogin();
+                  }
+                }}
                 disabled={loading}
                 className="h-12 rounded-xl border-slate-300"
               />
@@ -102,10 +144,36 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <Alert variant="destructive" className="rounded-xl">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+            <Alert variant={needsConfirmation ? "default" : "destructive"} className="rounded-xl">
+              {needsConfirmation ? <Mail className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+              <AlertDescription>
+                {error}
+                {needsConfirmation && (
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto font-semibold text-rd-orange ml-2"
+                    onClick={handleResendConfirmation}
+                    disabled={loading}
+                  >
+                    Resend confirmation email
+                  </Button>
+                )}
+              </AlertDescription>
             </Alert>
+          )}
+
+          {needsConfirmation && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+              <p className="font-semibold mb-2">📧 Email Confirmation Required</p>
+              <p>
+                For your security, you need to verify your email address before logging in. 
+                Check your inbox for the confirmation email or click the button above to resend it.
+              </p>
+              <p className="mt-2 text-xs text-blue-600">
+                <strong>Admin Note:</strong> To disable email confirmation for internal users, 
+                go to Database → Users → Auth Settings → Email and turn off "Confirm email".
+              </p>
+            </div>
           )}
 
           <div className="text-center text-sm">
