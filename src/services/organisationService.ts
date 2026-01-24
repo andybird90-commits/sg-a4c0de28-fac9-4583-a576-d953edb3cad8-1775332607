@@ -63,14 +63,23 @@ export const organisationService = {
   },
 
   async getOrganisationByCode(code: string): Promise<Organisation | null> {
-    const { data, error } = await supabase
-      .from("organisations")
-      .select("*")
-      .eq("organisation_code", code)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("organisations")
+        .select("*")
+        .eq("organisation_code", code.trim().toLowerCase())
+        .single();
 
-    if (error) return null;
-    return data as Organisation;
+      if (error) {
+        console.error("Error fetching organisation by code:", error);
+        return null;
+      }
+      
+      return data as Organisation;
+    } catch (err) {
+      console.error("Exception in getOrganisationByCode:", err);
+      return null;
+    }
   },
 
   async joinOrganisation(orgId: string, role: string = "client"): Promise<void> {

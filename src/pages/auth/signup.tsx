@@ -12,7 +12,6 @@ import Link from "next/link";
 export default function SignupPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [orgCode, setOrgCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,24 +22,35 @@ export default function SignupPage() {
     setError("");
 
     try {
-      // Validate organisation code
-      const org = await organisationService.getOrganisationByCode(orgCode);
+      // Trim and validate organisation code format
+      const trimmedCode = orgCode.trim().toLowerCase();
+      
+      if (trimmedCode.length !== 8) {
+        throw new Error("Organisation code must be exactly 8 characters");
+      }
+
+      // Validate organisation code exists
+      const org = await organisationService.getOrganisationByCode(trimmedCode);
+      
       if (!org) {
-        throw new Error("Invalid organisation code");
+        throw new Error("Invalid organisation code. Please check with your administrator.");
       }
 
       if (!org.sidekick_enabled) {
         throw new Error("RD Sidekick access is not enabled for this organisation");
       }
 
+      // Generate email from username if not an email
+      const email = username.includes("@") ? username : `${username.toLowerCase().replace(/\s+/g, ".")}@temp.local`;
+
       // Create user account
       const { data, error: signupError } = await supabase.auth.signUp({
-        email,
+        email: email,
         password,
         options: {
           data: {
             full_name: username,
-            org_code: orgCode
+            org_code: trimmedCode
           }
         }
       });
@@ -49,18 +59,22 @@ export default function SignupPage() {
       if (!data.user) throw new Error("Failed to create user account");
 
       // Create profile
-      await supabase.from("profiles").upsert({
+      const { error: profileError } = await supabase.from("profiles").upsert({
         id: data.user.id,
         full_name: username,
         email: email
       });
 
+      if (profileError) throw profileError;
+
       // Join organisation
       await organisationService.joinOrganisation(org.id, "client");
 
+      // Redirect to home
       router.push("/home");
     } catch (err: any) {
-      setError(err.message || "Failed to sign up");
+      console.error("Signup error:", err);
+      setError(err.message || "Failed to sign up. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -96,26 +110,13 @@ export default function SignupPage() {
 
           <div className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-slate-700 font-medium">Full Name</Label>
+              <Label htmlFor="username" className="text-slate-700 font-medium">Username</Label>
               <Input
                 id="username"
                 type="text"
-                placeholder="John Doe"
+                placeholder="Your name or email"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                disabled={loading}
-                className="h-12 rounded-xl border-slate-300"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700 font-medium">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
                 className="h-12 rounded-xl border-slate-300"
               />
@@ -152,7 +153,7 @@ export default function SignupPage() {
             <Button
               className="w-full h-14 text-lg font-semibold bg-rd-orange hover:bg-[#E67510] rounded-xl shadow-lg mt-6"
               onClick={handleSignup}
-              disabled={!username || !email || !password || orgCode.length !== 8 || loading}
+              disabled={!username || !password || orgCode.length !== 8 || loading}
             >
               {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
               Sign Up
