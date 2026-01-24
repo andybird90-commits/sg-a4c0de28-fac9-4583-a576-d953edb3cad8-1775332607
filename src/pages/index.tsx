@@ -68,8 +68,8 @@ export default function LandingPage() {
             <img
               src="/rdtax-logo.png"
               alt="RD TAX Logo"
-              className="h-64 w-auto object-contain"
-            />
+              className="h-64 w-auto object-contain" />
+
           </div>
 
           {/* Hero Content */}
@@ -89,7 +89,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 className="bg-rd-orange hover:bg-rd-orange/90 text-white font-semibold text-lg px-8 py-6 rounded-xl"
-                onClick={() => router.push("/auth/signup")}>
+                onClick={() => router.push("/auth/signup")} style={{ color: "#ffffff", backgroundColor: "#525252" }}>
 
                 Get Started Free
                 <ArrowRight className="ml-2 h-5 w-5" />
