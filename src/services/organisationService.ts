@@ -5,7 +5,6 @@ import type { Database } from "@/integrations/supabase/types";
 export type Organisation = {
   id: string;
   name: string;
-  // Based on error messages, the DB column is organisation_code
   organisation_code: string;
   sidekick_enabled: boolean;
   created_at: string;
@@ -29,24 +28,33 @@ export const organisationService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
+    // Query organisation_users with explicit join to organisations table
     const { data, error } = await supabase
       .from("organisation_users")
       .select(`
         role,
-        organisations (
+        organisations!organisation_users_org_id_fkey (
           id,
           name,
           organisation_code,
+          sidekick_enabled,
           created_at
         )
       `)
       .eq("user_id", user.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching user organisations:", error);
+      throw error;
+    }
 
-    // Use any cast to avoid complex type inference issues with joined tables
+    // Transform the nested data structure into flat UserOrganisation objects
     return (data || []).map((item: any) => ({
-      ...item.organisations,
+      id: item.organisations.id,
+      name: item.organisations.name,
+      organisation_code: item.organisations.organisation_code,
+      sidekick_enabled: item.organisations.sidekick_enabled,
+      created_at: item.organisations.created_at,
       role: item.role
     })) as UserOrganisation[];
   },
