@@ -227,7 +227,7 @@ export default function LandingPage() {
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
             Ready to Streamline Your R&D Evidence?
           </h2>
-          <p className="text-xl text-slate-200 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-200 mb-8 max-w-2xl mx-auto" style={{ backgroundColor: "#ffffff", color: "#525252" }}>
             Join innovative teams who trust RD Sidekick to capture and organize
             their R&D tax evidence.
           </p>
@@ -236,7 +236,7 @@ export default function LandingPage() {
             <Button
               size="lg"
               className="bg-rd-orange hover:bg-rd-orange/90 text-white font-semibold text-lg px-8 py-6 rounded-xl"
-              onClick={() => router.push("/auth/signup")}>
+              onClick={() => router.push("/auth/signup")} style={{ color: "#525252" }}>
 
               Start Capturing Evidence
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -245,7 +245,7 @@ export default function LandingPage() {
               size="lg"
               variant="outline"
               className="border-2 border-white text-white hover:bg-white hover:text-rd-navy font-semibold text-lg px-8 py-6 rounded-xl"
-              onClick={() => router.push("/auth/login")}>
+              onClick={() => router.push("/auth/login")} style={{ color: "#525252" }}>
 
               Already Have an Account?
             </Button>
@@ -256,7 +256,7 @@ export default function LandingPage() {
       {/* Footer */}
       <div className="bg-rd-navy text-white py-8">
         <div className="container mx-auto px-6 text-center">
-          <p className="text-slate-300">
+          <p className="text-slate-300" style={{ color: "#525252" }}>
             © {new Date().getFullYear()} RD TAX. All rights reserved.
           </p>
           <p className="text-slate-400 text-sm mt-2">
