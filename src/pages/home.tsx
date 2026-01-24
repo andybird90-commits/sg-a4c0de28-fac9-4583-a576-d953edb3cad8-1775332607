@@ -265,21 +265,46 @@ export default function HomePage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <Button 
-                      onClick={() => router.push("/admin/organisations")} 
+                    <Button
                       variant="outline"
-                      className="w-full justify-start bg-white hover:bg-primary hover:text-primary-foreground transition-professional"
+                      className="w-full justify-start gap-3 h-auto py-4 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all group"
+                      onClick={() => router.push("/admin/organisations")}
                     >
-                      <Building2 className="mr-3 h-4 w-4" />
-                      Organisations
+                      <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                        <Building2 className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-semibold text-slate-900">Organisations</p>
+                        <p className="text-xs text-slate-500">Manage client orgs</p>
+                      </div>
                     </Button>
-                    <Button 
-                      onClick={() => router.push("/admin/sidekick-access")} 
+
+                    <Button
                       variant="outline"
-                      className="w-full justify-start bg-white hover:bg-primary hover:text-primary-foreground transition-professional"
+                      className="w-full justify-start gap-3 h-auto py-4 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all group"
+                      onClick={() => router.push("/admin/users")}
                     >
-                      <Users className="mr-3 h-4 w-4" />
-                      Sidekick Access
+                      <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                        <Users className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-semibold text-slate-900">User Management</p>
+                        <p className="text-xs text-slate-500">View all users</p>
+                      </div>
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start gap-3 h-auto py-4 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all group"
+                      onClick={() => router.push("/admin/analytics")}
+                    >
+                      <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                        <BarChart3 className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-semibold text-slate-900">Analytics</p>
+                        <p className="text-xs text-slate-500">System insights</p>
+                      </div>
                     </Button>
                   </CardContent>
                 </Card>
