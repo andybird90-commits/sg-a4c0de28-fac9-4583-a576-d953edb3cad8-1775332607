@@ -134,7 +134,6 @@ export default function CapturePage() {
       const evidence = await evidenceService.createEvidence({
         org_id: currentOrg.id,
         project_id: projectId || null,
-        created_by: user.id,
         type: (type as any) || "note",
         description: description,
         tag: tag,
@@ -142,7 +141,7 @@ export default function CapturePage() {
       });
 
       if (file) {
-        await evidenceService.uploadFile(currentOrg.id, evidence.id, file);
+        await evidenceService.uploadEvidenceFile(evidence.id, file);
       }
 
       // Find project name for notification

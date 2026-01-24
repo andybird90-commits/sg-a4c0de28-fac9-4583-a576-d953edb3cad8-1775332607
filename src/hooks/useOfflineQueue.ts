@@ -3,6 +3,20 @@ import { indexedDBQueue, type QueuedEvidence } from "@/lib/indexedDB";
 import { evidenceService } from "@/services/evidenceService";
 import { useNotifications } from "@/contexts/NotificationContext";
 
+// Helper to convert base64 to File
+function base64ToFile(base64: string, filename: string, mimeType: string): File {
+  const arr = base64.split(',');
+  // Handle both "data:image/png;base64,..." and raw base64 strings
+  const dataStr = arr.length > 1 ? arr[1] : arr[0];
+  const bstr = atob(dataStr);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mimeType });
+}
+
 export function useOfflineQueue() {
   const [isOnline, setIsOnline] = useState(true);
   const [queuedItems, setQueuedItems] = useState<QueuedEvidence[]>([]);
@@ -106,28 +120,19 @@ export function useOfflineQueue() {
           // Create evidence item
           const evidenceData = {
             org_id: item.org_id,
-            project_id: item.project_id,
-            created_by: item.org_id,
+            project_id: item.project_id || undefined,
             type: item.type,
-            description: item.description,
-            tag: item.tag,
-            claim_year: item.claim_year
+            description: item.description || undefined,
+            tag: item.tag || undefined,
+            claim_year: item.claim_year || undefined
           };
 
           const createdEvidence = await evidenceService.createEvidence(evidenceData);
 
-          // Upload file if present
+          // Upload file if it exists
           if (item.file_data && item.file_name && item.mime_type) {
-            const base64Data = item.file_data.split(",")[1];
-            const binaryData = atob(base64Data);
-            const bytes = new Uint8Array(binaryData.length);
-            for (let i = 0; i < binaryData.length; i++) {
-              bytes[i] = binaryData.charCodeAt(i);
-            }
-            const blob = new Blob([bytes], { type: item.mime_type });
-            const file = new File([blob], item.file_name, { type: item.mime_type });
-
-            await evidenceService.uploadFile(item.org_id, createdEvidence.id, file);
+             const file = base64ToFile(item.file_data, item.file_name, item.mime_type);
+             await evidenceService.uploadEvidenceFile(createdEvidence.id, file);
           }
 
           await indexedDBQueue.updateItem(item.local_id, { status: "complete" });

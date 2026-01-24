@@ -1,44 +1,27 @@
 import { supabase } from "@/integrations/supabase/client";
-import { offlineQueue } from "@/lib/offlineQueue";
+import type { Database } from "@/integrations/supabase/types";
 
-// Define strict types based on the schema we created
-export type EvidenceItem = {
-  id: string;
-  org_id: string;
-  project_id: string | null;
-  created_by: string;
-  type: 'image' | 'document' | 'note' | 'audio' | 'video';
-  description: string | null;
-  tag: string | null;
-  claim_year: number | null;
-  created_at: string;
-};
-
-export type EvidenceFile = {
-  id: string;
-  evidence_id: string;
-  org_id: string;
-  storage_path: string;
-  mime_type: string | null;
-  size_bytes: number | null;
-  created_at: string;
-};
+export type EvidenceItem = Database["public"]["Tables"]["evidence_items"]["Row"];
+type EvidenceFile = Database["public"]["Tables"]["evidence_files"]["Row"];
 
 export interface EvidenceWithFiles extends EvidenceItem {
   evidence_files: EvidenceFile[];
-  creator_name?: string;
   project_name?: string;
 }
 
 export const evidenceService = {
-  async getEvidenceList(orgId: string, projectId?: string, fromDate?: string, toDate?: string): Promise<EvidenceWithFiles[]> {
-    // Cast supabase to any to bypass schema type restriction for 'sidekick'
-    let query = (supabase as any)
-      .schema("sidekick")
+  async getEvidence(
+    orgId: string,
+    projectId?: string,
+    fromDate?: string,
+    toDate?: string
+  ): Promise<EvidenceWithFiles[]> {
+    let query = supabase
       .from("evidence_items")
       .select(`
         *,
-        evidence_files (*)
+        evidence_files (*),
+        projects (name)
       `)
       .eq("org_id", orgId)
       .order("created_at", { ascending: false });
@@ -55,180 +38,156 @@ export const evidenceService = {
       query = query.lte("created_at", toDate);
     }
 
-    const { data: evidenceData, error: evidenceError } = await query;
+    const { data, error } = await query;
 
-    if (evidenceError) throw evidenceError;
-    if (!evidenceData) return [];
-
-    // Fetch related public data separately
-    const userIds = [...new Set(evidenceData.map((item: any) => item.created_by))] as string[];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .in("id", userIds);
-    
-    const projectIds = [...new Set(evidenceData.map((item: any) => item.project_id).filter(Boolean))] as string[];
-    let projects: any[] = [];
-    if (projectIds.length > 0) {
-      const { data: projectData } = await supabase
-        .from("projects")
-        .select("id, name")
-        .in("id", projectIds);
-      projects = projectData || [];
+    if (error) {
+      console.error("Error fetching evidence:", error);
+      throw error;
     }
 
-    const profilesMap = new Map(profiles?.map((p: any) => [p.id, p.full_name]) || []);
-    const projectsMap = new Map(projects?.map((p: any) => [p.id, p.name]) || []);
-
-    return evidenceData.map((item: any) => ({
+    return (data || []).map((item: any) => ({
       ...item,
-      creator_name: profilesMap.get(item.created_by) || "Unknown",
-      project_name: item.project_id ? (projectsMap.get(item.project_id) || "Unknown Project") : "No Project"
+      project_name: item.projects?.name || null,
+      evidence_files: item.evidence_files || []
     })) as EvidenceWithFiles[];
   },
 
   async getEvidenceById(id: string): Promise<EvidenceWithFiles | null> {
-    const { data, error } = await (supabase as any)
-      .schema("sidekick")
+    const { data, error } = await supabase
       .from("evidence_items")
       .select(`
         *,
-        evidence_files (*)
+        evidence_files (*),
+        projects (name)
       `)
       .eq("id", id)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching evidence by ID:", error);
+      throw error;
+    }
+
     if (!data) return null;
-
-    let creatorName = "Unknown";
-    let projectName = "No Project";
-
-    if (data.created_by) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", data.created_by)
-        .single();
-      if (profile) creatorName = profile.full_name || "Unknown";
-    }
-
-    if (data.project_id) {
-      const { data: project } = await supabase
-        .from("projects")
-        .select("name")
-        .eq("id", data.project_id)
-        .single();
-      if (project) projectName = project.name;
-    }
 
     return {
       ...data,
-      creator_name: creatorName,
-      project_name: projectName
+      project_name: data.projects?.name || null,
+      evidence_files: data.evidence_files || []
     } as EvidenceWithFiles;
   },
 
-  async createEvidence(evidence: Partial<EvidenceItem>): Promise<EvidenceItem> {
-    // Check for offline status
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      const offlineId = `offline_${crypto.randomUUID()}`;
-      const offlineItem = {
-        ...evidence,
-        id: offlineId,
-        created_at: new Date().toISOString()
-      } as EvidenceItem;
+  async createEvidence(evidence: {
+    org_id: string;
+    project_id?: string;
+    type: string;
+    description?: string;
+    tag?: string;
+    location?: string;
+  }): Promise<EvidenceItem> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
 
-      offlineQueue.addItem({
-        id: offlineId,
-        action: "create_evidence",
-        payload: evidence,
-        timestamp: Date.now()
-      });
-
-      // Return local optimistic version
-      return offlineItem;
-    }
-
-    const { data, error } = await (supabase as any)
-      .schema("sidekick")
+    const { data, error } = await supabase
       .from("evidence_items")
-      .insert(evidence)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data as EvidenceItem;
-  },
-
-  async deleteEvidence(id: string): Promise<void> {
-    const { error } = await (supabase as any)
-      .schema("sidekick")
-      .from("evidence_items")
-      .delete()
-      .eq("id", id);
-
-    if (error) throw error;
-  },
-
-  async uploadFile(
-    orgId: string,
-    evidenceId: string,
-    file: File
-  ): Promise<EvidenceFile> {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      throw new Error("Cannot upload files while offline. Please try again when connected.");
-    }
-
-    const fileId = crypto.randomUUID();
-    const extension = file.name.split(".").pop();
-    const storagePath = `org/${orgId}/evidence/${evidenceId}/${fileId}.${extension}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("rd-sidekick")
-      .upload(storagePath, file);
-
-    if (uploadError) throw uploadError;
-
-    const { data, error } = await (supabase as any)
-      .schema("sidekick")
-      .from("evidence_files")
       .insert({
-        evidence_id: evidenceId,
-        org_id: orgId,
-        storage_path: storagePath,
-        mime_type: file.type,
-        size_bytes: file.size
+        ...evidence,
+        user_id: user.id
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error creating evidence:", error);
+      throw error;
+    }
+
+    return data as EvidenceItem;
+  },
+
+  async uploadEvidenceFile(
+    evidenceId: string,
+    file: File
+  ): Promise<EvidenceFile> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${evidenceId}_${Date.now()}.${fileExt}`;
+    const filePath = `${user.id}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("evidence-files")
+      .upload(filePath, file);
+
+    if (uploadError) {
+      console.error("Error uploading file:", uploadError);
+      throw uploadError;
+    }
+
+    const { data, error } = await supabase
+      .from("evidence_files")
+      .insert({
+        evidence_id: evidenceId,
+        file_name: file.name,
+        file_path: filePath,
+        file_type: file.type,
+        file_size: file.size
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating evidence file record:", error);
+      throw error;
+    }
+
     return data as EvidenceFile;
   },
 
-  async getSignedUrl(storagePath: string): Promise<string> {
+  async getSignedUrl(filePath: string): Promise<string> {
     const { data, error } = await supabase.storage
-      .from("rd-sidekick")
-      .createSignedUrl(storagePath, 3600);
+      .from("evidence-files")
+      .createSignedUrl(filePath, 3600);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error creating signed URL:", error);
+      throw error;
+    }
+
     return data.signedUrl;
   },
 
-  async deleteFile(fileId: string, storagePath: string): Promise<void> {
+  async deleteEvidence(id: string): Promise<void> {
+    const { error } = await supabase
+      .from("evidence_items")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error deleting evidence:", error);
+      throw error;
+    }
+  },
+
+  async deleteFile(fileId: string, filePath: string): Promise<void> {
     const { error: storageError } = await supabase.storage
-      .from("rd-sidekick")
-      .remove([storagePath]);
+      .from("evidence-files")
+      .remove([filePath]);
 
-    if (storageError) throw storageError;
+    if (storageError) {
+      console.error("Error removing file from storage:", storageError);
+      throw storageError;
+    }
 
-    const { error } = await (supabase as any)
-      .schema("sidekick")
+    const { error: dbError } = await supabase
       .from("evidence_files")
       .delete()
       .eq("id", fileId);
 
-    if (error) throw error;
+    if (dbError) {
+      console.error("Error deleting file record:", dbError);
+      throw dbError;
+    }
   }
 };

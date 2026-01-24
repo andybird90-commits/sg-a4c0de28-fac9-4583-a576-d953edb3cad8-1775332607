@@ -13,12 +13,12 @@ export default async function handler(
 
   if (req.method === "GET") {
     try {
-      const { data, error } = await (supabase as any)
-        .schema("sidekick")
+      const { data, error } = await supabase
         .from("evidence_items")
         .select(`
           *,
-          evidence_files (*)
+          evidence_files (*),
+          projects (name)
         `)
         .eq("id", id)
         .single();
@@ -26,8 +26,11 @@ export default async function handler(
       if (error) throw error;
       if (!data) return res.status(404).json({ error: "Evidence not found" });
 
-      return res.status(200).json(data);
-    } catch (error) {
+      return res.status(200).json({
+        ...data,
+        project_name: data.projects?.name || null
+      });
+    } catch (error: any) {
       console.error("Error fetching evidence:", error);
       return res.status(500).json({ error: "Failed to fetch evidence" });
     }

@@ -13,43 +13,44 @@ export default async function handler(
 
   if (req.method === "GET") {
     try {
-      // Fetch evidence with files
-      const { data: evidence, error: evidenceError } = await (supabase as any)
-        .schema("sidekick")
+      const { data, error } = await supabase
         .from("evidence_items")
         .select(`
           *,
-          evidence_files (*)
+          evidence_files (*),
+          projects (name)
         `)
         .eq("id", id)
         .single();
 
-      if (evidenceError) throw evidenceError;
-      if (!evidence) return res.status(404).json({ error: "Evidence not found" });
+      if (error) throw error;
+      if (!data) return res.status(404).json({ error: "Evidence not found" });
 
-      // Generate signed URLs for files
-      if (evidence.evidence_files && evidence.evidence_files.length > 0) {
-        const filesWithUrls = await Promise.all(
-          evidence.evidence_files.map(async (file: any) => {
-            const { data: signedUrl } = await (supabase as any)
-              .schema("sidekick")
-              .storage
+      const filesWithUrls = await Promise.all(
+        (data.evidence_files || []).map(async (file: any) => {
+          try {
+            const { data: urlData } = await supabase.storage
               .from("evidence-files")
-              .createSignedUrl(file.file_path, 3600); // 1 hour expiry
+              .createSignedUrl(file.file_path, 3600);
 
             return {
               ...file,
-              signed_url: signedUrl?.signedUrl || null
+              signed_url: urlData?.signedUrl || null
             };
-          })
-        );
+          } catch (err) {
+            console.error("Error creating signed URL:", err);
+            return { ...file, signed_url: null };
+          }
+        })
+      );
 
-        evidence.evidence_files = filesWithUrls;
-      }
-
-      return res.status(200).json(evidence);
-    } catch (error) {
-      console.error("Error fetching evidence for export:", error);
+      return res.status(200).json({
+        ...data,
+        project_name: data.projects?.name || null,
+        evidence_files: filesWithUrls
+      });
+    } catch (error: any) {
+      console.error("Error fetching evidence:", error);
       return res.status(500).json({ error: "Failed to fetch evidence" });
     }
   }

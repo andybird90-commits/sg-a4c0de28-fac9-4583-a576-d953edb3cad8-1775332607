@@ -42,7 +42,7 @@ export default function EvidenceDetailPage() {
       setEvidence(data);
       
       if (data?.evidence_files?.[0]) {
-        const url = await evidenceService.getSignedUrl(data.evidence_files[0].storage_path);
+        const url = await evidenceService.getSignedUrl(data.evidence_files[0].file_path);
         setFileUrl(url);
       }
     } catch (err: any) {
@@ -58,7 +58,7 @@ export default function EvidenceDetailPage() {
     try {
       if (evidence?.evidence_files) {
         for (const file of evidence.evidence_files) {
-          await evidenceService.deleteFile(file.id, file.storage_path);
+          await evidenceService.deleteFile(file.id, file.file_path);
         }
       }
       await evidenceService.deleteEvidence(id as string);
@@ -147,7 +147,7 @@ export default function EvidenceDetailPage() {
               ) : (
                 <div className="p-8 text-center bg-slate-50">
                   <FileText className="h-16 w-16 mx-auto mb-4 text-rd-orange" />
-                  <p className="font-medium text-slate-700 mb-4">{evidence.evidence_files[0].mime_type}</p>
+                  <p className="font-medium text-slate-700 mb-4">{evidence.evidence_files[0].file_type}</p>
                   <Button variant="outline" className="rounded-xl" asChild>
                     <a href={fileUrl} target="_blank" rel="noopener noreferrer">
                       <Download className="mr-2 h-4 w-4" />
@@ -188,16 +188,6 @@ export default function EvidenceDetailPage() {
                     year: 'numeric'
                   })}
                 </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 text-slate-600">
-              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
-                <User className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-slate-500">Created by</p>
-                <p className="font-semibold text-slate-900">{evidence.creator_name}</p>
               </div>
             </div>
 

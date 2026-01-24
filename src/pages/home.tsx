@@ -59,7 +59,7 @@ export default function HomePage() {
     setLoadingEvidence(true);
     setError("");
     try {
-      const data = await evidenceService.getEvidenceList(currentOrg.id);
+      const data = await evidenceService.getEvidence(currentOrg.id);
       setEvidence(data);
     } catch (err: any) {
       setError(err.message || "Failed to load evidence");

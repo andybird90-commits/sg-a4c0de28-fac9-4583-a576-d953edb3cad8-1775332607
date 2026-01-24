@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
+ 
 export type Json =
   | string
   | number
@@ -15,6 +15,101 @@ export type Database = {
   }
   public: {
     Tables: {
+      evidence_files: {
+        Row: {
+          created_at: string | null
+          evidence_id: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          evidence_id: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          evidence_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_files_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "evidence_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evidence_items: {
+        Row: {
+          claim_year: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          location: string | null
+          org_id: string
+          project_id: string | null
+          tag: string | null
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          claim_year?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          location?: string | null
+          org_id: string
+          project_id?: string | null
+          tag?: string | null
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          claim_year?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          location?: string | null
+          org_id?: string
+          project_id?: string | null
+          tag?: string | null
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evidence_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_invite_codes: {
         Row: {
           code: string
