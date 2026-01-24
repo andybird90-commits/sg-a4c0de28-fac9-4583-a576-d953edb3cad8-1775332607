@@ -48,7 +48,7 @@ export default function AdminUsers() {
   const checkAdminAccess = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || user.email !== "andy.bird@rdmande.uk") {
-      notify({ type: "error", message: "Access denied. Admin only." });
+      notify({ type: "error", title: "Access Denied", message: "Access denied. Admin only." });
       router.push("/home");
     }
   };
@@ -119,7 +119,7 @@ export default function AdminUsers() {
       setFilteredUsers(usersWithOrgs);
     } catch (error: any) {
       console.error("Error fetching users:", error);
-      notify({ type: "error", message: "Failed to load users" });
+      notify({ type: "error", title: "Error", message: "Failed to load users" });
     } finally {
       setLoading(false);
     }

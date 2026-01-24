@@ -43,7 +43,7 @@ export default function AdminAnalytics() {
   const checkAdminAccess = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || user.email !== "andy.bird@rdmande.uk") {
-      notify({ type: "error", message: "Access denied. Admin only." });
+      notify({ type: "error", title: "Access Denied", message: "Access denied. Admin only." });
       router.push("/home");
     }
   };
@@ -164,7 +164,7 @@ export default function AdminAnalytics() {
       });
     } catch (error: any) {
       console.error("Error fetching analytics:", error);
-      notify({ type: "error", message: "Failed to load analytics" });
+      notify({ type: "error", title: "Error", message: "Failed to load analytics" });
     } finally {
       setLoading(false);
     }
