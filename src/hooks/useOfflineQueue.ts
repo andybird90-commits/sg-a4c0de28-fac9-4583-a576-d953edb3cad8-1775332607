@@ -25,6 +25,11 @@ export function useOfflineQueue() {
 
     const handleOffline = () => {
       setIsOnline(false);
+      notify({
+        type: "warning",
+        title: "You're offline",
+        message: "Evidence will be saved locally and synced when you're back online."
+      });
     };
 
     setIsOnline(navigator.onLine);
@@ -61,14 +66,14 @@ export function useOfflineQueue() {
       notify({
         type: "info",
         title: "Saved offline",
-        message: "We'll upload when you're back online."
+        message: "Your evidence will be uploaded when you're back online."
       });
     } catch (error) {
       console.error("Failed to add to queue:", error);
       notify({
         type: "error",
-        title: "Queue error",
-        message: "Failed to save offline. Please try again."
+        title: "Failed to save",
+        message: "Couldn't save evidence offline. Please try again."
       });
     }
   };
@@ -102,7 +107,7 @@ export function useOfflineQueue() {
           const evidenceData = {
             org_id: item.org_id,
             project_id: item.project_id,
-            created_by: item.org_id, // Will be set by RLS
+            created_by: item.org_id,
             type: item.type,
             description: item.description,
             tag: item.tag,
@@ -134,6 +139,12 @@ export function useOfflineQueue() {
             error_message: error instanceof Error ? error.message : "Upload failed"
           });
           failCount++;
+          
+          notify({
+            type: "error",
+            title: "Upload failed",
+            message: error instanceof Error ? error.message : "Failed to upload evidence item."
+          });
         }
       }
 
@@ -147,14 +158,6 @@ export function useOfflineQueue() {
         });
       }
 
-      if (failCount > 0) {
-        notify({
-          type: "error",
-          title: "Some uploads failed",
-          message: "Tap failed items to retry."
-        });
-      }
-
       // Clear completed items after successful sync
       setTimeout(() => {
         indexedDBQueue.clearCompleted();
@@ -165,7 +168,7 @@ export function useOfflineQueue() {
       notify({
         type: "error",
         title: "Sync failed",
-        message: "Please try again later."
+        message: "Couldn't complete sync. Please try again."
       });
     } finally {
       setSyncing(false);

@@ -12,7 +12,6 @@ import { organisationService } from "@/services/organisationService";
 import { Loader2, Camera, Upload, X, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
-import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from "@/components/EmptyState";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 import { useNotifications } from "@/contexts/NotificationContext";
@@ -22,13 +21,12 @@ type Project = {
   name: string;
 };
 
-const TAGS = ['Prototype', 'Test', 'Failure', 'Iteration', 'Work-in-progress', 'Other'];
+const TAGS = ["Prototype", "Test", "Failure", "Iteration", "Work-in-progress", "Other"];
 
 export default function CapturePage() {
   const router = useRouter();
   const { type } = router.query;
   const { user, currentOrg } = useApp();
-  const { toast } = useToast();
   const { isOnline, addToQueue } = useOfflineQueue();
   const { notify } = useNotifications();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -52,9 +50,9 @@ export default function CapturePage() {
 
   useEffect(() => {
     // Auto-trigger file selection based on type
-    if (type === 'photo' && cameraInputRef.current) {
+    if (type === "photo" && cameraInputRef.current) {
       cameraInputRef.current.click();
-    } else if ((type === 'upload-photo' || type === 'document') && fileInputRef.current) {
+    } else if ((type === "upload-photo" || type === "document") && fileInputRef.current) {
       fileInputRef.current.click();
     }
   }, [type]);
@@ -76,7 +74,7 @@ export default function CapturePage() {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      if (selectedFile.type.startsWith('image/')) {
+      if (selectedFile.type.startsWith("image/")) {
         const url = URL.createObjectURL(selectedFile);
         setPreviewUrl(url);
       } else {
@@ -117,7 +115,7 @@ export default function CapturePage() {
 
         // Add to offline queue
         await addToQueue({
-          type: (type as any) || 'note',
+          type: (type as any) || "note",
           org_id: currentOrg.id,
           project_id: projectId || null,
           description: description,
@@ -137,7 +135,7 @@ export default function CapturePage() {
         org_id: currentOrg.id,
         project_id: projectId || null,
         created_by: user.id,
-        type: (type as any) || 'note',
+        type: (type as any) || "note",
         description: description,
         tag: tag,
         claim_year: new Date().getFullYear()
@@ -147,10 +145,14 @@ export default function CapturePage() {
         await evidenceService.uploadFile(currentOrg.id, evidence.id, file);
       }
 
+      // Find project name for notification
+      const project = projects.find(p => p.id === projectId);
+      const projectName = project ? project.name : "your project";
+
       notify({
         type: "success",
         title: "Evidence uploaded",
-        message: "Your evidence has been saved successfully"
+        message: `Your ${type === "photo" ? "photo" : type === "document" ? "document" : "note"} has been saved to ${projectName}.`
       });
 
       router.push("/home");
@@ -159,7 +161,7 @@ export default function CapturePage() {
       notify({
         type: "error",
         title: "Upload failed",
-        message: err.message || "Failed to create evidence"
+        message: "We couldn't upload this evidence. Please try again."
       });
     } finally {
       setUploading(false);
@@ -168,11 +170,11 @@ export default function CapturePage() {
 
   const getPageTitle = () => {
     switch (type) {
-      case 'photo': return 'Take Photo';
-      case 'upload-photo': return 'Upload Photo';
-      case 'document': return 'Upload Document';
-      case 'note': return 'Add Note';
-      default: return 'Add Evidence';
+      case "photo": return "Take Photo";
+      case "upload-photo": return "Upload Photo";
+      case "document": return "Upload Document";
+      case "note": return "Add Note";
+      default: return "Add Evidence";
     }
   };
 
@@ -236,7 +238,7 @@ export default function CapturePage() {
         />
         <input
           type="file"
-          accept={type === 'document' ? ".pdf,.doc,.docx,.xls,.xlsx,.zip,.png,.jpg,.jpeg" : "image/*"}
+          accept={type === "document" ? ".pdf,.doc,.docx,.xls,.xlsx,.zip,.png,.jpg,.jpeg" : "image/*"}
           className="hidden"
           ref={fileInputRef}
           onChange={handleFileChange}
@@ -285,23 +287,23 @@ export default function CapturePage() {
           )}
 
           {/* Trigger buttons if no file selected yet for file types */}
-          {!file && type !== 'note' && (
+          {!file && type !== "note" && (
             <Button
               variant="outline"
               className="w-full h-40 border-dashed border-2 border-slate-300 hover:border-rd-orange hover:bg-orange-50 rounded-xl"
               onClick={() => {
-                if (type === 'photo') cameraInputRef.current?.click();
+                if (type === "photo") cameraInputRef.current?.click();
                 else fileInputRef.current?.click();
               }}
             >
               <div className="flex flex-col items-center gap-3">
-                {type === 'photo' ? (
+                {type === "photo" ? (
                   <Camera className="h-12 w-12 text-rd-orange" strokeWidth={2} />
                 ) : (
                   <Upload className="h-12 w-12 text-rd-orange" strokeWidth={2} />
                 )}
                 <span className="font-semibold text-slate-700">
-                  {type === 'photo' ? 'Tap to take photo' : 'Tap to select file'}
+                  {type === "photo" ? "Tap to take photo" : "Tap to select file"}
                 </span>
               </div>
             </Button>
@@ -344,8 +346,8 @@ export default function CapturePage() {
                   onClick={() => setTag(t)}
                   className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
                     tag === t
-                      ? 'bg-rd-orange text-white shadow-md'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      ? "bg-rd-orange text-white shadow-md"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                   }`}
                 >
                   {t}
