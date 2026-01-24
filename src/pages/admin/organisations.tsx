@@ -1,26 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/router";
 import { Layout } from "@/components/Layout";
 import { SEO } from "@/components/SEO";
-import { useApp } from "@/contexts/AppContext";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Copy, Plus, Building2, Users, Calendar, Trash2, RefreshCw, Loader2 } from "lucide-react";
+import { Building2, Plus, Copy, Check, Users, Activity, Shield, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/contexts/NotificationContext";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 
 type Organisation = {
   id: string;
@@ -29,191 +20,169 @@ type Organisation = {
   sidekick_enabled: boolean;
   created_at: string;
   user_count?: number;
-  last_evidence_date?: string;
+  last_activity?: string;
 };
 
-export default function OrganisationsAdmin() {
-  const router = useRouter();
-  const { user, loading } = useApp();
-  const { notify } = useNotifications();
+export default function OrganisationsPage() {
   const [organisations, setOrganisations] = useState<Organisation[]>([]);
-  const [selectedOrg, setSelectedOrg] = useState<Organisation | null>(null);
-  const [loadingOrgs, setLoadingOrgs] = useState(true);
-  const [newOrgName, setNewOrgName] = useState("");
-  const [newOrgCode, setNewOrgCode] = useState("");
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [newOrgName, setNewOrgName] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const { notify } = useNotifications();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/auth/login");
-    }
-  }, [user, loading, router]);
-
-  useEffect(() => {
-    if (user) {
-      loadOrganisations();
-    }
-  }, [user]);
-
-  const generateCode = () => {
-    const chars = "abcdefghijklmnopqrstuvwxyz";
-    let code = "";
-    for (let i = 0; i < 8; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setNewOrgCode(code);
-  };
+    loadOrganisations();
+  }, []);
 
   const loadOrganisations = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: orgs, error } = await supabase
         .from("organisations")
-        .select("id, name, organisation_code, sidekick_enabled, created_at")
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
+      // Get user counts and last activity for each org
       const orgsWithStats = await Promise.all(
-        (data || []).map(async (org) => {
+        (orgs || []).map(async (org) => {
           const { count } = await supabase
             .from("organisation_users")
             .select("*", { count: "exact", head: true })
             .eq("org_id", org.id);
 
-          const { data: lastEvidence } = await (supabase as any)
-            .schema("sidekick")
+          const { data: evidenceData } = await supabase
             .from("evidence_items")
             .select("created_at")
             .eq("org_id", org.id)
             .order("created_at", { ascending: false })
-            .limit(1)
-            .single();
+            .limit(1);
+
+          const lastEvidence = evidenceData && evidenceData.length > 0 
+            ? evidenceData[0].created_at 
+            : null;
 
           return {
             ...org,
             user_count: count || 0,
-            last_evidence_date: lastEvidence?.created_at || null
+            last_activity: lastEvidence
           };
         })
       );
 
       setOrganisations(orgsWithStats);
-    } catch (error) {
-      console.error("Error loading organisations:", error);
+    } catch (error: any) {
       notify({
         type: "error",
-        title: "Load failed",
-        message: "Could not load organisations"
+        title: "Failed to load organisations",
+        message: error.message
       });
     } finally {
-      setLoadingOrgs(false);
+      setLoading(false);
     }
   };
 
-  const handleCreateOrg = async () => {
-    if (!newOrgName.trim() || !newOrgCode.trim()) {
+  const generateOrgCode = () => {
+    const chars = "abcdefghijklmnopqrstuvwxyz";
+    let code = "";
+    for (let i = 0; i < 8; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
+  const createOrganisation = async () => {
+    if (!newOrgName.trim()) {
       notify({
         type: "error",
         title: "Validation error",
-        message: "Please provide both organisation name and code"
-      });
-      return;
-    }
-
-    if (newOrgCode.length !== 8) {
-      notify({
-        type: "error",
-        title: "Invalid code",
-        message: "Organisation code must be exactly 8 characters"
+        message: "Organisation name is required"
       });
       return;
     }
 
     setCreating(true);
     try {
+      const code = generateOrgCode();
+
       const { data, error } = await supabase
         .from("organisations")
         .insert({
           name: newOrgName.trim(),
-          organisation_code: newOrgCode.toLowerCase(),
+          organisation_code: code,
           sidekick_enabled: true
         })
         .select()
         .single();
 
-      if (error) {
-        if (error.code === "23505") {
-          throw new Error("This organisation code is already in use");
-        }
-        throw error;
-      }
+      if (error) throw error;
 
       notify({
         type: "success",
         title: "Organisation created",
-        message: `${newOrgName} has been created successfully`
+        message: `Code: ${code}`
       });
 
       setNewOrgName("");
-      setNewOrgCode("");
-      setCreateDialogOpen(false);
-      await loadOrganisations();
+      setDialogOpen(false);
+      loadOrganisations();
     } catch (error: any) {
-      console.error("Error creating organisation:", error);
       notify({
         type: "error",
-        title: "Creation failed",
-        message: error.message || "Could not create organisation"
+        title: "Failed to create organisation",
+        message: error.message
       });
     } finally {
       setCreating(false);
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    notify({
-      type: "success",
-      title: "Copied",
-      message: "Code copied to clipboard"
-    });
-  };
-
-  const toggleOrgAccess = async (org: Organisation) => {
+  const toggleSidekick = async (orgId: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
         .from("organisations")
-        .update({ sidekick_enabled: !org.sidekick_enabled })
-        .eq("id", org.id);
+        .update({ sidekick_enabled: !currentStatus })
+        .eq("id", orgId);
 
       if (error) throw error;
 
-      await loadOrganisations();
-      if (selectedOrg?.id === org.id) {
-        setSelectedOrg({ ...org, sidekick_enabled: !org.sidekick_enabled });
-      }
-
       notify({
         type: "success",
-        title: "Access updated",
-        message: `RD Sidekick ${!org.sidekick_enabled ? "enabled" : "disabled"} for ${org.name}`
+        title: "Updated",
+        message: `Sidekick access ${!currentStatus ? "enabled" : "disabled"}`
       });
-    } catch (error) {
-      console.error("Error toggling access:", error);
+
+      loadOrganisations();
+    } catch (error: any) {
       notify({
         type: "error",
-        title: "Update failed",
-        message: "Could not update access"
+        title: "Failed to update",
+        message: error.message
       });
     }
   };
 
-  if (loading || loadingOrgs) {
+  const copyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    notify({
+      type: "success",
+      title: "Copied",
+      message: "Organisation code copied to clipboard"
+    });
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  if (loading) {
     return (
       <Layout>
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <p className="text-center text-gray-600">Loading...</p>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading organisations...</p>
+          </div>
         </div>
       </Layout>
     );
@@ -222,245 +191,180 @@ export default function OrganisationsAdmin() {
   return (
     <Layout>
       <SEO title="Organisations - Admin" />
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-[#001F3F] mb-2">Organisations</h1>
-            <p className="text-gray-600">Manage organisations and access codes</p>
-          </div>
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-[#FF6B35] hover:bg-[#E67510]">
-                <Plus size={16} className="mr-2" />
-                Add Organisation
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Organisation</DialogTitle>
-                <DialogDescription>
-                  Add a new organisation with a unique 8-letter code
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="orgName">Organisation Name</Label>
-                  <Input
-                    id="orgName"
-                    placeholder="ACME Corporation"
-                    value={newOrgName}
-                    onChange={(e) => setNewOrgName(e.target.value)}
-                    disabled={creating}
-                  />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+                  <Building2 className="h-6 w-6 text-white" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="orgCode">Organisation Code (8 letters)</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="orgCode"
-                      placeholder="abcdefgh"
-                      value={newOrgCode}
-                      onChange={(e) => setNewOrgCode(e.target.value.toLowerCase().replace(/[^a-z]/g, "").slice(0, 8))}
-                      disabled={creating}
-                      maxLength={8}
-                      className="font-mono"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={generateCode}
-                      disabled={creating}
-                      size="icon"
-                    >
-                      <RefreshCw size={16} />
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    This code will be shared with users to sign up
-                  </p>
+                <div>
+                  <h1 className="text-3xl font-bold text-slate-900">Organisations</h1>
+                  <p className="text-slate-600 mt-1">Manage client organisations and access</p>
                 </div>
               </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setCreateDialogOpen(false)}
-                  disabled={creating}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreateOrg}
-                  disabled={!newOrgName.trim() || newOrgCode.length !== 8 || creating}
-                  className="bg-[#FF6B35] hover:bg-[#E67510]"
-                >
-                  {creating ? <Loader2 size={16} className="mr-2 animate-spin" /> : null}
-                  Create Organisation
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-6">
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">All Organisations</h2>
-            <div className="space-y-3">
-              {organisations.length === 0 ? (
-                <p className="text-center py-8 text-gray-500">No organisations yet</p>
-              ) : (
-                organisations.map((org) => (
-                  <div
-                    key={org.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedOrg?.id === org.id
-                        ? "border-[#FF6B35] bg-orange-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    onClick={() => setSelectedOrg(org)}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Building2 size={18} className="text-[#001F3F]" />
-                        <h3 className="font-semibold text-[#001F3F]">{org.name}</h3>
-                      </div>
-                      <Badge variant={org.sidekick_enabled ? "default" : "secondary"}>
-                        {org.sidekick_enabled ? "Enabled" : "Disabled"}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                      <span className="flex items-center gap-1">
-                        <Users size={14} />
-                        {org.user_count} users
-                      </span>
-                      {org.last_evidence_date && (
-                        <span className="flex items-center gap-1">
-                          <Calendar size={14} />
-                          Last: {new Date(org.last_evidence_date).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 bg-gray-100 rounded px-3 py-2">
-                      <code className="text-sm font-mono font-semibold flex-1">
-                        {org.organisation_code}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyToClipboard(org.organisation_code);
-                        }}
-                      >
-                        <Copy size={14} />
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
             </div>
-          </Card>
-
-          <Card className="p-6">
-            {selectedOrg ? (
-              <>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold">{selectedOrg.name}</h2>
-                  <Badge variant={selectedOrg.sidekick_enabled ? "default" : "secondary"} className="text-sm">
-                    {selectedOrg.sidekick_enabled ? "Active" : "Inactive"}
-                  </Badge>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Organisation
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Create Organisation</DialogTitle>
+                  <DialogDescription>
+                    Add a new client organisation with an auto-generated code
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="org-name">Organisation Name</Label>
+                    <Input
+                      id="org-name"
+                      placeholder="e.g. ACME Corporation"
+                      value={newOrgName}
+                      onChange={(e) => setNewOrgName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && createOrganisation()}
+                    />
+                  </div>
+                  <Alert className="bg-blue-50 border-blue-200">
+                    <Sparkles className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-800">
+                      An 8-letter organisation code will be automatically generated
+                    </AlertDescription>
+                  </Alert>
                 </div>
+                <div className="flex justify-end gap-3">
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={createOrganisation} disabled={creating}>
+                    {creating ? "Creating..." : "Create Organisation"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
 
-                <div className="space-y-6">
+          {/* Stats Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <Card className="border-0 shadow-sm bg-white/80 backdrop-blur">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold mb-3 text-sm text-gray-600 uppercase tracking-wide">
-                      Organisation Code
-                    </h3>
-                    <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <code className="text-2xl font-mono font-bold text-[#001F3F]">
-                          {selectedOrg.organisation_code}
-                        </code>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(selectedOrg.organisation_code)}
-                        >
-                          <Copy size={16} />
-                        </Button>
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Share this code with users to allow them to sign up to your organisation
+                    <p className="text-sm font-medium text-slate-600">Total Organisations</p>
+                    <p className="text-3xl font-bold text-slate-900 mt-2">{organisations.length}</p>
+                  </div>
+                  <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <Building2 className="h-6 w-6 text-blue-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white/80 backdrop-blur">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600">Sidekick Enabled</p>
+                    <p className="text-3xl font-bold text-slate-900 mt-2">
+                      {organisations.filter(o => o.sidekick_enabled).length}
                     </p>
                   </div>
-
-                  <div>
-                    <h3 className="font-semibold mb-3 text-sm text-gray-600 uppercase tracking-wide">
-                      RD Sidekick Access
-                    </h3>
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <div>
-                        <p className="font-medium">Access Control</p>
-                        <p className="text-sm text-gray-500">
-                          {selectedOrg.sidekick_enabled 
-                            ? "Users can access RD Sidekick features"
-                            : "RD Sidekick access is disabled"}
-                        </p>
-                      </div>
-                      <Switch
-                        checked={selectedOrg.sidekick_enabled}
-                        onCheckedChange={() => toggleOrgAccess(selectedOrg)}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold mb-3 text-sm text-gray-600 uppercase tracking-wide">
-                      Statistics
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <Users size={20} className="text-[#FF6B35] mb-2" />
-                        <p className="text-2xl font-bold text-[#001F3F]">{selectedOrg.user_count}</p>
-                        <p className="text-sm text-gray-600">Users</p>
-                      </div>
-                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <Calendar size={20} className="text-[#FF6B35] mb-2" />
-                        <p className="text-sm font-medium text-[#001F3F]">
-                          {selectedOrg.last_evidence_date
-                            ? new Date(selectedOrg.last_evidence_date).toLocaleDateString()
-                            : "No activity"}
-                        </p>
-                        <p className="text-sm text-gray-600">Last Evidence</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold mb-3 text-sm text-gray-600 uppercase tracking-wide">
-                      Details
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between py-2 border-b border-gray-200">
-                        <span className="text-gray-600">Created</span>
-                        <span className="font-medium">
-                          {new Date(selectedOrg.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-2 border-b border-gray-200">
-                        <span className="text-gray-600">Organisation ID</span>
-                        <span className="font-mono text-xs">{selectedOrg.id.slice(0, 8)}...</span>
-                      </div>
-                    </div>
+                  <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                    <Shield className="h-6 w-6 text-green-600" />
                   </div>
                 </div>
-              </>
-            ) : (
-              <div className="text-center py-12 text-gray-500">
-                <Building2 size={48} className="mx-auto mb-4 opacity-20" />
-                <p>Select an organisation to view details</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white/80 backdrop-blur">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-600">Total Users</p>
+                    <p className="text-3xl font-bold text-slate-900 mt-2">
+                      {organisations.reduce((sum, o) => sum + (o.user_count || 0), 0)}
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                    <Users className="h-6 w-6 text-purple-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Organisations List */}
+          <Card className="border-0 shadow-lg bg-white/90 backdrop-blur">
+            <CardHeader className="border-b bg-slate-50/50">
+              <CardTitle>All Organisations</CardTitle>
+              <CardDescription>Manage access and organisation codes</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-slate-100">
+                {organisations.map((org) => (
+                  <div key={org.id} className="p-6 hover:bg-slate-50/50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-3">
+                          <h3 className="text-lg font-semibold text-slate-900">{org.name}</h3>
+                          <Badge variant={org.sidekick_enabled ? "default" : "secondary"} className="shadow-sm">
+                            {org.sidekick_enabled ? "Enabled" : "Disabled"}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <Shield className="h-4 w-4" />
+                            <span className="font-mono font-medium">{org.organisation_code}</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              onClick={() => copyCode(org.organisation_code)}
+                            >
+                              {copiedCode === org.organisation_code ? (
+                                <Check className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <Users className="h-4 w-4" />
+                            <span>{org.user_count || 0} users</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <Activity className="h-4 w-4" />
+                            <span>
+                              {org.last_activity
+                                ? `Active ${new Date(org.last_activity).toLocaleDateString()}`
+                                : "No activity"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 ml-6">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor={`toggle-${org.id}`} className="text-sm font-medium cursor-pointer">
+                            Sidekick
+                          </Label>
+                          <Switch
+                            id={`toggle-${org.id}`}
+                            checked={org.sidekick_enabled}
+                            onCheckedChange={() => toggleSidekick(org.id, org.sidekick_enabled)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
+            </CardContent>
           </Card>
         </div>
       </div>

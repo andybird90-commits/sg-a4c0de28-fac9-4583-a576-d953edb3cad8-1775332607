@@ -6,17 +6,19 @@ const QUEUE_STORE = "evidence_queue";
 export type QueuedEvidence = {
   local_id: string;
   type: string;
-  org_id: string;
-  project_id: string | null;
-  description: string | null;
-  tag: string | null;
-  claim_year: number | null;
+  org_id?: string;
+  project_id?: string | null;
+  description?: string | null;
+  tag?: string | null;
+  claim_year?: number | null;
   file_data?: string; // base64 encoded
   file_name?: string;
   mime_type?: string;
   created_at: string;
   status: "pending" | "uploading" | "failed" | "complete";
   error_message?: string;
+  payload?: any;
+  file?: File | null;
 };
 
 export interface QueuedItem {
