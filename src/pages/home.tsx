@@ -17,7 +17,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useNotifications } from "@/contexts/NotificationContext";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function HomePage() {
   const router = useRouter();
