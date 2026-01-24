@@ -1,89 +1,111 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
 import { organisationService, type UserOrganisation } from "@/services/organisationService";
 
 interface AppContextType {
-  user: User | null;
+  user: any;
+  loading: boolean;
   organisations: UserOrganisation[];
   currentOrg: UserOrganisation | null;
+  orgLoading: boolean;
   setCurrentOrg: (org: UserOrganisation) => void;
-  loading: boolean;
   refreshOrganisations: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [organisations, setOrganisations] = useState<UserOrganisation[]>([]);
-  const [currentOrg, setCurrentOrgState] = useState<UserOrganisation | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
-  const setCurrentOrg = (org: UserOrganisation) => {
-    setCurrentOrgState(org);
-    localStorage.setItem("currentOrgId", org.id);
-  };
+  const [organisations, setOrganisations] = useState<UserOrganisation[]>([]);
+  const [currentOrg, setCurrentOrg] = useState<UserOrganisation | null>(null);
+  const [orgLoading, setOrgLoading] = useState(false);
 
   const refreshOrganisations = async () => {
+    if (!user) {
+      console.log("[AppContext] No user, skipping org refresh");
+      return;
+    }
+
+    console.log("[AppContext] Refreshing organisations for user:", user.email);
+    setOrgLoading(true);
     try {
-      console.log("[AppContext] Fetching organisations...");
       const orgs = await organisationService.getUserOrganisations();
-      console.log("[AppContext] Organisations fetched:", orgs);
+      console.log("[AppContext] Fetched organisations:", orgs);
       setOrganisations(orgs);
 
-      // Try to restore previously selected org
-      const savedOrgId = localStorage.getItem("currentOrgId");
-      if (savedOrgId) {
-        const savedOrg = orgs.find(o => o.id === savedOrgId);
-        if (savedOrg) {
-          console.log("[AppContext] Restored saved organisation:", savedOrg.name);
-          setCurrentOrgState(savedOrg);
-          return;
+      // Auto-select first org if none selected
+      if (orgs.length > 0 && !currentOrg) {
+        console.log("[AppContext] Auto-selecting first org:", orgs[0].name);
+        setCurrentOrg(orgs[0]);
+        // Store in localStorage for persistence
+        localStorage.setItem("currentOrgId", orgs[0].id);
+      } else if (orgs.length > 0 && currentOrg) {
+        // Try to restore from localStorage
+        const savedOrgId = localStorage.getItem("currentOrgId");
+        if (savedOrgId) {
+          const savedOrg = orgs.find((o) => o.id === savedOrgId);
+          if (savedOrg) {
+            console.log("[AppContext] Restoring saved org:", savedOrg.name);
+            setCurrentOrg(savedOrg);
+          }
         }
       }
-
-      // If no saved org or saved org not found, use first available
-      if (orgs.length > 0) {
-        console.log("[AppContext] Setting first organisation as current:", orgs[0].name);
-        setCurrentOrgState(orgs[0]);
-        localStorage.setItem("currentOrgId", orgs[0].id);
-      } else {
-        console.warn("[AppContext] No organisations found for user");
-      }
     } catch (error) {
-      console.error("[AppContext] Error loading organisations:", error);
+      console.error("[AppContext] Error fetching organisations:", error);
+    } finally {
+      setOrgLoading(false);
     }
   };
 
   useEffect(() => {
+    // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("[AppContext] Session loaded:", session?.user?.email || "No user");
+      console.log("[AppContext] Initial session:", session ? "exists" : "none");
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("[AppContext] Auth state changed:", session?.user?.email || "No user");
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("[AppContext] Auth state changed:", _event, session?.user?.email);
       setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (user) {
-      console.log("[AppContext] User detected, loading organisations for:", user.email);
+    if (user && !orgLoading) {
+      console.log("[AppContext] User set, refreshing organisations");
       refreshOrganisations();
-    } else {
-      console.log("[AppContext] No user, clearing organisations");
+    } else if (!user) {
+      console.log("[AppContext] User cleared, resetting organisations");
       setOrganisations([]);
-      setCurrentOrgState(null);
+      setCurrentOrg(null);
+      localStorage.removeItem("currentOrgId");
     }
   }, [user]);
 
   return (
-    <AppContext.Provider value={{ user, organisations, currentOrg, setCurrentOrg, loading, refreshOrganisations }}>
+    <AppContext.Provider
+      value={{
+        user,
+        loading,
+        organisations,
+        currentOrg,
+        orgLoading,
+        setCurrentOrg: (org) => {
+          console.log("[AppContext] Setting current org:", org.name);
+          setCurrentOrg(org);
+          localStorage.setItem("currentOrgId", org.id);
+        },
+        refreshOrganisations,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

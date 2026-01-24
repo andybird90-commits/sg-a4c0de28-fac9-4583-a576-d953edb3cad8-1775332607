@@ -1,27 +1,32 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/integrations/supabase/client";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, Loader2, ArrowLeft, Mail } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
+import { authService } from "@/services/authService";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { notify } = useNotifications();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
     setError("");
     setNeedsConfirmation(false);
 
     try {
+      console.log("[Login] Attempting login for:", email);
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -41,9 +46,26 @@ export default function LoginPage() {
 
       if (!data.user) throw new Error("Failed to log in");
 
-      router.push("/home");
+      console.log("[Login] Login successful, user:", data.user.email);
+      notify({
+        type: "success",
+        title: "Login successful",
+        message: "Welcome back!"
+      });
+
+      // Wait a moment for AppContext to load organisations
+      setTimeout(() => {
+        console.log("[Login] Redirecting to home");
+        router.push("/home");
+      }, 500);
     } catch (err: any) {
+      console.error("[Login] Login failed:", err);
       setError(err.message || "Failed to log in");
+      notify({
+        type: "error",
+        title: "Login failed",
+        message: err.message || "Invalid email or password"
+      });
     } finally {
       setLoading(false);
     }
@@ -125,7 +147,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && email && password && !loading) {
-                    handleLogin();
+                    handleLogin(e);
                   }
                 }}
                 disabled={loading}
@@ -135,7 +157,7 @@ export default function LoginPage() {
 
             <Button
               className="w-full h-14 text-lg font-semibold bg-rd-orange hover:bg-[#E67510] rounded-xl shadow-lg mt-6"
-              onClick={handleLogin}
+              onClick={(e) => handleLogin(e)}
               disabled={!email || !password || loading}
             >
               {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
