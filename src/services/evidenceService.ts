@@ -84,6 +84,7 @@ export const evidenceService = {
     description?: string;
     tag?: string;
     location?: string;
+    claim_year?: number;
   }): Promise<EvidenceItem> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
