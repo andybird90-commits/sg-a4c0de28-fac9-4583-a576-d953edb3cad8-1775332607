@@ -16,6 +16,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useNotifications } from "@/contexts/NotificationContext";
+import { supabase } from "@/lib/supabase";
 
 export default function HomePage() {
   const router = useRouter();
@@ -23,6 +25,7 @@ export default function HomePage() {
   const [evidence, setEvidence] = useState<EvidenceWithFiles[]>([]);
   const [loadingEvidence, setLoadingEvidence] = useState(true);
   const [error, setError] = useState("");
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -31,10 +34,24 @@ export default function HomePage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (currentOrg) {
+    if (currentOrg && user) {
       loadEvidence();
+      checkUserRole();
     }
-  }, [currentOrg]);
+  }, [currentOrg, user]);
+
+  const checkUserRole = async () => {
+    if (!currentOrg || !user) return;
+    
+    const { data } = await supabase
+      .from("organisation_users")
+      .select("role")
+      .eq("org_id", currentOrg.id)
+      .eq("user_id", user.id)
+      .single();
+    
+    setUserRole(data?.role || null);
+  };
 
   const loadEvidence = async () => {
     if (!currentOrg) return;
@@ -92,6 +109,7 @@ export default function HomePage() {
 
   const groupedEvidence = groupByDate(evidence);
   const initials = user.email?.substring(0, 2).toUpperCase() || "U";
+  const isAdmin = userRole === "admin";
 
   return (
     <div className="min-h-screen bg-white">
@@ -122,6 +140,35 @@ export default function HomePage() {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
+        )}
+
+        {isAdmin && (
+          <div className="bg-gradient-to-r from-[#001F3F] to-[#003366] rounded-xl p-4 text-white">
+            <h3 className="font-bold mb-2 flex items-center gap-2">
+              <Settings size={20} />
+              Admin Tools
+            </h3>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/admin/organisations")}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <Folder className="mr-2 h-4 w-4" />
+                Organisations
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/admin/sidekick-access")}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Sidekick Access
+              </Button>
+            </div>
+          </div>
         )}
 
         <Sheet>
