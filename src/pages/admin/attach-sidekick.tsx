@@ -10,11 +10,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { X, Search, Filter, Image, FileText, Mic, Video, StickyNote, Loader2, Eye, Calendar, Tag as TagIcon } from "lucide-react";
+import { X, Search, Filter, Image, FileText, Mic, Video, StickyNote, Loader2, Eye, Calendar, Tag as TagIcon, Folder } from "lucide-react";
 import { useNotifications } from "@/contexts/NotificationContext";
 import type { EvidenceWithFiles } from "@/services/evidenceService";
+import { organisationService, type Project } from "@/services/organisationService";
 
-const typeIcons = {
+const typeIcons: Record<string, any> = {
   image: Image,
   document: FileText,
   audio: Mic,
@@ -32,6 +33,7 @@ interface AttachSidekickModalProps {
 export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachSidekickModalProps) {
   const { notify } = useNotifications();
   const [evidence, setEvidence] = useState<EvidenceWithFiles[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedItem, setSelectedItem] = useState<EvidenceWithFiles | null>(null);
   const [previewData, setPreviewData] = useState<any>(null);
@@ -48,8 +50,18 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
   useEffect(() => {
     if (isOpen && orgId) {
       loadEvidence();
+      loadProjects();
     }
   }, [isOpen, orgId]);
+
+  const loadProjects = async () => {
+    try {
+      const data = await organisationService.getProjects(orgId);
+      setProjects(data);
+    } catch (error) {
+      console.error("Error loading projects:", error);
+    }
+  };
 
   const loadEvidence = async () => {
     if (!orgId) {
@@ -187,7 +199,20 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
 
         {/* Filters */}
         <div className="p-6 border-b border-gray-200 bg-gray-50">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="flex flex-col">
+              <label className="text-xs font-medium text-gray-700 mb-1">Project</label>
+              <select
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent"
+                value={filters.projectId}
+                onChange={(e) => setFilters({ ...filters, projectId: e.target.value })}
+              >
+                <option value="">All Projects</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex flex-col">
               <label className="text-xs font-medium text-gray-700 mb-1">From Date</label>
               <Input
@@ -258,7 +283,7 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
             ) : (
               <div className="grid grid-cols-1 gap-3">
                 {evidence.map((item) => {
-                  const Icon = typeIcons[item.type];
+                  const Icon = typeIcons[item.type] || FileText;
                   const isSelected = selectedIds.has(item.id);
                   const isViewing = selectedItem?.id === item.id;
 
@@ -272,11 +297,13 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
                           ? "border-[#FF6B35] bg-orange-50"
                           : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
                       }`}
+                      onClick={() => loadPreview(item)}
                     >
                       <div className="flex items-start gap-3">
                         <Checkbox 
                           checked={isSelected}
                           onCheckedChange={() => toggleSelection(item.id)}
+                          onClick={(e) => e.stopPropagation()}
                           className="mt-1"
                         />
                         <Icon size={24} className="text-[#001F3F] flex-shrink-0 mt-1" />
@@ -285,7 +312,10 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
                             {item.description || "No description"}
                           </p>
                           {item.project_name && (
-                            <p className="text-xs text-gray-500 mb-2">{item.project_name}</p>
+                            <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
+                              <Folder size={12} />
+                              <span>{item.project_name}</span>
+                            </div>
                           )}
                           <div className="flex items-center gap-2 flex-wrap">
                             {item.tag && (
@@ -320,12 +350,12 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
           </div>
 
           {/* Preview Pane */}
-          <div className="w-96 bg-gray-50 overflow-y-auto">
+          <div className="w-96 bg-gray-50 overflow-y-auto border-l border-gray-200">
             {!selectedItem ? (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                 <Eye className="h-16 w-16 text-gray-300 mb-4" />
                 <p className="text-gray-500 font-medium">No item selected</p>
-                <p className="text-gray-400 text-sm mt-2">Click the eye icon to preview evidence details</p>
+                <p className="text-gray-400 text-sm mt-2">Click an item to see details</p>
               </div>
             ) : previewLoading ? (
               <div className="flex items-center justify-center h-full">
@@ -341,11 +371,21 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
                     {previewData.evidence_files.map((file: any, index: number) => (
                       <div key={index} className="mb-4">
                         {file.file_type?.startsWith("image/") && file.signed_url ? (
-                          <img 
-                            src={file.signed_url} 
-                            alt="Evidence preview"
-                            className="w-full rounded-lg border border-gray-200 shadow-sm"
-                          />
+                          <div className="relative group">
+                            <img 
+                              src={file.signed_url} 
+                              alt="Evidence preview"
+                              className="w-full rounded-lg border border-gray-200 shadow-sm"
+                            />
+                            <a 
+                              href={file.signed_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Eye size={16} />
+                            </a>
+                          </div>
                         ) : (
                           <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3">
                             <FileText className="h-8 w-8 text-[#001F3F]" />
@@ -357,6 +397,16 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
                                 {file.file_size ? `${(file.file_size / 1024).toFixed(1)} KB` : "Unknown size"}
                               </p>
                             </div>
+                            {file.signed_url && (
+                              <a 
+                                href={file.signed_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-[#001F3F] hover:text-[#FF6B35]"
+                              >
+                                <Eye size={16} />
+                              </a>
+                            )}
                           </div>
                         )}
                       </div>
@@ -367,46 +417,55 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
                 <Separator className="my-4" />
 
                 {/* Metadata */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">Type</label>
-                    <p className="text-sm text-gray-900 mt-1 capitalize">{previewData.type}</p>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Type</label>
+                    <div className="flex items-center gap-2">
+                      {React.createElement(typeIcons[previewData.type] || FileText, { size: 16, className: "text-[#001F3F]" })}
+                      <span className="text-sm text-gray-900 capitalize">{previewData.type}</span>
+                    </div>
                   </div>
 
                   {previewData.description && (
                     <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase">Description</label>
-                      <p className="text-sm text-gray-900 mt-1">{previewData.description}</p>
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Description</label>
+                      <p className="text-sm text-gray-900 bg-white p-3 rounded-lg border border-gray-100">{previewData.description}</p>
                     </div>
                   )}
 
                   {previewData.project_name && (
                     <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase">Project</label>
-                      <p className="text-sm text-gray-900 mt-1">{previewData.project_name}</p>
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Project</label>
+                      <div className="flex items-center gap-2">
+                        <Folder size={16} className="text-gray-400" />
+                        <p className="text-sm text-gray-900">{previewData.project_name}</p>
+                      </div>
                     </div>
                   )}
 
-                  {previewData.tag && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {previewData.tag && (
+                      <div>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Tag</label>
+                        <Badge variant="secondary" className="mt-1">
+                          <TagIcon size={12} className="mr-1" />
+                          {previewData.tag}
+                        </Badge>
+                      </div>
+                    )}
+
                     <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase">Tag</label>
-                      <Badge variant="secondary" className="mt-1">
-                        {previewData.tag}
-                      </Badge>
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Date</label>
+                      <p className="text-sm text-gray-900">
+                        {new Date(previewData.created_at).toLocaleDateString()}
+                      </p>
                     </div>
-                  )}
-
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">Created</label>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {new Date(previewData.created_at).toLocaleString()}
-                    </p>
                   </div>
 
                   {previewData.location && (
                     <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase">Location</label>
-                      <p className="text-sm text-gray-900 mt-1">{previewData.location}</p>
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Location</label>
+                      <p className="text-sm text-gray-900">{previewData.location}</p>
                     </div>
                   )}
                 </div>
