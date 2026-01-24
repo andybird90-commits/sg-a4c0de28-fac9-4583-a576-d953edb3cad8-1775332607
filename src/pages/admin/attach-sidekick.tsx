@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { X, Search, Filter, Image, FileText, Mic, Video, StickyNote } from "lucide-react";
+import { X, Search, Filter, Image, FileText, Mic, Video, StickyNote, Loader2 } from "lucide-react";
 import { useNotifications } from "@/contexts/NotificationContext";
 import type { EvidenceWithFiles } from "@/services/evidenceService";
 
@@ -41,12 +41,21 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
   });
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && orgId) {
       loadEvidence();
     }
   }, [isOpen, orgId]);
 
   const loadEvidence = async () => {
+    if (!orgId) {
+      notify({
+        type: "error",
+        title: "Organisation not found",
+        message: "Please select an organisation first"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const params = new URLSearchParams({ org_id: orgId });
@@ -55,16 +64,19 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
       if (filters.toDate) params.append("to", filters.toDate);
 
       const response = await fetch(`/api/sidekick/evidence?${params}`);
-      if (!response.ok) throw new Error("Failed to load evidence");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to load evidence");
+      }
 
       const data = await response.json();
       setEvidence(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading evidence:", error);
       notify({
         type: "error",
         title: "Load failed",
-        message: "Could not load evidence from RD Sidekick"
+        message: error.message || "Could not load evidence from RD Sidekick"
       });
     } finally {
       setLoading(false);
@@ -151,8 +163,8 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
               <option value="Work-in-progress">WIP</option>
               <option value="Other">Other</option>
             </select>
-            <Button onClick={loadEvidence} variant="outline">
-              <Filter size={16} className="mr-2" />
+            <Button onClick={loadEvidence} variant="outline" disabled={loading}>
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Filter size={16} className="mr-2" />}
               Apply Filters
             </Button>
           </div>
@@ -160,7 +172,14 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
 
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
-            <p className="text-center text-gray-500">Loading evidence...</p>
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-[#FF6B35]" />
+              <p className="ml-3 text-gray-500">Loading evidence...</p>
+            </div>
+          ) : evidence.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No evidence found. Try adjusting your filters.</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {evidence.map((item) => {
@@ -222,7 +241,7 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
 
 export default function AttachSidekickPage() {
   const router = useRouter();
-  const { user, loading } = useApp();
+  const { user, currentOrg, loading } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(true);
 
   useEffect(() => {
@@ -236,13 +255,43 @@ export default function AttachSidekickPage() {
     router.back();
   };
 
+  // Show loading state while app context initializes
+  if (loading) {
+    return (
+      <Layout showNav={false}>
+        <SEO title="Attach Evidence - RD Sidekick" />
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#FF6B35]" />
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show error if no organisation is selected
+  if (!currentOrg) {
+    return (
+      <Layout showNav={false}>
+        <SEO title="Attach Evidence - RD Sidekick" />
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <Card className="max-w-md p-6 text-center">
+            <h2 className="text-xl font-bold text-[#001F3F] mb-4">No Organisation Selected</h2>
+            <p className="text-gray-600 mb-6">Please select an organisation to attach evidence.</p>
+            <Button onClick={() => router.push("/home")}>
+              Go to Home
+            </Button>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout showNav={false}>
-      <SEO title="Attach Evidence - RD Pro" />
+      <SEO title="Attach Evidence - RD Sidekick" />
       <AttachSidekickModal
         isOpen={isModalOpen}
         onClose={handleClose}
-        orgId={router.query.orgId as string || ""}
+        orgId={currentOrg.id}
         claimId={router.query.claimId as string || ""}
       />
     </Layout>
