@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
+import { AdminNav } from "@/components/AdminNav";
+import { useRouter } from "next/router";
 import { SEO } from "@/components/SEO";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +25,7 @@ type Organisation = {
   last_activity?: string;
 };
 
-export default function OrganisationsPage() {
+export default function AdminOrganisations() {
   const [organisations, setOrganisations] = useState<Organisation[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -193,6 +195,7 @@ export default function OrganisationsPage() {
       <SEO title="Organisations - Admin" />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <AdminNav />
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>

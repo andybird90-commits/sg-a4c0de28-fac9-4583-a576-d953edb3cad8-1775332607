@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
+import { AdminNav } from "@/components/AdminNav";
 import { useRouter } from "next/router";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -180,17 +181,10 @@ export default function AdminUsers() {
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <AdminNav />
+          
           {/* Header */}
           <div className="mb-8">
-            <Button
-              variant="ghost"
-              onClick={() => router.push("/home")}
-              className="mb-4 text-slate-600 hover:text-slate-900"
-            >
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-
             <div className="flex items-center gap-4 mb-2">
               <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg">
                 <Users className="h-8 w-8 text-white" />

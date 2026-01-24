@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
+import { AdminNav } from "@/components/AdminNav";
+import { useRouter } from "next/router";
 import { SEO } from "@/components/SEO";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +41,7 @@ type OrgUser = {
   last_active: string | null;
 };
 
-export default function SidekickAccessPage() {
+export default function AdminSidekickAccess() {
   const [organisations, setOrganisations] = useState<Organisation[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<Organisation | null>(null);
   const [orgUsers, setOrgUsers] = useState<OrgUser[]>([]);
@@ -231,6 +233,7 @@ export default function SidekickAccessPage() {
       <SEO title="RD Sidekick Access - Admin" />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <AdminNav />
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
