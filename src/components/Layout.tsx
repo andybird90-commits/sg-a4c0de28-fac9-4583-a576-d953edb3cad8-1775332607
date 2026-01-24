@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Home, Camera, Settings, LogOut, Building2 } from "lucide-react";
+import { Home, Camera, Settings, LogOut } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { authService } from "@/services/authService";
 import { NotificationToast } from "./NotificationToast";
@@ -39,13 +39,17 @@ export function Layout({ children, showNav = true }: LayoutProps) {
           <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Building2 size={24} />
-                <div>
-                  <h1 className="font-bold text-lg">RD Sidekick</h1>
-                  {currentOrg && (
-                    <p className="text-xs text-gray-300">{currentOrg.name}</p>
-                  )}
-                </div>
+                <img 
+                  src="/rdtax-logo.png" 
+                  alt="RD TAX Logo" 
+                  className="h-10 w-auto object-contain"
+                />
+                {currentOrg && (
+                  <div className="border-l border-white/20 pl-3">
+                    <p className="text-sm font-medium">{currentOrg.name}</p>
+                    <p className="text-xs text-slate-300">RD Sidekick</p>
+                  </div>
+                )}
               </div>
               <button
                 onClick={handleLogout}
