@@ -255,6 +255,14 @@ export default function HomePage() {
                     Feasibility Analysis
                   </Button>
                   <Button 
+                    onClick={() => router.push("/feasibility/history")} 
+                    variant="outline"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200"
+                  >
+                    <Clock className="mr-3 h-4 w-4" />
+                    Feasibility History
+                  </Button>
+                  <Button 
                     onClick={() => router.push("/evidence/capture")} 
                     variant="outline"
                     className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200"
