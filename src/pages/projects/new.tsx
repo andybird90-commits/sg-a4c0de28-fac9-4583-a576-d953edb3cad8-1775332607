@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Layout } from "@/components/Layout";
 import { SEO } from "@/components/SEO";
@@ -31,6 +31,13 @@ export default function NewProjectPage() {
     stage: "idea",
   });
 
+  // Handle authentication redirect on client side only
+  useEffect(() => {
+    if (!user) {
+      router.push("/auth/login");
+    }
+  }, [user, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !currentOrg) return;
@@ -56,8 +63,8 @@ export default function NewProjectPage() {
     }
   };
 
+  // Show loading while checking authentication
   if (!user) {
-    router.push("/auth/login");
     return null;
   }
 
