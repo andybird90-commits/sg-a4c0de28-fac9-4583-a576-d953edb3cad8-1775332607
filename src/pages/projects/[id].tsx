@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Lightbulb, FileText, MessageSquare, Send, Upload, Link as LinkIcon, Trash2, ExternalLink, Sparkles } from "lucide-react";
+import { ArrowLeft, Lightbulb, FileText, MessageSquare, Send, Upload, Link as LinkIcon, Trash2, ExternalLink, Sparkles, Edit } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
@@ -65,6 +65,17 @@ export default function ProjectDetailPage() {
 
   // Comment form state
   const [commentBody, setCommentBody] = useState("");
+  
+  // Edit project state
+  const [editingProject, setEditingProject] = useState(false);
+  const [editProjectName, setEditProjectName] = useState("");
+  const [editProjectDescription, setEditProjectDescription] = useState("");
+  const [editProjectSector, setEditProjectSector] = useState("");
+  const [editProjectStage, setEditProjectStage] = useState("");
+  
+  // Delete state
+  const [deletingProject, setDeletingProject] = useState(false);
+  const [deletingEvidence, setDeletingEvidence] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -119,6 +130,15 @@ export default function ProjectDetailPage() {
 
     fetchData();
   }, [id, user, router.isReady]);
+
+  useEffect(() => {
+    if (editingProject && project) {
+      setEditProjectName(project.name);
+      setEditProjectDescription(project.description || "");
+      setEditProjectSector(project.sector || "");
+      setEditProjectStage(project.stage || "");
+    }
+  }, [editingProject, project]);
 
   const handleMarkReadyForReview = async () => {
     if (!project) return;
@@ -213,7 +233,7 @@ export default function ProjectDetailPage() {
         ideaDescription: project.description || project.name,
         sector: project.sector || undefined,
         stage: project.stage || undefined,
-        projectId: project.id // Pass project ID to link it immediately
+        projectId: project.id
       });
 
       setFeasibilityAnalysis(analysis);
@@ -223,6 +243,63 @@ export default function ProjectDetailPage() {
       alert("Failed to run feasibility analysis");
     } finally {
       setRunningFeasibility(false);
+    }
+  };
+
+  const handleEditProject = async () => {
+    if (!project) return;
+
+    setSubmitting(true);
+    try {
+      await sidekickProjectService.updateProject(project.id, {
+        name: editProjectName,
+        description: editProjectDescription || null,
+        sector: editProjectSector || null,
+        stage: editProjectStage || null,
+      });
+
+      const updated = await sidekickProjectService.getProjectById(project.id);
+      setProject(updated);
+      setEditingProject(false);
+      alert("Project updated successfully!");
+    } catch (error) {
+      console.error("Error updating project:", error);
+      alert("Failed to update project");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!project || !window.confirm("Are you sure you want to delete this project? This will also delete all evidence and comments. This action cannot be undone.")) return;
+
+    setDeletingProject(true);
+    try {
+      await sidekickProjectService.deleteProject(project.id);
+      alert("Project deleted successfully");
+      router.push("/projects");
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      alert("Failed to delete project");
+    } finally {
+      setDeletingProject(false);
+    }
+  };
+
+  const handleDeleteEvidence = async (evidenceId: string) => {
+    if (!project || !window.confirm("Are you sure you want to delete this evidence item?")) return;
+
+    setDeletingEvidence(evidenceId);
+    try {
+      await sidekickEvidenceService.deleteEvidence(evidenceId);
+      const evidenceData = await sidekickEvidenceService.getEvidenceByProject(project.id);
+      setEvidence(evidenceData);
+      alert("Evidence deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting evidence:", error);
+      alert("Failed to delete evidence");
+    } finally {
+      setDeletingEvidence(null);
     }
   };
 
@@ -282,11 +359,31 @@ export default function ProjectDetailPage() {
                 {project.stage && <Badge variant="outline">{project.stage}</Badge>}
               </div>
             </div>
-            {canEdit && (
-              <Button onClick={handleMarkReadyForReview} disabled={submitting}>
-                Mark Ready for RD Review
+            <div className="flex gap-2">
+              {canEdit && (
+                <>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setEditingProject(true)}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button onClick={handleMarkReadyForReview} disabled={submitting}>
+                    Mark Ready for RD Review
+                  </Button>
+                </>
+              )}
+              <Button 
+                variant="outline" 
+                onClick={handleDeleteProject}
+                disabled={deletingProject}
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {deletingProject ? "Deleting..." : "Delete"}
               </Button>
-            )}
+            </div>
           </div>
 
           <Tabs defaultValue="feasibility" className="space-y-6">
@@ -531,6 +628,15 @@ export default function ProjectDetailPage() {
                                   {new Date(item.created_at).toLocaleString()}
                                 </p>
                               </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteEvidence(item.id)}
+                                disabled={deletingEvidence === item.id}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </div>
                           </div>
                         ))}
@@ -596,6 +702,78 @@ export default function ProjectDetailPage() {
               </div>
             </TabsContent>
           </Tabs>
+
+        {/* Edit Project Dialog */}
+        <Dialog open={editingProject} onOpenChange={setEditingProject}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit className="h-5 w-5 text-primary" />
+                Edit Project
+              </DialogTitle>
+              <DialogDescription>
+                Update your project details below
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-project-name">Project Name</Label>
+                <Input
+                  id="edit-project-name"
+                  value={editProjectName}
+                  onChange={(e) => setEditProjectName(e.target.value)}
+                  placeholder="Enter project name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-project-description">Description</Label>
+                <Textarea
+                  id="edit-project-description"
+                  value={editProjectDescription}
+                  onChange={(e) => setEditProjectDescription(e.target.value)}
+                  placeholder="Enter project description"
+                  rows={4}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-project-sector">Sector</Label>
+                  <Input
+                    id="edit-project-sector"
+                    value={editProjectSector}
+                    onChange={(e) => setEditProjectSector(e.target.value)}
+                    placeholder="e.g., Energy, Healthcare"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-project-stage">Stage</Label>
+                  <Input
+                    id="edit-project-stage"
+                    value={editProjectStage}
+                    onChange={(e) => setEditProjectStage(e.target.value)}
+                    placeholder="e.g., Concept, Development"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingProject(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleEditProject}
+                disabled={submitting || !editProjectName.trim()}
+              >
+                {submitting ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         </div>
       </Layout>
     </>
