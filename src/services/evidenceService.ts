@@ -48,7 +48,7 @@ export const evidenceService = {
     return (data || []).map((item: any) => ({
       ...item,
       project_name: item.projects?.name || null,
-      evidence_files: item.evidence_files || []
+      evidence_files: Array.isArray(item.evidence_files) ? item.evidence_files : []
     })) as EvidenceWithFiles[];
   },
 

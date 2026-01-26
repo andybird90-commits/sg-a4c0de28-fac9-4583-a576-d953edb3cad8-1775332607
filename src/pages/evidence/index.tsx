@@ -17,7 +17,7 @@ import {
   Building2,
   ChevronRight
 } from "lucide-react";
-import { evidenceService } from "@/services/evidenceService";
+import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
 import { useNotifications } from "@/contexts/NotificationContext";
 
 export default function EvidencePage() {
@@ -39,7 +39,9 @@ export default function EvidencePage() {
 
     setLoading(true);
     try {
-      const data = await evidenceService.getEvidence(currentOrg.id);
+      console.log("Loading evidence for org:", currentOrg.id);
+      const data = await sidekickEvidenceService.getEvidenceByCompany(currentOrg.id);
+      console.log("Evidence loaded:", data.length, "items");
       setEvidence(data);
     } catch (error: any) {
       console.error("Error loading evidence:", error);
@@ -54,7 +56,8 @@ export default function EvidencePage() {
   };
 
   const filteredEvidence = evidence.filter(item => 
-    item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.body?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.tags?.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -126,7 +129,7 @@ export default function EvidencePage() {
                   {filteredEvidence.map((item) => (
                     <div 
                       key={item.id}
-                      onClick={() => router.push(`/evidence/${item.id}`)}
+                      onClick={() => router.push(`/evidence/sidekick/${item.id}`)}
                       className="p-4 hover:bg-white transition-colors cursor-pointer group"
                     >
                       <div className="flex items-start gap-4">
@@ -134,20 +137,19 @@ export default function EvidencePage() {
                           <FileText className="h-5 w-5 text-[#001F3F]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900 line-clamp-2 mb-1">
-                            {item.description || "No description"}
+                          <p className="text-sm font-medium text-slate-900 line-clamp-1 mb-1">
+                            {item.title || "Untitled Evidence"}
                           </p>
+                          {item.body && (
+                            <p className="text-xs text-slate-600 line-clamp-2 mb-2">
+                              {item.body}
+                            </p>
+                          )}
                           <div className="flex items-center gap-3 text-xs text-slate-500">
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {new Date(item.created_at).toLocaleDateString()}
                             </span>
-                            {item.project?.name && (
-                              <span className="flex items-center gap-1">
-                                <Building2 className="h-3 w-3" />
-                                {item.project.name}
-                              </span>
-                            )}
                           </div>
                           {item.tags && item.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-2">
