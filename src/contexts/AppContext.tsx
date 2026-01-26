@@ -8,9 +8,9 @@ interface AppContextType {
   loading: boolean;
   organisations: UserOrganisation[];
   currentOrg: UserOrganisation | null;
-  orgLoading: boolean;
   setCurrentOrg: (org: UserOrganisation) => void;
   refreshOrganisations: () => Promise<void>;
+  organisationsLoading: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -20,42 +20,53 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [organisations, setOrganisations] = useState<UserOrganisation[]>([]);
   const [currentOrg, setCurrentOrg] = useState<UserOrganisation | null>(null);
-  const [orgLoading, setOrgLoading] = useState(false);
+  const [organisationsLoading, setOrganisationsLoading] = useState(false);
+
+  // Handler to update currentOrg and save to localStorage
+  const handleSetCurrentOrg = (org: UserOrganisation) => {
+    setCurrentOrg(org);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("selectedOrgId", org.id);
+    }
+  };
 
   const refreshOrganisations = async () => {
     if (!user) {
-      console.log("[AppContext] No user, skipping org refresh");
+      setOrganisations([]);
+      setCurrentOrg(null);
       return;
     }
 
-    console.log("[AppContext] Refreshing organisations for user:", user.email);
-    setOrgLoading(true);
     try {
-      const orgs = await organisationService.getUserOrganisations();
-      console.log("[AppContext] Fetched organisations:", orgs);
+      setOrganisationsLoading(true);
+      const orgs = await organisationService.getUserOrganisations(); // No parameter needed
       setOrganisations(orgs);
 
-      // Auto-select first org if none selected
-      if (orgs.length > 0 && !currentOrg) {
-        console.log("[AppContext] Auto-selecting first org:", orgs[0].name);
-        setCurrentOrg(orgs[0]);
-        // Store in localStorage for persistence
-        localStorage.setItem("currentOrgId", orgs[0].id);
-      } else if (orgs.length > 0 && currentOrg) {
-        // Try to restore from localStorage
-        const savedOrgId = localStorage.getItem("currentOrgId");
-        if (savedOrgId) {
-          const savedOrg = orgs.find((o) => o.id === savedOrgId);
-          if (savedOrg) {
-            console.log("[AppContext] Restoring saved org:", savedOrg.name);
-            setCurrentOrg(savedOrg);
-          }
+      // Try to restore last selected org from localStorage
+      const savedOrgId = typeof window !== "undefined" ? localStorage.getItem("selectedOrgId") : null;
+      if (savedOrgId) {
+        const savedOrg = orgs.find((org) => org.id === savedOrgId);
+        if (savedOrg) {
+          setCurrentOrg(savedOrg);
+          return;
         }
       }
+
+      // Auto-select if only one org
+      if (orgs.length === 1) {
+        setCurrentOrg(orgs[0]);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("selectedOrgId", orgs[0].id);
+        }
+      } else if (orgs.length === 0) {
+        setCurrentOrg(null);
+      }
     } catch (error) {
-      console.error("[AppContext] Error fetching organisations:", error);
+      console.error("Error fetching organisations:", error);
+      setOrganisations([]);
+      setCurrentOrg(null);
     } finally {
-      setOrgLoading(false);
+      setOrganisationsLoading(false);
     }
   };
 
@@ -103,16 +114,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
           // Fetch organisations using the service
           try {
-            const orgs = await organisationService.getUserOrganisations();
+            setOrganisationsLoading(true);
+            const orgs = await organisationService.getUserOrganisations(); // No parameter
             setOrganisations(orgs);
 
             if (orgs.length > 0) {
-              const savedOrgId = localStorage.getItem("currentOrgId");
+              const savedOrgId = localStorage.getItem("selectedOrgId"); // Use consistent key
               const savedOrg = orgs.find((o) => o.id === savedOrgId);
               setCurrentOrg(savedOrg || orgs[0]);
+              if (savedOrg || orgs.length === 1) {
+                localStorage.setItem("selectedOrgId", (savedOrg || orgs[0]).id);
+              }
             }
           } catch (orgError) {
             console.error("Error fetching organisations:", orgError);
+          } finally {
+            setOrganisationsLoading(false);
           }
         }
       } catch (error) {
@@ -144,14 +161,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (user && !orgLoading) {
+    if (user && !organisationsLoading) {
       console.log("[AppContext] User set, refreshing organisations");
       refreshOrganisations();
     } else if (!user) {
       console.log("[AppContext] User cleared, resetting organisations");
       setOrganisations([]);
       setCurrentOrg(null);
-      localStorage.removeItem("currentOrgId");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("selectedOrgId"); // Use consistent key
+      }
     }
   }, [user]);
 
@@ -162,13 +181,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         loading,
         organisations,
         currentOrg,
-        orgLoading,
-        setCurrentOrg: (org) => {
-          console.log("[AppContext] Setting current org:", org.name);
-          setCurrentOrg(org);
-          localStorage.setItem("currentOrgId", org.id);
-        },
+        setCurrentOrg: handleSetCurrentOrg,
         refreshOrganisations,
+        organisationsLoading,
       }}
     >
       {children}

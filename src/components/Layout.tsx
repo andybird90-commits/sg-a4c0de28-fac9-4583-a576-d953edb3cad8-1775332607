@@ -16,7 +16,7 @@ interface LayoutProps {
 
 export function Layout({ children, showNav = true }: LayoutProps) {
   const router = useRouter();
-  const { user, currentOrg } = useApp();
+  const { user, currentOrg, organisations, organisationsLoading } = useApp();
   const { isOnline, syncingCount } = useOfflineQueue();
 
   const handleLogout = async () => {
@@ -33,6 +33,21 @@ export function Layout({ children, showNav = true }: LayoutProps) {
     { href: "/settings", icon: Settings, label: "Settings" }
   ];
 
+  // Public routes that don't require authentication
+  const publicRoutes = ["/auth/login", "/auth/signup", "/"];
+  const isPublicRoute = publicRoutes.includes(router.pathname);
+
+  // Show loading spinner while checking auth or fetching organisations
+  if (organisationsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-900 mx-auto"></div>
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
