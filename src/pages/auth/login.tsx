@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Layout } from "@/components/Layout";
 import { SEO } from "@/components/SEO";
@@ -10,14 +10,34 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2, Mail, Lock, ArrowRight } from "lucide-react";
 import { authService } from "@/services/authService";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { useApp } from "@/contexts/AppContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user } = useApp();
   const { notify } = useNotifications();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const validateAndClearSession = async () => {
+      try {
+        await authService.clearInvalidSession();
+      } catch (error) {
+        console.error("Error clearing session:", error);
+      }
+    };
+
+    validateAndClearSession();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      router.push("/home");
+    }
+  }, [user, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

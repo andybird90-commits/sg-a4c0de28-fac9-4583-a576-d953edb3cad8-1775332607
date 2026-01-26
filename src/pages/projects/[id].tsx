@@ -340,176 +340,170 @@ export default function ProjectDetailPage() {
       <Layout>
         <div className="container mx-auto px-4 py-8 max-w-6xl">
           <Link href="/projects">
-            <Button variant="ghost" className="mb-4">
-              <ArrowLeft className="w-4 h-4 mr-2" />
+            <Button variant="ghost" className="mb-4 sm:mb-6" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Projects
             </Button>
           </Link>
 
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{project.name}</h1>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4 sm:mb-6">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 break-words">{project.name}</h1>
               {project.description && (
-                <p className="text-muted-foreground">{project.description}</p>
+                <p className="text-sm sm:text-base text-muted-foreground mb-3 break-words">{project.description}</p>
               )}
-              <div className="flex items-center gap-3 mt-3">
-                <Badge className={statusColors[project.status]}>
-                  {statusLabels[project.status]}
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className={statusColors[project.status] || "bg-gray-500"}>
+                  {statusLabels[project.status] || project.status}
                 </Badge>
-                {project.sector && <Badge variant="outline">{project.sector}</Badge>}
-                {project.stage && <Badge variant="outline">{project.stage}</Badge>}
+                {project.sector && <Badge variant="outline" className="text-xs">{project.sector}</Badge>}
+                {project.stage && <Badge variant="outline" className="text-xs">{project.stage}</Badge>}
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap sm:flex-nowrap flex-shrink-0">
               {canEdit && (
                 <>
                   <Button 
-                    variant="outline"
+                    variant="outline" 
+                    size="sm"
                     onClick={() => setEditingProject(true)}
+                    className="flex-1 sm:flex-none"
                   >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
+                    <Edit className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Edit Project</span>
+                    <span className="sm:hidden">Edit</span>
                   </Button>
-                  <Button onClick={handleMarkReadyForReview} disabled={submitting}>
-                    Mark Ready for RD Review
-                  </Button>
+                  {project.status === "draft" && (
+                    <Button 
+                      onClick={handleMarkReadyForReview} 
+                      disabled={submitting}
+                      size="sm"
+                      className="flex-1 sm:flex-none"
+                    >
+                      <span className="hidden sm:inline">Mark Ready for Review</span>
+                      <span className="sm:hidden">Ready</span>
+                    </Button>
+                  )}
                 </>
               )}
               <Button 
-                variant="outline" 
+                variant="destructive" 
+                size="sm"
                 onClick={handleDeleteProject}
                 disabled={deletingProject}
-                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                className="flex-1 sm:flex-none"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
-                {deletingProject ? "Deleting..." : "Delete"}
+                <Trash2 className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Delete Project</span>
+                <span className="sm:hidden">Delete</span>
               </Button>
             </div>
           </div>
 
-          <Tabs defaultValue="feasibility" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="feasibility">
-                <Lightbulb className="w-4 h-4 mr-2" />
-                Feasibility
+          <Tabs defaultValue="feasibility" className="space-y-4 sm:space-y-6">
+            <TabsList className="w-full sm:w-auto grid grid-cols-3 h-auto gap-1">
+              <TabsTrigger value="feasibility" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
+                <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Feasibility</span>
+                <span className="sm:hidden">Idea</span>
               </TabsTrigger>
-              <TabsTrigger value="evidence">
-                <FileText className="w-4 h-4 mr-2" />
-                Evidence
+              <TabsTrigger value="evidence" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Evidence</span>
+                <span className="sm:hidden">Files</span>
               </TabsTrigger>
-              <TabsTrigger value="comments">
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Comments
+              <TabsTrigger value="comments" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
+                <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Comments</span>
+                <span className="sm:hidden">Chat</span>
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="feasibility">
               <Card>
                 <CardHeader>
-                  <CardTitle>Feasibility Analysis</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">Feasibility Analysis</CardTitle>
+                  <CardDescription className="text-sm">
                     AI-powered feasibility assessment for this project
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {feasibilityLoading ? (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">Loading feasibility analysis...</p>
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
-                  ) : !feasibilityAnalysis ? (
-                    <div className="text-center py-8 space-y-4">
-                      <div className="flex justify-center">
-                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                          <Lightbulb className="w-8 h-8 text-muted-foreground" />
+                  ) : feasibilityAnalysis ? (
+                    <div className="space-y-4">
+                      {feasibilityAnalysis.summary && (
+                        <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <h3 className="font-semibold text-sm sm:text-base mb-2 flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-blue-600" />
+                            Analysis Summary
+                          </h3>
+                          <p className="text-xs sm:text-sm text-muted-foreground break-words">{feasibilityAnalysis.summary}</p>
                         </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                        {feasibilityAnalysis.technical_rating && (
+                          <div className="p-3 sm:p-4 border rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-1">Technical Feasibility</div>
+                            <div className="text-lg sm:text-xl font-bold">{feasibilityAnalysis.technical_rating}</div>
+                            {feasibilityAnalysis.technical_reasoning && (
+                              <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">{feasibilityAnalysis.technical_reasoning}</p>
+                            )}
+                          </div>
+                        )}
+                        {feasibilityAnalysis.commercial_rating && (
+                          <div className="p-3 sm:p-4 border rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-1">Commercial Viability</div>
+                            <div className="text-lg sm:text-xl font-bold">{feasibilityAnalysis.commercial_rating}</div>
+                            {feasibilityAnalysis.commercial_reasoning && (
+                              <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">{feasibilityAnalysis.commercial_reasoning}</p>
+                            )}
+                          </div>
+                        )}
+                        {feasibilityAnalysis.rd_tax_flag && (
+                          <div className="p-3 sm:p-4 border rounded-lg">
+                            <div className="text-xs text-muted-foreground mb-1">R&D Tax Eligibility</div>
+                            <div className="text-lg sm:text-xl font-bold">{feasibilityAnalysis.rd_tax_flag}</div>
+                            {feasibilityAnalysis.rd_tax_reasoning && (
+                              <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">{feasibilityAnalysis.rd_tax_reasoning}</p>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <p className="text-lg font-medium mb-2">Feasibility Analysis Not Yet Run</p>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Run an AI-powered feasibility analysis to assess technical viability, commercial potential, and R&D tax eligibility for this project.
-                        </p>
-                      </div>
+
                       <Button 
-                        onClick={handleRunFeasibility} 
-                        disabled={runningFeasibility}
-                        size="lg"
+                        variant="outline" 
+                        onClick={() => router.push(`/feasibility/${feasibilityAnalysis.id}`)}
+                        className="w-full sm:w-auto"
+                        size="sm"
                       >
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        {runningFeasibility ? "Running Analysis..." : "Run Feasibility Analysis"}
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        View Full Feasibility Report
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-6">
-                      {/* High-level Summary */}
-                      <div className="border-l-4 border-primary pl-4 py-2 bg-muted/50 rounded-r">
-                        <h3 className="font-semibold mb-2 flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-primary" />
-                          Analysis Summary
-                        </h3>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {feasibilityAnalysis.summary || "Feasibility analysis completed"}
-                        </p>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <Badge variant={
-                            feasibilityAnalysis.technical_rating === "high" ? "default" :
-                            feasibilityAnalysis.technical_rating === "medium" ? "secondary" : "outline"
-                          }>
-                            Technical: {feasibilityAnalysis.technical_rating?.toUpperCase() || "N/A"}
-                          </Badge>
-                          <Badge variant={
-                            feasibilityAnalysis.commercial_rating === "high" ? "default" :
-                            feasibilityAnalysis.commercial_rating === "medium" ? "secondary" : "outline"
-                          }>
-                            Commercial: {feasibilityAnalysis.commercial_rating?.toUpperCase() || "N/A"}
-                          </Badge>
-                          <Badge variant={
-                            feasibilityAnalysis.rd_tax_flag === "yes" ? "default" :
-                            feasibilityAnalysis.rd_tax_flag === "maybe" ? "secondary" : "outline"
-                          }>
-                            R&D Tax: {feasibilityAnalysis.rd_tax_flag?.toUpperCase() || "N/A"}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* Quick Insights */}
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium">Delivery Complexity</h4>
-                          <p className="text-sm text-muted-foreground capitalize">
-                            {feasibilityAnalysis.delivery_complexity || "Not assessed"}
-                          </p>
-                        </div>
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium">Estimated Timeframe</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {feasibilityAnalysis.delivery_timeframe_months 
-                              ? `${feasibilityAnalysis.delivery_timeframe_months} months` 
-                              : "Not estimated"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* View Full Report Button */}
-                      <div className="flex gap-3">
-                        <Link href={`/feasibility/${feasibilityAnalysis.id}`} className="flex-1">
-                          <Button variant="default" className="w-full">
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            View Full Feasibility Report
-                          </Button>
-                        </Link>
-                        <Button 
-                          variant="outline" 
-                          onClick={handleRunFeasibility} 
-                          disabled={runningFeasibility}
-                        >
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          {runningFeasibility ? "Re-running..." : "Re-run Analysis"}
-                        </Button>
-                      </div>
-
-                      <p className="text-xs text-muted-foreground">
-                        Last analyzed: {new Date(feasibilityAnalysis.created_at).toLocaleString()}
-                      </p>
+                    <div className="text-center py-8 space-y-4">
+                      <p className="text-sm text-muted-foreground">No feasibility analysis yet</p>
+                      <Button 
+                        onClick={handleRunFeasibility} 
+                        disabled={runningFeasibility}
+                        size="sm"
+                      >
+                        {runningFeasibility ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Running Analysis...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Run Feasibility Analysis
+                          </>
+                        )}
+                      </Button>
                     </div>
                   )}
                 </CardContent>
@@ -517,170 +511,149 @@ export default function ProjectDetailPage() {
             </TabsContent>
 
             <TabsContent value="evidence">
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Add Evidence</CardTitle>
-                    <CardDescription>
-                      Capture notes, upload files, or add links related to this project
-                    </CardDescription>
+                    <CardTitle className="text-lg sm:text-xl">Add Evidence</CardTitle>
+                    <CardDescription className="text-sm">Upload files, add notes, or link external resources</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Evidence Type</Label>
-                      <Select value={evidenceType} onValueChange={(value: any) => setEvidenceType(value)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="note">📝 Note</SelectItem>
-                          <SelectItem value="file">📎 File Upload</SelectItem>
-                          <SelectItem value="link">🔗 External Link</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        type="button"
+                        variant={evidenceType === "note" ? "default" : "outline"}
+                        onClick={() => setEvidenceType("note")}
+                        size="sm"
+                        className="flex-1 sm:flex-none"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Note
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={evidenceType === "file" ? "default" : "outline"}
+                        onClick={() => setEvidenceType("file")}
+                        size="sm"
+                        className="flex-1 sm:flex-none"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        File
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={evidenceType === "link" ? "default" : "outline"}
+                        onClick={() => setEvidenceType("link")}
+                        size="sm"
+                        className="flex-1 sm:flex-none"
+                      >
+                        <LinkIcon className="h-4 w-4 mr-2" />
+                        Link
+                      </Button>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="evidence-title">Title (Optional)</Label>
-                      <Input
-                        id="evidence-title"
-                        value={evidenceTitle}
-                        onChange={(e) => setEvidenceTitle(e.target.value)}
-                        placeholder="Enter title"
-                      />
-                    </div>
-
-                    {evidenceType === "note" && (
-                      <div className="space-y-2">
-                        <Label htmlFor="evidence-body">Note Content</Label>
-                        <Textarea
-                          id="evidence-body"
-                          value={evidenceBody}
-                          onChange={(e) => setEvidenceBody(e.target.value)}
-                          placeholder="Write your note..."
-                          rows={4}
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="evidenceTitle" className="text-sm">Title</Label>
+                        <Input
+                          id="evidenceTitle"
+                          value={evidenceTitle}
+                          onChange={(e) => setEvidenceTitle(e.target.value)}
+                          placeholder="Brief title for this evidence"
+                          className="text-sm"
                         />
                       </div>
-                    )}
 
-                    {evidenceType === "file" && (
-                      <div className="space-y-2">
-                        <Label htmlFor="evidence-file">Upload File</Label>
-                        <Input
-                          id="evidence-file"
-                          type="file"
-                          onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
-                          className="cursor-pointer"
-                        />
-                        {evidenceFile && (
-                          <p className="text-sm text-muted-foreground">
-                            Selected: {evidenceFile.name}
-                          </p>
-                        )}
-                        <div className="space-y-2 mt-4">
-                          <Label htmlFor="evidence-body-file">Description (Optional)</Label>
+                      {evidenceType === "note" && (
+                        <div>
+                          <Label htmlFor="evidenceBody" className="text-sm">Description</Label>
                           <Textarea
-                            id="evidence-body-file"
+                            id="evidenceBody"
                             value={evidenceBody}
                             onChange={(e) => setEvidenceBody(e.target.value)}
-                            placeholder="Add a description for this file..."
-                            rows={3}
+                            placeholder="Describe your evidence..."
+                            rows={4}
+                            className="text-sm resize-none"
                           />
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {evidenceType === "link" && (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor="evidence-url">URL</Label>
+                      {evidenceType === "file" && (
+                        <div>
+                          <Label htmlFor="evidenceFile" className="text-sm">Upload File</Label>
                           <Input
-                            id="evidence-url"
+                            id="evidenceFile"
+                            type="file"
+                            onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
+                            className="text-sm"
+                          />
+                        </div>
+                      )}
+
+                      {evidenceType === "link" && (
+                        <div>
+                          <Label htmlFor="evidenceUrl" className="text-sm">External URL</Label>
+                          <Input
+                            id="evidenceUrl"
                             value={evidenceUrl}
                             onChange={(e) => setEvidenceUrl(e.target.value)}
-                            placeholder="https://example.com"
+                            placeholder="https://..."
+                            className="text-sm"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="evidence-body-link">Description (Optional)</Label>
-                          <Textarea
-                            id="evidence-body-link"
-                            value={evidenceBody}
-                            onChange={(e) => setEvidenceBody(e.target.value)}
-                            placeholder="Add a description for this link..."
-                            rows={3}
-                          />
-                        </div>
-                      </>
-                    )}
+                      )}
 
-                    <Button 
-                      onClick={handleAddEvidence} 
-                      disabled={submitting || (evidenceType === "file" && !evidenceFile) || (evidenceType === "link" && !evidenceUrl)}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      {submitting ? "Adding..." : "Add Evidence"}
-                    </Button>
+                      <Button 
+                        onClick={handleAddEvidence} 
+                        disabled={submitting}
+                        className="w-full sm:w-auto"
+                        size="sm"
+                      >
+                        {submitting ? "Adding..." : "Add Evidence"}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Evidence Items ({evidence.length})</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">Evidence Items ({evidence.length})</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {evidence.length === 0 ? (
-                      <p className="text-muted-foreground">No evidence items yet</p>
+                      <p className="text-sm text-muted-foreground text-center py-8">No evidence yet. Add your first evidence item above.</p>
                     ) : (
                       <div className="space-y-3">
                         {evidence.map((item) => (
-                          <div 
-                            key={item.id} 
-                            className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer group"
-                            onClick={() => router.push(`/evidence/sidekick/${item.id}`)}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Badge variant="outline">{item.type}</Badge>
-                                  {item.title && <span className="font-medium">{item.title}</span>}
-                                  {item.tags && item.tags.map((tag, idx) => (
-                                    <Badge key={idx} className="bg-primary/10 text-primary">{tag}</Badge>
-                                  ))}
+                          <div key={item.id} className="p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <Badge variant="secondary" className="text-xs">{item.type}</Badge>
+                                  {item.title && <h4 className="font-medium text-sm break-words">{item.title}</h4>}
                                 </div>
-                                {item.body && (
-                                  <p className="text-sm text-muted-foreground line-clamp-2">{item.body}</p>
-                                )}
+                                {item.body && <p className="text-xs sm:text-sm text-muted-foreground mb-2 break-words line-clamp-2">{item.body}</p>}
                                 {item.external_url && (
-                                  <a
-                                    href={item.external_url}
-                                    target="_blank"
+                                  <a 
+                                    href={item.external_url} 
+                                    target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-sm text-primary underline flex items-center gap-1 mt-1"
-                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-xs text-blue-600 hover:underline break-all"
                                   >
-                                    <LinkIcon className="w-3 h-3" />
                                     {item.external_url}
                                   </a>
                                 )}
-                                {item.file_path && (
-                                  <p className="text-sm text-muted-foreground mt-1">📎 File attached</p>
-                                )}
                                 <p className="text-xs text-muted-foreground mt-2">
-                                  {new Date(item.created_at).toLocaleString()}
+                                  {new Date(item.created_at).toLocaleDateString()}
                                 </p>
                               </div>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteEvidence(item.id);
-                                }}
+                                onClick={() => handleDeleteEvidence(item.id)}
                                 disabled={deletingEvidence === item.id}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="flex-shrink-0"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </div>
                           </div>
@@ -693,51 +666,57 @@ export default function ProjectDetailPage() {
             </TabsContent>
 
             <TabsContent value="comments">
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Add Comment</CardTitle>
-                    <CardDescription>
-                      Share updates or respond to RD staff feedback
-                    </CardDescription>
+                    <CardTitle className="text-lg sm:text-xl">Add Comment</CardTitle>
+                    <CardDescription className="text-sm">Share updates or respond to RD staff feedback</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <Textarea
                       value={commentBody}
                       onChange={(e) => setCommentBody(e.target.value)}
-                      placeholder="Write your comment..."
+                      placeholder="Write a comment..."
                       rows={4}
+                      className="text-sm resize-none"
                     />
-                    <Button onClick={handleAddComment} disabled={submitting || !commentBody.trim()}>
-                      <Send className="w-4 h-4 mr-2" />
-                      Post Comment
+                    <Button 
+                      onClick={handleAddComment} 
+                      disabled={submitting || !commentBody.trim()}
+                      className="w-full sm:w-auto"
+                      size="sm"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {submitting ? "Posting..." : "Post Comment"}
                     </Button>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Comments ({comments.length})</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">Comments ({comments.length})</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {comments.length === 0 ? (
-                      <p className="text-muted-foreground">No comments yet</p>
+                      <p className="text-sm text-muted-foreground text-center py-8">No comments yet. Start the conversation!</p>
                     ) : (
                       <div className="space-y-4">
                         {comments.map((comment) => (
-                          <div key={comment.id} className="border-l-2 border-primary pl-4 py-2">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge variant={comment.author_role === "rd_staff" ? "default" : "secondary"}>
-                                {comment.author_role === "rd_staff" ? "RD Staff" : "Client"}
-                              </Badge>
-                              <span className="text-sm text-muted-foreground">
-                                {comment.author?.email || "Unknown"}
+                          <div key={comment.id} className="p-3 sm:p-4 border rounded-lg">
+                            <div className="flex items-start justify-between gap-3 mb-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge variant={comment.author_role === "rd_staff" ? "default" : "secondary"} className="text-xs">
+                                  {comment.author_role === "rd_staff" ? "RD Staff" : "Client"}
+                                </Badge>
+                                {comment.author?.email && (
+                                  <span className="text-xs text-muted-foreground break-all">{comment.author.email}</span>
+                                )}
+                              </div>
+                              <span className="text-xs text-muted-foreground flex-shrink-0">
+                                {new Date(comment.created_at).toLocaleDateString()}
                               </span>
                             </div>
-                            <p className="text-sm">{comment.body}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {new Date(comment.created_at).toLocaleString()}
-                            </p>
+                            <p className="text-sm break-words whitespace-pre-wrap">{comment.body}</p>
                           </div>
                         ))}
                       </div>

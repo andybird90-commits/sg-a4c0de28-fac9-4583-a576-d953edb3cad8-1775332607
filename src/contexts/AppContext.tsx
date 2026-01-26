@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { authService } from "@/services/authService";
 import { organisationService, type UserOrganisation } from "@/services/organisationService";
 
 interface AppContextType {
@@ -59,23 +60,87 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("[AppContext] Initial session:", session ? "exists" : "none");
-      setUser(session?.user ?? null);
-      setLoading(false);
+    const checkUser = async () => {
+      try {
+        const session = await authService.validateSession();
+        
+        if (!session) {
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.error("Error fetching user:", userError);
+          if (userError.message?.includes("session") || userError.message?.includes("JWT")) {
+            await authService.clearInvalidSession();
+          }
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        if (!authUser) {
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", authUser.id)
+          .single();
+
+        if (profile) {
+          setUser({
+            id: authUser.id,
+            email: authUser.email!,
+            fullName: profile.full_name,
+          });
+
+          // Fetch organisations using the service
+          try {
+            const orgs = await organisationService.getUserOrganisations();
+            setOrganisations(orgs);
+
+            if (orgs.length > 0) {
+              const savedOrgId = localStorage.getItem("currentOrgId");
+              const savedOrg = orgs.find((o) => o.id === savedOrgId);
+              setCurrentOrg(savedOrg || orgs[0]);
+            }
+          } catch (orgError) {
+            console.error("Error fetching organisations:", orgError);
+          }
+        }
+      } catch (error) {
+        console.error("Error in checkUser:", error);
+        await authService.clearInvalidSession();
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_OUT" || !session) {
+        setUser(null);
+        setOrganisations([]);
+        setCurrentOrg(null);
+      } else if (event === "SIGNED_IN" && session) {
+        checkUser();
+      } else if (event === "TOKEN_REFRESHED") {
+        checkUser();
+      }
     });
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("[AppContext] Auth state changed:", _event, session?.user?.email);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {

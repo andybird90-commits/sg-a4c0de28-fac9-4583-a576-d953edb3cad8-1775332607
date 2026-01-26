@@ -47,6 +47,23 @@ export const sidekickEvidenceService = {
     return data || [];
   },
 
+  async getEvidenceByCompany(companyId: string): Promise<SidekickEvidenceItem[]> {
+    const { data, error } = await supabase
+      .from("sidekick_evidence_items")
+      .select(`
+        *,
+        sidekick_projects!inner(company_id, name)
+      `)
+      .eq("sidekick_projects.company_id", companyId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching evidence by company:", error);
+      throw new Error(error.message || "Failed to fetch evidence");
+    }
+    return data || [];
+  },
+
   async updateEvidence(evidenceId: string, updates: Partial<SidekickEvidenceInsert>): Promise<SidekickEvidenceItem> {
     const { data, error } = await supabase
       .from("sidekick_evidence_items")

@@ -178,5 +178,35 @@ export const authService = {
   // Listen to auth state changes
   onAuthStateChange(callback: (event: string, session: Session | null) => void) {
     return supabase.auth.onAuthStateChange(callback);
+  },
+
+  async clearInvalidSession() {
+    try {
+      await supabase.auth.signOut();
+      
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("supabase.auth.token");
+        sessionStorage.clear();
+      }
+    } catch (error) {
+      console.error("Error clearing invalid session:", error);
+    }
+  },
+
+  async validateSession() {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error || !session) {
+        await this.clearInvalidSession();
+        return null;
+      }
+      
+      return session;
+    } catch (error) {
+      console.error("Session validation error:", error);
+      await this.clearInvalidSession();
+      return null;
+    }
   }
 };

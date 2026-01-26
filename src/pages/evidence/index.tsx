@@ -150,6 +150,12 @@ export default function EvidencePage() {
                               <Calendar className="h-3 w-3" />
                               {new Date(item.created_at).toLocaleDateString()}
                             </span>
+                            {(item as any).sidekick_projects?.name && (
+                              <span className="flex items-center gap-1">
+                                <Building2 className="h-3 w-3" />
+                                {(item as any).sidekick_projects.name}
+                              </span>
+                            )}
                           </div>
                           {item.tags && item.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-2">
