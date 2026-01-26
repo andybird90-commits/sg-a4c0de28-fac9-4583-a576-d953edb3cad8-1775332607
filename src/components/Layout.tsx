@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Home, Camera, Settings, LogOut } from "lucide-react";
+import { Home, Camera, Settings, LogOut, Lightbulb } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { authService } from "@/services/authService";
 import { NotificationToast } from "./NotificationToast";
@@ -25,9 +25,11 @@ export function Layout({ children, showNav = true }: LayoutProps) {
   };
 
   const navItems = [
-  { href: "/home", icon: Home, label: "Home" },
-  { href: "/evidence/capture", icon: Camera, label: "Add Evidence" },
-  { href: "/settings", icon: Settings, label: "Settings" }];
+    { href: "/home", icon: Home, label: "Home" },
+    { href: "/evidence/capture", icon: Camera, label: "Add Evidence" },
+    { href: "/feasibility", icon: Lightbulb, label: "Feasibility" },
+    { href: "/settings", icon: Settings, label: "Settings" }
+  ];
 
 
   return (
