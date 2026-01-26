@@ -19,7 +19,13 @@ export const sidekickCommentService = {
   async getCommentsByProject(projectId: string): Promise<SidekickProjectComment[]> {
     const { data, error } = await supabase
       .from("sidekick_project_comments")
-      .select("*, author:author_id(email)")
+      .select(`
+        *,
+        profiles!sidekick_project_comments_author_id_fkey (
+          email,
+          full_name
+        )
+      `)
       .eq("project_id", projectId)
       .order("created_at", { ascending: true });
 
