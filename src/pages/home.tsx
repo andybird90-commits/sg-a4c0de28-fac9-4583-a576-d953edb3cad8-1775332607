@@ -16,38 +16,27 @@ import {
   Activity,
   Building2,
   Shield,
-  Image,
-  FileText,
-  Mic,
-  Video,
-  StickyNote,
   ArrowRight,
   BarChart3,
   Users,
   Clock,
-  Lightbulb
+  Lightbulb,
+  FileText,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
-import { evidenceService, type EvidenceItem } from "@/services/evidenceService";
+import { evidenceService } from "@/services/evidenceService";
 import { organisationService, type Project } from "@/services/organisationService";
 import { useNotifications } from "@/contexts/NotificationContext";
-
-const typeIcons: Record<string, any> = {
-  image: Image,
-  document: FileText,
-  audio: Mic,
-  video: Video,
-  note: StickyNote
-};
 
 export default function HomePage() {
   const router = useRouter();
   const { user, currentOrg } = useApp();
   const { notify } = useNotifications();
-  const [evidence, setEvidence] = useState<EvidenceItem[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [stats, setStats] = useState({
-    total: 0,
-    thisMonth: 0,
+    totalEvidence: 0,
+    evidenceThisMonth: 0,
     activeProjects: 0,
     recentActivity: 0
   });
@@ -69,7 +58,6 @@ export default function HomePage() {
         organisationService.getProjects(currentOrg.id)
       ]);
 
-      setEvidence(evidenceData);
       setProjects(projectsData);
 
       const now = new Date();
@@ -83,8 +71,8 @@ export default function HomePage() {
       const recentActivity = evidenceData.filter(e => new Date(e.created_at) >= lastWeek).length;
 
       setStats({
-        total: evidenceData.length,
-        thisMonth,
+        totalEvidence: evidenceData.length,
+        evidenceThisMonth: thisMonth,
         activeProjects: projectsData.length,
         recentActivity
       });
@@ -148,12 +136,12 @@ export default function HomePage() {
                 </div>
               </div>
               <Button 
-                onClick={() => router.push("/evidence/capture")} 
+                onClick={() => router.push("/projects/new")} 
                 size="lg"
                 className="gradient-primary shadow-professional-md hover:shadow-professional-lg transition-professional"
               >
-                <Camera className="mr-2 h-5 w-5" />
-                Capture Evidence
+                <FolderOpen className="mr-2 h-5 w-5" />
+                New Project
               </Button>
             </div>
           </div>
@@ -165,7 +153,7 @@ export default function HomePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-white/80 mb-1">Total Evidence</p>
-                    <p className="text-3xl font-bold text-white">{stats.total}</p>
+                    <p className="text-3xl font-bold text-white">{stats.totalEvidence}</p>
                   </div>
                   <div className="bg-white/20 p-3 rounded-lg">
                     <Layers className="h-6 w-6 text-white" />
@@ -179,7 +167,7 @@ export default function HomePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-white/80 mb-1">This Month</p>
-                    <p className="text-3xl font-bold text-white">{stats.thisMonth}</p>
+                    <p className="text-3xl font-bold text-white">{stats.evidenceThisMonth}</p>
                   </div>
                   <div className="bg-white/20 p-3 rounded-lg">
                     <Calendar className="h-6 w-6 text-white" />
@@ -231,20 +219,20 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Button 
-                    onClick={() => router.push("/evidence/capture")} 
-                    variant="outline"
-                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200"
-                  >
-                    <Camera className="mr-3 h-4 w-4" />
-                    Capture Evidence
-                  </Button>
-                  <Button 
-                    onClick={() => router.push("/home")} 
+                    onClick={() => router.push("/projects/new")} 
                     variant="outline"
                     className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200"
                   >
                     <FolderOpen className="mr-3 h-4 w-4" />
-                    Browse Evidence
+                    New Project
+                  </Button>
+                  <Button 
+                    onClick={() => router.push("/projects")} 
+                    variant="outline"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200"
+                  >
+                    <BarChart3 className="mr-3 h-4 w-4" />
+                    Browse Projects
                   </Button>
                   <Button 
                     onClick={() => router.push("/feasibility")} 
@@ -255,12 +243,12 @@ export default function HomePage() {
                     Feasibility Analysis
                   </Button>
                   <Button 
-                    onClick={() => router.push("/projects")} 
+                    onClick={() => router.push("/evidence/capture")} 
                     variant="outline"
                     className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200"
                   >
-                    <FolderOpen className="mr-3 h-4 w-4" />
-                    My Projects
+                    <Camera className="mr-3 h-4 w-4" />
+                    Capture Evidence
                   </Button>
                   <Button 
                     onClick={() => router.push("/settings")} 
@@ -326,72 +314,22 @@ export default function HomePage() {
                   </CardContent>
                 </Card>
               )}
-
-              {projects.length > 0 && (
-                <Card className="border-0 shadow-professional-md">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <BarChart3 className="h-5 w-5 text-primary" />
-                        Projects Overview
-                      </CardTitle>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => router.push("/projects")}
-                        className="text-primary hover:text-primary hover:bg-primary/10"
-                      >
-                        View All
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {projects.slice(0, 5).map((project) => (
-                      <div 
-                        key={project.id}
-                        onClick={() => router.push(`/projects/${project.id}`)}
-                        className="p-3 rounded-lg bg-muted/50 hover:bg-muted transition-professional cursor-pointer"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-foreground truncate">
-                              {project.name}
-                            </p>
-                            {project.description && (
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                                {project.description}
-                              </p>
-                            )}
-                          </div>
-                          <Badge 
-                            variant="default"
-                            className="ml-2 text-2xs bg-primary"
-                          >
-                            Active
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
             </div>
 
-            {/* Right Column - Recent Evidence */}
+            {/* Right Column - Recent Projects */}
             <div className="lg:col-span-2">
               <Card className="border-0 shadow-professional-md h-full">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Clock className="h-5 w-5 text-primary" />
-                      Recent Evidence
+                      Recent Projects
                     </CardTitle>
-                    {evidence.length > 0 && (
+                    {projects.length > 0 && (
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        onClick={() => router.push("/home")}
+                        onClick={() => router.push("/projects")}
                         className="text-primary hover:text-primary hover:bg-primary/10"
                       >
                         View All
@@ -405,51 +343,83 @@ export default function HomePage() {
                     <div className="flex items-center justify-center py-12">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
-                  ) : evidence.length === 0 ? (
+                  ) : projects.length === 0 ? (
                     <div className="text-center py-12">
                       <div className="bg-muted rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                        <Camera className="h-8 w-8 text-muted-foreground" />
+                        <FolderOpen className="h-8 w-8 text-muted-foreground" />
                       </div>
-                      <h3 className="text-lg font-semibold text-foreground mb-2">No evidence yet</h3>
+                      <h3 className="text-lg font-semibold text-foreground mb-2">No projects yet</h3>
                       <p className="text-muted-foreground text-sm mb-6">
-                        Start capturing evidence to build your R&D documentation
+                        Create your first project to organize your R&D work
                       </p>
                       <Button 
-                        onClick={() => router.push("/evidence/capture")}
+                        onClick={() => router.push("/projects/new")}
                         className="gradient-primary"
                       >
-                        <Camera className="mr-2 h-4 w-4" />
-                        Capture Your First Evidence
+                        <FolderOpen className="mr-2 h-4 w-4" />
+                        Create Your First Project
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {evidence.slice(0, 8).map((item) => {
-                        const Icon = typeIcons[item.type] || FileText;
+                    <div className="space-y-4">
+                      {projects.slice(0, 8).map((project) => {
                         return (
                           <div
-                            key={item.id}
-                            onClick={() => router.push(`/evidence/${item.id}`)}
-                            className="p-4 rounded-lg border border-slate-200 hover:border-primary hover:shadow-professional-md transition-professional cursor-pointer bg-white"
+                            key={project.id}
+                            onClick={() => router.push(`/projects/${project.id}`)}
+                            className="p-5 rounded-lg border border-slate-200 hover:border-primary hover:shadow-professional-md transition-professional cursor-pointer bg-white"
                           >
-                            <div className="flex items-start gap-4">
-                              <div className="bg-primary/10 p-2.5 rounded-lg flex-shrink-0">
-                                <Icon className="h-5 w-5 text-primary" />
-                              </div>
+                            <div className="flex items-start justify-between gap-4">
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-foreground mb-1 line-clamp-2">
-                                  {item.description || "No description"}
-                                </p>
-                                <div className="flex items-center gap-3 flex-wrap">
-                                  {item.tag && (
-                                    <Badge variant="secondary" className="text-2xs">
-                                      {item.tag}
-                                    </Badge>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h3 className="font-semibold text-base text-foreground line-clamp-1">
+                                    {project.name}
+                                  </h3>
+                                  <Badge 
+                                    variant="default"
+                                    className="text-2xs bg-success/10 text-success border-success/20 flex items-center gap-1"
+                                  >
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Active
+                                  </Badge>
+                                </div>
+                                
+                                {project.description && (
+                                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                                    {project.description}
+                                  </p>
+                                )}
+
+                                <div className="flex items-center gap-4 flex-wrap">
+                                  <div className="flex items-center text-xs text-muted-foreground">
+                                    <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                                    {new Date(project.created_at).toLocaleDateString()}
+                                  </div>
+                                  
+                                  {project.tags && project.tags.length > 0 && (
+                                    <div className="flex items-center gap-1.5">
+                                      {project.tags.slice(0, 2).map((tag, idx) => (
+                                        <Badge 
+                                          key={idx}
+                                          variant="secondary" 
+                                          className="text-2xs"
+                                        >
+                                          {tag}
+                                        </Badge>
+                                      ))}
+                                      {project.tags.length > 2 && (
+                                        <Badge variant="secondary" className="text-2xs">
+                                          +{project.tags.length - 2}
+                                        </Badge>
+                                      )}
+                                    </div>
                                   )}
-                                  <span className="text-xs text-muted-foreground flex items-center">
-                                    <Calendar className="h-3 w-3 mr-1" />
-                                    {new Date(item.created_at).toLocaleDateString()}
-                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex-shrink-0">
+                                <div className="bg-primary/10 p-3 rounded-lg">
+                                  <FolderOpen className="h-5 w-5 text-primary" />
                                 </div>
                               </div>
                             </div>
