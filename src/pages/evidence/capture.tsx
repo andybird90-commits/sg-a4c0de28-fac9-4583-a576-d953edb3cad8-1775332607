@@ -26,8 +26,8 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-import { evidenceService } from "@/services/evidenceService";
-import { organisationService, type Project } from "@/services/organisationService";
+import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
+import { sidekickProjectService } from "@/services/sidekickProjectService";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 
@@ -39,7 +39,7 @@ export default function CaptureEvidencePage() {
   
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
@@ -63,7 +63,7 @@ export default function CaptureEvidencePage() {
   const loadProjects = async () => {
     if (!currentOrg) return;
     try {
-      const data = await organisationService.getProjects(currentOrg.id);
+      const data = await sidekickProjectService.getProjects(currentOrg.id);
       setProjects(data.filter(p => p.is_active));
     } catch (error) {
       console.error("Error loading projects:", error);
@@ -96,32 +96,42 @@ export default function CaptureEvidencePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentOrg) return;
+    if (!currentOrg || !formData.projectId) {
+      notify({
+        type: "error",
+        title: "Missing information",
+        message: "Please select a project before saving evidence"
+      });
+      return;
+    }
 
     setLoading(true);
     try {
-      const evidence = await evidenceService.createEvidence({
-        org_id: currentOrg.id,
-        project_id: formData.projectId || undefined,
-        description: formData.description,
-        type: formData.type,
-        tag: formData.tag,
-        location: formData.location,
-        claim_year: new Date(formData.date).getFullYear()
-      });
-
+      // Upload file first if exists
+      let fileUrl = null;
       if (file) {
         if (isOnline) {
-          await evidenceService.uploadEvidenceFile(evidence.id, file);
+          fileUrl = await sidekickEvidenceService.uploadFile(file, formData.projectId);
         } else {
           // Queue file upload for later
           await addToQueue({
             type: "FILE_UPLOAD",
-            payload: { evidenceId: evidence.id },
+            payload: { projectId: formData.projectId },
             file: file
           });
         }
       }
+
+      // Create evidence record
+      const evidence = await sidekickEvidenceService.createEvidence({
+        project_id: formData.projectId,
+        description: formData.description,
+        evidence_type: formData.type,
+        tag: formData.tag,
+        location: formData.location,
+        evidence_date: formData.date,
+        file_url: fileUrl
+      });
 
       setSuccess(true);
       notify({
@@ -138,10 +148,11 @@ export default function CaptureEvidencePage() {
       }, 2000);
 
     } catch (error: any) {
+      console.error("Evidence capture error:", error);
       notify({
         type: "error",
         title: "Capture failed",
-        message: error.message || "Failed to save evidence"
+        message: error.message || "Failed to save evidence. Please try again."
       });
     } finally {
       setLoading(false);
@@ -262,13 +273,14 @@ export default function CaptureEvidencePage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="project">Project</Label>
+                    <Label htmlFor="project">Project <span className="text-error">*</span></Label>
                     <Select 
                       value={formData.projectId} 
                       onValueChange={(val) => setFormData({...formData, projectId: val})}
+                      required
                     >
                       <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Select Project (Optional)" />
+                        <SelectValue placeholder="Select Project" />
                       </SelectTrigger>
                       <SelectContent>
                         {projects.map(p => (

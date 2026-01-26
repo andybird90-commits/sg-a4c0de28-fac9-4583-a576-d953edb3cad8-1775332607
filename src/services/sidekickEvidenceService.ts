@@ -12,7 +12,10 @@ export const sidekickEvidenceService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error creating evidence:", error);
+      throw new Error(error.message || "Failed to create evidence");
+    }
     return evidence;
   },
 
@@ -23,7 +26,10 @@ export const sidekickEvidenceService = {
       .eq("project_id", projectId)
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching evidence:", error);
+      throw new Error(error.message || "Failed to fetch evidence");
+    }
     return data || [];
   },
 
@@ -35,7 +41,10 @@ export const sidekickEvidenceService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error updating evidence:", error);
+      throw new Error(error.message || "Failed to update evidence");
+    }
     return data;
   },
 
@@ -45,24 +54,49 @@ export const sidekickEvidenceService = {
       .delete()
       .eq("id", evidenceId);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error deleting evidence:", error);
+      throw new Error(error.message || "Failed to delete evidence");
+    }
   },
 
   async uploadFile(file: File, projectId: string): Promise<string> {
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${projectId}/${Date.now()}.${fileExt}`;
-    const filePath = `sidekick-evidence/${fileName}`;
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${projectId}/${Date.now()}.${fileExt}`;
+      const filePath = `sidekick-evidence/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("evidence-files")
-      .upload(filePath, file);
+      const { error: uploadError } = await supabase.storage
+        .from("evidence-files")
+        .upload(filePath, file);
 
-    if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Error uploading file:", uploadError);
+        throw new Error(uploadError.message || "Failed to upload file");
+      }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from("evidence-files")
-      .getPublicUrl(filePath);
-
-    return filePath;
+      return filePath;
+    } catch (error: any) {
+      console.error("File upload error:", error);
+      throw new Error(error.message || "Failed to upload file");
+    }
   },
+
+  async getSignedUrl(filePath: string): Promise<string> {
+    try {
+      const { data, error } = await supabase.storage
+        .from("evidence-files")
+        .createSignedUrl(filePath, 3600);
+
+      if (error) {
+        console.error("Error creating signed URL:", error);
+        throw new Error(error.message || "Failed to get file URL");
+      }
+
+      return data.signedUrl;
+    } catch (error: any) {
+      console.error("Signed URL error:", error);
+      throw new Error(error.message || "Failed to get file URL");
+    }
+  }
 };
