@@ -110,6 +110,101 @@ export type Database = {
           },
         ]
       }
+      feasibility_analyses: {
+        Row: {
+          commercial_rating: string | null
+          commercial_reasoning: string | null
+          created_at: string | null
+          delivery_complexity: string | null
+          delivery_dependencies: Json | null
+          delivery_timeframe_months: number | null
+          id: string
+          idea_description: string
+          idea_title: string | null
+          next_actions: Json | null
+          notable_risks: Json | null
+          organisation_id: string
+          rd_tax_flag: string | null
+          rd_tax_reasoning: string | null
+          regulatory_issues: Json | null
+          revenue_ideas: Json | null
+          sector: string | null
+          sector_guess: string | null
+          stage: string | null
+          summary: string | null
+          target_customers: Json | null
+          technical_constraints: Json | null
+          technical_rating: string | null
+          technical_reasoning: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          commercial_rating?: string | null
+          commercial_reasoning?: string | null
+          created_at?: string | null
+          delivery_complexity?: string | null
+          delivery_dependencies?: Json | null
+          delivery_timeframe_months?: number | null
+          id?: string
+          idea_description: string
+          idea_title?: string | null
+          next_actions?: Json | null
+          notable_risks?: Json | null
+          organisation_id: string
+          rd_tax_flag?: string | null
+          rd_tax_reasoning?: string | null
+          regulatory_issues?: Json | null
+          revenue_ideas?: Json | null
+          sector?: string | null
+          sector_guess?: string | null
+          stage?: string | null
+          summary?: string | null
+          target_customers?: Json | null
+          technical_constraints?: Json | null
+          technical_rating?: string | null
+          technical_reasoning?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          commercial_rating?: string | null
+          commercial_reasoning?: string | null
+          created_at?: string | null
+          delivery_complexity?: string | null
+          delivery_dependencies?: Json | null
+          delivery_timeframe_months?: number | null
+          id?: string
+          idea_description?: string
+          idea_title?: string | null
+          next_actions?: Json | null
+          notable_risks?: Json | null
+          organisation_id?: string
+          rd_tax_flag?: string | null
+          rd_tax_reasoning?: string | null
+          regulatory_issues?: Json | null
+          revenue_ideas?: Json | null
+          sector?: string | null
+          sector_guess?: string | null
+          stage?: string | null
+          summary?: string | null
+          target_customers?: Json | null
+          technical_constraints?: Json | null
+          technical_rating?: string | null
+          technical_reasoning?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feasibility_analyses_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_invite_codes: {
         Row: {
           code: string

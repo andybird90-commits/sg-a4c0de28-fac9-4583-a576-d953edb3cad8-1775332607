@@ -1,0 +1,84 @@
+import { supabase } from "@/integrations/supabase/client";
+
+export interface FeasibilityInput {
+  ideaDescription: string;
+  sector?: string;
+  stage?: string;
+}
+
+export interface FeasibilityAnalysis {
+  id: string;
+  user_id: string;
+  organisation_id: string;
+  idea_description: string;
+  sector?: string;
+  stage?: string;
+  idea_title?: string;
+  summary?: string;
+  sector_guess?: string;
+  technical_rating?: "low" | "medium" | "high";
+  technical_reasoning?: string;
+  technical_constraints?: string[];
+  commercial_rating?: "low" | "medium" | "high";
+  commercial_reasoning?: string;
+  target_customers?: string[];
+  revenue_ideas?: string[];
+  delivery_complexity?: "low" | "medium" | "high";
+  delivery_timeframe_months?: number;
+  delivery_dependencies?: string[];
+  notable_risks?: string[];
+  regulatory_issues?: string[];
+  rd_tax_flag?: "yes" | "maybe" | "no";
+  rd_tax_reasoning?: string;
+  next_actions?: string[];
+  created_at: string;
+}
+
+export const feasibilityService = {
+  async submitForAnalysis(input: FeasibilityInput): Promise<FeasibilityAnalysis> {
+    const response = await fetch("/api/feasibility/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to analyze idea");
+    }
+
+    return response.json();
+  },
+
+  async getAnalyses(organisationId: string): Promise<FeasibilityAnalysis[]> {
+    const { data, error } = await supabase
+      .from("feasibility_analyses")
+      .select("*")
+      .eq("organisation_id", organisationId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getAnalysisById(id: string): Promise<FeasibilityAnalysis | null> {
+    const { data, error } = await supabase
+      .from("feasibility_analyses")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getAllAnalyses(): Promise<FeasibilityAnalysis[]> {
+    const { data, error } = await supabase
+      .from("feasibility_analyses")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+};
