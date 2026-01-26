@@ -1,0 +1,175 @@
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import { Layout } from "@/components/Layout";
+import { SEO } from "@/components/SEO";
+import { AdminNav } from "@/components/AdminNav";
+import { useApp } from "@/contexts/AppContext";
+import { sidekickProjectService } from "@/services/sidekickProjectService";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Clock, Building2, Eye } from "lucide-react";
+import type { Database } from "@/integrations/supabase/types";
+
+type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"] & {
+  organisations?: {
+    name: string;
+    sidekick_enabled: boolean;
+    linked_conexa_company_name: string | null;
+  };
+};
+
+const statusColors: Record<string, string> = {
+  draft: "bg-gray-500",
+  ready_for_review: "bg-blue-500",
+  in_review: "bg-yellow-500",
+  needs_changes: "bg-orange-500",
+  rejected: "bg-red-500",
+  transferred: "bg-green-500",
+};
+
+const statusLabels: Record<string, string> = {
+  draft: "Draft",
+  ready_for_review: "Ready for Review",
+  in_review: "In Review",
+  needs_changes: "Needs Changes",
+  rejected: "Rejected",
+  transferred: "Transferred to Conexa",
+};
+
+export default function RDReviewPage() {
+  const router = useRouter();
+  const { user } = useApp();
+  const [projects, setProjects] = useState<SidekickProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("ready_for_review");
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/auth/login");
+      return;
+    }
+  }, [user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchProjects = async () => {
+      setLoading(true);
+      try {
+        const data = await sidekickProjectService.getProjectsForReview(statusFilter);
+        setProjects(data);
+      } catch (error) {
+        console.error("Error fetching projects for review:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [user, statusFilter]);
+
+  if (!user) return null;
+
+  return (
+    <>
+      <SEO
+        title="RD Review Queue - RD Sidekick Admin"
+        description="Review Sidekick projects from clients"
+      />
+      <Layout>
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <AdminNav />
+
+          <div className="mt-8">
+            <h1 className="text-3xl font-bold mb-2">RD Review Queue</h1>
+            <p className="text-muted-foreground mb-6">
+              Review and manage Sidekick projects submitted by clients
+            </p>
+
+            <Tabs value={statusFilter} onValueChange={setStatusFilter} className="space-y-6">
+              <TabsList>
+                <TabsTrigger value="ready_for_review">Ready for Review</TabsTrigger>
+                <TabsTrigger value="in_review">In Review</TabsTrigger>
+                <TabsTrigger value="needs_changes">Needs Changes</TabsTrigger>
+                <TabsTrigger value="">All Statuses</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value={statusFilter}>
+                {loading ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">Loading projects...</p>
+                  </div>
+                ) : projects.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <p className="text-muted-foreground">No projects in this status</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {projects.map((project) => (
+                      <Card key={project.id} className="hover:shadow-md transition-shadow">
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <CardTitle className="text-lg">{project.name}</CardTitle>
+                                <Badge className={statusColors[project.status]}>
+                                  {statusLabels[project.status]}
+                                </Badge>
+                              </div>
+                              {project.description && (
+                                <p className="text-sm text-muted-foreground mb-3">
+                                  {project.description}
+                                </p>
+                              )}
+                              <div className="flex flex-wrap items-center gap-3 text-sm">
+                                {project.organisations && (
+                                  <div className="flex items-center gap-1">
+                                    <Building2 className="w-4 h-4" />
+                                    <span>{project.organisations.name}</span>
+                                    {project.organisations.sidekick_enabled && (
+                                      <Badge variant="outline" className="ml-1">
+                                        Sidekick Enabled
+                                      </Badge>
+                                    )}
+                                    {project.organisations.linked_conexa_company_name && (
+                                      <Badge variant="secondary" className="ml-1">
+                                        Linked: {project.organisations.linked_conexa_company_name}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
+                                {project.sector && <Badge variant="outline">{project.sector}</Badge>}
+                                {project.stage && <Badge variant="outline">{project.stage}</Badge>}
+                              </div>
+                              {project.ready_for_review_at && (
+                                <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+                                  <Clock className="w-3 h-3" />
+                                  Ready for review: {new Date(project.ready_for_review_at).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                            <Link href={`/admin/rd-review/${project.id}`}>
+                              <Button size="sm">
+                                <Eye className="w-4 h-4 mr-2" />
+                                Review
+                              </Button>
+                            </Link>
+                          </div>
+                        </CardHeader>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </Layout>
+    </>
+  );
+}

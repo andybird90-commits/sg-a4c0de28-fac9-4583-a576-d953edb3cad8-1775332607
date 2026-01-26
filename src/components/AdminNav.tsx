@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,8 +11,10 @@ import {
   FileText,
   Settings,
   Shield,
-  ArrowLeft
+  ArrowLeft,
+  ClipboardCheck
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function AdminNav() {
   const router = useRouter();
@@ -46,6 +49,11 @@ export function AdminNav() {
       icon: Shield, 
       path: "/admin/sidekick-access",
       color: "text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
+    },
+    { 
+      href: "/admin/rd-review", 
+      icon: ClipboardCheck, 
+      label: "RD Review" 
     },
   ];
 
