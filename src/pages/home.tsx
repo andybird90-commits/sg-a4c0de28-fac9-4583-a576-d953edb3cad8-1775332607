@@ -390,30 +390,9 @@ export default function HomePage() {
                                   </p>
                                 )}
 
-                                <div className="flex items-center gap-4 flex-wrap">
-                                  <div className="flex items-center text-xs text-muted-foreground">
-                                    <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                                    {new Date(project.created_at).toLocaleDateString()}
-                                  </div>
-                                  
-                                  {project.tags && project.tags.length > 0 && (
-                                    <div className="flex items-center gap-1.5">
-                                      {project.tags.slice(0, 2).map((tag, idx) => (
-                                        <Badge 
-                                          key={idx}
-                                          variant="secondary" 
-                                          className="text-2xs"
-                                        >
-                                          {tag}
-                                        </Badge>
-                                      ))}
-                                      {project.tags.length > 2 && (
-                                        <Badge variant="secondary" className="text-2xs">
-                                          +{project.tags.length - 2}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  )}
+                                <div className="flex items-center text-xs text-muted-foreground">
+                                  <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                                  {new Date(project.created_at).toLocaleDateString()}
                                 </div>
                               </div>
 

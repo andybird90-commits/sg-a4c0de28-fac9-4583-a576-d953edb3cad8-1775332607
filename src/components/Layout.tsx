@@ -27,7 +27,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
   const navItems = [
     { href: "/home", icon: Home, label: "Home" },
     { href: "/evidence/capture", icon: Camera, label: "Capture" },
-    { href: "/home", icon: Layers, label: "Evidence" },
+    { href: "/evidence", icon: Layers, label: "Evidence" },
     { href: "/projects", icon: FolderOpen, label: "Projects" },
     { href: "/feasibility", icon: Lightbulb, label: "Feasibility" },
     { href: "/settings", icon: Settings, label: "Settings" }
