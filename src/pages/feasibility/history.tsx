@@ -19,6 +19,13 @@ export default function FeasibilityHistoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
+    if (!user) {
+      router.push("/auth/login");
+      return;
+    }
+  }, [user, router]);
+
+  useEffect(() => {
     if (!user || !currentOrg) return;
 
     const fetchAnalyses = async () => {
