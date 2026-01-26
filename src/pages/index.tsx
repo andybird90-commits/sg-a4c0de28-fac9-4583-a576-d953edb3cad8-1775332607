@@ -129,13 +129,7 @@ export default function LandingPage() {
         </nav>
 
         {/* Hero Section */}
-        <section className="relative pt-32 pb-20 overflow-hidden hero-gradient">
-          {/* Animated background elements */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-20 left-10 w-72 h-72 bg-white rounded-full blur-3xl animate-float"></div>
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-white rounded-full blur-3xl animate-float" style={{ animationDelay: "2s" }}></div>
-          </div>
-
+        <section className="relative pt-32 pb-20 overflow-hidden bg-white">
           <div className="container mx-auto px-6 relative z-10">
             <div className="max-w-7xl mx-auto">
               {/* Two Column Layout: Logo Left, Content Right */}
@@ -145,33 +139,35 @@ export default function LandingPage() {
                   <img 
                     src="/rdtax-logo.png" 
                     alt="RD TAX" 
-                    className="w-full max-w-md h-auto animate-float"
+                    className="w-full max-w-md h-auto"
                   />
                 </div>
 
                 {/* Right: Content */}
                 <div className="text-center lg:text-left">
-                  <Badge className="mb-6 bg-white/10 text-white border-white/20 px-6 py-2 text-sm font-medium">
+                  <Badge className="mb-6 bg-[#ff6b35]/10 text-[#ff6b35] border-[#ff6b35]/20 px-6 py-2 text-sm font-medium">
                     <Sparkles className="w-4 h-4 mr-2" />
                     Trusted by R&D teams across the UK
                   </Badge>
                   
-                  <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white mb-6 leading-tight tracking-tight">
+                  <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-slate-900 mb-6 leading-tight tracking-tight">
                     Your R&D Evidence,
                     <br />
-                    <span className="text-gradient">Captured Effortlessly</span>
+                    <span className="bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] bg-clip-text text-transparent">
+                      Captured Effortlessly
+                    </span>
                   </h1>
                   
-                  <p className="text-lg md:text-xl text-slate-300 mb-10 leading-relaxed">
+                  <p className="text-lg md:text-xl text-slate-600 mb-10 leading-relaxed">
                     RD Sidekick helps you capture, organize, and submit R&D tax evidence on the go. 
-                    <strong className="text-white"> Never miss a claimable moment again.</strong>
+                    <strong className="text-slate-900"> Never miss a claimable moment again.</strong>
                   </p>
 
                   <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
                     <Button
                       size="lg"
                       onClick={() => router.push("/auth/signup")}
-                      className="bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-white text-lg px-10 py-7 rounded-2xl hover:opacity-90 hover:scale-105 transition-all shadow-2xl glow-effect">
+                      className="bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-white text-lg px-10 py-7 rounded-2xl hover:opacity-90 hover:scale-105 transition-all shadow-xl">
                       <Smartphone className="mr-2 h-5 w-5" />
                       Start Capturing Evidence
                     </Button>
@@ -179,21 +175,21 @@ export default function LandingPage() {
                       size="lg"
                       variant="outline"
                       onClick={() => router.push("/auth/login")}
-                      className="border-2 border-white text-white hover:bg-white hover:text-slate-900 text-lg px-10 py-7 rounded-2xl transition-all">
+                      className="border-2 border-slate-300 text-slate-700 hover:bg-slate-50 text-lg px-10 py-7 rounded-2xl transition-all">
                       Log In
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </div>
 
-                  {/* Stats - Below content on desktop */}
+                  {/* Stats - Below content on right side */}
                   <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto lg:mx-0">
                     {stats.map((stat, index) => (
-                      <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                      <div key={index} className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
                         <div className="flex justify-center lg:justify-start mb-2">
                           <stat.icon className="h-6 w-6 text-[#ff6b35]" />
                         </div>
-                        <div className="text-3xl font-black text-white mb-1">{stat.value}</div>
-                        <div className="text-xs text-slate-300 font-medium">{stat.label}</div>
+                        <div className="text-3xl font-black text-slate-900 mb-1">{stat.value}</div>
+                        <div className="text-xs text-slate-600 font-medium">{stat.label}</div>
                       </div>
                     ))}
                   </div>
