@@ -64,8 +64,9 @@ export default function CaptureEvidencePage() {
   const loadProjects = async () => {
     if (!currentOrg) return;
     try {
+      // Fixed: use getProjectsByOrganisation instead of getProjects
       const data = await sidekickProjectService.getProjectsByOrganisation(currentOrg.id);
-      setProjects(data.filter(p => p.is_active));
+      setProjects(data);
     } catch (error) {
       console.error("Error loading projects:", error);
     }
