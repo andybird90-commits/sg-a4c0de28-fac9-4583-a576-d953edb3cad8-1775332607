@@ -21,7 +21,7 @@ export const sidekickProjectService = {
     const { data, error } = await supabase
       .from("sidekick_projects")
       .select("*")
-      .eq("organisation_id", organisationId)
+      .eq("company_id", organisationId)
       .order("created_at", { ascending: false });
 
     if (error) throw error;

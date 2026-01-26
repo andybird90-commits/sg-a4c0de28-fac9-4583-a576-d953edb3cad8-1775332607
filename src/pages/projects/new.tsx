@@ -38,7 +38,7 @@ export default function NewProjectPage() {
     setLoading(true);
     try {
       const project = await sidekickProjectService.createProject({
-        organisation_id: currentOrg.id,
+        company_id: currentOrg.id,
         created_by: user.id,
         name: formData.name,
         description: formData.description,
