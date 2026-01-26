@@ -21,7 +21,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
 
   const handleLogout = async () => {
     await authService.signOut();
-    router.push("/auth/login");
+    router.push("/");
   };
 
   const navItems = [
