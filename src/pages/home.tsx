@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { evidenceService } from "@/services/evidenceService";
 import { organisationService, type Project } from "@/services/organisationService";
+import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
 import { useNotifications } from "@/contexts/NotificationContext";
 
 export default function HomePage() {
@@ -53,25 +54,36 @@ export default function HomePage() {
 
     setLoading(true);
     try {
-      const [evidenceData, projectsData] = await Promise.all([
+      // Fetch both old evidence and new sidekick evidence
+      const [oldEvidenceData, projectsData] = await Promise.all([
         evidenceService.getEvidence(currentOrg.id),
         organisationService.getProjects(currentOrg.id)
       ]);
 
+      // Fetch sidekick evidence for all projects
+      const sidekickEvidencePromises = projectsData.map(project => 
+        sidekickEvidenceService.getEvidenceByProject(project.id).catch(() => [])
+      );
+      const sidekickEvidenceArrays = await Promise.all(sidekickEvidencePromises);
+      const sidekickEvidenceData = sidekickEvidenceArrays.flat();
+
+      // Combine both evidence sources
+      const allEvidence = [...oldEvidenceData, ...sidekickEvidenceData];
+
       setProjects(projectsData);
 
       const now = new Date();
-      const thisMonth = evidenceData.filter(e => {
+      const thisMonth = allEvidence.filter(e => {
         const created = new Date(e.created_at);
         return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
       }).length;
 
       const lastWeek = new Date();
       lastWeek.setDate(lastWeek.getDate() - 7);
-      const recentActivity = evidenceData.filter(e => new Date(e.created_at) >= lastWeek).length;
+      const recentActivity = allEvidence.filter(e => new Date(e.created_at) >= lastWeek).length;
 
       setStats({
-        totalEvidence: evidenceData.length,
+        totalEvidence: allEvidence.length,
         evidenceThisMonth: thisMonth,
         activeProjects: projectsData.length,
         recentActivity
