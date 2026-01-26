@@ -24,7 +24,8 @@ import {
   ArrowRight,
   BarChart3,
   Users,
-  Clock
+  Clock,
+  Lightbulb
 } from "lucide-react";
 import { evidenceService, type EvidenceItem } from "@/services/evidenceService";
 import { organisationService, type Project } from "@/services/organisationService";
@@ -244,6 +245,22 @@ export default function HomePage() {
                   >
                     <FolderOpen className="mr-3 h-4 w-4" />
                     Browse Evidence
+                  </Button>
+                  <Button 
+                    onClick={() => router.push("/feasibility")} 
+                    variant="outline"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200"
+                  >
+                    <Lightbulb className="mr-3 h-4 w-4" />
+                    Feasibility Analysis
+                  </Button>
+                  <Button 
+                    onClick={() => router.push("/projects")} 
+                    variant="outline"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200"
+                  >
+                    <FolderOpen className="mr-3 h-4 w-4" />
+                    My Projects
                   </Button>
                   <Button 
                     onClick={() => router.push("/settings")} 
