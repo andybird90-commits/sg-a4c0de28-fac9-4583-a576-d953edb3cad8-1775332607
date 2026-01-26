@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const openaiApiKey = process.env.OPENAI_API_KEY!;
 
 const SYSTEM_PROMPT = `You are RD Sidekick, a private feasibility assistant available exclusively to companies that are Sidekick Enabled.
@@ -55,9 +55,17 @@ export default async function handler(
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Create Supabase client with the user's token
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    });
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
