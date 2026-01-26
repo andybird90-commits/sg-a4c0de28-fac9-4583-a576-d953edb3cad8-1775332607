@@ -23,7 +23,7 @@ export default function FeasibilityResultPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!id || !user) return;
+    if (!id || !user || !router.isReady) return;
 
     const fetchAnalysis = async () => {
       try {
@@ -38,7 +38,7 @@ export default function FeasibilityResultPage() {
     };
 
     fetchAnalysis();
-  }, [id, user]);
+  }, [id, user, router.isReady]);
 
   if (loading) return <Layout><div className="p-8 text-center">Loading analysis...</div></Layout>;
   if (error) return <Layout><div className="p-8 text-center text-red-600">Error: {error}</div></Layout>;
