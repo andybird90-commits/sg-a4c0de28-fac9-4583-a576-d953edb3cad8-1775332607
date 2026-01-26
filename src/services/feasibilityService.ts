@@ -58,7 +58,7 @@ export const feasibilityService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as FeasibilityAnalysis[]) || [];
   },
 
   async getAnalysisById(id: string): Promise<FeasibilityAnalysis | null> {
@@ -69,7 +69,7 @@ export const feasibilityService = {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as unknown as FeasibilityAnalysis;
   },
 
   async getAllAnalyses(): Promise<FeasibilityAnalysis[]> {
@@ -79,6 +79,6 @@ export const feasibilityService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data as unknown as FeasibilityAnalysis[]) || [];
   }
 };
