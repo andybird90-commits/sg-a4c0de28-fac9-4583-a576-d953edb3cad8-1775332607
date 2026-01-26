@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -124,6 +124,7 @@ export type Database = {
           next_actions: Json | null
           notable_risks: Json | null
           organisation_id: string
+          project_id: string | null
           rd_tax_flag: string | null
           rd_tax_reasoning: string | null
           regulatory_issues: Json | null
@@ -152,6 +153,7 @@ export type Database = {
           next_actions?: Json | null
           notable_risks?: Json | null
           organisation_id: string
+          project_id?: string | null
           rd_tax_flag?: string | null
           rd_tax_reasoning?: string | null
           regulatory_issues?: Json | null
@@ -180,6 +182,7 @@ export type Database = {
           next_actions?: Json | null
           notable_risks?: Json | null
           organisation_id?: string
+          project_id?: string | null
           rd_tax_flag?: string | null
           rd_tax_reasoning?: string | null
           regulatory_issues?: Json | null
@@ -201,6 +204,13 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feasibility_analyses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "sidekick_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -279,6 +289,11 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_conexa_company: boolean
+          linked_at: string | null
+          linked_by_user_id: string | null
+          linked_conexa_company_id: string | null
+          linked_conexa_company_name: string | null
           name: string
           organisation_code: string
           sidekick_enabled: boolean
@@ -287,6 +302,11 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_conexa_company?: boolean
+          linked_at?: string | null
+          linked_by_user_id?: string | null
+          linked_conexa_company_id?: string | null
+          linked_conexa_company_name?: string | null
           name: string
           organisation_code: string
           sidekick_enabled?: boolean
@@ -295,12 +315,25 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_conexa_company?: boolean
+          linked_at?: string | null
+          linked_by_user_id?: string | null
+          linked_conexa_company_id?: string | null
+          linked_conexa_company_name?: string | null
           name?: string
           organisation_code?: string
           sidekick_enabled?: boolean
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organisations_linked_conexa_company_id_fkey"
+            columns: ["linked_conexa_company_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -420,6 +453,153 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sidekick_evidence_items: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string
+          external_url: string | null
+          file_path: string | null
+          id: string
+          project_id: string
+          rd_internal_only: boolean
+          sidekick_visible: boolean
+          tags: string[] | null
+          title: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by: string
+          external_url?: string | null
+          file_path?: string | null
+          id?: string
+          project_id: string
+          rd_internal_only?: boolean
+          sidekick_visible?: boolean
+          tags?: string[] | null
+          title?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string
+          external_url?: string | null
+          file_path?: string | null
+          id?: string
+          project_id?: string
+          rd_internal_only?: boolean
+          sidekick_visible?: boolean
+          tags?: string[] | null
+          title?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sidekick_evidence_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "sidekick_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sidekick_project_comments: {
+        Row: {
+          author_id: string
+          author_role: string
+          body: string
+          created_at: string
+          id: string
+          project_id: string
+        }
+        Insert: {
+          author_id: string
+          author_role: string
+          body: string
+          created_at?: string
+          id?: string
+          project_id: string
+        }
+        Update: {
+          author_id?: string
+          author_role?: string
+          body?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sidekick_project_comments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "sidekick_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sidekick_projects: {
+        Row: {
+          company_id: string
+          conexa_project_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          ready_for_review_at: string | null
+          reviewed_by_user_id: string | null
+          sector: string | null
+          stage: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          conexa_project_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          ready_for_review_at?: string | null
+          reviewed_by_user_id?: string | null
+          sector?: string | null
+          stage?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          conexa_project_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          ready_for_review_at?: string | null
+          reviewed_by_user_id?: string | null
+          sector?: string | null
+          stage?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sidekick_projects_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
             referencedColumns: ["id"]
           },
         ]
