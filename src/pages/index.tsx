@@ -137,54 +137,67 @@ export default function LandingPage() {
           </div>
 
           <div className="container mx-auto px-6 relative z-10">
-            <div className="max-w-5xl mx-auto text-center">
-              <Badge className="mb-6 bg-white/10 text-white border-white/20 px-6 py-2 text-sm font-medium">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Trusted by R&D teams across the UK
-              </Badge>
-              
-              <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-tight tracking-tight">
-                Your R&D Evidence,
-                <br />
-                <span className="text-gradient">Captured Effortlessly</span>
-              </h1>
-              
-              <p className="text-xl md:text-2xl text-slate-300 mb-10 max-w-3xl mx-auto leading-relaxed">
-                The modern way to capture, organize, and submit R&D tax evidence. 
-                <strong className="text-white"> Never miss a claimable moment again.</strong>
-              </p>
+            <div className="max-w-7xl mx-auto">
+              {/* Two Column Layout: Logo Left, Content Right */}
+              <div className="grid lg:grid-cols-2 gap-12 items-center">
+                {/* Left: Logo */}
+                <div className="flex justify-center lg:justify-start">
+                  <img 
+                    src="/rdtax-logo.png" 
+                    alt="RD TAX" 
+                    className="w-full max-w-md h-auto animate-float"
+                  />
+                </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-                <Button
-                  size="lg"
-                  onClick={() => router.push("/auth/signup")}
-                  className="bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-white text-lg px-10 py-7 rounded-2xl hover:opacity-90 hover:scale-105 transition-all shadow-2xl glow-effect">
+                {/* Right: Content */}
+                <div className="text-center lg:text-left">
+                  <Badge className="mb-6 bg-white/10 text-white border-white/20 px-6 py-2 text-sm font-medium">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Trusted by R&D teams across the UK
+                  </Badge>
+                  
+                  <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-white mb-6 leading-tight tracking-tight">
+                    Your R&D Evidence,
+                    <br />
+                    <span className="text-gradient">Captured Effortlessly</span>
+                  </h1>
+                  
+                  <p className="text-lg md:text-xl text-slate-300 mb-10 leading-relaxed">
+                    RD Sidekick helps you capture, organize, and submit R&D tax evidence on the go. 
+                    <strong className="text-white"> Never miss a claimable moment again.</strong>
+                  </p>
 
-                  <Smartphone className="mr-2 h-5 w-5" />
-                  Start Capturing Evidence
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => router.push("/auth/login")}
-                  className="border-2 border-white text-white hover:bg-white hover:text-slate-900 text-lg px-10 py-7 rounded-2xl transition-all">
-
-                  Log In
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-                {stats.map((stat, index) =>
-                <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                    <div className="flex justify-center mb-3">
-                      <stat.icon className="h-8 w-8 text-[#ff6b35]" />
-                    </div>
-                    <div className="text-4xl font-black text-white mb-2">{stat.value}</div>
-                    <div className="text-sm text-slate-300 font-medium">{stat.label}</div>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
+                    <Button
+                      size="lg"
+                      onClick={() => router.push("/auth/signup")}
+                      className="bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-white text-lg px-10 py-7 rounded-2xl hover:opacity-90 hover:scale-105 transition-all shadow-2xl glow-effect">
+                      <Smartphone className="mr-2 h-5 w-5" />
+                      Start Capturing Evidence
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={() => router.push("/auth/login")}
+                      className="border-2 border-white text-white hover:bg-white hover:text-slate-900 text-lg px-10 py-7 rounded-2xl transition-all">
+                      Log In
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
                   </div>
-                )}
+
+                  {/* Stats - Below content on desktop */}
+                  <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto lg:mx-0">
+                    {stats.map((stat, index) => (
+                      <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                        <div className="flex justify-center lg:justify-start mb-2">
+                          <stat.icon className="h-6 w-6 text-[#ff6b35]" />
+                        </div>
+                        <div className="text-3xl font-black text-white mb-1">{stat.value}</div>
+                        <div className="text-xs text-slate-300 font-medium">{stat.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
