@@ -154,58 +154,58 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
             <Card className="border-0 shadow-professional-md hover:shadow-professional-lg transition-professional overflow-hidden">
-              <div className="gradient-info p-4 sm:p-6">
-                <div className="flex items-center justify-between">
+              <div className="gradient-info p-3 sm:p-4 lg:p-6">
+                <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs sm:text-sm font-medium text-white/80 mb-1 truncate">Total Evidence</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-white">{stats.totalEvidence}</p>
+                    <p className="text-2xs sm:text-xs lg:text-sm font-medium text-white/80 mb-1 truncate">Total Evidence</p>
+                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white truncate">{stats.totalEvidence}</p>
                   </div>
-                  <div className="bg-white/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                    <Layers className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  <div className="bg-white/20 p-1.5 sm:p-2 lg:p-3 rounded-lg flex-shrink-0">
+                    <Layers className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                   </div>
                 </div>
               </div>
             </Card>
 
             <Card className="border-0 shadow-professional-md hover:shadow-professional-lg transition-professional overflow-hidden">
-              <div className="gradient-success p-4 sm:p-6">
-                <div className="flex items-center justify-between">
+              <div className="gradient-success p-3 sm:p-4 lg:p-6">
+                <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs sm:text-sm font-medium text-white/80 mb-1 truncate">This Month</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-white">{stats.evidenceThisMonth}</p>
+                    <p className="text-2xs sm:text-xs lg:text-sm font-medium text-white/80 mb-1 truncate">This Month</p>
+                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white truncate">{stats.evidenceThisMonth}</p>
                   </div>
-                  <div className="bg-white/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                    <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  <div className="bg-white/20 p-1.5 sm:p-2 lg:p-3 rounded-lg flex-shrink-0">
+                    <Calendar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                   </div>
                 </div>
               </div>
             </Card>
 
             <Card className="border-0 shadow-professional-md hover:shadow-professional-lg transition-professional overflow-hidden">
-              <div className="gradient-secondary p-4 sm:p-6">
-                <div className="flex items-center justify-between">
+              <div className="gradient-secondary p-3 sm:p-4 lg:p-6">
+                <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs sm:text-sm font-medium text-white/80 mb-1 truncate">Active Projects</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-white">{stats.activeProjects}</p>
+                    <p className="text-2xs sm:text-xs lg:text-sm font-medium text-white/80 mb-1 truncate">Active Projects</p>
+                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white truncate">{stats.activeProjects}</p>
                   </div>
-                  <div className="bg-white/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                    <FolderOpen className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  <div className="bg-white/20 p-1.5 sm:p-2 lg:p-3 rounded-lg flex-shrink-0">
+                    <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                   </div>
                 </div>
               </div>
             </Card>
 
             <Card className="border-0 shadow-professional-md hover:shadow-professional-lg transition-professional overflow-hidden">
-              <div className="gradient-primary p-4 sm:p-6">
-                <div className="flex items-center justify-between">
+              <div className="gradient-primary p-3 sm:p-4 lg:p-6">
+                <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs sm:text-sm font-medium text-white/80 mb-1 truncate">Last 7 Days</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-white">{stats.recentActivity}</p>
+                    <p className="text-2xs sm:text-xs lg:text-sm font-medium text-white/80 mb-1 truncate">Last 7 Days</p>
+                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white truncate">{stats.recentActivity}</p>
                   </div>
-                  <div className="bg-white/20 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                    <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                  <div className="bg-white/20 p-1.5 sm:p-2 lg:p-3 rounded-lg flex-shrink-0">
+                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                   </div>
                 </div>
               </div>
@@ -214,19 +214,19 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <Card className="border-0 shadow-professional-md">
-                <CardHeader className="pb-4">
+                <CardHeader className="pb-3 sm:pb-4">
                   <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                    Quick Actions
+                    <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                    <span className="truncate">Quick Actions</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 sm:space-y-3">
                   <Button 
                     onClick={() => router.push("/projects/new")} 
                     variant="outline"
-                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-sm sm:text-base h-auto py-2 sm:py-2.5"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
                   >
                     <FolderOpen className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">New Project</span>
@@ -234,7 +234,7 @@ export default function HomePage() {
                   <Button 
                     onClick={() => router.push("/projects")} 
                     variant="outline"
-                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-sm sm:text-base h-auto py-2 sm:py-2.5"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
                   >
                     <BarChart3 className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Browse Projects</span>
@@ -242,7 +242,7 @@ export default function HomePage() {
                   <Button 
                     onClick={() => router.push("/feasibility")} 
                     variant="outline"
-                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-sm sm:text-base h-auto py-2 sm:py-2.5"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
                   >
                     <Lightbulb className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Feasibility Analysis</span>
@@ -250,7 +250,7 @@ export default function HomePage() {
                   <Button 
                     onClick={() => router.push("/feasibility/history")} 
                     variant="outline"
-                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-sm sm:text-base h-auto py-2 sm:py-2.5"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
                   >
                     <Clock className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Feasibility History</span>
@@ -258,7 +258,7 @@ export default function HomePage() {
                   <Button 
                     onClick={() => router.push("/evidence/capture")} 
                     variant="outline"
-                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-sm sm:text-base h-auto py-2 sm:py-2.5"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
                   >
                     <Camera className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Capture Evidence</span>
@@ -266,7 +266,7 @@ export default function HomePage() {
                   <Button 
                     onClick={() => router.push("/settings")} 
                     variant="outline"
-                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-sm sm:text-base h-auto py-2 sm:py-2.5"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
                   >
                     <Settings className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Settings</span>
@@ -276,52 +276,52 @@ export default function HomePage() {
 
               {isAdmin && (
                 <Card className="border-0 shadow-professional-md bg-gradient-to-br from-primary/5 to-primary/10">
-                  <CardHeader className="pb-4">
+                  <CardHeader className="pb-3 sm:pb-4">
                     <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                      <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                      Admin Tools
+                      <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                      <span className="truncate">Admin Tools</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 sm:space-y-3">
                     <Button
                       variant="outline"
-                      className="w-full justify-start gap-2 sm:gap-3 h-auto py-3 sm:py-4 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all group text-sm sm:text-base"
+                      className="w-full justify-start gap-2 sm:gap-3 h-auto py-2.5 sm:py-3 lg:py-4 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all group text-xs sm:text-sm lg:text-base"
                       onClick={() => router.push("/admin/organisations")}
                     >
-                      <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors flex-shrink-0">
-                        <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+                      <div className="p-1 sm:p-1.5 lg:p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors flex-shrink-0">
+                        <Building2 className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-purple-600" />
                       </div>
                       <div className="text-left min-w-0 flex-1">
-                        <p className="font-semibold text-slate-900 truncate">Organisations</p>
-                        <p className="text-xs text-slate-500 truncate">Manage client orgs</p>
+                        <p className="font-semibold text-slate-900 truncate text-xs sm:text-sm">Organisations</p>
+                        <p className="text-2xs sm:text-xs text-slate-500 truncate">Manage client orgs</p>
                       </div>
                     </Button>
 
                     <Button
                       variant="outline"
-                      className="w-full justify-start gap-2 sm:gap-3 h-auto py-3 sm:py-4 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all group text-sm sm:text-base"
+                      className="w-full justify-start gap-2 sm:gap-3 h-auto py-2.5 sm:py-3 lg:py-4 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all group text-xs sm:text-sm lg:text-base"
                       onClick={() => router.push("/admin/users")}
                     >
-                      <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors flex-shrink-0">
-                        <Users className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+                      <div className="p-1 sm:p-1.5 lg:p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors flex-shrink-0">
+                        <Users className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-purple-600" />
                       </div>
                       <div className="text-left min-w-0 flex-1">
-                        <p className="font-semibold text-slate-900 truncate">User Management</p>
-                        <p className="text-xs text-slate-500 truncate">View all users</p>
+                        <p className="font-semibold text-slate-900 truncate text-xs sm:text-sm">User Management</p>
+                        <p className="text-2xs sm:text-xs text-slate-500 truncate">View all users</p>
                       </div>
                     </Button>
 
                     <Button
                       variant="outline"
-                      className="w-full justify-start gap-2 sm:gap-3 h-auto py-3 sm:py-4 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all group text-sm sm:text-base"
+                      className="w-full justify-start gap-2 sm:gap-3 h-auto py-2.5 sm:py-3 lg:py-4 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all group text-xs sm:text-sm lg:text-base"
                       onClick={() => router.push("/admin/analytics")}
                     >
-                      <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors flex-shrink-0">
-                        <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+                      <div className="p-1 sm:p-1.5 lg:p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors flex-shrink-0">
+                        <BarChart3 className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-purple-600" />
                       </div>
                       <div className="text-left min-w-0 flex-1">
-                        <p className="font-semibold text-slate-900 truncate">Analytics</p>
-                        <p className="text-xs text-slate-500 truncate">System insights</p>
+                        <p className="font-semibold text-slate-900 truncate text-xs sm:text-sm">Analytics</p>
+                        <p className="text-2xs sm:text-xs text-slate-500 truncate">System insights</p>
                       </div>
                     </Button>
                   </CardContent>

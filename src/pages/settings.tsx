@@ -33,61 +33,61 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white border-b border-slate-200 safe-top">
-        <div className="px-6 py-4 flex items-center gap-4">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-4">
           <Button
             variant="ghost"
-            className="rounded-full w-10 h-10 p-0 -ml-2"
+            className="rounded-full w-9 h-9 sm:w-10 sm:h-10 p-0 -ml-1 sm:-ml-2 flex-shrink-0"
             onClick={() => router.push("/home")}
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
-          <h1 className="text-xl font-bold text-rd-navy">Settings</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-rd-navy truncate">Settings</h1>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 px-6 py-6 space-y-5">
+      <div className="flex-1 px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
         {/* Profile Section */}
         <Card className="evidence-card">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-bold text-rd-navy">Profile</CardTitle>
+          <CardHeader className="pb-3 sm:pb-4">
+            <CardTitle className="text-base sm:text-lg font-bold text-rd-navy">Profile</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16 bg-rd-navy">
+          <CardContent className="space-y-4 sm:space-y-6">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <Avatar className="h-14 w-14 sm:h-16 sm:w-16 bg-rd-navy flex-shrink-0">
                 <AvatarImage src={user.user_metadata?.avatar_url} />
-                <AvatarFallback className="text-lg font-bold text-white bg-rd-navy">
+                <AvatarFallback className="text-base sm:text-lg font-bold text-white bg-rd-navy">
                   {getInitials(user.user_metadata?.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h3 className="font-bold text-lg text-rd-navy">
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-base sm:text-lg text-rd-navy truncate">
                   {user.user_metadata?.full_name || "User"}
                 </h3>
-                <p className="text-sm text-slate-600">{user.email || user.phone}</p>
+                <p className="text-xs sm:text-sm text-slate-600 truncate">{user.email || user.phone}</p>
               </div>
             </div>
 
-            <div className="space-y-3 pt-4 border-t border-slate-200">
+            <div className="space-y-2 sm:space-y-3 pt-3 sm:pt-4 border-t border-slate-200">
               {user.email && (
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                    <Mail className="h-5 w-5 text-rd-orange" />
+                <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-slate-50 rounded-xl">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                    <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-rd-orange" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-slate-500">Email</p>
-                    <p className="text-sm font-semibold text-slate-900 truncate">{user.email}</p>
+                    <p className="text-2xs sm:text-xs font-medium text-slate-500">Email</p>
+                    <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">{user.email}</p>
                   </div>
                 </div>
               )}
               {user.phone && (
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                    <Phone className="h-5 w-5 text-rd-orange" />
+                <div className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 bg-slate-50 rounded-xl">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                    <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-rd-orange" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-slate-500">Phone</p>
-                    <p className="text-sm font-semibold text-slate-900">{user.phone}</p>
+                    <p className="text-2xs sm:text-xs font-medium text-slate-500">Phone</p>
+                    <p className="text-xs sm:text-sm font-semibold text-slate-900">{user.phone}</p>
                   </div>
                 </div>
               )}
@@ -97,37 +97,37 @@ export default function SettingsPage() {
 
         {/* Organisation Section */}
         <Card className="evidence-card">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-bold text-rd-navy">Organisation</CardTitle>
+          <CardHeader className="pb-3 sm:pb-4">
+            <CardTitle className="text-base sm:text-lg font-bold text-rd-navy">Organisation</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-rd-navy to-[#1a3a5f] rounded-xl text-white">
-              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                <Building2 className="h-6 w-6" />
+          <CardContent className="space-y-4 sm:space-y-5">
+            <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gradient-to-br from-rd-navy to-[#1a3a5f] rounded-xl text-white">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
-              <div className="flex-1">
-                <p className="font-bold text-lg">{currentOrg?.name || "No Organisation"}</p>
-                <p className="text-xs text-white/80 capitalize">{currentOrg?.role} Role</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-base sm:text-lg truncate">{currentOrg?.name || "No Organisation"}</p>
+                <p className="text-xs text-white/80 capitalize truncate">{currentOrg?.role} Role</p>
               </div>
             </div>
 
             {organisations.length > 1 && (
-              <div className="space-y-3">
-                <Label className="text-slate-700 font-semibold">Switch Organisation</Label>
+              <div className="space-y-2 sm:space-y-3">
+                <Label className="text-slate-700 font-semibold text-xs sm:text-sm">Switch Organisation</Label>
                 <div className="grid gap-2">
                   {organisations.map((org) => (
                     <Button
                       key={org.id}
                       variant={currentOrg?.id === org.id ? "default" : "outline"}
-                      className={`w-full justify-start h-12 rounded-xl font-semibold ${
+                      className={`w-full justify-start h-11 sm:h-12 rounded-xl font-semibold text-xs sm:text-sm ${
                         currentOrg?.id === org.id 
                           ? 'bg-rd-orange hover:bg-[#E67510]' 
                           : 'border-slate-300'
                       }`}
                       onClick={() => setCurrentOrg(org)}
                     >
-                      <Building2 className="mr-2 h-5 w-5" />
-                      {org.name}
+                      <Building2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                      <span className="truncate">{org.name}</span>
                     </Button>
                   ))}
                 </div>
@@ -138,42 +138,43 @@ export default function SettingsPage() {
 
         {/* App Settings */}
         <Card className="evidence-card">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-bold text-rd-navy">App Settings</CardTitle>
+          <CardHeader className="pb-3 sm:pb-4">
+            <CardTitle className="text-base sm:text-lg font-bold text-rd-navy">App Settings</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
+          <CardContent className="space-y-4 sm:space-y-6">
+            <div className="flex items-center justify-between p-2.5 sm:p-3 bg-slate-50 rounded-xl">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0">
                   {theme === 'dark' ? (
-                    <Moon className="h-5 w-5 text-rd-navy" />
+                    <Moon className="h-4 w-4 sm:h-5 sm:w-5 text-rd-navy" />
                   ) : (
-                    <Sun className="h-5 w-5 text-rd-orange" />
+                    <Sun className="h-4 w-4 sm:h-5 sm:w-5 text-rd-orange" />
                   )}
                 </div>
-                <Label className="text-slate-700 font-semibold">Dark Mode</Label>
+                <Label className="text-slate-700 font-semibold text-xs sm:text-sm truncate">Dark Mode</Label>
               </div>
               <Switch
                 checked={theme === 'dark'}
                 onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+                className="flex-shrink-0"
               />
             </div>
 
-            <div className="pt-4 border-t border-slate-200">
+            <div className="pt-3 sm:pt-4 border-t border-slate-200">
               <Button 
                 variant="destructive" 
-                className="w-full h-14 text-lg font-semibold rounded-xl shadow-lg" 
+                className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold rounded-xl shadow-lg" 
                 onClick={handleLogout}
                 disabled={loading}
               >
-                <LogOut className="mr-2 h-5 w-5" />
+                <LogOut className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                 {loading ? "Logging out..." : "Log Out"}
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        <div className="text-center text-xs text-slate-400 py-4">
+        <div className="text-center text-xs text-slate-400 py-3 sm:py-4">
           RD Sidekick v1.0.0
         </div>
       </div>
