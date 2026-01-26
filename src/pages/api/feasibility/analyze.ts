@@ -79,7 +79,7 @@ export default async function handler(
     // Get user's organisation
     const { data: orgUser } = await supabase
       .from("organisation_users")
-      .select("organisation_id")
+      .select("org_id")
       .eq("user_id", user.id)
       .single();
 
@@ -161,7 +161,7 @@ Return only valid JSON using the following schema:
       .from("feasibility_analyses")
       .insert({
         user_id: user.id,
-        organisation_id: orgUser.organisation_id,
+        organisation_id: orgUser.org_id,
         idea_description: ideaDescription,
         sector,
         stage,
