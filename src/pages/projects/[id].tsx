@@ -533,9 +533,9 @@ export default function ProjectDetailPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="note">Note</SelectItem>
-                          <SelectItem value="file">File Upload</SelectItem>
-                          <SelectItem value="link">External Link</SelectItem>
+                          <SelectItem value="note">📝 Note</SelectItem>
+                          <SelectItem value="file">📎 File Upload</SelectItem>
+                          <SelectItem value="link">🔗 External Link</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -570,25 +570,56 @@ export default function ProjectDetailPage() {
                           id="evidence-file"
                           type="file"
                           onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
+                          className="cursor-pointer"
                         />
+                        {evidenceFile && (
+                          <p className="text-sm text-muted-foreground">
+                            Selected: {evidenceFile.name}
+                          </p>
+                        )}
+                        <div className="space-y-2 mt-4">
+                          <Label htmlFor="evidence-body-file">Description (Optional)</Label>
+                          <Textarea
+                            id="evidence-body-file"
+                            value={evidenceBody}
+                            onChange={(e) => setEvidenceBody(e.target.value)}
+                            placeholder="Add a description for this file..."
+                            rows={3}
+                          />
+                        </div>
                       </div>
                     )}
 
                     {evidenceType === "link" && (
-                      <div className="space-y-2">
-                        <Label htmlFor="evidence-url">URL</Label>
-                        <Input
-                          id="evidence-url"
-                          value={evidenceUrl}
-                          onChange={(e) => setEvidenceUrl(e.target.value)}
-                          placeholder="https://example.com"
-                        />
-                      </div>
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="evidence-url">URL</Label>
+                          <Input
+                            id="evidence-url"
+                            value={evidenceUrl}
+                            onChange={(e) => setEvidenceUrl(e.target.value)}
+                            placeholder="https://example.com"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="evidence-body-link">Description (Optional)</Label>
+                          <Textarea
+                            id="evidence-body-link"
+                            value={evidenceBody}
+                            onChange={(e) => setEvidenceBody(e.target.value)}
+                            placeholder="Add a description for this link..."
+                            rows={3}
+                          />
+                        </div>
+                      </>
                     )}
 
-                    <Button onClick={handleAddEvidence} disabled={submitting}>
+                    <Button 
+                      onClick={handleAddEvidence} 
+                      disabled={submitting || (evidenceType === "file" && !evidenceFile) || (evidenceType === "link" && !evidenceUrl)}
+                    >
                       <Upload className="w-4 h-4 mr-2" />
-                      Add Evidence
+                      {submitting ? "Adding..." : "Add Evidence"}
                     </Button>
                   </CardContent>
                 </Card>
