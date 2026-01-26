@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { Layout } from "@/components/Layout";
 import { SEO } from "@/components/SEO";
 import { useApp } from "@/contexts/AppContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,7 +64,7 @@ export default function CaptureEvidencePage() {
   const loadProjects = async () => {
     if (!currentOrg) return;
     try {
-      const data = await sidekickProjectService.getProjects(currentOrg.id);
+      const data = await sidekickProjectService.getProjectsByOrganisation(currentOrg.id);
       setProjects(data.filter(p => p.is_active));
     } catch (error) {
       console.error("Error loading projects:", error);
@@ -107,13 +108,14 @@ export default function CaptureEvidencePage() {
 
     setLoading(true);
     try {
-      // Upload file first if exists
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("You must be logged in to save evidence");
+
       let fileUrl = null;
       if (file) {
         if (isOnline) {
           fileUrl = await sidekickEvidenceService.uploadFile(file, formData.projectId);
         } else {
-          // Queue file upload for later
           await addToQueue({
             type: "FILE_UPLOAD",
             payload: { projectId: formData.projectId },
@@ -122,15 +124,22 @@ export default function CaptureEvidencePage() {
         }
       }
 
-      // Create evidence record
+      const fullBody = [
+        formData.description,
+        formData.location ? `Location: ${formData.location}` : null,
+        formData.date ? `Date: ${formData.date}` : null
+      ].filter(Boolean).join('\n\n');
+
       const evidence = await sidekickEvidenceService.createEvidence({
         project_id: formData.projectId,
-        description: formData.description,
-        evidence_type: formData.type,
-        tag: formData.tag,
-        location: formData.location,
-        evidence_date: formData.date,
-        file_url: fileUrl
+        created_by: user.id,
+        body: fullBody,
+        type: formData.type,
+        tags: formData.tag ? [formData.tag] : [],
+        file_path: fileUrl,
+        title: `Evidence - ${new Date().toLocaleDateString()}`,
+        rd_internal_only: false,
+        sidekick_visible: true
       });
 
       setSuccess(true);
