@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
+ 
 export type Json =
   | string
   | number
@@ -539,6 +539,13 @@ export type Database = {
           project_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sidekick_project_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sidekick_project_comments_project_id_fkey"
             columns: ["project_id"]

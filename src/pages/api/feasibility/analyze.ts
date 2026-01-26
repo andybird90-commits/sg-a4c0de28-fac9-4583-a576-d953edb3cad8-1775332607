@@ -70,7 +70,7 @@ export default async function handler(
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { ideaDescription, sector, stage } = req.body;
+    const { ideaDescription, sector, stage, projectId } = req.body;
 
     if (!ideaDescription) {
       return res.status(400).json({ error: "Idea description is required" });
@@ -162,6 +162,7 @@ Return only valid JSON using the following schema:
       .insert({
         user_id: user.id,
         organisation_id: orgUser.org_id,
+        project_id: projectId || null,
         idea_description: ideaDescription,
         sector,
         stage,

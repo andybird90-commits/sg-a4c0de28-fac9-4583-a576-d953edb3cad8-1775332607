@@ -7,6 +7,7 @@ import { useApp } from "@/contexts/AppContext";
 import { sidekickProjectService } from "@/services/sidekickProjectService";
 import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
 import { sidekickCommentService } from "@/services/sidekickCommentService";
+import { feasibilityService, type FeasibilityAnalysis } from "@/services/feasibilityService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Lightbulb, FileText, MessageSquare, Send, Upload, Link as LinkIcon, Trash2 } from "lucide-react";
+import { ArrowLeft, Lightbulb, FileText, MessageSquare, Send, Upload, Link as LinkIcon, Trash2, ExternalLink, Sparkles } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
@@ -49,8 +50,11 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<SidekickProject | null>(null);
   const [evidence, setEvidence] = useState<SidekickEvidenceItem[]>([]);
   const [comments, setComments] = useState<SidekickProjectComment[]>([]);
+  const [feasibilityAnalysis, setFeasibilityAnalysis] = useState<FeasibilityAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
+  const [feasibilityLoading, setFeasibilityLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [runningFeasibility, setRunningFeasibility] = useState(false);
 
   // Evidence form state
   const [evidenceType, setEvidenceType] = useState<"note" | "file" | "link">("note");
@@ -74,6 +78,9 @@ export default function ProjectDetailPage() {
 
     const fetchData = async () => {
       try {
+        setLoading(true);
+        
+        // Fetch project, evidence, and comments
         const [projectData, evidenceData, commentsData] = await Promise.all([
           sidekickProjectService.getProjectById(id as string),
           sidekickEvidenceService.getEvidenceByProject(id as string),
@@ -83,6 +90,26 @@ export default function ProjectDetailPage() {
         setProject(projectData);
         setEvidence(evidenceData);
         setComments(commentsData);
+
+        // Fetch feasibility analysis separately to avoid blocking main data
+        setFeasibilityLoading(true);
+        try {
+          const analyses = await feasibilityService.getAnalysesByProject(id as string);
+          if (analyses && analyses.length > 0) {
+            // Get the most recent analysis
+            const sortedAnalyses = analyses.sort((a, b) => 
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            );
+            setFeasibilityAnalysis(sortedAnalyses[0]);
+          } else {
+            setFeasibilityAnalysis(null);
+          }
+        } catch (feasibilityError) {
+          console.error("Error fetching feasibility analysis:", feasibilityError);
+          setFeasibilityAnalysis(null);
+        } finally {
+          setFeasibilityLoading(false);
+        }
       } catch (error) {
         console.error("Error fetching project data:", error);
       } finally {
@@ -176,6 +203,29 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleRunFeasibility = async () => {
+    if (!project || !user) return;
+
+    setRunningFeasibility(true);
+    try {
+      // Create analysis and link it to this project
+      const analysis = await feasibilityService.submitForAnalysis({
+        ideaDescription: project.description || project.name,
+        sector: project.sector || undefined,
+        stage: project.stage || undefined,
+        projectId: project.id // Pass project ID to link it immediately
+      });
+
+      setFeasibilityAnalysis(analysis);
+      alert("Feasibility analysis completed successfully!");
+    } catch (error) {
+      console.error("Error running feasibility analysis:", error);
+      alert("Failed to run feasibility analysis");
+    } finally {
+      setRunningFeasibility(false);
+    }
+  };
+
   if (!user) return null;
 
   if (loading) {
@@ -260,17 +310,110 @@ export default function ProjectDetailPage() {
                 <CardHeader>
                   <CardTitle>Feasibility Analysis</CardTitle>
                   <CardDescription>
-                    Run AI-powered feasibility checks for this project
+                    AI-powered feasibility assessment for this project
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Feasibility analysis integration coming soon. For now, use the standalone{" "}
-                    <Link href="/feasibility" className="text-primary underline">
-                      Feasibility page
-                    </Link>
-                    .
-                  </p>
+                <CardContent className="space-y-4">
+                  {feasibilityLoading ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">Loading feasibility analysis...</p>
+                    </div>
+                  ) : !feasibilityAnalysis ? (
+                    <div className="text-center py-8 space-y-4">
+                      <div className="flex justify-center">
+                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                          <Lightbulb className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium mb-2">Feasibility Analysis Not Yet Run</p>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Run an AI-powered feasibility analysis to assess technical viability, commercial potential, and R&D tax eligibility for this project.
+                        </p>
+                      </div>
+                      <Button 
+                        onClick={handleRunFeasibility} 
+                        disabled={runningFeasibility}
+                        size="lg"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        {runningFeasibility ? "Running Analysis..." : "Run Feasibility Analysis"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* High-level Summary */}
+                      <div className="border-l-4 border-primary pl-4 py-2 bg-muted/50 rounded-r">
+                        <h3 className="font-semibold mb-2 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-primary" />
+                          Analysis Summary
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {feasibilityAnalysis.summary || "Feasibility analysis completed"}
+                        </p>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <Badge variant={
+                            feasibilityAnalysis.technical_rating === "high" ? "default" :
+                            feasibilityAnalysis.technical_rating === "medium" ? "secondary" : "outline"
+                          }>
+                            Technical: {feasibilityAnalysis.technical_rating?.toUpperCase() || "N/A"}
+                          </Badge>
+                          <Badge variant={
+                            feasibilityAnalysis.commercial_rating === "high" ? "default" :
+                            feasibilityAnalysis.commercial_rating === "medium" ? "secondary" : "outline"
+                          }>
+                            Commercial: {feasibilityAnalysis.commercial_rating?.toUpperCase() || "N/A"}
+                          </Badge>
+                          <Badge variant={
+                            feasibilityAnalysis.rd_tax_flag === "yes" ? "default" :
+                            feasibilityAnalysis.rd_tax_flag === "maybe" ? "secondary" : "outline"
+                          }>
+                            R&D Tax: {feasibilityAnalysis.rd_tax_flag?.toUpperCase() || "N/A"}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Quick Insights */}
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium">Delivery Complexity</h4>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {feasibilityAnalysis.delivery_complexity || "Not assessed"}
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium">Estimated Timeframe</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {feasibilityAnalysis.delivery_timeframe_months 
+                              ? `${feasibilityAnalysis.delivery_timeframe_months} months` 
+                              : "Not estimated"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* View Full Report Button */}
+                      <div className="flex gap-3">
+                        <Link href={`/feasibility/${feasibilityAnalysis.id}`} className="flex-1">
+                          <Button variant="default" className="w-full">
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            View Full Feasibility Report
+                          </Button>
+                        </Link>
+                        <Button 
+                          variant="outline" 
+                          onClick={handleRunFeasibility} 
+                          disabled={runningFeasibility}
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          {runningFeasibility ? "Re-running..." : "Re-run Analysis"}
+                        </Button>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        Last analyzed: {new Date(feasibilityAnalysis.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

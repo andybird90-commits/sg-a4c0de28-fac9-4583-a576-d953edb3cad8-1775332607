@@ -4,12 +4,14 @@ export interface FeasibilityInput {
   ideaDescription: string;
   sector?: string;
   stage?: string;
+  projectId?: string; // Optional project ID to link analysis
 }
 
 export interface FeasibilityAnalysis {
   id: string;
   user_id: string;
   organisation_id: string;
+  project_id?: string;
   idea_description: string;
   sector?: string;
   stage?: string;
@@ -79,6 +81,17 @@ export const feasibilityService = {
 
     if (error) throw error;
     return data as unknown as FeasibilityAnalysis;
+  },
+
+  async getAnalysesByProject(projectId: string): Promise<FeasibilityAnalysis[]> {
+    const { data, error } = await supabase
+      .from("feasibility_analyses")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return (data as unknown as FeasibilityAnalysis[]) || [];
   },
 
   async getAllAnalyses(): Promise<FeasibilityAnalysis[]> {
