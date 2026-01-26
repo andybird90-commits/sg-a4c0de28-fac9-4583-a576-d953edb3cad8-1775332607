@@ -85,7 +85,7 @@ export default function HomePage() {
       setStats({
         total: evidenceData.length,
         thisMonth,
-        activeProjects: projectsData.filter(p => p.is_active).length,
+        activeProjects: projectsData.length,
         recentActivity
       });
     } catch (error: any) {
@@ -330,15 +330,27 @@ export default function HomePage() {
               {projects.length > 0 && (
                 <Card className="border-0 shadow-professional-md">
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5 text-primary" />
-                      Projects Overview
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5 text-primary" />
+                        Projects Overview
+                      </CardTitle>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => router.push("/projects")}
+                        className="text-primary hover:text-primary hover:bg-primary/10"
+                      >
+                        View All
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {projects.slice(0, 5).map((project) => (
                       <div 
                         key={project.id}
+                        onClick={() => router.push(`/projects/${project.id}`)}
                         className="p-3 rounded-lg bg-muted/50 hover:bg-muted transition-professional cursor-pointer"
                       >
                         <div className="flex items-start justify-between">
@@ -353,10 +365,10 @@ export default function HomePage() {
                             )}
                           </div>
                           <Badge 
-                            variant={project.is_active ? "default" : "secondary"}
-                            className="ml-2 text-2xs"
+                            variant="default"
+                            className="ml-2 text-2xs bg-primary"
                           >
-                            {project.is_active ? "Active" : "Inactive"}
+                            Active
                           </Badge>
                         </div>
                       </div>

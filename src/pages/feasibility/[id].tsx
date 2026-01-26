@@ -5,22 +5,36 @@ import { Layout } from "@/components/Layout";
 import { SEO } from "@/components/SEO";
 import { useApp } from "@/contexts/AppContext";
 import { feasibilityService, FeasibilityAnalysis } from "@/services/feasibilityService";
+import { organisationService } from "@/services/organisationService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { 
   ArrowLeft, Download, AlertTriangle, CheckCircle2, 
-  Clock, Gauge, TrendingUp, ShieldAlert, PoundSterling 
+  Clock, Gauge, TrendingUp, ShieldAlert, PoundSterling,
+  FolderPlus, Trash2, Edit, Sparkles
 } from "lucide-react";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 export default function FeasibilityResultPage() {
   const router = useRouter();
   const { id } = router.query;
-  const { user } = useApp();
+  const { user, currentOrg } = useApp();
+  const { notify } = useNotifications();
   const [analysis, setAnalysis] = useState<FeasibilityAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [projectDescription, setProjectDescription] = useState("");
+  const [projectTags, setProjectTags] = useState("");
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id || !user || !router.isReady) return;
@@ -39,6 +53,77 @@ export default function FeasibilityResultPage() {
 
     fetchAnalysis();
   }, [id, user, router.isReady]);
+
+  useEffect(() => {
+    if (showCreateProject && analysis) {
+      setProjectName(analysis.idea_title || "");
+      setProjectDescription(analysis.summary || "");
+      const tags = [
+        analysis.sector_guess,
+        ...(analysis.target_customers || []).slice(0, 2)
+      ].filter(Boolean).join(", ");
+      setProjectTags(tags);
+    }
+  }, [showCreateProject, analysis]);
+
+  const handleCreateProject = async () => {
+    if (!currentOrg || !user || !analysis) return;
+
+    setCreatingProject(true);
+    try {
+      const newProject = await organisationService.createProject(currentOrg.id, {
+        name: projectName,
+        description: projectDescription,
+        tags: projectTags.split(",").map(t => t.trim()).filter(Boolean),
+        is_active: true
+      });
+
+      // Link the analysis to the project
+      await feasibilityService.updateAnalysis(analysis.id, {
+        project_id: newProject.id
+      });
+
+      notify({
+        type: "success",
+        title: "Project created",
+        message: "Project created successfully from feasibility analysis"
+      });
+
+      router.push(`/projects/${newProject.id}`);
+    } catch (err: any) {
+      notify({
+        type: "error",
+        title: "Creation failed",
+        message: err.message || "Failed to create project"
+      });
+    } finally {
+      setCreatingProject(false);
+      setShowCreateProject(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!analysis || !window.confirm("Are you sure you want to delete this analysis? This cannot be undone.")) return;
+
+    setDeleting(true);
+    try {
+      await feasibilityService.deleteAnalysis(analysis.id);
+      notify({
+        type: "success",
+        title: "Analysis deleted",
+        message: "Feasibility analysis has been deleted"
+      });
+      router.push("/feasibility/history");
+    } catch (err: any) {
+      notify({
+        type: "error",
+        title: "Delete failed",
+        message: err.message || "Failed to delete analysis"
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   if (loading) return <Layout><div className="p-8 text-center">Loading analysis...</div></Layout>;
   if (error) return <Layout><div className="p-8 text-center text-red-600">Error: {error}</div></Layout>;
@@ -139,16 +224,33 @@ export default function FeasibilityResultPage() {
         <div className="max-w-5xl mx-auto px-4 py-8 print-full-width">
           <div className="flex items-center justify-between mb-8 print-hide">
             <Link 
-              href="/feasibility" 
+              href="/feasibility/history" 
               className="text-gray-600 hover:text-[#001F3F] flex items-center gap-2"
             >
               <ArrowLeft size={20} />
-              Back to Analysis
+              Back to Analysis History
             </Link>
             <div className="flex gap-3">
+              <Button 
+                variant="default"
+                onClick={() => setShowCreateProject(true)}
+                className="bg-[#FF6B35] hover:bg-[#FF8C61]"
+              >
+                <FolderPlus size={16} className="mr-2" />
+                Create Project
+              </Button>
               <Button variant="outline" onClick={() => window.print()}>
                 <Download size={16} className="mr-2" />
                 Export PDF
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleDelete}
+                disabled={deleting}
+                className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              >
+                <Trash2 size={16} className="mr-2" />
+                {deleting ? "Deleting..." : "Delete"}
               </Button>
             </div>
           </div>
@@ -370,6 +472,81 @@ export default function FeasibilityResultPage() {
             </div>
           </div>
         </div>
+
+        {/* Create Project Dialog */}
+        <Dialog open={showCreateProject} onOpenChange={setShowCreateProject}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-[#FF6B35]" />
+                Create Project from Feasibility Analysis
+              </DialogTitle>
+              <DialogDescription>
+                We've auto-populated the project details from your feasibility analysis. 
+                Review and edit as needed before creating your project.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="project-name">Project Name</Label>
+                <Input
+                  id="project-name"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  placeholder="Enter project name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project-description">Description</Label>
+                <Textarea
+                  id="project-description"
+                  value={projectDescription}
+                  onChange={(e) => setProjectDescription(e.target.value)}
+                  placeholder="Enter project description"
+                  rows={4}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project-tags">Tags (comma-separated)</Label>
+                <Input
+                  id="project-tags"
+                  value={projectTags}
+                  onChange={(e) => setProjectTags(e.target.value)}
+                  placeholder="e.g., energy, sustainability, AI"
+                />
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-900 mb-1">AI-Powered Setup</p>
+                    <p className="text-sm text-blue-700">
+                      This project will be automatically linked to your feasibility analysis, 
+                      allowing you to reference technical ratings, commercial insights, and R&D tax considerations.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowCreateProject(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleCreateProject}
+                disabled={creatingProject || !projectName.trim()}
+                className="bg-[#FF6B35] hover:bg-[#FF8C61]"
+              >
+                {creatingProject ? "Creating..." : "Create Project"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Layout>
     </>
   );

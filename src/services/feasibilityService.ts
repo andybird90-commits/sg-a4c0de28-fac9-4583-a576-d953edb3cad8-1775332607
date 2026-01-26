@@ -101,6 +101,24 @@ export const feasibilityService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return (data as unknown as FeasibilityAnalysis[]) || [];
+    return (data as FeasibilityAnalysis[]) || [];
+  },
+
+  async updateAnalysis(id: string, updates: Partial<FeasibilityAnalysis>): Promise<void> {
+    const { error } = await supabase
+      .from("feasibility_analyses")
+      .update(updates)
+      .eq("id", id);
+
+    if (error) throw error;
+  },
+
+  async deleteAnalysis(id: string): Promise<void> {
+    const { error } = await supabase
+      .from("feasibility_analyses")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
   }
 };
