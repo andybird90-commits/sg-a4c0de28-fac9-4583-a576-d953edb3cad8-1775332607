@@ -64,13 +64,80 @@ export default function FeasibilityResultPage() {
 
   return (
     <>
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: portrait;
+            margin: 1.5cm 1cm;
+          }
+          
+          body {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+          }
+          
+          .print-hide {
+            display: none !important;
+          }
+          
+          .page-break-before {
+            page-break-before: always;
+          }
+          
+          .page-break-after {
+            page-break-after: always;
+          }
+          
+          .page-break-inside-avoid {
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          
+          .print-full-width {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+          }
+          
+          /* Ensure cards don't break across pages */
+          .print-card {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin-bottom: 1rem;
+          }
+          
+          /* Compact spacing for print */
+          .print-compact {
+            margin-bottom: 0.75rem !important;
+            padding: 0.75rem !important;
+          }
+          
+          /* Header adjustments */
+          .print-header {
+            margin-bottom: 1rem !important;
+          }
+          
+          /* Grid adjustments for print */
+          .print-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+          }
+          
+          /* Text size adjustments */
+          .print-text-sm {
+            font-size: 0.8rem !important;
+            line-height: 1.3 !important;
+          }
+        }
+      `}</style>
       <SEO
         title={`Analysis: ${analysis.idea_title || "New Idea"} - RD Sidekick`}
         description="Feasibility analysis results"
       />
       <Layout>
-        <div className="max-w-5xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-8">
+        <div className="max-w-5xl mx-auto px-4 py-8 print-full-width">
+          <div className="flex items-center justify-between mb-8 print-hide">
             <Link 
               href="/feasibility" 
               className="text-gray-600 hover:text-[#001F3F] flex items-center gap-2"
@@ -86,7 +153,7 @@ export default function FeasibilityResultPage() {
             </div>
           </div>
 
-          <div className="mb-8">
+          <div className="mb-8 print-header page-break-inside-avoid">
             <div className="flex items-center gap-3 mb-2">
               <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-medium">
                 {analysis.sector_guess || "General"}
@@ -98,15 +165,15 @@ export default function FeasibilityResultPage() {
             <h1 className="text-3xl font-bold text-[#001F3F] mb-4">
               {analysis.idea_title || "Feasibility Analysis"}
             </h1>
-            <p className="text-lg text-gray-700 leading-relaxed bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+            <p className="text-lg text-gray-700 leading-relaxed bg-white p-6 rounded-lg border border-gray-200 shadow-sm print-compact print-text-sm">
               {analysis.summary}
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="grid md:grid-cols-3 gap-6 mb-8 print-grid">
             {/* Technical Card */}
-            <Card className="border-t-4 border-t-blue-500">
-              <CardHeader>
+            <Card className="border-t-4 border-t-blue-500 print-card print-compact">
+              <CardHeader className="print-compact">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
                     <Gauge className="text-blue-600" size={20} />
@@ -117,7 +184,7 @@ export default function FeasibilityResultPage() {
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="print-compact print-text-sm">
                 <p className="text-sm text-gray-600 mb-4">{analysis.technical_reasoning}</p>
                 {analysis.technical_constraints && analysis.technical_constraints.length > 0 && (
                   <div>
@@ -135,8 +202,8 @@ export default function FeasibilityResultPage() {
             </Card>
 
             {/* Commercial Card */}
-            <Card className="border-t-4 border-t-green-500">
-              <CardHeader>
+            <Card className="border-t-4 border-t-green-500 print-card print-compact">
+              <CardHeader className="print-compact">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="text-green-600" size={20} />
@@ -147,7 +214,7 @@ export default function FeasibilityResultPage() {
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="print-compact print-text-sm">
                 <p className="text-sm text-gray-600 mb-4">{analysis.commercial_reasoning}</p>
                 
                 {analysis.target_customers && analysis.target_customers.length > 0 && (
@@ -179,8 +246,8 @@ export default function FeasibilityResultPage() {
             </Card>
 
             {/* Delivery Card */}
-            <Card className="border-t-4 border-t-purple-500">
-              <CardHeader>
+            <Card className="border-t-4 border-t-purple-500 print-card print-compact">
+              <CardHeader className="print-compact">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
                     <Clock className="text-purple-600" size={20} />
@@ -198,7 +265,7 @@ export default function FeasibilityResultPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="print-compact print-text-sm">
                 {analysis.delivery_dependencies && analysis.delivery_dependencies.length > 0 && (
                   <div>
                     <h4 className="text-xs font-semibold text-gray-900 mb-2 uppercase">Key Dependencies</h4>
@@ -215,16 +282,16 @@ export default function FeasibilityResultPage() {
             </Card>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className="grid md:grid-cols-2 gap-6 mb-8 print-grid page-break-before">
             {/* Risks */}
-            <Card>
-              <CardHeader>
+            <Card className="print-card print-compact">
+              <CardHeader className="print-compact">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="text-orange-500" size={20} />
                   <CardTitle>Risks & Regulations</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="print-compact print-text-sm">
                 <div className="space-y-4">
                   <div>
                     <h4 className="text-sm font-semibold mb-2">Notable Risks</h4>
@@ -254,14 +321,14 @@ export default function FeasibilityResultPage() {
 
             {/* Next Actions & R&D Tax */}
             <div className="space-y-6">
-              <Card className="border-l-4 border-l-[#FF6B35]">
-                <CardHeader>
+              <Card className="border-l-4 border-l-[#FF6B35] print-card print-compact">
+                <CardHeader className="print-compact">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="text-[#FF6B35]" size={20} />
                     <CardTitle>Recommended Next Actions</CardTitle>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="print-compact print-text-sm">
                   <ul className="space-y-3">
                     {(analysis.next_actions || []).map((action, i) => (
                       <li key={i} className="flex gap-3 text-sm text-gray-800">
@@ -275,14 +342,14 @@ export default function FeasibilityResultPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-slate-50">
-                <CardHeader className="pb-2">
+              <Card className="bg-slate-50 print-card print-compact">
+                <CardHeader className="pb-2 print-compact">
                   <div className="flex items-center gap-2">
                     <PoundSterling className="text-slate-600" size={20} />
                     <CardTitle className="text-base">R&D Tax Potential</CardTitle>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="print-compact print-text-sm">
                   <div className="flex items-start gap-4">
                     <div className={`
                       px-3 py-1 rounded font-bold text-sm uppercase shrink-0
