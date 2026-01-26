@@ -43,10 +43,10 @@ export default function CaptureEvidencePage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [fileType, setFileType] = useState<'image' | 'video' | 'audio' | 'document' | null>(null);
   
   const [formData, setFormData] = useState({
     description: "",
-    type: "image",
     projectId: "",
     tag: "Work in Progress",
     date: new Date().toISOString().split('T')[0],
@@ -64,7 +64,6 @@ export default function CaptureEvidencePage() {
   const loadProjects = async () => {
     if (!currentOrg) return;
     try {
-      // Fixed: use getProjectsByOrganisation instead of getProjects
       const data = await sidekickProjectService.getProjectsByOrganisation(currentOrg.id);
       setProjects(data);
     } catch (error) {
@@ -81,16 +80,17 @@ export default function CaptureEvidencePage() {
       const objectUrl = URL.createObjectURL(selectedFile);
       setPreviewUrl(objectUrl);
       
-      // Auto-detect type
-      if (selectedFile.type.startsWith('image/')) setFormData(prev => ({ ...prev, type: 'image' }));
-      else if (selectedFile.type.startsWith('video/')) setFormData(prev => ({ ...prev, type: 'video' }));
-      else if (selectedFile.type.startsWith('audio/')) setFormData(prev => ({ ...prev, type: 'audio' }));
-      else setFormData(prev => ({ ...prev, type: 'document' }));
+      // Detect file type for display purposes only (not saved to DB)
+      if (selectedFile.type.startsWith('image/')) setFileType('image');
+      else if (selectedFile.type.startsWith('video/')) setFileType('video');
+      else if (selectedFile.type.startsWith('audio/')) setFileType('audio');
+      else setFileType('document');
     }
   };
 
   const clearFile = () => {
     setFile(null);
+    setFileType(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -131,11 +131,17 @@ export default function CaptureEvidencePage() {
         formData.date ? `Date: ${formData.date}` : null
       ].filter(Boolean).join('\n\n');
 
+      // FIXED: Use correct type values based on constraint
+      // 'note' = text-only evidence
+      // 'file' = file attachment
+      // 'link' = external link (future feature)
+      const evidenceType = file ? 'file' : 'note';
+
       const evidence = await sidekickEvidenceService.createEvidence({
         project_id: formData.projectId,
         created_by: user.id,
         body: fullBody,
-        type: formData.type,
+        type: evidenceType, // ✅ Now uses 'file' or 'note' only
         tags: formData.tag ? [formData.tag] : [],
         file_path: fileUrl,
         title: `Evidence - ${new Date().toLocaleDateString()}`,
@@ -244,7 +250,7 @@ export default function CaptureEvidencePage() {
                   
                   {previewUrl ? (
                     <div className="relative inline-block">
-                      {formData.type === 'image' ? (
+                      {fileType === 'image' ? (
                         <img 
                           src={previewUrl} 
                           alt="Preview" 
@@ -252,9 +258,9 @@ export default function CaptureEvidencePage() {
                         />
                       ) : (
                         <div className="h-32 w-32 bg-white rounded-lg shadow-professional flex items-center justify-center mx-auto">
-                          {formData.type === 'video' && <Video className="h-12 w-12 text-primary" />}
-                          {formData.type === 'audio' && <Mic className="h-12 w-12 text-primary" />}
-                          {formData.type === 'document' && <FileText className="h-12 w-12 text-primary" />}
+                          {fileType === 'video' && <Video className="h-12 w-12 text-primary" />}
+                          {fileType === 'audio' && <Mic className="h-12 w-12 text-primary" />}
+                          {fileType === 'document' && <FileText className="h-12 w-12 text-primary" />}
                         </div>
                       )}
                       <button
