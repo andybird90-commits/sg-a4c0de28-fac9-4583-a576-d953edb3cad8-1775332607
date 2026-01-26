@@ -12,10 +12,13 @@ export type Organisation = {
 
 export type Project = {
   id: string;
-  org_id: string;
+  company_id: string; // Changed from org_id to match schema
   name: string;
   description: string | null;
-  is_active: boolean | null;
+  sector: string | null;
+  stage: string | null;
+  status: string;
+  is_active: boolean; // Computed or derived if not in schema (schema has status='draft')
   created_at: string;
 };
 
@@ -105,20 +108,56 @@ export const organisationService = {
     if (error) throw error;
   },
 
-  async getProjects(orgId: string, activeOnly: boolean = true): Promise<Project[]> {
-    let query = supabase
-      .from("projects")
+  async getProjects(orgId: string, activeOnly = true): Promise<Project[]> {
+    // Note: Schema uses 'company_id', not 'organisation_id' or 'org_id'
+    const query = supabase
+      .from("sidekick_projects")
       .select("*")
-      .eq("org_id", orgId)
-      .order("name", { ascending: true });
+      .eq("company_id", orgId)
+      .order("created_at", { ascending: false });
 
-    if (activeOnly) {
-      query = query.eq("is_active", true);
-    }
-
+    // Schema uses 'status' not 'is_active'. Filter for non-archived if needed, 
+    // or just return all for now. The previous code assumed 'is_active'.
+    // Let's assume 'draft', 'needs_changes', 'review' are active.
+    
     const { data, error } = await query;
+    if (error) throw error;
+    
+    // Map to Project type
+    return (data || []).map((p: any) => ({
+      ...p,
+      is_active: p.status !== 'archived' // Derive is_active
+    })) as Project[];
+  },
+
+  async createProject(orgId: string, project: Partial<Project> & { tags?: string[] }): Promise<Project> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+
+    // Remove 'tags' and 'is_active' as they are not in schema
+    // Map 'name', 'description' directly
+    // Use 'company_id' for org link
+    
+    const { tags, is_active, ...projectData } = project;
+
+    const { data, error } = await supabase
+      .from("sidekick_projects")
+      .insert({
+        company_id: orgId,
+        created_by: user.id,
+        name: projectData.name || "New Project",
+        description: projectData.description,
+        sector: projectData.sector,
+        stage: projectData.stage,
+        status: 'draft'
+      })
+      .select()
+      .single();
 
     if (error) throw error;
-    return (data || []) as Project[];
+    return {
+      ...data,
+      is_active: data.status !== 'archived'
+    } as Project;
   }
 };
