@@ -150,15 +150,7 @@ export default function FeasibilityPage() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => router.push("/feasibility/history")}
-                  >
-                    <History size={16} className="mr-2" />
-                    View History
-                  </Button>
+                <div className="flex items-center justify-end pt-4">
                   <Button
                     type="submit"
                     disabled={loading}
