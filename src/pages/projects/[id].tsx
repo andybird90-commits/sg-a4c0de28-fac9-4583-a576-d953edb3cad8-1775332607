@@ -603,27 +603,37 @@ export default function ProjectDetailPage() {
                     ) : (
                       <div className="space-y-3">
                         {evidence.map((item) => (
-                          <div key={item.id} className="border rounded-lg p-4">
+                          <div 
+                            key={item.id} 
+                            className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer group"
+                            onClick={() => router.push(`/evidence/sidekick/${item.id}`)}
+                          >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
                                   <Badge variant="outline">{item.type}</Badge>
                                   {item.title && <span className="font-medium">{item.title}</span>}
+                                  {item.tags && item.tags.map((tag, idx) => (
+                                    <Badge key={idx} className="bg-primary/10 text-primary">{tag}</Badge>
+                                  ))}
                                 </div>
-                                {item.body && <p className="text-sm text-muted-foreground">{item.body}</p>}
+                                {item.body && (
+                                  <p className="text-sm text-muted-foreground line-clamp-2">{item.body}</p>
+                                )}
                                 {item.external_url && (
                                   <a
                                     href={item.external_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-sm text-primary underline flex items-center gap-1"
+                                    className="text-sm text-primary underline flex items-center gap-1 mt-1"
+                                    onClick={(e) => e.stopPropagation()}
                                   >
                                     <LinkIcon className="w-3 h-3" />
                                     {item.external_url}
                                   </a>
                                 )}
                                 {item.file_path && (
-                                  <p className="text-sm text-muted-foreground">File: {item.file_path}</p>
+                                  <p className="text-sm text-muted-foreground mt-1">📎 File attached</p>
                                 )}
                                 <p className="text-xs text-muted-foreground mt-2">
                                   {new Date(item.created_at).toLocaleString()}
@@ -632,9 +642,12 @@ export default function ProjectDetailPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleDeleteEvidence(item.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteEvidence(item.id);
+                                }}
                                 disabled={deletingEvidence === item.id}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
