@@ -156,8 +156,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                           className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
                           onClick={() => {
                             setMobileMenuOpen(false);
-                            authService.signOut();
-                            router.push("/auth/login");
+                            handleLogout();
                           }}
                         >
                           <LogOut className="h-4 w-4" />
@@ -169,15 +168,29 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                 </Sheet>
               )}
 
-              <Link href="/" className="flex items-center gap-2">
+              {/* Logo - Passive (no link) */}
+              <div className="flex items-center gap-2 cursor-default">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                   RD
                 </div>
                 <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hidden sm:block">
                   RD Sidekick
                 </span>
-              </Link>
+              </div>
             </div>
+
+            {/* Desktop Logout Button */}
+            {user && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="hidden lg:flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            )}
           </div>
         </div>
       </header>
