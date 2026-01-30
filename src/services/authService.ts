@@ -263,7 +263,17 @@ export const authService = {
           const response = await originalFetch(...args);
           
           // Check if it's a Supabase auth endpoint with 403
-          const url = typeof args[0] === 'string' ? args[0] : args[0]?.url;
+          const input = args[0];
+          let url = '';
+          
+          if (typeof input === 'string') {
+            url = input;
+          } else if (input instanceof URL) {
+            url = input.toString();
+          } else if (input && typeof input === 'object' && 'url' in input) {
+            url = (input as Request).url;
+          }
+          
           if (url && url.includes('supabase.co/auth') && response.status === 403) {
             console.warn("403 error from Supabase auth, clearing session");
             await this.clearInvalidSession();
