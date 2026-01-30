@@ -36,13 +36,28 @@ const getURL = () => {
 export const authService = {
   // Get current user
   async getCurrentUser(): Promise<AuthUser | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user ? {
-      id: user.id,
-      email: user.email || "",
-      user_metadata: user.user_metadata,
-      created_at: user.created_at
-    } : null;
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      // Handle 403 session errors
+      if (error && (error.message?.includes("session") || error.message?.includes("JWT") || error.status === 403)) {
+        await this.clearInvalidSession();
+        return null;
+      }
+      
+      return user ? {
+        id: user.id,
+        email: user.email || "",
+        user_metadata: user.user_metadata,
+        created_at: user.created_at
+      } : null;
+    } catch (error: any) {
+      console.error("Error getting current user:", error);
+      if (error?.status === 403 || error?.message?.includes("session")) {
+        await this.clearInvalidSession();
+      }
+      return null;
+    }
   },
 
   // Get current session
@@ -182,11 +197,24 @@ export const authService = {
 
   async clearInvalidSession() {
     try {
-      await supabase.auth.signOut();
+      // Clear the session from Supabase
+      await supabase.auth.signOut({ scope: 'local' });
       
       if (typeof window !== "undefined") {
-        localStorage.removeItem("supabase.auth.token");
+        // Clear all auth-related storage
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.includes('supabase')) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        
+        // Clear session storage
         sessionStorage.clear();
+        
+        console.log("Invalid session cleared");
       }
     } catch (error) {
       console.error("Error clearing invalid session:", error);
@@ -197,16 +225,60 @@ export const authService = {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
       
-      if (error || !session) {
+      // If there's an error or no session, clear everything
+      if (error) {
+        console.error("Session validation error:", error);
+        await this.clearInvalidSession();
+        return null;
+      }
+      
+      if (!session) {
+        await this.clearInvalidSession();
+        return null;
+      }
+      
+      // Verify the session is actually valid by making a user request
+      const { error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error("User validation error:", userError);
         await this.clearInvalidSession();
         return null;
       }
       
       return session;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Session validation error:", error);
       await this.clearInvalidSession();
       return null;
+    }
+  },
+
+  // Add global error handler for Supabase 403 errors
+  setupGlobalErrorHandler() {
+    if (typeof window !== "undefined") {
+      // Intercept fetch to catch 403 errors from Supabase
+      const originalFetch = window.fetch;
+      window.fetch = async (...args) => {
+        try {
+          const response = await originalFetch(...args);
+          
+          // Check if it's a Supabase auth endpoint with 403
+          const url = typeof args[0] === 'string' ? args[0] : args[0]?.url;
+          if (url && url.includes('supabase.co/auth') && response.status === 403) {
+            console.warn("403 error from Supabase auth, clearing session");
+            await this.clearInvalidSession();
+            
+            // Optionally reload the page to reset state
+            if (window.location.pathname !== '/auth/login') {
+              window.location.href = '/auth/login';
+            }
+          }
+          
+          return response;
+        } catch (error) {
+          throw error;
+        }
+      };
     }
   }
 };

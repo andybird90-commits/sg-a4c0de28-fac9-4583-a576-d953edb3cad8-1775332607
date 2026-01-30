@@ -15,6 +15,370 @@ export type Database = {
   }
   public: {
     Tables: {
+      cif_documents: {
+        Row: {
+          cif_id: string
+          doc_type: string
+          file_path: string
+          id: string
+          notes: string | null
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          cif_id: string
+          doc_type: string
+          file_path: string
+          id?: string
+          notes?: string | null
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          cif_id?: string
+          doc_type?: string
+          file_path?: string
+          id?: string
+          notes?: string | null
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cif_documents_cif_id_fkey"
+            columns: ["cif_id"]
+            isOneToOne: false
+            referencedRelation: "cif_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cif_records: {
+        Row: {
+          cif_status: string
+          created_at: string
+          director_comment: string | null
+          director_decided_at: string | null
+          director_decision: string | null
+          director_id: string | null
+          id: string
+          org_id: string | null
+          prospect_id: string
+          section1_completed_at: string | null
+          section1_completed_by: string | null
+          section2_feasibility_id: string | null
+          section3_completed_at: string | null
+          section3_completed_by: string | null
+          section4_completed_at: string | null
+          section4_completed_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          cif_status?: string
+          created_at?: string
+          director_comment?: string | null
+          director_decided_at?: string | null
+          director_decision?: string | null
+          director_id?: string | null
+          id?: string
+          org_id?: string | null
+          prospect_id: string
+          section1_completed_at?: string | null
+          section1_completed_by?: string | null
+          section2_feasibility_id?: string | null
+          section3_completed_at?: string | null
+          section3_completed_by?: string | null
+          section4_completed_at?: string | null
+          section4_completed_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cif_status?: string
+          created_at?: string
+          director_comment?: string | null
+          director_decided_at?: string | null
+          director_decision?: string | null
+          director_id?: string | null
+          id?: string
+          org_id?: string | null
+          prospect_id?: string
+          section1_completed_at?: string | null
+          section1_completed_by?: string | null
+          section2_feasibility_id?: string | null
+          section3_completed_at?: string | null
+          section3_completed_by?: string | null
+          section4_completed_at?: string | null
+          section4_completed_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cif_records_director_id_fkey"
+            columns: ["director_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_records_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_records_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_records_section1_completed_by_fkey"
+            columns: ["section1_completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_records_section2_feasibility_id_fkey"
+            columns: ["section2_feasibility_id"]
+            isOneToOne: false
+            referencedRelation: "feasibility_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_records_section3_completed_by_fkey"
+            columns: ["section3_completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_records_section4_completed_by_fkey"
+            columns: ["section4_completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claims: {
+        Row: {
+          actual_submission_date: string | null
+          bd_owner_id: string | null
+          claim_year: number
+          cost_lead_id: string | null
+          created_at: string
+          director_id: string | null
+          engagement_id: string | null
+          expected_submission_date: string | null
+          hmrc_reference: string | null
+          id: string
+          notes: string | null
+          ops_owner_id: string | null
+          org_id: string
+          period_end: string | null
+          period_start: string | null
+          status: string
+          technical_lead_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_submission_date?: string | null
+          bd_owner_id?: string | null
+          claim_year: number
+          cost_lead_id?: string | null
+          created_at?: string
+          director_id?: string | null
+          engagement_id?: string | null
+          expected_submission_date?: string | null
+          hmrc_reference?: string | null
+          id?: string
+          notes?: string | null
+          ops_owner_id?: string | null
+          org_id: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          technical_lead_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_submission_date?: string | null
+          bd_owner_id?: string | null
+          claim_year?: number
+          cost_lead_id?: string | null
+          created_at?: string
+          director_id?: string | null
+          engagement_id?: string | null
+          expected_submission_date?: string | null
+          hmrc_reference?: string | null
+          id?: string
+          notes?: string | null
+          ops_owner_id?: string | null
+          org_id?: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string
+          technical_lead_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claims_bd_owner_id_fkey"
+            columns: ["bd_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claims_cost_lead_id_fkey"
+            columns: ["cost_lead_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claims_director_id_fkey"
+            columns: ["director_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claims_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claims_ops_owner_id_fkey"
+            columns: ["ops_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claims_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claims_technical_lead_id_fkey"
+            columns: ["technical_lead_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_mentions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          mentioned_user_id: string
+          read_at: string | null
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          mentioned_user_id: string
+          read_at?: string | null
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          mentioned_user_id?: string
+          read_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "internal_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_mentions_mentioned_user_id_fkey"
+            columns: ["mentioned_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      engagements: {
+        Row: {
+          created_at: string
+          created_by: string
+          end_date: string | null
+          fee_model: string | null
+          id: string
+          name: string
+          notes: string | null
+          org_id: string
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          end_date?: string | null
+          fee_model?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          org_id: string
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          end_date?: string | null
+          fee_model?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          org_id?: string
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engagements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagements_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evidence_files: {
         Row: {
           created_at: string | null
@@ -215,6 +579,79 @@ export type Database = {
           },
         ]
       }
+      internal_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          payload_json: Json
+          read_at: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          payload_json: Json
+          read_at?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          payload_json?: Json
+          read_at?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_invite_codes: {
         Row: {
           code: string
@@ -335,6 +772,98 @@ export type Database = {
           },
         ]
       }
+      pipeline_entries: {
+        Row: {
+          claim_id: string | null
+          created_at: string
+          created_by: string
+          engagement_id: string | null
+          estimated_qualifying_spend: number | null
+          expected_accounts_filing_date: string | null
+          expected_fee: number | null
+          expected_submission_date: string | null
+          filing_pattern: string | null
+          id: string
+          notes: string | null
+          org_id: string
+          period_label: string | null
+          predictor_confidence: string | null
+          predictor_last_run_at: string | null
+          probability: number | null
+          updated_at: string
+          weighted_fee: number | null
+        }
+        Insert: {
+          claim_id?: string | null
+          created_at?: string
+          created_by: string
+          engagement_id?: string | null
+          estimated_qualifying_spend?: number | null
+          expected_accounts_filing_date?: string | null
+          expected_fee?: number | null
+          expected_submission_date?: string | null
+          filing_pattern?: string | null
+          id?: string
+          notes?: string | null
+          org_id: string
+          period_label?: string | null
+          predictor_confidence?: string | null
+          predictor_last_run_at?: string | null
+          probability?: number | null
+          updated_at?: string
+          weighted_fee?: number | null
+        }
+        Update: {
+          claim_id?: string | null
+          created_at?: string
+          created_by?: string
+          engagement_id?: string | null
+          estimated_qualifying_spend?: number | null
+          expected_accounts_filing_date?: string | null
+          expected_fee?: number | null
+          expected_submission_date?: string | null
+          filing_pattern?: string | null
+          id?: string
+          notes?: string | null
+          org_id?: string
+          period_label?: string | null
+          predictor_confidence?: string | null
+          predictor_last_run_at?: string | null
+          probability?: number | null
+          updated_at?: string
+          weighted_fee?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_entries_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_entries_engagement_id_fkey"
+            columns: ["engagement_id"]
+            isOneToOne: false
+            referencedRelation: "engagements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_entries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -342,6 +871,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          internal_role: string | null
           updated_at: string | null
         }
         Insert: {
@@ -350,6 +880,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          internal_role?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -358,6 +889,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          internal_role?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -403,6 +935,74 @@ export type Database = {
           },
         ]
       }
+      prospects: {
+        Row: {
+          bd_owner_id: string
+          commercial_lead_id: string | null
+          company_name: string
+          company_number: string | null
+          created_at: string
+          id: string
+          org_id: string | null
+          status: string
+          technical_lead_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          bd_owner_id: string
+          commercial_lead_id?: string | null
+          company_name: string
+          company_number?: string | null
+          created_at?: string
+          id?: string
+          org_id?: string | null
+          status?: string
+          technical_lead_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bd_owner_id?: string
+          commercial_lead_id?: string | null
+          company_name?: string
+          company_number?: string | null
+          created_at?: string
+          id?: string
+          org_id?: string | null
+          status?: string
+          technical_lead_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prospects_bd_owner_id_fkey"
+            columns: ["bd_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prospects_commercial_lead_id_fkey"
+            columns: ["commercial_lead_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prospects_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prospects_technical_lead_id_fkey"
+            columns: ["technical_lead_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rd_claim_evidence: {
         Row: {
           attached_by: string | null
@@ -441,6 +1041,13 @@ export type Database = {
           type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "rd_claim_evidence_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "rd_claim_evidence_org_id_fkey"
             columns: ["org_id"]
@@ -520,7 +1127,10 @@ export type Database = {
           body: string
           created_at: string
           id: string
+          origin: string
           project_id: string
+          type: string
+          visibility: string
         }
         Insert: {
           author_id: string
@@ -528,7 +1138,10 @@ export type Database = {
           body: string
           created_at?: string
           id?: string
+          origin?: string
           project_id: string
+          type?: string
+          visibility?: string
         }
         Update: {
           author_id?: string
@@ -536,7 +1149,10 @@ export type Database = {
           body?: string
           created_at?: string
           id?: string
+          origin?: string
           project_id?: string
+          type?: string
+          visibility?: string
         }
         Relationships: [
           {
@@ -557,56 +1173,146 @@ export type Database = {
       }
       sidekick_projects: {
         Row: {
+          accepted_at: string | null
+          claim_id: string | null
           company_id: string
           conexa_project_id: string | null
           created_at: string
           created_by: string
           description: string | null
           id: string
+          internal_status: string | null
           name: string
           ready_for_review_at: string | null
           reviewed_by_user_id: string | null
           sector: string | null
           stage: string | null
           status: string
+          submitted_at: string | null
           updated_at: string
         }
         Insert: {
+          accepted_at?: string | null
+          claim_id?: string | null
           company_id: string
           conexa_project_id?: string | null
           created_at?: string
           created_by: string
           description?: string | null
           id?: string
+          internal_status?: string | null
           name: string
           ready_for_review_at?: string | null
           reviewed_by_user_id?: string | null
           sector?: string | null
           stage?: string | null
           status?: string
+          submitted_at?: string | null
           updated_at?: string
         }
         Update: {
+          accepted_at?: string | null
+          claim_id?: string | null
           company_id?: string
           conexa_project_id?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
           id?: string
+          internal_status?: string | null
           name?: string
           ready_for_review_at?: string | null
           reviewed_by_user_id?: string | null
           sector?: string | null
           stage?: string | null
           status?: string
+          submitted_at?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "sidekick_projects_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sidekick_projects_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      timesheet_entries: {
+        Row: {
+          activity_type: string | null
+          claim_id: string | null
+          created_at: string
+          date: string
+          hours: number
+          id: string
+          notes: string | null
+          org_id: string
+          sidekick_project_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_type?: string | null
+          claim_id?: string | null
+          created_at?: string
+          date: string
+          hours: number
+          id?: string
+          notes?: string | null
+          org_id: string
+          sidekick_project_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string | null
+          claim_id?: string | null
+          created_at?: string
+          date?: string
+          hours?: number
+          id?: string
+          notes?: string | null
+          org_id?: string
+          sidekick_project_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "timesheet_entries_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheet_entries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheet_entries_sidekick_project_id_fkey"
+            columns: ["sidekick_project_id"]
+            isOneToOne: false
+            referencedRelation: "sidekick_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "timesheet_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

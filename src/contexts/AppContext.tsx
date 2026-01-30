@@ -39,7 +39,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     try {
       setOrganisationsLoading(true);
-      const orgs = await organisationService.getUserOrganisations(); // No parameter needed
+      const orgs = await organisationService.getUserOrganisations();
       setOrganisations(orgs);
 
       // Try to restore last selected org from localStorage
@@ -71,6 +71,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Setup global error handler for 403 errors
+    authService.setupGlobalErrorHandler();
+
     const checkUser = async () => {
       try {
         const session = await authService.validateSession();
@@ -85,8 +88,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         
         if (userError) {
           console.error("Error fetching user:", userError);
-          if (userError.message?.includes("session") || userError.message?.includes("JWT")) {
+          // Handle 403 or session errors
+          if (userError.status === 403 || userError.message?.includes("session") || userError.message?.includes("JWT")) {
             await authService.clearInvalidSession();
+            setUser(null);
+            setLoading(false);
+            // Redirect to login if not already there
+            if (typeof window !== "undefined" && window.location.pathname !== '/auth/login') {
+              window.location.href = '/auth/login';
+            }
+            return;
           }
           setUser(null);
           setLoading(false);
@@ -115,11 +126,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           // Fetch organisations using the service
           try {
             setOrganisationsLoading(true);
-            const orgs = await organisationService.getUserOrganisations(); // No parameter
+            const orgs = await organisationService.getUserOrganisations();
             setOrganisations(orgs);
 
             if (orgs.length > 0) {
-              const savedOrgId = localStorage.getItem("selectedOrgId"); // Use consistent key
+              const savedOrgId = localStorage.getItem("selectedOrgId");
               const savedOrg = orgs.find((o) => o.id === savedOrgId);
               setCurrentOrg(savedOrg || orgs[0]);
               if (savedOrg || orgs.length === 1) {
@@ -132,9 +143,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             setOrganisationsLoading(false);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error in checkUser:", error);
-        await authService.clearInvalidSession();
+        // Handle any unexpected errors
+        if (error?.status === 403 || error?.message?.includes("session")) {
+          await authService.clearInvalidSession();
+          if (typeof window !== "undefined" && window.location.pathname !== '/auth/login') {
+            window.location.href = '/auth/login';
+          }
+        }
         setUser(null);
       } finally {
         setLoading(false);
