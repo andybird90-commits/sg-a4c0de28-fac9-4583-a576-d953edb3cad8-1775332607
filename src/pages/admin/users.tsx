@@ -66,6 +66,20 @@ export default function AdminUsers() {
 
       if (profilesError) throw profilesError;
 
+      // Get auth users metadata (includes last_sign_in_at)
+      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
+      
+      // Create a map of auth user metadata
+      const authUserMap: Record<string, any> = {};
+      if (!authError && authUsers) {
+        authUsers.forEach((authUser: any) => {
+          authUserMap[authUser.id] = {
+            last_sign_in_at: authUser.last_sign_in_at,
+            email: authUser.email
+          };
+        });
+      }
+
       // Get organisation memberships
       const { data: orgUsers, error: orgError } = await supabase
         .from("organisation_users")
@@ -105,12 +119,14 @@ export default function AdminUsers() {
             org_code: ou.organisations?.organisation_code || "N/A"
           }));
 
+        const authMeta = authUserMap[profile.id];
+
         return {
           id: profile.id,
-          email: profile.email || "No email",
+          email: profile.email || authMeta?.email || "No email",
           full_name: profile.full_name,
           created_at: profile.created_at,
-          last_sign_in_at: profile.last_sign_in_at,
+          last_sign_in_at: authMeta?.last_sign_in_at || null,
           organisations: userOrgs,
           evidence_count: evidenceCountMap[profile.id] || 0
         };
