@@ -126,10 +126,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         // Fetch profile with organisation info for staff detection
         const profile = await profileService.getCurrentUserProfileWithOrg();
+        console.log("[AppContext] Profile fetched:", profile);
         setProfileWithOrg(profile);
         
         // Determine if user is staff
         const staffStatus = checkIsStaff(profile);
+        console.log("[AppContext] Staff status:", staffStatus);
         setIsStaff(staffStatus);
 
         const { data: profileData } = await supabase
@@ -185,6 +187,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     checkUser();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("[AppContext] Auth state change:", event);
       if (event === "SIGNED_OUT" || !session) {
         setUser(null);
         setOrganisations([]);
@@ -192,9 +195,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setIsStaff(false);
         setProfileWithOrg(null);
       } else if (event === "SIGNED_IN" && session) {
-        checkUser();
+        // Re-check user and fetch profile
+        await checkUser();
       } else if (event === "TOKEN_REFRESHED") {
-        checkUser();
+        await checkUser();
       }
     });
 

@@ -11,12 +11,10 @@ import { AlertCircle, Loader2, Mail, Lock, ArrowRight } from "lucide-react";
 import { authService } from "@/services/authService";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useApp } from "@/contexts/AppContext";
-import { profileService } from "@/services/profileService";
-import { isStaff } from "@/lib/auth/roles";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user } = useApp();
+  const { user, isStaff, loading: appLoading } = useApp();
   const { notify } = useNotifications();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,11 +33,16 @@ export default function LoginPage() {
     validateAndClearSession();
   }, []);
 
+  // Handle routing after user is loaded by AppContext
   useEffect(() => {
-    if (user) {
-      router.push("/home");
+    if (!appLoading && user) {
+      if (isStaff) {
+        router.push("/staff");
+      } else {
+        router.push("/home");
+      }
     }
-  }, [user, router]);
+  }, [user, isStaff, appLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,17 +57,13 @@ export default function LoginPage() {
       return;
     }
 
-    if (user) {
-      // Check if user is staff and redirect accordingly
-      const profile = await profileService.getCurrentUserProfileWithOrg();
-      const staffStatus = isStaff(profile);
-      
-      if (staffStatus) {
-        router.push("/staff");
-      } else {
-        router.push("/home");
-      }
+    // Don't manually redirect - let the useEffect above handle it
+    // after AppContext finishes loading the user profile
+    if (!user) {
+      setError("Failed to sign in. Please try again.");
+      setLoading(false);
     }
+    // Keep loading state true - will redirect via useEffect
   };
 
   return (
