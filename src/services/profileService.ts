@@ -21,22 +21,10 @@ export const profileService = {
         return null;
       }
 
-      // Fetch profile with organisation info
-      // Using LEFT JOIN to get organisation details if user belongs to one
+      // Fetch profile data
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select(`
-          id,
-          email,
-          full_name,
-          internal_role,
-          organisation_users!inner(
-            organisations(
-              organisation_code,
-              name
-            )
-          )
-        `)
+        .select("id, email, full_name, internal_role")
         .eq("id", user.id)
         .single();
 
@@ -49,19 +37,39 @@ export const profileService = {
         return null;
       }
 
-      // Extract organisation info from the nested structure
-      const orgUsers = profile.organisation_users as any;
-      const org = Array.isArray(orgUsers) && orgUsers.length > 0 
-        ? orgUsers[0]?.organisations 
-        : null;
+      // Fetch organisation data separately via organisation_users table
+      const { data: orgUsers, error: orgError } = await supabase
+        .from("organisation_users")
+        .select(`
+          organisations (
+            organisation_code,
+            name
+          )
+        `)
+        .eq("user_id", user.id)
+        .limit(1);
+
+      console.log("Profile query result:", { profile, orgUsers, orgError });
+
+      // Extract organisation info
+      let organisationCode = null;
+      let organisationName = null;
+
+      if (orgUsers && orgUsers.length > 0) {
+        const org = (orgUsers[0] as any).organisations;
+        if (org) {
+          organisationCode = org.organisation_code;
+          organisationName = org.name;
+        }
+      }
 
       return {
         id: profile.id,
         email: profile.email || "",
         full_name: profile.full_name,
         internal_role: profile.internal_role as any,
-        organisation_code: org?.organisation_code || null,
-        organisation_name: org?.name || null
+        organisation_code: organisationCode,
+        organisation_name: organisationName
       };
     } catch (error) {
       console.error("Error in getCurrentUserProfileWithOrg:", error);
@@ -74,20 +82,10 @@ export const profileService = {
    */
   async getUserProfileWithOrg(userId: string): Promise<ProfileWithOrg | null> {
     try {
+      // Fetch profile data
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select(`
-          id,
-          email,
-          full_name,
-          internal_role,
-          organisation_users!inner(
-            organisations(
-              organisation_code,
-              name
-            )
-          )
-        `)
+        .select("id, email, full_name, internal_role")
         .eq("id", userId)
         .single();
 
@@ -96,19 +94,39 @@ export const profileService = {
         return null;
       }
 
-      // Extract organisation info from the nested structure
-      const orgUsers = profile.organisation_users as any;
-      const org = Array.isArray(orgUsers) && orgUsers.length > 0 
-        ? orgUsers[0]?.organisations 
-        : null;
+      // Fetch organisation data separately via organisation_users table
+      const { data: orgUsers, error: orgError } = await supabase
+        .from("organisation_users")
+        .select(`
+          organisations (
+            organisation_code,
+            name
+          )
+        `)
+        .eq("user_id", userId)
+        .limit(1);
+
+      console.log("Profile query result:", { profile, orgUsers, orgError });
+
+      // Extract organisation info
+      let organisationCode = null;
+      let organisationName = null;
+
+      if (orgUsers && orgUsers.length > 0) {
+        const org = (orgUsers[0] as any).organisations;
+        if (org) {
+          organisationCode = org.organisation_code;
+          organisationName = org.name;
+        }
+      }
 
       return {
         id: profile.id,
         email: profile.email || "",
         full_name: profile.full_name,
         internal_role: profile.internal_role as any,
-        organisation_code: org?.organisation_code || null,
-        organisation_name: org?.name || null
+        organisation_code: organisationCode,
+        organisation_name: organisationName
       };
     } catch (error) {
       console.error("Error in getUserProfileWithOrg:", error);
