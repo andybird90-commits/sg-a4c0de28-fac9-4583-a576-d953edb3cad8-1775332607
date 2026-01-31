@@ -51,9 +51,10 @@ export function AdminNav() {
       color: "text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
     },
     { 
-      href: "/admin/rd-review", 
+      label: "RD Review", 
       icon: ClipboardCheck, 
-      label: "RD Review" 
+      path: "/admin/rd-review",
+      color: "text-teal-600 bg-teal-50 hover:bg-teal-100"
     },
   ];
 
