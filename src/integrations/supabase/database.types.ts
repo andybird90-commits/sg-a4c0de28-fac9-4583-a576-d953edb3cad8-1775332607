@@ -941,6 +941,9 @@ export type Database = {
           commercial_lead_id: string | null
           company_name: string
           company_number: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string
           id: string
           org_id: string | null
@@ -953,6 +956,9 @@ export type Database = {
           commercial_lead_id?: string | null
           company_name: string
           company_number?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           org_id?: string | null
@@ -965,6 +971,9 @@ export type Database = {
           commercial_lead_id?: string | null
           company_name?: string
           company_number?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           org_id?: string | null

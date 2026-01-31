@@ -11,6 +11,8 @@ import { AlertCircle, Loader2, Mail, Lock, ArrowRight } from "lucide-react";
 import { authService } from "@/services/authService";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useApp } from "@/contexts/AppContext";
+import { profileService } from "@/services/profileService";
+import { isStaff } from "@/lib/auth/roles";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,25 +46,24 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    try {
-      await authService.signIn(email, password);
-      
-      notify({
-        type: "success",
-        title: "Welcome back!",
-        message: "Successfully logged in"
-      });
+    const { user, error } = await authService.signIn(email, password);
 
-      router.push("/home");
-    } catch (error: any) {
-      setError(error.message || "Failed to log in");
-      notify({
-        type: "error",
-        title: "Login failed",
-        message: error.message || "Invalid credentials"
-      });
-    } finally {
+    if (error) {
+      setError(error.message);
       setLoading(false);
+      return;
+    }
+
+    if (user) {
+      // Check if user is staff and redirect accordingly
+      const profile = await profileService.getCurrentUserProfileWithOrg();
+      const staffStatus = isStaff(profile);
+      
+      if (staffStatus) {
+        router.push("/staff");
+      } else {
+        router.push("/home");
+      }
     }
   };
 

@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { authService } from "@/services/authService";
 import { organisationService, type UserOrganisation } from "@/services/organisationService";
+import { profileService } from "@/services/profileService";
+import { isStaff as checkIsStaff, type ProfileWithOrg } from "@/lib/auth/roles";
 
 interface AppContextType {
   user: any;
@@ -11,6 +13,8 @@ interface AppContextType {
   setCurrentOrg: (org: UserOrganisation) => void;
   refreshOrganisations: () => Promise<void>;
   organisationsLoading: boolean;
+  isStaff: boolean;
+  profileWithOrg: ProfileWithOrg | null;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -21,6 +25,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [organisations, setOrganisations] = useState<UserOrganisation[]>([]);
   const [currentOrg, setCurrentOrg] = useState<UserOrganisation | null>(null);
   const [organisationsLoading, setOrganisationsLoading] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
+  const [profileWithOrg, setProfileWithOrg] = useState<ProfileWithOrg | null>(null);
 
   // Handler to update currentOrg and save to localStorage
   const handleSetCurrentOrg = (org: UserOrganisation) => {
@@ -80,6 +86,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         
         if (!session) {
           setUser(null);
+          setIsStaff(false);
+          setProfileWithOrg(null);
           setLoading(false);
           return;
         }
@@ -92,6 +100,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           if (userError.status === 403 || userError.message?.includes("session") || userError.message?.includes("JWT")) {
             await authService.clearInvalidSession();
             setUser(null);
+            setIsStaff(false);
+            setProfileWithOrg(null);
             setLoading(false);
             // Redirect to login if not already there
             if (typeof window !== "undefined" && window.location.pathname !== '/auth/login') {
@@ -100,27 +110,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             return;
           }
           setUser(null);
+          setIsStaff(false);
+          setProfileWithOrg(null);
           setLoading(false);
           return;
         }
 
         if (!authUser) {
           setUser(null);
+          setIsStaff(false);
+          setProfileWithOrg(null);
           setLoading(false);
           return;
         }
 
-        const { data: profile } = await supabase
+        // Fetch profile with organisation info for staff detection
+        const profile = await profileService.getCurrentUserProfileWithOrg();
+        setProfileWithOrg(profile);
+        
+        // Determine if user is staff
+        const staffStatus = checkIsStaff(profile);
+        setIsStaff(staffStatus);
+
+        const { data: profileData } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", authUser.id)
           .single();
 
-        if (profile) {
+        if (profileData) {
           setUser({
             id: authUser.id,
             email: authUser.email!,
-            fullName: profile.full_name,
+            fullName: profileData.full_name,
           });
 
           // Fetch organisations using the service
@@ -153,6 +175,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
         }
         setUser(null);
+        setIsStaff(false);
+        setProfileWithOrg(null);
       } finally {
         setLoading(false);
       }
@@ -165,6 +189,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setOrganisations([]);
         setCurrentOrg(null);
+        setIsStaff(false);
+        setProfileWithOrg(null);
       } else if (event === "SIGNED_IN" && session) {
         checkUser();
       } else if (event === "TOKEN_REFRESHED") {
@@ -201,6 +227,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setCurrentOrg: handleSetCurrentOrg,
         refreshOrganisations,
         organisationsLoading,
+        isStaff,
+        profileWithOrg,
       }}
     >
       {children}
