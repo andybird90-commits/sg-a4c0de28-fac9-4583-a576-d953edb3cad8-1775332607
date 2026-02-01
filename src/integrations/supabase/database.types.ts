@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -81,12 +81,18 @@ export type Database = {
           expected_feasibility_date: string | null
           finance_last_updated: string | null
           financial_year: string | null
+          has_claimed_before: boolean | null
           id: string
           linked_claim_id: string | null
           org_id: string | null
+          previous_claim_date_submitted: string | null
+          previous_claim_value: number | null
+          previous_claim_year_end_date: string | null
           primary_contact_email: string | null
+          primary_contact_landline: string | null
           primary_contact_name: string | null
           primary_contact_phone: string | null
+          primary_contact_position: string | null
           project_overview: string | null
           prospect_id: string
           rd_themes: string[] | null
@@ -124,12 +130,18 @@ export type Database = {
           expected_feasibility_date?: string | null
           finance_last_updated?: string | null
           financial_year?: string | null
+          has_claimed_before?: boolean | null
           id?: string
           linked_claim_id?: string | null
           org_id?: string | null
+          previous_claim_date_submitted?: string | null
+          previous_claim_value?: number | null
+          previous_claim_year_end_date?: string | null
           primary_contact_email?: string | null
+          primary_contact_landline?: string | null
           primary_contact_name?: string | null
           primary_contact_phone?: string | null
+          primary_contact_position?: string | null
           project_overview?: string | null
           prospect_id: string
           rd_themes?: string[] | null
@@ -167,12 +179,18 @@ export type Database = {
           expected_feasibility_date?: string | null
           finance_last_updated?: string | null
           financial_year?: string | null
+          has_claimed_before?: boolean | null
           id?: string
           linked_claim_id?: string | null
           org_id?: string | null
+          previous_claim_date_submitted?: string | null
+          previous_claim_value?: number | null
+          previous_claim_year_end_date?: string | null
           primary_contact_email?: string | null
+          primary_contact_landline?: string | null
           primary_contact_name?: string | null
           primary_contact_phone?: string | null
+          primary_contact_position?: string | null
           project_overview?: string | null
           prospect_id?: string
           rd_themes?: string[] | null
@@ -1042,6 +1060,8 @@ export type Database = {
           created_at: string
           id: string
           incorporation_date: string | null
+          number_of_directors: number | null
+          number_of_employees: number | null
           org_id: string | null
           registered_address: string | null
           sic_codes: string[] | null
@@ -1061,6 +1081,8 @@ export type Database = {
           created_at?: string
           id?: string
           incorporation_date?: string | null
+          number_of_directors?: number | null
+          number_of_employees?: number | null
           org_id?: string | null
           registered_address?: string | null
           sic_codes?: string[] | null
@@ -1080,6 +1102,8 @@ export type Database = {
           created_at?: string
           id?: string
           incorporation_date?: string | null
+          number_of_directors?: number | null
+          number_of_employees?: number | null
           org_id?: string | null
           registered_address?: string | null
           sic_codes?: string[] | null
