@@ -1,0 +1,731 @@
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import StaffLayout from "@/components/staff/StaffLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, Save, CheckCircle, XCircle, Upload, FileText } from "lucide-react";
+import { cifService, type CIFWithDetails } from "@/services/cifService";
+import { useApp } from "@/contexts/AppContext";
+import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
+
+export default function CIFDetailPage() {
+  const router = useRouter();
+  const { id } = router.query;
+  const { profile, isStaff } = useApp();
+  const { toast } = useToast();
+
+  const [cif, setCif] = useState<CIFWithDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Technical Form State
+  const [techUnderstanding, setTechUnderstanding] = useState("");
+  const [techChallenges, setTechChallenges] = useState("");
+  const [techActivities, setTechActivities] = useState("");
+  const [techProjects, setTechProjects] = useState("");
+  const [techStatus, setTechStatus] = useState<"qualified" | "not_qualified" | "needs_more_info">("needs_more_info");
+  const [techClaimBand, setTechClaimBand] = useState("");
+  const [techRiskRating, setTechRiskRating] = useState("");
+  const [techNotesForFinance, setTechNotesForFinance] = useState("");
+  const [techMissingInfo, setTechMissingInfo] = useState("");
+
+  // Financial Form State
+  const [financialYear, setFinancialYear] = useState("");
+  const [staffCost, setStaffCost] = useState("");
+  const [subcontractorCost, setSubcontractorCost] = useState("");
+  const [consumablesCost, setConsumablesCost] = useState("");
+  const [softwareCost, setSoftwareCost] = useState("");
+  const [apportionment, setApportionment] = useState("");
+  const [accountantName, setAccountantName] = useState("");
+  const [accountantFirm, setAccountantFirm] = useState("");
+  const [accountantEmail, setAccountantEmail] = useState("");
+  const [accountantPhone, setAccountantPhone] = useState("");
+  const [readyToSubmit, setReadyToSubmit] = useState(false);
+
+  useEffect(() => {
+    if (!isStaff) {
+      router.push("/home");
+      return;
+    }
+    if (id && typeof id === "string") {
+      fetchCIF(id);
+    }
+  }, [id, isStaff]);
+
+  const fetchCIF = async (cifId: string) => {
+    setLoading(true);
+    try {
+      const data = await cifService.getCIFById(cifId);
+      if (data) {
+        setCif(data);
+        // Pre-populate form fields if data exists
+        setTechUnderstanding(data.technical_understanding || "");
+        setTechChallenges(data.challenges_uncertainties || "");
+        setTechActivities(data.qualifying_activities?.join("\n") || "");
+        setTechProjects(data.rd_projects_list?.join("\n") || "");
+        setFinancialYear(data.financial_year || "");
+        setStaffCost(data.staff_cost_estimate?.toString() || "");
+        setSubcontractorCost(data.subcontractor_estimate?.toString() || "");
+        setConsumablesCost(data.consumables_estimate?.toString() || "");
+        setSoftwareCost(data.software_estimate?.toString() || "");
+        setApportionment(data.apportionment_assumptions || "");
+        setAccountantName(data.accountant_name || "");
+        setAccountantFirm(data.accountant_firm || "");
+        setAccountantEmail(data.accountant_email || "");
+        setAccountantPhone(data.accountant_phone || "");
+        setReadyToSubmit(data.ready_to_submit || false);
+      } else {
+        toast({ title: "Error", description: "CIF not found", variant: "destructive" });
+        router.push("/staff/cif");
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to load CIF", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCompleteTechnical = async () => {
+    if (!cif || !profile?.id) return;
+
+    if (!techUnderstanding || !techStatus) {
+      toast({ title: "Error", description: "Please fill in required fields", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const result = await cifService.completeTechnicalSection(
+        cif.id,
+        {
+          technical_understanding: techUnderstanding,
+          challenges_uncertainties: techChallenges,
+          qualifying_activities: techActivities.split("\n").filter(a => a.trim()),
+          rd_projects_list: techProjects.split("\n").filter(p => p.trim()),
+          feasibility_status: techStatus,
+          estimated_claim_band: techClaimBand || undefined,
+          risk_rating: techRiskRating || undefined,
+          notes_for_finance: techNotesForFinance,
+          missing_information_flags: techMissingInfo.split("\n").filter(f => f.trim()),
+        },
+        profile.id
+      );
+
+      if (result) {
+        toast({ title: "Success", description: "Technical section completed" });
+        fetchCIF(cif.id);
+      } else {
+        toast({ title: "Error", description: "Failed to complete technical section", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to save technical section", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCompleteFinancial = async () => {
+    if (!cif || !profile?.id) return;
+
+    if (!financialYear || !accountantName || !accountantFirm) {
+      toast({ title: "Error", description: "Please fill in required fields", variant: "destructive" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const result = await cifService.completeFinancialSection(
+        cif.id,
+        {
+          financial_year: financialYear,
+          staff_cost_estimate: staffCost ? parseFloat(staffCost) : undefined,
+          subcontractor_estimate: subcontractorCost ? parseFloat(subcontractorCost) : undefined,
+          consumables_estimate: consumablesCost ? parseFloat(consumablesCost) : undefined,
+          software_estimate: softwareCost ? parseFloat(softwareCost) : undefined,
+          apportionment_assumptions: apportionment,
+          accountant_name: accountantName,
+          accountant_firm: accountantFirm,
+          accountant_email: accountantEmail,
+          accountant_phone: accountantPhone,
+          ready_to_submit: readyToSubmit,
+        },
+        profile.id
+      );
+
+      if (result) {
+        toast({ title: "Success", description: "Financial section completed" });
+        fetchCIF(cif.id);
+      } else {
+        toast({ title: "Error", description: "Failed to complete financial section", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to save financial section", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApproveCIF = async () => {
+    if (!cif || !profile?.id) return;
+
+    setSaving(true);
+    try {
+      const result = await cifService.approveCIF(cif.id, profile.id);
+
+      if (result) {
+        toast({ 
+          title: "Success", 
+          description: `CIF approved and claim created: ${result.claim.title}` 
+        });
+        router.push("/staff/cif");
+      } else {
+        toast({ title: "Error", description: "Failed to approve CIF", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to approve CIF", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRejectCIF = async () => {
+    if (!cif) return;
+
+    setSaving(true);
+    try {
+      const result = await cifService.rejectCIF(cif.id, "rejected", "Rejected by admin");
+
+      if (result) {
+        toast({ title: "Success", description: "CIF rejected" });
+        router.push("/staff/cif");
+      } else {
+        toast({ title: "Error", description: "Failed to reject CIF", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to reject CIF", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!isStaff || loading) {
+    return (
+      <StaffLayout>
+        <div className="text-center py-12">Loading CIF...</div>
+      </StaffLayout>
+    );
+  }
+
+  if (!cif) {
+    return (
+      <StaffLayout>
+        <div className="text-center py-12">CIF not found</div>
+      </StaffLayout>
+    );
+  }
+
+  const prospect = cif.prospects;
+  const companyName = prospect?.company_name || "Unknown Company";
+
+  return (
+    <StaffLayout>
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => router.push("/staff/cif")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to CIF Pipeline
+          </Button>
+        </div>
+
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">{companyName}</h1>
+            <p className="text-muted-foreground mt-1">
+              CIF #{cif.id.slice(0, 8)} • FY: {cif.financial_year || "Not specified"}
+            </p>
+          </div>
+          <Badge className="text-base px-4 py-2">
+            {cif.current_stage?.replace(/_/g, " ").toUpperCase()}
+          </Badge>
+        </div>
+
+        {prospect && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Company Details</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="font-semibold">Company Number:</span> {prospect.company_number}
+              </div>
+              <div>
+                <span className="font-semibold">Status:</span> {prospect.status}
+              </div>
+              <div className="col-span-2">
+                <span className="font-semibold">Registered Name:</span> {prospect.registered_name}
+              </div>
+              {prospect.incorporation_date && (
+                <div>
+                  <span className="font-semibold">Incorporated:</span>{" "}
+                  {new Date(prospect.incorporation_date).toLocaleDateString()}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        <Tabs defaultValue="bdm" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="bdm">BDM Section</TabsTrigger>
+            <TabsTrigger value="technical">Technical</TabsTrigger>
+            <TabsTrigger value="financial">Financial</TabsTrigger>
+            <TabsTrigger value="admin">Admin</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="bdm" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>BDM Section A</CardTitle>
+                <CardDescription>Initial business development information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label className="font-semibold">Business Background</Label>
+                  <p className="text-sm mt-1">{cif.business_background || "Not provided"}</p>
+                </div>
+                <Separator />
+                <div>
+                  <Label className="font-semibold">Project Overview</Label>
+                  <p className="text-sm mt-1">{cif.project_overview || "Not provided"}</p>
+                </div>
+                <Separator />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="font-semibold">Primary Contact</Label>
+                    <p className="text-sm mt-1">{cif.primary_contact_name || "Not provided"}</p>
+                    <p className="text-sm text-muted-foreground">{cif.primary_contact_email}</p>
+                    <p className="text-sm text-muted-foreground">{cif.primary_contact_phone}</p>
+                  </div>
+                  <div>
+                    <Label className="font-semibold">R&D Themes</Label>
+                    <ul className="text-sm mt-1 list-disc list-inside">
+                      {cif.rd_themes?.map((theme, idx) => (
+                        <li key={idx}>{theme}</li>
+                      )) || <li>Not provided</li>}
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="technical" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Technical Feasibility Assessment</CardTitle>
+                <CardDescription>Complete technical review and feasibility determination</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tech-understanding">Technical Understanding *</Label>
+                  <Textarea
+                    id="tech-understanding"
+                    placeholder="Describe the technical work and R&D activities..."
+                    value={techUnderstanding}
+                    onChange={(e) => setTechUnderstanding(e.target.value)}
+                    rows={4}
+                    disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tech-challenges">Challenges & Uncertainties</Label>
+                  <Textarea
+                    id="tech-challenges"
+                    placeholder="Technical challenges and scientific uncertainties..."
+                    value={techChallenges}
+                    onChange={(e) => setTechChallenges(e.target.value)}
+                    rows={3}
+                    disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tech-activities">Qualifying Activities (one per line)</Label>
+                  <Textarea
+                    id="tech-activities"
+                    placeholder="List qualifying R&D activities..."
+                    value={techActivities}
+                    onChange={(e) => setTechActivities(e.target.value)}
+                    rows={3}
+                    disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tech-projects">R&D Projects List (one per line)</Label>
+                  <Textarea
+                    id="tech-projects"
+                    placeholder="List R&D projects..."
+                    value={techProjects}
+                    onChange={(e) => setTechProjects(e.target.value)}
+                    rows={3}
+                    disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tech-status">Feasibility Status *</Label>
+                    <Select value={techStatus} onValueChange={(v: any) => setTechStatus(v)} disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="qualified">Qualified</SelectItem>
+                        <SelectItem value="not_qualified">Not Qualified</SelectItem>
+                        <SelectItem value="needs_more_info">Needs More Info</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tech-claim-band">Estimated Claim Band</Label>
+                    <Select value={techClaimBand} onValueChange={setTechClaimBand} disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select band" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0-25k">£0-25k</SelectItem>
+                        <SelectItem value="25k-50k">£25k-50k</SelectItem>
+                        <SelectItem value="50k-100k">£50k-100k</SelectItem>
+                        <SelectItem value="100k-250k">£100k-250k</SelectItem>
+                        <SelectItem value="250k+">£250k+</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tech-risk">Risk Rating</Label>
+                    <Select value={techRiskRating} onValueChange={setTechRiskRating} disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select risk" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tech-notes">Notes for Finance Team</Label>
+                  <Textarea
+                    id="tech-notes"
+                    placeholder="Additional notes or context for finance team..."
+                    value={techNotesForFinance}
+                    onChange={(e) => setTechNotesForFinance(e.target.value)}
+                    rows={2}
+                    disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tech-missing">Missing Information Flags (one per line)</Label>
+                  <Textarea
+                    id="tech-missing"
+                    placeholder="List any missing information..."
+                    value={techMissingInfo}
+                    onChange={(e) => setTechMissingInfo(e.target.value)}
+                    rows={2}
+                    disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}
+                  />
+                </div>
+
+                {(cif.current_stage === "bdm_section" || cif.current_stage === "tech_feasibility") && (
+                  <Button onClick={handleCompleteTechnical} disabled={saving} className="w-full">
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? "Saving..." : "Complete Technical Section"}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="financial" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Financial Section</CardTitle>
+                <CardDescription>Complete financial estimates and compliance documentation</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="financial-year">Financial Year *</Label>
+                  <Input
+                    id="financial-year"
+                    placeholder="e.g. YE 31-03-2024 or 2023/24"
+                    value={financialYear}
+                    onChange={(e) => setFinancialYear(e.target.value)}
+                    disabled={cif.current_stage !== "financial_section"}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="staff-cost">Staff Cost Estimate (£)</Label>
+                    <Input
+                      id="staff-cost"
+                      type="number"
+                      placeholder="0.00"
+                      value={staffCost}
+                      onChange={(e) => setStaffCost(e.target.value)}
+                      disabled={cif.current_stage !== "financial_section"}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="subcontractor-cost">Subcontractor Estimate (£)</Label>
+                    <Input
+                      id="subcontractor-cost"
+                      type="number"
+                      placeholder="0.00"
+                      value={subcontractorCost}
+                      onChange={(e) => setSubcontractorCost(e.target.value)}
+                      disabled={cif.current_stage !== "financial_section"}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="consumables-cost">Consumables Estimate (£)</Label>
+                    <Input
+                      id="consumables-cost"
+                      type="number"
+                      placeholder="0.00"
+                      value={consumablesCost}
+                      onChange={(e) => setConsumablesCost(e.target.value)}
+                      disabled={cif.current_stage !== "financial_section"}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="software-cost">Software Estimate (£)</Label>
+                    <Input
+                      id="software-cost"
+                      type="number"
+                      placeholder="0.00"
+                      value={softwareCost}
+                      onChange={(e) => setSoftwareCost(e.target.value)}
+                      disabled={cif.current_stage !== "financial_section"}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="apportionment">Apportionment Assumptions</Label>
+                  <Textarea
+                    id="apportionment"
+                    placeholder="Describe cost allocation methodology..."
+                    value={apportionment}
+                    onChange={(e) => setApportionment(e.target.value)}
+                    rows={3}
+                    disabled={cif.current_stage !== "financial_section"}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Accountant Details</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="accountant-name">Accountant Name *</Label>
+                      <Input
+                        id="accountant-name"
+                        placeholder="Accountant name"
+                        value={accountantName}
+                        onChange={(e) => setAccountantName(e.target.value)}
+                        disabled={cif.current_stage !== "financial_section"}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="accountant-firm">Firm Name *</Label>
+                      <Input
+                        id="accountant-firm"
+                        placeholder="Accounting firm"
+                        value={accountantFirm}
+                        onChange={(e) => setAccountantFirm(e.target.value)}
+                        disabled={cif.current_stage !== "financial_section"}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="accountant-email">Email</Label>
+                      <Input
+                        id="accountant-email"
+                        type="email"
+                        placeholder="accountant@firm.com"
+                        value={accountantEmail}
+                        onChange={(e) => setAccountantEmail(e.target.value)}
+                        disabled={cif.current_stage !== "financial_section"}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="accountant-phone">Phone</Label>
+                      <Input
+                        id="accountant-phone"
+                        placeholder="+44 20 1234 5678"
+                        value={accountantPhone}
+                        onChange={(e) => setAccountantPhone(e.target.value)}
+                        disabled={cif.current_stage !== "financial_section"}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Required Documents</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button variant="outline" disabled>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Letter of Authority
+                    </Button>
+                    <Button variant="outline" disabled>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Anti-Slavery Statement
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Document upload functionality will be implemented in the next phase
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="ready-submit"
+                    checked={readyToSubmit}
+                    onCheckedChange={(checked) => setReadyToSubmit(checked as boolean)}
+                    disabled={cif.current_stage !== "financial_section"}
+                  />
+                  <Label htmlFor="ready-submit" className="cursor-pointer">
+                    Ready to submit to admin for approval
+                  </Label>
+                </div>
+
+                {cif.current_stage === "financial_section" && (
+                  <Button onClick={handleCompleteFinancial} disabled={saving} className="w-full">
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? "Saving..." : "Complete Financial Section"}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="admin" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Admin Review & Approval</CardTitle>
+                <CardDescription>Final review and claim creation</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-semibold">BDM Section</p>
+                      <p className="text-sm text-muted-foreground">Business development completed</p>
+                    </div>
+                    <CheckCircle className="h-6 w-6 text-green-500" />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-semibold">Technical Feasibility</p>
+                      <p className="text-sm text-muted-foreground">
+                        Status: {cif.feasibility_status || "Pending"}
+                      </p>
+                    </div>
+                    {cif.feasibility_status === "qualified" ? (
+                      <CheckCircle className="h-6 w-6 text-green-500" />
+                    ) : (
+                      <XCircle className="h-6 w-6 text-red-500" />
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-semibold">Financial Section</p>
+                      <p className="text-sm text-muted-foreground">
+                        Ready: {cif.ready_to_submit ? "Yes" : "No"}
+                      </p>
+                    </div>
+                    {cif.ready_to_submit ? (
+                      <CheckCircle className="h-6 w-6 text-green-500" />
+                    ) : (
+                      <XCircle className="h-6 w-6 text-orange-500" />
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-semibold">Required Documents</p>
+                      <p className="text-sm text-muted-foreground">Letter of Authority, Anti-Slavery</p>
+                    </div>
+                    <FileText className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                </div>
+
+                <Separator />
+
+                {cif.current_stage === "admin_approval" && (
+                  <div className="flex gap-3">
+                    <Button onClick={handleApproveCIF} disabled={saving} className="flex-1">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      {saving ? "Approving..." : "Approve & Create Claim"}
+                    </Button>
+                    <Button onClick={handleRejectCIF} disabled={saving} variant="destructive">
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </Button>
+                  </div>
+                )}
+
+                {cif.current_stage === "approved" && cif.linked_claim_id && (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="font-semibold text-green-900">CIF Approved</p>
+                    <p className="text-sm text-green-700">
+                      Claim has been created and linked to this CIF
+                    </p>
+                  </div>
+                )}
+
+                {cif.current_stage === "rejected" && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="font-semibold text-red-900">CIF Rejected</p>
+                    <p className="text-sm text-red-700">
+                      This CIF did not meet approval criteria
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </StaffLayout>
+  );
+}
