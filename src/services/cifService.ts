@@ -116,20 +116,37 @@ export const cifService = {
     createdBy: string;
   }): Promise<{ cif: CIFRecord; prospect: Prospect } | null> {
     try {
+      console.log("[cifService.createCIF] Starting CIF creation with data:", data);
+
       // 1. Create prospect record
+      console.log("[cifService.createCIF] Step 1: Creating prospect record...");
+      const prospectInsert = {
+        ...data.prospectData,
+        bd_owner_id: data.createdBy,
+        company_name: data.prospectData.company_name,
+      };
+      console.log("[cifService.createCIF] Prospect insert data:", prospectInsert);
+
       const { data: prospect, error: prospectError } = await supabase
         .from("prospects")
-        .insert({
-          ...data.prospectData,
-          bd_owner_id: data.createdBy, // Required field
-          company_name: data.prospectData.company_name, // Explicitly map to ensure type safety
-        } as any) // Cast to any to handle potential type lags with new columns like registered_name
+        .insert(prospectInsert as any)
         .select()
         .single();
 
-      if (prospectError) throw prospectError;
+      if (prospectError) {
+        console.error("[cifService.createCIF] Prospect creation error:", prospectError);
+        throw prospectError;
+      }
+      
+      if (!prospect) {
+        console.error("[cifService.createCIF] Prospect creation returned null");
+        throw new Error("Failed to create prospect - no data returned");
+      }
+
+      console.log("[cifService.createCIF] Prospect created successfully:", prospect);
 
       // 2. Create CIF record
+      console.log("[cifService.createCIF] Step 2: Creating CIF record...");
       const cifData: CIFInsert = {
         prospect_id: prospect.id,
         section1_completed_by: data.createdBy,
@@ -150,6 +167,7 @@ export const cifService = {
         previous_claim_date_submitted: data.bdmSectionData.previous_claim_date_submitted,
         bdm_last_updated: new Date().toISOString(),
       };
+      console.log("[cifService.createCIF] CIF insert data:", cifData);
 
       const { data: cif, error: cifError } = await supabase
         .from("cif_records")
@@ -157,12 +175,21 @@ export const cifService = {
         .select()
         .single();
 
-      if (cifError) throw cifError;
+      if (cifError) {
+        console.error("[cifService.createCIF] CIF creation error:", cifError);
+        throw cifError;
+      }
 
+      if (!cif) {
+        console.error("[cifService.createCIF] CIF creation returned null");
+        throw new Error("Failed to create CIF - no data returned");
+      }
+
+      console.log("[cifService.createCIF] CIF created successfully:", cif);
       return { cif, prospect };
     } catch (error) {
-      console.error("Error creating CIF:", error);
-      return null;
+      console.error("[cifService.createCIF] Error creating CIF:", error);
+      throw error; // Re-throw so the caller can handle it
     }
   },
 
