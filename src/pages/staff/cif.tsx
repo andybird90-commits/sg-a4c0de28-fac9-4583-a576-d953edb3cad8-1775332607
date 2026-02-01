@@ -311,7 +311,6 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
   
   // BDM Form Fields
   const [businessBackground, setBusinessBackground] = useState("");
-  const [projectOverview, setProjectOverview] = useState("");
   const [primaryContactName, setPrimaryContactName] = useState("");
   const [primaryContactPosition, setPrimaryContactPosition] = useState("");
   const [primaryContactEmail, setPrimaryContactEmail] = useState("");
@@ -372,7 +371,6 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
         companyData,
         bdmFields: {
           businessBackground,
-          projectOverview,
           primaryContactName,
           primaryContactPosition,
           primaryContactEmail,
@@ -486,17 +484,6 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
               placeholder="Describe the company's business and industry..."
               value={businessBackground}
               onChange={(e) => setBusinessBackground(e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="project-overview">Project Overview *</Label>
-            <Textarea
-              id="project-overview"
-              placeholder="Describe the R&D project and objectives..."
-              value={projectOverview}
-              onChange={(e) => setProjectOverview(e.target.value)}
               rows={3}
             />
           </div>
