@@ -398,7 +398,6 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
         },
         bdmSectionData: {
           business_background: businessBackground,
-          project_overview: projectOverview,
           primary_contact_name: primaryContactName,
           primary_contact_position: primaryContactPosition || undefined,
           primary_contact_email: primaryContactEmail || undefined,

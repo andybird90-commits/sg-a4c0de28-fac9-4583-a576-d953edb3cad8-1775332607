@@ -140,6 +140,12 @@ export const cifService = {
 
       if (prospectError) {
         console.error("[cifService.createCIF] Prospect creation error:", prospectError);
+        console.error("[cifService.createCIF] Error details:", {
+          code: prospectError.code,
+          message: prospectError.message,
+          details: prospectError.details,
+          hint: prospectError.hint
+        });
         throw prospectError;
       }
       
