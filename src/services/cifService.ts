@@ -90,7 +90,6 @@ export const cifService = {
     prospectData: {
       company_name: string;
       company_number?: string;
-      registered_name?: string;
       registered_address?: string;
       sic_codes?: string[];
       incorporation_date?: string;
@@ -120,16 +119,22 @@ export const cifService = {
 
       // 1. Create prospect record
       console.log("[cifService.createCIF] Step 1: Creating prospect record...");
-      const prospectInsert = {
-        ...data.prospectData,
-        bd_owner_id: data.createdBy,
+      const prospectInsert: any = {
         company_name: data.prospectData.company_name,
+        company_number: data.prospectData.company_number,
+        company_status: data.prospectData.status,
+        registered_address: data.prospectData.registered_address,
+        sic_codes: data.prospectData.sic_codes,
+        incorporation_date: data.prospectData.incorporation_date,
+        number_of_directors: data.prospectData.number_of_directors,
+        number_of_employees: data.prospectData.number_of_employees,
+        bd_owner_id: data.createdBy,
       };
       console.log("[cifService.createCIF] Prospect insert data:", prospectInsert);
 
       const { data: prospect, error: prospectError } = await supabase
         .from("prospects")
-        .insert(prospectInsert as any)
+        .insert(prospectInsert)
         .select()
         .single();
 

@@ -391,7 +391,6 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
         prospectData: {
           company_name: companyData.company_name,
           company_number: companyData.company_number,
-          registered_name: companyData.company_name,
           registered_address: JSON.stringify(companyData.registered_address),
           sic_codes: companyData.sic_codes || [],
           incorporation_date: companyData.date_of_creation,
