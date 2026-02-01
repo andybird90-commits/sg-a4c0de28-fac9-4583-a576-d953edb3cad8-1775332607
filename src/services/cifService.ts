@@ -37,10 +37,7 @@ export const cifService = {
    */
   async lookupCompaniesHouse(companyNumber: string): Promise<CompaniesHouseData | null> {
     try {
-      // Clean company number (remove spaces, convert to uppercase)
       const cleanNumber = companyNumber.replace(/\s/g, "").toUpperCase();
-
-      // Call Companies House API via our Next.js API route (to hide API key)
       const response = await fetch(`/api/companies-house/lookup?number=${cleanNumber}`);
       
       if (!response.ok) {
@@ -57,7 +54,7 @@ export const cifService = {
   },
 
   /**
-   * Check if company is active (not dissolved/inactive)
+   * Check if company is active
    */
   isCompanyActive(status: string): boolean {
     const inactiveStatuses = [
@@ -89,7 +86,6 @@ export const cifService = {
     createdBy: string;
   }): Promise<{ cif: CIFRecord; prospect: Prospect } | null> {
     try {
-      // 1. Create prospect record
       const { data: prospect, error: prospectError } = await supabase
         .from("prospects")
         .insert(data.prospectData)
@@ -98,15 +94,11 @@ export const cifService = {
 
       if (prospectError) throw prospectError;
 
-      // 2. Create CIF record with BDM section completed
       const cifData: CIFInsert = {
         prospect_id: prospect.id,
-        created_by: data.createdBy,
-        stage: "awaiting_technical",
-        section_a_complete: true,
-        section_b_complete: false,
-        section_c_complete: false,
-        section_d_complete: false,
+        section1_completed_by: data.createdBy,
+        current_stage: "bdm_section",
+        cif_status: "in_progress",
         business_background: data.bdmSectionData.business_background,
         project_overview: data.bdmSectionData.project_overview,
         primary_contact_name: data.bdmSectionData.primary_contact_name,
@@ -133,7 +125,7 @@ export const cifService = {
   },
 
   /**
-   * Complete technical feasibility section (TECH role)
+   * Complete technical feasibility section
    */
   async completeTechnicalSection(
     cifId: string,
@@ -148,19 +140,39 @@ export const cifService = {
       notes_for_finance?: string;
       missing_information_flags?: string[];
     },
-    userId: string
+    userId: string,
+    organisationId: string
   ): Promise<CIFRecord | null> {
     try {
-      // Update CIF stage based on qualification
       const newStage = feasibilityData.feasibility_status === "qualified" 
-        ? "awaiting_financial" 
+        ? "financial_section"
         : "rejected";
+
+      const { data: feasibility, error: feasError } = await supabase
+        .from("feasibility_analyses")
+        .insert({
+          organisation_id: organisationId,
+          user_id: userId,
+          technical_understanding: feasibilityData.technical_understanding,
+          challenges_uncertainties: feasibilityData.challenges_uncertainties,
+          qualifying_activities: feasibilityData.qualifying_activities,
+          rd_projects_list: feasibilityData.rd_projects_list,
+          feasibility_status: feasibilityData.feasibility_status,
+          estimated_claim_band: feasibilityData.estimated_claim_band,
+          risk_rating: feasibilityData.risk_rating,
+          notes_for_finance: feasibilityData.notes_for_finance,
+          missing_information_flags: feasibilityData.missing_information_flags,
+        })
+        .select()
+        .single();
+
+      if (feasError) throw feasError;
 
       const { data, error } = await supabase
         .from("cif_records")
         .update({
-          stage: newStage,
-          section_b_complete: true,
+          current_stage: newStage,
+          section2_feasibility_id: feasibility.id,
           tech_last_updated: new Date().toISOString(),
         })
         .eq("id", cifId)
@@ -168,22 +180,6 @@ export const cifService = {
         .single();
 
       if (error) throw error;
-
-      // Create feasibility analysis record
-      await supabase.from("feasibility_analyses").insert({
-        prospect_id: data.prospect_id,
-        analysed_by: userId,
-        technical_understanding: feasibilityData.technical_understanding,
-        challenges_uncertainties: feasibilityData.challenges_uncertainties,
-        qualifying_activities: feasibilityData.qualifying_activities,
-        rd_projects_list: feasibilityData.rd_projects_list,
-        feasibility_status: feasibilityData.feasibility_status,
-        estimated_claim_band: feasibilityData.estimated_claim_band,
-        risk_rating: feasibilityData.risk_rating,
-        notes_for_finance: feasibilityData.notes_for_finance,
-        missing_information_flags: feasibilityData.missing_information_flags,
-      });
-
       return data;
     } catch (error) {
       console.error("Error completing technical section:", error);
@@ -192,16 +188,16 @@ export const cifService = {
   },
 
   /**
-   * Complete financial section (FINANCE role)
+   * Complete financial section
    */
   async completeFinancialSection(
     cifId: string,
     financialData: {
-      financial_years?: string[];
-      staff_cost_estimates?: number;
-      subcontractor_estimates?: number;
-      consumables_estimates?: number;
-      software_estimates?: number;
+      financial_year?: string;
+      staff_cost_estimate?: number;
+      subcontractor_estimate?: number;
+      consumables_estimate?: number;
+      software_estimate?: number;
       apportionment_assumptions?: string;
       accountant_name?: string;
       accountant_firm?: string;
@@ -214,13 +210,12 @@ export const cifService = {
       const { data, error } = await supabase
         .from("cif_records")
         .update({
-          stage: "awaiting_admin",
-          section_c_complete: true,
-          financial_years: financialData.financial_years,
-          staff_cost_estimates: financialData.staff_cost_estimates,
-          subcontractor_estimates: financialData.subcontractor_estimates,
-          consumables_estimates: financialData.consumables_estimates,
-          software_estimates: financialData.software_estimates,
+          current_stage: "admin_approval",
+          financial_year: financialData.financial_year,
+          staff_cost_estimate: financialData.staff_cost_estimate,
+          subcontractor_estimate: financialData.subcontractor_estimate,
+          consumables_estimate: financialData.consumables_estimate,
+          software_estimate: financialData.software_estimate,
           apportionment_assumptions: financialData.apportionment_assumptions,
           accountant_name: financialData.accountant_name,
           accountant_firm: financialData.accountant_firm,
@@ -249,7 +244,6 @@ export const cifService = {
     adminUserId: string
   ): Promise<{ cif: CIFRecord; claim: any } | null> {
     try {
-      // 1. Get CIF with prospect data
       const { data: cif, error: cifError } = await supabase
         .from("cif_records")
         .select("*, prospects(*)")
@@ -261,36 +255,47 @@ export const cifService = {
       const prospect = Array.isArray(cif.prospects) ? cif.prospects[0] : cif.prospects;
       if (!prospect) throw new Error("Prospect not found");
 
-      // 2. Determine claim year (use first financial year or current year)
-      const claimYear = cif.financial_years && cif.financial_years.length > 0
-        ? cif.financial_years[0]
-        : new Date().getFullYear().toString();
-
-      // 3. Create claim record
-      const claimTitle = `${prospect.company_name} ${claimYear} Claim`;
+      const yearStr = cif.financial_year || new Date().getFullYear().toString();
+      const claimYear = parseInt(yearStr.replace(/\D/g, "")) || new Date().getFullYear();
+      const claimTitle = `${prospect.company_name} ${yearStr} Claim`;
       
+      let orgId = prospect.org_id;
+      if (!orgId) {
+        const { data: org } = await supabase
+          .from("organisations")
+          .insert({
+            name: prospect.company_name,
+            organisation_code: prospect.company_name.substring(0, 3).toUpperCase() + Math.floor(Math.random() * 1000)
+          })
+          .select()
+          .single();
+        if (org) orgId = org.id;
+      }
+
+      if (!orgId) throw new Error("Could not create organisation for claim");
+
       const { data: claim, error: claimError } = await supabase
         .from("claims")
         .insert({
-          prospect_id: prospect.id,
+          org_id: orgId,
           title: claimTitle,
           claim_year: claimYear,
-          status: "active",
-          created_by: adminUserId,
+          status: "intake",
         })
         .select()
         .single();
 
       if (claimError) throw claimError;
 
-      // 4. Update CIF to approved and link claim
       const { data: updatedCif, error: updateError } = await supabase
         .from("cif_records")
         .update({
-          stage: "approved",
-          section_d_complete: true,
+          current_stage: "approved",
+          cif_status: "approved",
           linked_claim_id: claim.id,
           admin_last_updated: new Date().toISOString(),
+          director_decision: "approved",
+          director_decided_at: new Date().toISOString()
         })
         .eq("id", cifId)
         .select()
@@ -306,20 +311,30 @@ export const cifService = {
   },
 
   /**
-   * Admin reject CIF back to a specific stage
+   * Admin reject CIF
    */
   async rejectCIF(
     cifId: string,
-    rejectToStage: "awaiting_bdm" | "awaiting_technical" | "awaiting_financial" | "rejected",
+    rejectToStage: "bdm_section" | "tech_feasibility" | "financial_section" | "rejected",
     reason?: string
   ): Promise<CIFRecord | null> {
     try {
+      const updateData: any = {
+        admin_last_updated: new Date().toISOString(),
+      };
+      
+      if (rejectToStage === "rejected") {
+        updateData.cif_status = "rejected";
+        updateData.current_stage = "rejected";
+        updateData.director_decision = "rejected";
+      } else {
+        updateData.current_stage = rejectToStage;
+        updateData.cif_status = "in_progress";
+      }
+
       const { data, error } = await supabase
         .from("cif_records")
-        .update({
-          stage: rejectToStage,
-          admin_last_updated: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq("id", cifId)
         .select()
         .single();
@@ -333,7 +348,7 @@ export const cifService = {
   },
 
   /**
-   * Get CIFs for Job Board A (Awaiting Technical)
+   * Get Job Board A (Awaiting Technical)
    */
   async getJobBoardA(): Promise<CIFWithDetails[]> {
     try {
@@ -342,13 +357,19 @@ export const cifService = {
         .select(`
           *,
           prospects(*),
-          created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email)
         `)
-        .eq("stage", "awaiting_technical")
+        .eq("current_stage", "bdm_section")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+
+      return (data || []).map(item => ({
+        ...item,
+        created_by_profile: Array.isArray(item.created_by_profile) 
+          ? item.created_by_profile[0] 
+          : item.created_by_profile
+      })) as CIFWithDetails[];
     } catch (error) {
       console.error("Error fetching Job Board A:", error);
       return [];
@@ -356,7 +377,7 @@ export const cifService = {
   },
 
   /**
-   * Get CIFs for Job Board B (Awaiting Financial)
+   * Get Job Board B (Awaiting Financial)
    */
   async getJobBoardB(): Promise<CIFWithDetails[]> {
     try {
@@ -365,13 +386,19 @@ export const cifService = {
         .select(`
           *,
           prospects(*),
-          created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email)
         `)
-        .eq("stage", "awaiting_financial")
+        .eq("current_stage", "tech_feasibility")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+
+      return (data || []).map(item => ({
+        ...item,
+        created_by_profile: Array.isArray(item.created_by_profile) 
+          ? item.created_by_profile[0] 
+          : item.created_by_profile
+      })) as CIFWithDetails[];
     } catch (error) {
       console.error("Error fetching Job Board B:", error);
       return [];
@@ -379,7 +406,7 @@ export const cifService = {
   },
 
   /**
-   * Get CIFs for Job Board C (Awaiting Admin)
+   * Get Job Board C (Awaiting Admin)
    */
   async getJobBoardC(): Promise<CIFWithDetails[]> {
     try {
@@ -388,13 +415,19 @@ export const cifService = {
         .select(`
           *,
           prospects(*),
-          created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email)
         `)
-        .eq("stage", "awaiting_admin")
+        .eq("current_stage", "financial_section")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+
+      return (data || []).map(item => ({
+        ...item,
+        created_by_profile: Array.isArray(item.created_by_profile) 
+          ? item.created_by_profile[0] 
+          : item.created_by_profile
+      })) as CIFWithDetails[];
     } catch (error) {
       console.error("Error fetching Job Board C:", error);
       return [];
@@ -411,13 +444,19 @@ export const cifService = {
         .select(`
           *,
           prospects(*),
-          created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email)
         `)
-        .eq("stage", "rejected")
+        .eq("current_stage", "rejected")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+
+      return (data || []).map(item => ({
+        ...item,
+        created_by_profile: Array.isArray(item.created_by_profile) 
+          ? item.created_by_profile[0] 
+          : item.created_by_profile
+      })) as CIFWithDetails[];
     } catch (error) {
       console.error("Error fetching rejected CIFs:", error);
       return [];
@@ -425,7 +464,7 @@ export const cifService = {
   },
 
   /**
-   * Get single CIF by ID with all details
+   * Get single CIF by ID
    */
   async getCIFById(cifId: string): Promise<CIFWithDetails | null> {
     try {
@@ -434,13 +473,23 @@ export const cifService = {
         .select(`
           *,
           prospects(*),
-          created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email)
         `)
         .eq("id", cifId)
         .single();
 
       if (error) throw error;
-      return data;
+
+      if (data) {
+        return {
+          ...data,
+          created_by_profile: Array.isArray(data.created_by_profile) 
+            ? data.created_by_profile[0] 
+            : data.created_by_profile
+        } as CIFWithDetails;
+      }
+
+      return null;
     } catch (error) {
       console.error("Error fetching CIF:", error);
       return null;
@@ -452,13 +501,11 @@ export const cifService = {
    */
   async uploadDocument(
     cifId: string,
-    prospectId: string,
     file: File,
     documentType: "letter_of_authority" | "anti_slavery" | "accountant_docs" | "other",
     uploadedBy: string
   ): Promise<boolean> {
     try {
-      // 1. Upload file to Supabase Storage
       const fileExt = file.name.split(".").pop();
       const fileName = `${cifId}_${documentType}_${Date.now()}.${fileExt}`;
       const filePath = `cif_documents/${fileName}`;
@@ -469,14 +516,12 @@ export const cifService = {
 
       if (uploadError) throw uploadError;
 
-      // 2. Create document record
       const { error: docError } = await supabase
         .from("cif_documents")
         .insert({
-          prospect_id: prospectId,
-          document_type: documentType,
+          cif_id: cifId,
+          doc_type: documentType,
           file_path: filePath,
-          file_name: file.name,
           uploaded_by: uploadedBy,
         });
 
