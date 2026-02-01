@@ -13,7 +13,10 @@ import {
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  Home,
+  Briefcase,
+  Shield
 } from "lucide-react";
 import { useState } from "react";
 
@@ -67,11 +70,31 @@ export function StaffLayout({ children }: StaffLayoutProps) {
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/staff" },
-    { icon: FileText, label: "Claims", href: "/staff/claims" },
-    { icon: Users, label: "CIF / Prospects", href: "/staff/cif" },
-    { icon: Building2, label: "Clients", href: "/staff/clients" },
-    { icon: Settings, label: "Admin", href: "/staff/admin" }
+    { 
+      path: "/staff", 
+      label: "Home", 
+      icon: Home 
+    },
+    { 
+      path: "/staff/claims", 
+      label: "Claims", 
+      icon: FileText 
+    },
+    { 
+      path: "/staff/cif", 
+      label: "CIF Pipeline", 
+      icon: Briefcase 
+    },
+    { 
+      path: "/staff/clients", 
+      label: "Clients", 
+      icon: Users 
+    },
+    { 
+      path: "/staff/admin", 
+      label: "Admin", 
+      icon: Shield 
+    },
   ];
 
   return (
@@ -140,12 +163,12 @@ export function StaffLayout({ children }: StaffLayoutProps) {
             </div>
             <nav className="p-4 space-y-2">
               {navItems.map((item) => {
-                const isActive = router.pathname === item.href;
+                const isActive = router.pathname === item.path;
                 return (
                   <button
-                    key={item.href}
+                    key={item.path}
                     onClick={() => {
-                      router.push(item.href);
+                      router.push(item.path);
                       setMobileMenuOpen(false);
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
@@ -169,11 +192,11 @@ export function StaffLayout({ children }: StaffLayoutProps) {
         <aside className="hidden lg:block w-64 bg-white border-r border-slate-200 min-h-screen sticky top-16">
           <nav className="p-4 space-y-2">
             {navItems.map((item) => {
-              const isActive = router.pathname === item.href;
+              const isActive = router.pathname === item.path;
               return (
                 <button
-                  key={item.href}
-                  onClick={() => router.push(item.href)}
+                  key={item.path}
+                  onClick={() => router.push(item.path)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                     isActive
                       ? "bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-white"
