@@ -62,15 +62,35 @@ export type Database = {
       }
       cif_records: {
         Row: {
+          accountant_email: string | null
+          accountant_firm: string | null
+          accountant_name: string | null
+          accountant_phone: string | null
+          admin_last_updated: string | null
+          apportionment_assumptions: string | null
+          bdm_last_updated: string | null
+          business_background: string | null
           cif_status: string
+          consumables_estimate: number | null
           created_at: string
+          current_stage: string | null
           director_comment: string | null
           director_decided_at: string | null
           director_decision: string | null
           director_id: string | null
+          expected_feasibility_date: string | null
+          finance_last_updated: string | null
+          financial_year: string | null
           id: string
+          linked_claim_id: string | null
           org_id: string | null
+          primary_contact_email: string | null
+          primary_contact_name: string | null
+          primary_contact_phone: string | null
+          project_overview: string | null
           prospect_id: string
+          rd_themes: string[] | null
+          ready_to_submit: boolean | null
           section1_completed_at: string | null
           section1_completed_by: string | null
           section2_feasibility_id: string | null
@@ -78,18 +98,42 @@ export type Database = {
           section3_completed_by: string | null
           section4_completed_at: string | null
           section4_completed_by: string | null
+          software_estimate: number | null
+          staff_cost_estimate: number | null
+          subcontractor_estimate: number | null
+          tech_last_updated: string | null
           updated_at: string
         }
         Insert: {
+          accountant_email?: string | null
+          accountant_firm?: string | null
+          accountant_name?: string | null
+          accountant_phone?: string | null
+          admin_last_updated?: string | null
+          apportionment_assumptions?: string | null
+          bdm_last_updated?: string | null
+          business_background?: string | null
           cif_status?: string
+          consumables_estimate?: number | null
           created_at?: string
+          current_stage?: string | null
           director_comment?: string | null
           director_decided_at?: string | null
           director_decision?: string | null
           director_id?: string | null
+          expected_feasibility_date?: string | null
+          finance_last_updated?: string | null
+          financial_year?: string | null
           id?: string
+          linked_claim_id?: string | null
           org_id?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          primary_contact_phone?: string | null
+          project_overview?: string | null
           prospect_id: string
+          rd_themes?: string[] | null
+          ready_to_submit?: boolean | null
           section1_completed_at?: string | null
           section1_completed_by?: string | null
           section2_feasibility_id?: string | null
@@ -97,18 +141,42 @@ export type Database = {
           section3_completed_by?: string | null
           section4_completed_at?: string | null
           section4_completed_by?: string | null
+          software_estimate?: number | null
+          staff_cost_estimate?: number | null
+          subcontractor_estimate?: number | null
+          tech_last_updated?: string | null
           updated_at?: string
         }
         Update: {
+          accountant_email?: string | null
+          accountant_firm?: string | null
+          accountant_name?: string | null
+          accountant_phone?: string | null
+          admin_last_updated?: string | null
+          apportionment_assumptions?: string | null
+          bdm_last_updated?: string | null
+          business_background?: string | null
           cif_status?: string
+          consumables_estimate?: number | null
           created_at?: string
+          current_stage?: string | null
           director_comment?: string | null
           director_decided_at?: string | null
           director_decision?: string | null
           director_id?: string | null
+          expected_feasibility_date?: string | null
+          finance_last_updated?: string | null
+          financial_year?: string | null
           id?: string
+          linked_claim_id?: string | null
           org_id?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          primary_contact_phone?: string | null
+          project_overview?: string | null
           prospect_id?: string
+          rd_themes?: string[] | null
+          ready_to_submit?: boolean | null
           section1_completed_at?: string | null
           section1_completed_by?: string | null
           section2_feasibility_id?: string | null
@@ -116,6 +184,10 @@ export type Database = {
           section3_completed_by?: string | null
           section4_completed_at?: string | null
           section4_completed_by?: string | null
+          software_estimate?: number | null
+          staff_cost_estimate?: number | null
+          subcontractor_estimate?: number | null
+          tech_last_updated?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -124,6 +196,13 @@ export type Database = {
             columns: ["director_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_records_linked_claim_id_fkey"
+            columns: ["linked_claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
             referencedColumns: ["id"]
           },
           {
@@ -482,17 +561,22 @@ export type Database = {
           delivery_complexity: string | null
           delivery_dependencies: Json | null
           delivery_timeframe_months: number | null
+          estimated_claim_band: string | null
+          feasibility_status: string | null
           id: string
           idea_description: string
           idea_title: string | null
+          missing_information_flags: string[] | null
           next_actions: Json | null
           notable_risks: Json | null
+          notes_for_finance: string | null
           organisation_id: string
           project_id: string | null
           rd_tax_flag: string | null
           rd_tax_reasoning: string | null
           regulatory_issues: Json | null
           revenue_ideas: Json | null
+          risk_rating: string | null
           sector: string | null
           sector_guess: string | null
           stage: string | null
@@ -511,17 +595,22 @@ export type Database = {
           delivery_complexity?: string | null
           delivery_dependencies?: Json | null
           delivery_timeframe_months?: number | null
+          estimated_claim_band?: string | null
+          feasibility_status?: string | null
           id?: string
           idea_description: string
           idea_title?: string | null
+          missing_information_flags?: string[] | null
           next_actions?: Json | null
           notable_risks?: Json | null
+          notes_for_finance?: string | null
           organisation_id: string
           project_id?: string | null
           rd_tax_flag?: string | null
           rd_tax_reasoning?: string | null
           regulatory_issues?: Json | null
           revenue_ideas?: Json | null
+          risk_rating?: string | null
           sector?: string | null
           sector_guess?: string | null
           stage?: string | null
@@ -540,17 +629,22 @@ export type Database = {
           delivery_complexity?: string | null
           delivery_dependencies?: Json | null
           delivery_timeframe_months?: number | null
+          estimated_claim_band?: string | null
+          feasibility_status?: string | null
           id?: string
           idea_description?: string
           idea_title?: string | null
+          missing_information_flags?: string[] | null
           next_actions?: Json | null
           notable_risks?: Json | null
+          notes_for_finance?: string | null
           organisation_id?: string
           project_id?: string | null
           rd_tax_flag?: string | null
           rd_tax_reasoning?: string | null
           regulatory_issues?: Json | null
           revenue_ideas?: Json | null
+          risk_rating?: string | null
           sector?: string | null
           sector_guess?: string | null
           stage?: string | null
@@ -941,12 +1035,16 @@ export type Database = {
           commercial_lead_id: string | null
           company_name: string
           company_number: string | null
+          company_status: string | null
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
           created_at: string
           id: string
+          incorporation_date: string | null
           org_id: string | null
+          registered_address: string | null
+          sic_codes: string[] | null
           status: string
           technical_lead_id: string | null
           updated_at: string
@@ -956,12 +1054,16 @@ export type Database = {
           commercial_lead_id?: string | null
           company_name: string
           company_number?: string | null
+          company_status?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
           id?: string
+          incorporation_date?: string | null
           org_id?: string | null
+          registered_address?: string | null
+          sic_codes?: string[] | null
           status?: string
           technical_lead_id?: string | null
           updated_at?: string
@@ -971,12 +1073,16 @@ export type Database = {
           commercial_lead_id?: string | null
           company_name?: string
           company_number?: string | null
+          company_status?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
           id?: string
+          incorporation_date?: string | null
           org_id?: string | null
+          registered_address?: string | null
+          sic_codes?: string[] | null
           status?: string
           technical_lead_id?: string | null
           updated_at?: string
