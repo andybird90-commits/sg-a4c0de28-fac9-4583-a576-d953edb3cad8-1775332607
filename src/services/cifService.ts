@@ -3,6 +3,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type CIFRecord = Database["public"]["Tables"]["cif_records"]["Row"];
 type CIFInsert = Database["public"]["Tables"]["cif_records"]["Insert"];
+type CIFUpdate = Database["public"]["Tables"]["cif_records"]["Update"];
 type Prospect = Database["public"]["Tables"]["prospects"]["Row"];
 type ProspectInsert = Database["public"]["Tables"]["prospects"]["Insert"];
 type Organisation = Database["public"]["Tables"]["organisations"]["Row"];
@@ -160,7 +161,7 @@ export const cifService = {
       
       if (!orgId) {
         // Check prospect for org_id
-        // @ts-ignore - prospects relationship might return array or object depending on generated types
+        // @ts-expect-error - prospects relationship might return array or object depending on generated types
         const prospect = Array.isArray(currentCif.prospects) ? currentCif.prospects[0] : currentCif.prospects;
         
         if (prospect?.org_id) {
@@ -304,7 +305,7 @@ export const cifService = {
 
       if (cifError) throw cifError;
 
-      // @ts-ignore
+      // @ts-expect-error - prospects relationship might return array or object
       const prospect = Array.isArray(cif.prospects) ? cif.prospects[0] : cif.prospects;
       if (!prospect) throw new Error("Prospect not found");
 
@@ -434,9 +435,9 @@ export const cifService = {
 
       return (data || []).map(item => ({
         ...item,
-        // @ts-ignore
+        // @ts-expect-error - join returns array or object
         created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
-        // @ts-ignore
+        // @ts-expect-error - join returns array or object
         prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects
       })) as CIFWithDetails[];
     } catch (error) {
@@ -464,9 +465,9 @@ export const cifService = {
 
       return (data || []).map(item => ({
         ...item,
-        // @ts-ignore
+        // @ts-expect-error - join returns array or object
         created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
-        // @ts-ignore
+        // @ts-expect-error - join returns array or object
         prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects
       })) as CIFWithDetails[];
     } catch (error) {
@@ -494,9 +495,9 @@ export const cifService = {
 
       return (data || []).map(item => ({
         ...item,
-        // @ts-ignore
+        // @ts-expect-error - join returns array or object
         created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
-        // @ts-ignore
+        // @ts-expect-error - join returns array or object
         prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects
       })) as CIFWithDetails[];
     } catch (error) {
@@ -524,9 +525,9 @@ export const cifService = {
 
       return (data || []).map(item => ({
         ...item,
-        // @ts-ignore
+        // @ts-expect-error - join returns array or object
         created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
-        // @ts-ignore
+        // @ts-expect-error - join returns array or object
         prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects
       })) as CIFWithDetails[];
     } catch (error) {
@@ -555,9 +556,9 @@ export const cifService = {
       if (data) {
         return {
           ...data,
-          // @ts-ignore
+          // @ts-expect-error - join returns array or object
           created_by_profile: Array.isArray(data.created_by_profile) ? data.created_by_profile[0] : data.created_by_profile,
-          // @ts-ignore
+          // @ts-expect-error - join returns array or object
           prospects: Array.isArray(data.prospects) ? data.prospects[0] : data.prospects
         } as CIFWithDetails;
       }
