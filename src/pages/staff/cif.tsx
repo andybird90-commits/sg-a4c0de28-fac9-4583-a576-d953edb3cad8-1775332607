@@ -385,6 +385,17 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
         }
       });
 
+      console.log("[CIF Creation] Company data details:", {
+        company_name: companyData.company_name,
+        company_number: companyData.company_number,
+        status: companyData.company_status,
+        address: companyData.registered_address,
+        sic_codes: companyData.sic_codes,
+        incorporation: companyData.date_of_creation,
+        directors: companyData.number_of_directors,
+        employees: companyData.number_of_employees
+      });
+
       const result = await cifService.createCIF({
         prospectData: {
           company_name: companyData.company_name,
