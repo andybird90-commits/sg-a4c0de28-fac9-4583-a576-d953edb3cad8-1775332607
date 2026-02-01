@@ -19,7 +19,7 @@ export default function StaffCIFPage() {
   const router = useRouter();
   const { profileWithOrg: profile, isStaff } = useApp();
   const { toast } = useToast();
-  
+
   const [loading, setLoading] = useState(true);
   const [jobBoardA, setJobBoardA] = useState<CIFWithDetails[]>([]);
   const [jobBoardB, setJobBoardB] = useState<CIFWithDetails[]>([]);
@@ -39,11 +39,11 @@ export default function StaffCIFPage() {
     setLoading(true);
     try {
       const [boardA, boardB, boardC, rejected] = await Promise.all([
-        cifService.getJobBoardA(),
-        cifService.getJobBoardB(),
-        cifService.getJobBoardC(),
-        cifService.getRejectedCIFs(),
-      ]);
+      cifService.getJobBoardA(),
+      cifService.getJobBoardB(),
+      cifService.getJobBoardC(),
+      cifService.getRejectedCIFs()]
+      );
       setJobBoardA(boardA);
       setJobBoardB(boardB);
       setJobBoardC(boardC);
@@ -61,13 +61,13 @@ export default function StaffCIFPage() {
 
   const getStageColor = (stage: string) => {
     switch (stage) {
-      case "bdm_section": return "bg-blue-500";
-      case "tech_feasibility": return "bg-purple-500";
-      case "financial_section": return "bg-orange-500";
-      case "admin_approval": return "bg-green-500";
-      case "approved": return "bg-emerald-500";
-      case "rejected": return "bg-red-500";
-      default: return "bg-gray-500";
+      case "bdm_section":return "bg-blue-500";
+      case "tech_feasibility":return "bg-purple-500";
+      case "financial_section":return "bg-orange-500";
+      case "admin_approval":return "bg-green-500";
+      case "approved":return "bg-emerald-500";
+      case "rejected":return "bg-red-500";
+      default:return "bg-gray-500";
     }
   };
 
@@ -79,7 +79,7 @@ export default function StaffCIFPage() {
   const renderCIFCard = (cif: CIFWithDetails) => {
     const prospect = cif.prospects;
     const companyName = prospect?.company_name || "Unknown Company";
-    
+
     return (
       <Card key={cif.id} className="hover:shadow-lg transition-shadow">
         <CardHeader className="pb-3">
@@ -90,7 +90,7 @@ export default function StaffCIFPage() {
                 FY: {cif.financial_year || "Not specified"}
               </CardDescription>
             </div>
-            <Badge className={getStageColor(cif.current_stage)}>
+            <Badge className={getStageColor(cif.current_stage)} style={{ padding: "0px 2px" }}>
               {cif.current_stage?.replace(/_/g, " ").toUpperCase()}
             </Badge>
           </div>
@@ -101,27 +101,27 @@ export default function StaffCIFPage() {
               <Clock className="h-4 w-4" />
               <span>Updated: {formatDate(cif.updated_at)}</span>
             </div>
-            {cif.created_by_profile && (
-              <div className="text-muted-foreground">
+            {cif.created_by_profile &&
+            <div className="text-muted-foreground">
                 Created by: {cif.created_by_profile.full_name || cif.created_by_profile.email}
               </div>
-            )}
-            {cif.estimated_claim_band && (
-              <div className="text-muted-foreground">
+            }
+            {cif.estimated_claim_band &&
+            <div className="text-muted-foreground">
                 Est. Claim: {cif.estimated_claim_band}
               </div>
-            )}
+            }
           </div>
-          <Button 
-            className="w-full mt-4" 
-            onClick={() => router.push(`/staff/cif/${cif.id}`)}
-          >
+          <Button
+            className="w-full mt-4"
+            onClick={() => router.push(`/staff/cif/${cif.id}`)}>
+
             <ExternalLink className="h-4 w-4 mr-2" />
             Open CIF
           </Button>
         </CardContent>
-      </Card>
-    );
+      </Card>);
+
   };
 
   if (!isStaff) {
@@ -146,13 +146,13 @@ export default function StaffCIFPage() {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
-              <CIFCreationForm 
+              <CIFCreationForm
                 onSuccess={() => {
                   setCreateDialogOpen(false);
                   fetchAllBoards();
                 }}
-                onCancel={() => setCreateDialogOpen(false)}
-              />
+                onCancel={() => setCreateDialogOpen(false)} />
+
             </DialogContent>
           </Dialog>
         </div>
@@ -161,35 +161,35 @@ export default function StaffCIFPage() {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="board-a" className="relative">
               Job Board A
-              {jobBoardA.length > 0 && (
-                <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+              {jobBoardA.length > 0 &&
+              <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {jobBoardA.length}
                 </Badge>
-              )}
+              }
             </TabsTrigger>
             <TabsTrigger value="board-b" className="relative">
               Job Board B
-              {jobBoardB.length > 0 && (
-                <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+              {jobBoardB.length > 0 &&
+              <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {jobBoardB.length}
                 </Badge>
-              )}
+              }
             </TabsTrigger>
             <TabsTrigger value="board-c" className="relative">
               Job Board C
-              {jobBoardC.length > 0 && (
-                <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+              {jobBoardC.length > 0 &&
+              <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {jobBoardC.length}
                 </Badge>
-              )}
+              }
             </TabsTrigger>
             <TabsTrigger value="rejected" className="relative">
               Rejected
-              {rejectedCIFs.length > 0 && (
-                <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+              {rejectedCIFs.length > 0 &&
+              <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {rejectedCIFs.length}
                 </Badge>
-              )}
+              }
             </TabsTrigger>
           </TabsList>
 
@@ -202,18 +202,18 @@ export default function StaffCIFPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
-                ) : jobBoardA.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                {loading ?
+                <div className="text-center py-8 text-muted-foreground">Loading...</div> :
+                jobBoardA.length === 0 ?
+                <div className="text-center py-8 text-muted-foreground">
                     <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     No CIFs awaiting technical review
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  </div> :
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {jobBoardA.map(renderCIFCard)}
                   </div>
-                )}
+                }
               </CardContent>
             </Card>
           </TabsContent>
@@ -227,18 +227,18 @@ export default function StaffCIFPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
-                ) : jobBoardB.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                {loading ?
+                <div className="text-center py-8 text-muted-foreground">Loading...</div> :
+                jobBoardB.length === 0 ?
+                <div className="text-center py-8 text-muted-foreground">
                     <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     No CIFs awaiting financial section
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  </div> :
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {jobBoardB.map(renderCIFCard)}
                   </div>
-                )}
+                }
               </CardContent>
             </Card>
           </TabsContent>
@@ -252,18 +252,18 @@ export default function StaffCIFPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
-                ) : jobBoardC.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                {loading ?
+                <div className="text-center py-8 text-muted-foreground">Loading...</div> :
+                jobBoardC.length === 0 ?
+                <div className="text-center py-8 text-muted-foreground">
                     <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     No CIFs awaiting admin approval
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  </div> :
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {jobBoardC.map(renderCIFCard)}
                   </div>
-                )}
+                }
               </CardContent>
             </Card>
           </TabsContent>
@@ -277,38 +277,38 @@ export default function StaffCIFPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
-                ) : rejectedCIFs.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+                {loading ?
+                <div className="text-center py-8 text-muted-foreground">Loading...</div> :
+                rejectedCIFs.length === 0 ?
+                <div className="text-center py-8 text-muted-foreground">
                     <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     No rejected CIFs
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  </div> :
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {rejectedCIFs.map(renderCIFCard)}
                   </div>
-                )}
+                }
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-    </StaffLayout>
-  );
+    </StaffLayout>);
+
 }
 
 // CIF Creation Form Component
-function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCancel: () => void;}) {
   const { profileWithOrg: profile } = useApp();
   const { toast } = useToast();
-  
+
   const [step, setStep] = useState<"lookup" | "bdm">("lookup");
   const [companyNumber, setCompanyNumber] = useState("");
   const [lookupLoading, setLookupLoading] = useState(false);
   const [companyData, setCompanyData] = useState<any>(null);
   const [saving, setSaving] = useState(false);
-  
+
   // BDM Form Fields
   const [businessBackground, setBusinessBackground] = useState("");
   const [primaryContactName, setPrimaryContactName] = useState("");
@@ -332,17 +332,17 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
     setLookupLoading(true);
     try {
       const data = await cifService.lookupCompaniesHouse(companyNumber);
-      
+
       if (!data) {
         toast({ title: "Error", description: "Company not found", variant: "destructive" });
         return;
       }
 
       if (!cifService.isCompanyActive(data.company_status)) {
-        toast({ 
-          title: "Company Inactive", 
+        toast({
+          title: "Company Inactive",
           description: "This company is dissolved or inactive and cannot be onboarded",
-          variant: "destructive" 
+          variant: "destructive"
         });
         return;
       }
@@ -380,7 +380,7 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
           previousClaimYearEnd,
           previousClaimValue,
           previousClaimDateSubmitted,
-          rdThemes: rdThemes.split("\n").filter(t => t.trim()),
+          rdThemes: rdThemes.split("\n").filter((t) => t.trim()),
           expectedFeasibilityDate
         }
       });
@@ -405,7 +405,7 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
           incorporation_date: companyData.date_of_creation,
           status: companyData.company_status,
           number_of_directors: companyData.number_of_directors,
-          number_of_employees: companyData.number_of_employees,
+          number_of_employees: companyData.number_of_employees
         },
         bdmSectionData: {
           business_background: businessBackground,
@@ -418,10 +418,10 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
           previous_claim_year_end_date: hasClaimedBefore && previousClaimYearEnd ? previousClaimYearEnd : undefined,
           previous_claim_value: hasClaimedBefore && previousClaimValue ? parseFloat(previousClaimValue) : undefined,
           previous_claim_date_submitted: hasClaimedBefore && previousClaimDateSubmitted ? previousClaimDateSubmitted : undefined,
-          rd_themes: rdThemes.split("\n").filter(t => t.trim()),
-          expected_feasibility_date: expectedFeasibilityDate || undefined,
+          rd_themes: rdThemes.split("\n").filter((t) => t.trim()),
+          expected_feasibility_date: expectedFeasibilityDate || undefined
         },
-        createdBy: profile.id,
+        createdBy: profile.id
       });
 
       console.log("[CIF Creation] Result:", result);
@@ -448,24 +448,24 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
           {step === "lookup" ? "Lookup Company" : "Complete BDM Section"}
         </DialogTitle>
         <DialogDescription>
-          {step === "lookup" 
-            ? "Enter the Companies House number to lookup company details"
-            : "Fill in the initial business development information"
+          {step === "lookup" ?
+          "Enter the Companies House number to lookup company details" :
+          "Fill in the initial business development information"
           }
         </DialogDescription>
       </DialogHeader>
 
-      {step === "lookup" && (
-        <div className="space-y-4 py-4">
+      {step === "lookup" &&
+      <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="company-number">Company Number</Label>
             <Input
-              id="company-number"
-              placeholder="e.g. 12345678"
-              value={companyNumber}
-              onChange={(e) => setCompanyNumber(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleCompanyLookup()}
-            />
+            id="company-number"
+            placeholder="e.g. 12345678"
+            value={companyNumber}
+            onChange={(e) => setCompanyNumber(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleCompanyLookup()} />
+
           </div>
           <div className="flex gap-3">
             <Button onClick={handleCompanyLookup} disabled={lookupLoading} className="flex-1">
@@ -474,10 +474,10 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
             <Button onClick={onCancel} variant="outline">Cancel</Button>
           </div>
         </div>
-      )}
+      }
 
-      {step === "bdm" && companyData && (
-        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+      {step === "bdm" && companyData &&
+      <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
           <Card className="bg-muted/50">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">{companyData.company_name}</CardTitle>
@@ -490,132 +490,132 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
           <div className="space-y-2">
             <Label htmlFor="business-bg">Business Background *</Label>
             <Textarea
-              id="business-bg"
-              placeholder="Describe the company's business and industry..."
-              value={businessBackground}
-              onChange={(e) => setBusinessBackground(e.target.value)}
-              rows={3}
-            />
+            id="business-bg"
+            placeholder="Describe the company's business and industry..."
+            value={businessBackground}
+            onChange={(e) => setBusinessBackground(e.target.value)}
+            rows={3} />
+
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="contact-name">Primary Contact Name *</Label>
             <Input
-              id="contact-name"
-              placeholder="Contact person name"
-              value={primaryContactName}
-              onChange={(e) => setPrimaryContactName(e.target.value)}
-            />
+            id="contact-name"
+            placeholder="Contact person name"
+            value={primaryContactName}
+            onChange={(e) => setPrimaryContactName(e.target.value)} />
+
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="contact-position">Primary Contact Position</Label>
             <Input
-              id="contact-position"
-              placeholder="e.g. Business Manager, CTO"
-              value={primaryContactPosition}
-              onChange={(e) => setPrimaryContactPosition(e.target.value)}
-            />
+            id="contact-position"
+            placeholder="e.g. Business Manager, CTO"
+            value={primaryContactPosition}
+            onChange={(e) => setPrimaryContactPosition(e.target.value)} />
+
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="contact-email">Primary Contact Email</Label>
             <Input
-              id="contact-email"
-              type="email"
-              placeholder="contact@company.com"
-              value={primaryContactEmail}
-              onChange={(e) => setPrimaryContactEmail(e.target.value)}
-            />
+            id="contact-email"
+            type="email"
+            placeholder="contact@company.com"
+            value={primaryContactEmail}
+            onChange={(e) => setPrimaryContactEmail(e.target.value)} />
+
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="contact-phone">Primary Contact Phone</Label>
             <Input
-              id="contact-phone"
-              placeholder="+44 7123 456789"
-              value={primaryContactPhone}
-              onChange={(e) => setPrimaryContactPhone(e.target.value)}
-            />
+            id="contact-phone"
+            placeholder="+44 7123 456789"
+            value={primaryContactPhone}
+            onChange={(e) => setPrimaryContactPhone(e.target.value)} />
+
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="contact-landline">Primary Contact Landline</Label>
             <Input
-              id="contact-landline"
-              placeholder="+44 20 1234 5678"
-              value={primaryContactLandline}
-              onChange={(e) => setPrimaryContactLandline(e.target.value)}
-            />
+            id="contact-landline"
+            placeholder="+44 20 1234 5678"
+            value={primaryContactLandline}
+            onChange={(e) => setPrimaryContactLandline(e.target.value)} />
+
           </div>
 
           <div className="space-y-4 pt-2">
             <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="has-claimed" 
-                checked={hasClaimedBefore}
-                onCheckedChange={(checked) => setHasClaimedBefore(checked === true)}
-              />
+              <Checkbox
+              id="has-claimed"
+              checked={hasClaimedBefore}
+              onCheckedChange={(checked) => setHasClaimedBefore(checked === true)} />
+
               <Label htmlFor="has-claimed" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 Has the company claimed before?
               </Label>
             </div>
 
-            {hasClaimedBefore && (
-              <div className="space-y-4 pl-6 border-l-2 border-muted">
+            {hasClaimedBefore &&
+          <div className="space-y-4 pl-6 border-l-2 border-muted">
                 <div className="space-y-2">
                   <Label htmlFor="prev-year-end">Previous Claim Year End Date</Label>
                   <Input
-                    id="prev-year-end"
-                    type="text"
-                    value={previousClaimYearEnd}
-                    onChange={(e) => setPreviousClaimYearEnd(e.target.value)}
-                  />
+                id="prev-year-end"
+                type="text"
+                value={previousClaimYearEnd}
+                onChange={(e) => setPreviousClaimYearEnd(e.target.value)} />
+
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="prev-value">Previous Claim Value (£)</Label>
                   <Input
-                    id="prev-value"
-                    type="number"
-                    placeholder="e.g. 32000"
-                    value={previousClaimValue}
-                    onChange={(e) => setPreviousClaimValue(e.target.value)}
-                  />
+                id="prev-value"
+                type="number"
+                placeholder="e.g. 32000"
+                value={previousClaimValue}
+                onChange={(e) => setPreviousClaimValue(e.target.value)} />
+
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="prev-submitted">Previous Claim Date Submitted</Label>
                   <Input
-                    id="prev-submitted"
-                    type="date"
-                    value={previousClaimDateSubmitted}
-                    onChange={(e) => setPreviousClaimDateSubmitted(e.target.value)}
-                  />
+                id="prev-submitted"
+                type="date"
+                value={previousClaimDateSubmitted}
+                onChange={(e) => setPreviousClaimDateSubmitted(e.target.value)} />
+
                 </div>
               </div>
-            )}
+          }
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="rd-themes">R&D Themes (one per line)</Label>
             <Textarea
-              id="rd-themes"
-              placeholder="e.g. AI/ML&#10;Software Development&#10;Data Analytics"
-              value={rdThemes}
-              onChange={(e) => setRdThemes(e.target.value)}
-              rows={4}
-            />
+            id="rd-themes"
+            placeholder="e.g. AI/ML&#10;Software Development&#10;Data Analytics"
+            value={rdThemes}
+            onChange={(e) => setRdThemes(e.target.value)}
+            rows={4} />
+
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="feasibility-date">Expected Feasibility Date</Label>
             <Input
-              id="feasibility-date"
-              type="date"
-              value={expectedFeasibilityDate}
-              onChange={(e) => setExpectedFeasibilityDate(e.target.value)}
-            />
+            id="feasibility-date"
+            type="date"
+            value={expectedFeasibilityDate}
+            onChange={(e) => setExpectedFeasibilityDate(e.target.value)} />
+
           </div>
 
           <div className="flex gap-3 pt-4">
@@ -626,7 +626,7 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
             <Button onClick={onCancel} variant="outline">Cancel</Button>
           </div>
         </div>
-      )}
-    </>
-  );
+      }
+    </>);
+
 }
