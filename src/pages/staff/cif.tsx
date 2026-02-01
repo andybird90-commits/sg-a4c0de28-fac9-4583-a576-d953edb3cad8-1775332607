@@ -368,6 +368,25 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
 
     setSaving(true);
     try {
+      console.log("[CIF Creation] Starting CIF creation with data:", {
+        companyData,
+        bdmFields: {
+          businessBackground,
+          projectOverview,
+          primaryContactName,
+          primaryContactPosition,
+          primaryContactEmail,
+          primaryContactPhone,
+          primaryContactLandline,
+          hasClaimedBefore,
+          previousClaimYearEnd,
+          previousClaimValue,
+          previousClaimDateSubmitted,
+          rdThemes: rdThemes.split("\n").filter(t => t.trim()),
+          expectedFeasibilityDate
+        }
+      });
+
       const result = await cifService.createCIF({
         prospectData: {
           company_name: companyData.company_name,
@@ -398,14 +417,18 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
         createdBy: profile.id,
       });
 
+      console.log("[CIF Creation] Result:", result);
+
       if (result) {
         toast({ title: "Success", description: "CIF created successfully" });
         onSuccess();
       } else {
-        toast({ title: "Error", description: "Failed to create CIF", variant: "destructive" });
+        console.error("[CIF Creation] Result was null/undefined");
+        toast({ title: "Error", description: "Failed to create CIF - no result returned", variant: "destructive" });
       }
     } catch (error) {
-      toast({ title: "Error", description: "Failed to create CIF", variant: "destructive" });
+      console.error("[CIF Creation] Error:", error);
+      toast({ title: "Error", description: `Failed to create CIF: ${error instanceof Error ? error.message : "Unknown error"}`, variant: "destructive" });
     } finally {
       setSaving(false);
     }
