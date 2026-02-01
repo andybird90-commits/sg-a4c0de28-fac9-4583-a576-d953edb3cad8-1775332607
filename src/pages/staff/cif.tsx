@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function StaffCIFPage() {
   const router = useRouter();
@@ -312,8 +313,14 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
   const [businessBackground, setBusinessBackground] = useState("");
   const [projectOverview, setProjectOverview] = useState("");
   const [primaryContactName, setPrimaryContactName] = useState("");
+  const [primaryContactPosition, setPrimaryContactPosition] = useState("");
   const [primaryContactEmail, setPrimaryContactEmail] = useState("");
   const [primaryContactPhone, setPrimaryContactPhone] = useState("");
+  const [primaryContactLandline, setPrimaryContactLandline] = useState("");
+  const [hasClaimedBefore, setHasClaimedBefore] = useState(false);
+  const [previousClaimYearEnd, setPreviousClaimYearEnd] = useState("");
+  const [previousClaimValue, setPreviousClaimValue] = useState("");
+  const [previousClaimDateSubmitted, setPreviousClaimDateSubmitted] = useState("");
   const [rdThemes, setRdThemes] = useState("");
   const [expectedFeasibilityDate, setExpectedFeasibilityDate] = useState("");
 
@@ -370,13 +377,21 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
           sic_codes: companyData.sic_codes || [],
           incorporation_date: companyData.date_of_creation,
           status: companyData.company_status,
+          number_of_directors: companyData.number_of_directors,
+          number_of_employees: companyData.number_of_employees,
         },
         bdmSectionData: {
           business_background: businessBackground,
           project_overview: projectOverview,
           primary_contact_name: primaryContactName,
-          primary_contact_email: primaryContactEmail,
-          primary_contact_phone: primaryContactPhone,
+          primary_contact_position: primaryContactPosition || undefined,
+          primary_contact_email: primaryContactEmail || undefined,
+          primary_contact_phone: primaryContactPhone || undefined,
+          primary_contact_landline: primaryContactLandline || undefined,
+          has_claimed_before: hasClaimedBefore,
+          previous_claim_year_end_date: hasClaimedBefore && previousClaimYearEnd ? previousClaimYearEnd : undefined,
+          previous_claim_value: hasClaimedBefore && previousClaimValue ? parseFloat(previousClaimValue) : undefined,
+          previous_claim_date_submitted: hasClaimedBefore && previousClaimDateSubmitted ? previousClaimDateSubmitted : undefined,
           rd_themes: rdThemes.split("\n").filter(t => t.trim()),
           expected_feasibility_date: expectedFeasibilityDate || undefined,
         },
@@ -475,6 +490,16 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="contact-position">Primary Contact Position</Label>
+            <Input
+              id="contact-position"
+              placeholder="e.g. Business Manager, CTO"
+              value={primaryContactPosition}
+              onChange={(e) => setPrimaryContactPosition(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="contact-email">Primary Contact Email</Label>
             <Input
               id="contact-email"
@@ -489,10 +514,68 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
             <Label htmlFor="contact-phone">Primary Contact Phone</Label>
             <Input
               id="contact-phone"
-              placeholder="+44 20 1234 5678"
+              placeholder="+44 7123 456789"
               value={primaryContactPhone}
               onChange={(e) => setPrimaryContactPhone(e.target.value)}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="contact-landline">Primary Contact Landline</Label>
+            <Input
+              id="contact-landline"
+              placeholder="+44 20 1234 5678"
+              value={primaryContactLandline}
+              onChange={(e) => setPrimaryContactLandline(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="has-claimed" 
+                checked={hasClaimedBefore}
+                onCheckedChange={(checked) => setHasClaimedBefore(checked === true)}
+              />
+              <Label htmlFor="has-claimed" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Has the company claimed before?
+              </Label>
+            </div>
+
+            {hasClaimedBefore && (
+              <div className="space-y-4 pl-6 border-l-2 border-muted">
+                <div className="space-y-2">
+                  <Label htmlFor="prev-year-end">Previous Claim Year End Date</Label>
+                  <Input
+                    id="prev-year-end"
+                    type="date"
+                    value={previousClaimYearEnd}
+                    onChange={(e) => setPreviousClaimYearEnd(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="prev-value">Previous Claim Value (£)</Label>
+                  <Input
+                    id="prev-value"
+                    type="number"
+                    placeholder="e.g. 32000"
+                    value={previousClaimValue}
+                    onChange={(e) => setPreviousClaimValue(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="prev-submitted">Previous Claim Date Submitted</Label>
+                  <Input
+                    id="prev-submitted"
+                    type="date"
+                    value={previousClaimDateSubmitted}
+                    onChange={(e) => setPreviousClaimDateSubmitted(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
