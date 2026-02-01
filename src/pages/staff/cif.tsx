@@ -361,7 +361,7 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
   const handleCreateCIF = async () => {
     if (!companyData || !profile?.id) return;
 
-    if (!businessBackground || !projectOverview || !primaryContactName) {
+    if (!businessBackground || !primaryContactName) {
       toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
       return;
     }
@@ -570,7 +570,7 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
                   <Label htmlFor="prev-year-end">Previous Claim Year End Date</Label>
                   <Input
                     id="prev-year-end"
-                    type="date"
+                    type="text"
                     value={previousClaimYearEnd}
                     onChange={(e) => setPreviousClaimYearEnd(e.target.value)}
                   />
