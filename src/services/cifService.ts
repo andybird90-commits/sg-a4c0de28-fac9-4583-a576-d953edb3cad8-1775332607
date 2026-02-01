@@ -31,6 +31,16 @@ export interface CIFWithDetails extends CIFRecord {
     full_name: string | null;
     email: string | null;
   } | null;
+  // Feasibility fields (flattened or optional)
+  technical_understanding?: string | null;
+  challenges_uncertainties?: string | null;
+  qualifying_activities?: string[] | null;
+  rd_projects_list?: string[] | null;
+  feasibility_status?: "qualified" | "not_qualified" | "needs_more_info" | null;
+  estimated_claim_band?: "0-25k" | "25k-50k" | "50k-100k" | "100k-250k" | "250k+" | null;
+  risk_rating?: "low" | "medium" | "high" | null;
+  notes_for_finance?: string | null;
+  missing_information_flags?: string[] | null;
 }
 
 export const cifService = {
@@ -75,7 +85,15 @@ export const cifService = {
    * Create new CIF record with BDM Section A data
    */
   async createCIF(data: {
-    prospectData: ProspectInsert;
+    prospectData: {
+      company_name: string;
+      company_number?: string;
+      registered_name?: string;
+      registered_address?: string;
+      sic_codes?: string[];
+      incorporation_date?: string;
+      status?: string;
+    };
     bdmSectionData: {
       business_background?: string;
       project_overview?: string;
@@ -424,18 +442,32 @@ export const cifService = {
         .select(`
           *,
           prospects(*),
-          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email)
+          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email),
+          feasibility:feasibility_analyses(*)
         `)
         .eq("current_stage", "bdm_section")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      return (data || []).map(item => ({
-        ...item,
-        created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
-        prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects
-      })) as CIFWithDetails[];
+      return (data || []).map(item => {
+        const feasibility = Array.isArray(item.feasibility) ? item.feasibility[0] : item.feasibility;
+        return {
+          ...item,
+          created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
+          prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects,
+          // Map feasibility fields if they exist
+          technical_understanding: feasibility?.technical_reasoning,
+          challenges_uncertainties: feasibility?.technical_challenges, // Note: Schema check needed for exact col name
+          qualifying_activities: feasibility?.qualifying_activities, // Note: Check schema type (jsonb vs array)
+          rd_projects_list: feasibility?.rd_projects_list,
+          feasibility_status: feasibility?.feasibility_status,
+          estimated_claim_band: feasibility?.estimated_claim_band,
+          risk_rating: feasibility?.risk_rating,
+          notes_for_finance: feasibility?.notes_for_finance,
+          missing_information_flags: feasibility?.missing_information_flags
+        };
+      }) as CIFWithDetails[];
     } catch (error) {
       console.error("Error fetching Job Board A:", error);
       return [];
@@ -452,18 +484,26 @@ export const cifService = {
         .select(`
           *,
           prospects(*),
-          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email)
+          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email),
+          feasibility:feasibility_analyses(*)
         `)
         .eq("current_stage", "tech_feasibility")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      return (data || []).map(item => ({
-        ...item,
-        created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
-        prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects
-      })) as CIFWithDetails[];
+      return (data || []).map(item => {
+        const feasibility = Array.isArray(item.feasibility) ? item.feasibility[0] : item.feasibility;
+        return {
+          ...item,
+          created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
+          prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects,
+          technical_understanding: feasibility?.technical_reasoning,
+          feasibility_status: feasibility?.feasibility_status,
+          estimated_claim_band: feasibility?.estimated_claim_band,
+          // Map other fields similarly
+        };
+      }) as CIFWithDetails[];
     } catch (error) {
       console.error("Error fetching Job Board B:", error);
       return [];
@@ -480,18 +520,25 @@ export const cifService = {
         .select(`
           *,
           prospects(*),
-          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email)
+          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email),
+          feasibility:feasibility_analyses(*)
         `)
         .eq("current_stage", "financial_section")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      return (data || []).map(item => ({
-        ...item,
-        created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
-        prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects
-      })) as CIFWithDetails[];
+      return (data || []).map(item => {
+        const feasibility = Array.isArray(item.feasibility) ? item.feasibility[0] : item.feasibility;
+        return {
+          ...item,
+          created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
+          prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects,
+          technical_understanding: feasibility?.technical_reasoning,
+          feasibility_status: feasibility?.feasibility_status,
+          estimated_claim_band: feasibility?.estimated_claim_band,
+        };
+      }) as CIFWithDetails[];
     } catch (error) {
       console.error("Error fetching Job Board C:", error);
       return [];
@@ -508,18 +555,25 @@ export const cifService = {
         .select(`
           *,
           prospects(*),
-          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email)
+          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email),
+          feasibility:feasibility_analyses(*)
         `)
         .eq("current_stage", "rejected")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      return (data || []).map(item => ({
-        ...item,
-        created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
-        prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects
-      })) as CIFWithDetails[];
+      return (data || []).map(item => {
+        const feasibility = Array.isArray(item.feasibility) ? item.feasibility[0] : item.feasibility;
+        return {
+          ...item,
+          created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
+          prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects,
+          technical_understanding: feasibility?.technical_reasoning,
+          feasibility_status: feasibility?.feasibility_status,
+          estimated_claim_band: feasibility?.estimated_claim_band,
+        };
+      }) as CIFWithDetails[];
     } catch (error) {
       console.error("Error fetching rejected CIFs:", error);
       return [];
@@ -536,7 +590,8 @@ export const cifService = {
         .select(`
           *,
           prospects(*),
-          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email)
+          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email),
+          feasibility:feasibility_analyses(*)
         `)
         .eq("id", cifId)
         .single();
@@ -544,10 +599,21 @@ export const cifService = {
       if (error) throw error;
 
       if (data) {
+        const feasibility = Array.isArray(data.feasibility) ? data.feasibility[0] : data.feasibility;
         return {
           ...data,
           created_by_profile: Array.isArray(data.created_by_profile) ? data.created_by_profile[0] : data.created_by_profile,
-          prospects: Array.isArray(data.prospects) ? data.prospects[0] : data.prospects
+          prospects: Array.isArray(data.prospects) ? data.prospects[0] : data.prospects,
+          // Map feasibility fields
+          technical_understanding: feasibility?.technical_reasoning,
+          challenges_uncertainties: feasibility?.technical_challenges, 
+          qualifying_activities: feasibility?.qualifying_activities as string[] | null, // Cast jsonb to string[]
+          rd_projects_list: feasibility?.rd_projects_list as string[] | null,
+          feasibility_status: feasibility?.feasibility_status as any,
+          estimated_claim_band: feasibility?.estimated_claim_band as any,
+          risk_rating: feasibility?.risk_rating as any,
+          notes_for_finance: feasibility?.notes_for_finance,
+          missing_information_flags: feasibility?.missing_information_flags as string[] | null
         } as CIFWithDetails;
       }
 

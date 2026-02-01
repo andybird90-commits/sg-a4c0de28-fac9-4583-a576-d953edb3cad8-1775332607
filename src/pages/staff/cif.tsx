@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import StaffLayout from "@/components/staff/StaffLayout";
+import { StaffLayout } from "@/components/staff/StaffLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 export default function StaffCIFPage() {
   const router = useRouter();
-  const { profile, isStaff } = useApp();
+  const { profileWithOrg: profile, isStaff } = useApp();
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
@@ -299,7 +299,7 @@ export default function StaffCIFPage() {
 
 // CIF Creation Form Component
 function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
-  const { profile } = useApp();
+  const { profileWithOrg: profile } = useApp();
   const { toast } = useToast();
   
   const [step, setStep] = useState<"lookup" | "bdm">("lookup");

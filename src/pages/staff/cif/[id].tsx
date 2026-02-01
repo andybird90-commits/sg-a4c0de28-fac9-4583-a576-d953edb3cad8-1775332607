@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import StaffLayout from "@/components/staff/StaffLayout";
+import { StaffLayout } from "@/components/staff/StaffLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 export default function CIFDetailPage() {
   const router = useRouter();
   const { id } = router.query;
-  const { profile, isStaff } = useApp();
+  const { profileWithOrg: profile, isStaff } = useApp();
   const { toast } = useToast();
 
   const [cif, setCif] = useState<CIFWithDetails | null>(null);
@@ -385,7 +385,7 @@ export default function CIFDetailPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="tech-status">Feasibility Status *</Label>
-                    <Select value={techStatus} onValueChange={(v: any) => setTechStatus(v)} disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}>
+                    <Select value={techStatus} onValueChange={(v: "qualified" | "not_qualified" | "needs_more_info") => setTechStatus(v)} disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
