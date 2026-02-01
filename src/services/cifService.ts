@@ -23,6 +23,8 @@ export interface CompaniesHouseData {
   sic_codes?: string[];
   date_of_creation?: string;
   type?: string;
+  number_of_directors?: number;
+  number_of_employees?: number;
 }
 
 export interface CIFWithDetails extends CIFRecord {
@@ -93,15 +95,23 @@ export const cifService = {
       sic_codes?: string[];
       incorporation_date?: string;
       status?: string;
+      number_of_directors?: number;
+      number_of_employees?: number;
     };
     bdmSectionData: {
       business_background?: string;
       project_overview?: string;
       primary_contact_name?: string;
+      primary_contact_position?: string;
       primary_contact_email?: string;
       primary_contact_phone?: string;
+      primary_contact_landline?: string;
       rd_themes?: string[];
       expected_feasibility_date?: string;
+      has_claimed_before?: boolean;
+      previous_claim_year_end_date?: string;
+      previous_claim_value?: number;
+      previous_claim_date_submitted?: string;
     };
     createdBy: string;
   }): Promise<{ cif: CIFRecord; prospect: Prospect } | null> {
@@ -128,10 +138,16 @@ export const cifService = {
         business_background: data.bdmSectionData.business_background,
         project_overview: data.bdmSectionData.project_overview,
         primary_contact_name: data.bdmSectionData.primary_contact_name,
+        primary_contact_position: data.bdmSectionData.primary_contact_position,
         primary_contact_email: data.bdmSectionData.primary_contact_email,
         primary_contact_phone: data.bdmSectionData.primary_contact_phone,
+        primary_contact_landline: data.bdmSectionData.primary_contact_landline,
         rd_themes: data.bdmSectionData.rd_themes,
         expected_feasibility_date: data.bdmSectionData.expected_feasibility_date,
+        has_claimed_before: data.bdmSectionData.has_claimed_before,
+        previous_claim_year_end_date: data.bdmSectionData.previous_claim_year_end_date,
+        previous_claim_value: data.bdmSectionData.previous_claim_value,
+        previous_claim_date_submitted: data.bdmSectionData.previous_claim_date_submitted,
         bdm_last_updated: new Date().toISOString(),
       };
 
