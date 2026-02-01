@@ -109,7 +109,11 @@ export const cifService = {
       // 1. Create prospect record
       const { data: prospect, error: prospectError } = await supabase
         .from("prospects")
-        .insert(data.prospectData)
+        .insert({
+          ...data.prospectData,
+          bd_owner_id: data.createdBy, // Required field
+          company_name: data.prospectData.company_name, // Explicitly map to ensure type safety
+        } as any) // Cast to any to handle potential type lags with new columns like registered_name
         .select()
         .single();
 

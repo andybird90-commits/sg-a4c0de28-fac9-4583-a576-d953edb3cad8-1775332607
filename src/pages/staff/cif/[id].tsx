@@ -32,8 +32,8 @@ export default function CIFDetailPage() {
   const [techActivities, setTechActivities] = useState("");
   const [techProjects, setTechProjects] = useState("");
   const [techStatus, setTechStatus] = useState<"qualified" | "not_qualified" | "needs_more_info">("needs_more_info");
-  const [techClaimBand, setTechClaimBand] = useState("");
-  const [techRiskRating, setTechRiskRating] = useState("");
+  const [techClaimBand, setTechClaimBand] = useState<"0-25k" | "25k-50k" | "50k-100k" | "100k-250k" | "250k+">("0-25k");
+  const [techRiskRating, setTechRiskRating] = useState<"low" | "medium" | "high">("low");
   const [techNotesForFinance, setTechNotesForFinance] = useState("");
   const [techMissingInfo, setTechMissingInfo] = useState("");
 
@@ -71,6 +71,12 @@ export default function CIFDetailPage() {
         setTechChallenges(data.challenges_uncertainties || "");
         setTechActivities(data.qualifying_activities?.join("\n") || "");
         setTechProjects(data.rd_projects_list?.join("\n") || "");
+        if (data.feasibility_status) setTechStatus(data.feasibility_status);
+        if (data.estimated_claim_band) setTechClaimBand(data.estimated_claim_band);
+        if (data.risk_rating) setTechRiskRating(data.risk_rating);
+        setTechNotesForFinance(data.notes_for_finance || "");
+        setTechMissingInfo(data.missing_information_flags?.join("\n") || "");
+
         setFinancialYear(data.financial_year || "");
         setStaffCost(data.staff_cost_estimate?.toString() || "");
         setSubcontractorCost(data.subcontractor_estimate?.toString() || "");
@@ -270,7 +276,7 @@ export default function CIFDetailPage() {
                 <span className="font-semibold">Status:</span> {prospect.status}
               </div>
               <div className="col-span-2">
-                <span className="font-semibold">Registered Name:</span> {prospect.registered_name}
+                <span className="font-semibold">Registered Name:</span> {(prospect as any).registered_name || prospect.company_name}
               </div>
               {prospect.incorporation_date && (
                 <div>
@@ -399,7 +405,7 @@ export default function CIFDetailPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="tech-claim-band">Estimated Claim Band</Label>
-                    <Select value={techClaimBand} onValueChange={setTechClaimBand} disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}>
+                    <Select value={techClaimBand} onValueChange={(v: any) => setTechClaimBand(v)} disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select band" />
                       </SelectTrigger>
@@ -415,7 +421,7 @@ export default function CIFDetailPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="tech-risk">Risk Rating</Label>
-                    <Select value={techRiskRating} onValueChange={setTechRiskRating} disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}>
+                    <Select value={techRiskRating} onValueChange={(v: any) => setTechRiskRating(v)} disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select risk" />
                       </SelectTrigger>
