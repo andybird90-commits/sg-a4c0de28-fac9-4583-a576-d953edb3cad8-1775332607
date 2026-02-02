@@ -140,12 +140,12 @@ export default function ClaimDetailPage() {
     try {
       await claimService.createProject({
         claim_id: claim.id,
-        org_id: claim.org_id, // Pass org_id explicitly
+        org_id: claim.org_id,
         name: projectForm.name,
         description: projectForm.description,
         start_date: projectForm.start_date || null,
         end_date: projectForm.end_date || null,
-        rd_theme: projectForm.rd_theme, // Use rd_theme
+        rd_theme: projectForm.rd_theme,
         created_by: profile.id,
       });
 
@@ -210,7 +210,7 @@ export default function ClaimDetailPage() {
     try {
       await claimService.createCost({
         claim_id: claim.id,
-        org_id: claim.org_id, // Pass org_id
+        org_id: claim.org_id,
         project_id: costForm.project_id || null,
         cost_type: costForm.cost_type as any,
         description: costForm.description,
@@ -245,9 +245,9 @@ export default function ClaimDetailPage() {
       // For now, create document record (file upload would go to Supabase Storage)
       await claimService.createDocument({
         claim_id: claim.id,
-        org_id: claim.org_id, // Pass org_id
+        org_id: claim.org_id,
         doc_type: documentType as any,
-        title: selectedFile.name, // Add title
+        title: selectedFile.name,
         file_name: selectedFile.name,
         file_path: filePath,
         file_size: selectedFile.size,
