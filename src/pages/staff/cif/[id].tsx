@@ -15,6 +15,7 @@ import { cifService, type CIFWithDetails } from "@/services/cifService";
 import { useApp } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/lib/supabase";
 
 export default function CIFDetailPage() {
   const router = useRouter();
@@ -50,6 +51,11 @@ export default function CIFDetailPage() {
   const [accountantPhone, setAccountantPhone] = useState("");
   const [readyToSubmit, setReadyToSubmit] = useState(false);
 
+  // Document upload state
+  const [uploadingLOA, setUploadingLOA] = useState(false);
+  const [uploadingASS, setUploadingASS] = useState(false);
+  const [documents, setDocuments] = useState<any[]>([]);
+
   useEffect(() => {
     if (!isStaff) {
       router.push("/home");
@@ -57,6 +63,7 @@ export default function CIFDetailPage() {
     }
     if (id && typeof id === "string") {
       fetchCIF(id);
+      fetchDocuments(id);
     }
   }, [id, isStaff]);
 
@@ -96,6 +103,136 @@ export default function CIFDetailPage() {
       toast({ title: "Error", description: "Failed to load CIF", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDocuments = async (cifId: string) => {
+    try {
+      const { data: docs, error } = await supabase
+        .from("cif_documents")
+        .select("*, uploaded_by_profile:profiles!cif_documents_uploaded_by_fkey(full_name)")
+        .eq("cif_id", cifId)
+        .order("uploaded_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching documents:", error);
+        return;
+      }
+
+      setDocuments(docs || []);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+    }
+  };
+
+  const handleFileUpload = async (file: File, docType: "loa" | "anti_slavery") => {
+    if (!cif || !profile?.id) return;
+
+    const setUploading = docType === "loa" ? setUploadingLOA : setUploadingASS;
+    setUploading(true);
+
+    try {
+      // Create bucket if it doesn't exist (will fail silently if it already exists)
+      const { error: bucketError } = await supabase.storage.createBucket("cif-documents", {
+        public: false,
+        fileSizeLimit: 10485760, // 10MB
+      });
+
+      // Upload file to Supabase Storage
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${cif.id}/${docType}_${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("cif-documents")
+        .upload(fileName, file);
+
+      if (uploadError) {
+        toast({ title: "Error", description: "Failed to upload file", variant: "destructive" });
+        console.error("Upload error:", uploadError);
+        return;
+      }
+
+      // Save document reference in database
+      const { error: dbError } = await supabase.from("cif_documents").insert({
+        cif_id: cif.id,
+        doc_type: docType,
+        file_path: fileName,
+        uploaded_by: profile.id,
+        notes: file.name,
+      });
+
+      if (dbError) {
+        toast({ title: "Error", description: "Failed to save document reference", variant: "destructive" });
+        console.error("Database error:", dbError);
+        // Clean up uploaded file
+        await supabase.storage.from("cif-documents").remove([fileName]);
+        return;
+      }
+
+      toast({ title: "Success", description: `${docType === "loa" ? "Letter of Authority" : "Anti-Slavery Statement"} uploaded` });
+      fetchDocuments(cif.id);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast({ title: "Error", description: "Failed to upload file", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string, filePath: string) => {
+    if (!cif) return;
+
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from("cif-documents")
+        .remove([filePath]);
+
+      if (storageError) {
+        console.error("Storage delete error:", storageError);
+      }
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from("cif_documents")
+        .delete()
+        .eq("id", docId);
+
+      if (dbError) {
+        toast({ title: "Error", description: "Failed to delete document", variant: "destructive" });
+        return;
+      }
+
+      toast({ title: "Success", description: "Document deleted" });
+      fetchDocuments(cif.id);
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      toast({ title: "Error", description: "Failed to delete document", variant: "destructive" });
+    }
+  };
+
+  const handleDownloadDocument = async (filePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("cif-documents")
+        .download(filePath);
+
+      if (error || !data) {
+        toast({ title: "Error", description: "Failed to download document", variant: "destructive" });
+        return;
+      }
+
+      // Create download link
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading document:", error);
+      toast({ title: "Error", description: "Failed to download document", variant: "destructive" });
     }
   };
 
@@ -605,19 +742,95 @@ export default function CIFDetailPage() {
 
                 <div className="space-y-4">
                   <h3 className="font-semibold">Required Documents</h3>
+                  
                   <div className="grid grid-cols-2 gap-4">
-                    <Button variant="outline" disabled>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Letter of Authority
-                    </Button>
-                    <Button variant="outline" disabled>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Anti-Slavery Statement
-                    </Button>
+                    <div>
+                      <Label className="block mb-2">Letter of Authority</Label>
+                      <input
+                        type="file"
+                        id="loa-upload"
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileUpload(file, "loa");
+                        }}
+                        className="hidden"
+                        disabled={cif.current_stage !== "financial_section" || uploadingLOA}
+                      />
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => document.getElementById("loa-upload")?.click()}
+                        disabled={cif.current_stage !== "financial_section" || uploadingLOA}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {uploadingLOA ? "Uploading..." : "Upload Letter of Authority"}
+                      </Button>
+                    </div>
+
+                    <div>
+                      <Label className="block mb-2">Anti-Slavery Statement</Label>
+                      <input
+                        type="file"
+                        id="ass-upload"
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileUpload(file, "anti_slavery");
+                        }}
+                        className="hidden"
+                        disabled={cif.current_stage !== "financial_section" || uploadingASS}
+                      />
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => document.getElementById("ass-upload")?.click()}
+                        disabled={cif.current_stage !== "financial_section" || uploadingASS}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {uploadingASS ? "Uploading..." : "Upload Anti-Slavery Statement"}
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Document upload functionality will be implemented in the next phase
-                  </p>
+
+                  {documents.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <h4 className="text-sm font-semibold">Uploaded Documents</h4>
+                      {documents.map((doc) => (
+                        <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-muted-foreground" />
+                            <div>
+                              <p className="text-sm font-medium">
+                                {doc.doc_type === "loa" ? "Letter of Authority" : "Anti-Slavery Statement"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {doc.notes} • Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDownloadDocument(doc.file_path, doc.notes)}
+                            >
+                              Download
+                            </Button>
+                            {cif.current_stage === "financial_section" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -689,9 +902,15 @@ export default function CIFDetailPage() {
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
                       <p className="font-semibold">Required Documents</p>
-                      <p className="text-sm text-muted-foreground">Letter of Authority, Anti-Slavery</p>
+                      <p className="text-sm text-muted-foreground">
+                        {documents.length} document{documents.length !== 1 ? "s" : ""} uploaded
+                      </p>
                     </div>
-                    <FileText className="h-6 w-6 text-muted-foreground" />
+                    {documents.length >= 2 ? (
+                      <CheckCircle className="h-6 w-6 text-green-500" />
+                    ) : (
+                      <XCircle className="h-6 w-6 text-orange-500" />
+                    )}
                   </div>
                 </div>
 

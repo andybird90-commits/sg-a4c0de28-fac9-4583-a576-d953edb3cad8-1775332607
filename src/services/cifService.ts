@@ -388,7 +388,6 @@ export const cifService = {
 
       const yearStr = cif.financial_year || new Date().getFullYear().toString();
       const claimYear = parseInt(yearStr.replace(/\D/g, "")) || new Date().getFullYear();
-      const claimTitle = `${prospect.company_name} ${yearStr} Claim`;
       
       let orgId = cif.org_id || prospect.org_id;
       
@@ -416,7 +415,6 @@ export const cifService = {
         .from("claims")
         .insert({
           org_id: orgId,
-          title: claimTitle,
           claim_year: claimYear,
           status: "intake",
         })
