@@ -703,14 +703,15 @@ export class ClaimService {
     sectionsNeedingRevision: string[]
   ): Promise<ClaimProject> {
     try {
-      // Get current approval sections
+      // Get current project data
       const { data: project } = await supabase
         .from("claim_projects")
-        .select("approval_sections")
+        .select("approval_sections, revision_count")
         .eq("id", projectId)
         .single();
 
-      const approvalSections = project?.approval_sections || {};
+      const approvalSections = (project?.approval_sections as Record<string, string>) || {};
+      const currentRevisionCount = project?.revision_count || 0;
       
       // Mark requested sections as needs_revision
       sectionsNeedingRevision.forEach(section => {
@@ -722,7 +723,7 @@ export class ClaimService {
         .update({
           workflow_status: "revision_requested",
           approval_sections: approvalSections,
-          revision_count: supabase.raw("revision_count + 1"),
+          revision_count: currentRevisionCount + 1,
           updated_at: new Date().toISOString(),
         })
         .eq("id", projectId)
@@ -944,8 +945,8 @@ export class ClaimService {
         .from("project_status_history")
         .insert({
           claim_project_id: projectId,
-          old_status: oldStatus,
-          new_status: newStatus,
+          from_status: oldStatus,
+          to_status: newStatus,
           changed_by: changedBy,
           notes: notes,
         });
