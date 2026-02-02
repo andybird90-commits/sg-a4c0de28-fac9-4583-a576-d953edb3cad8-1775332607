@@ -479,8 +479,8 @@ export const cifService = {
       };
       
       if (rejectionType === "archive") {
-        // Archive the CIF
-        updateData.cif_status = "archived";
+        // Archive the CIF - use 'rejected' status (allowed value) and set current_stage to 'rejected'
+        updateData.cif_status = "rejected";
         updateData.current_stage = "rejected";
         updateData.director_decision = "archived";
         updateData.director_comment = reason;
@@ -660,7 +660,7 @@ export const cifService = {
           rejected_by_profile:profiles!cif_records_rejected_by_fkey(full_name, email)
         `)
         .eq("current_stage", "rejected")
-        .neq("cif_status", "archived")
+        .neq("director_decision", "archived")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -696,7 +696,7 @@ export const cifService = {
           feasibility:feasibility_analyses(*),
           rejected_by_profile:profiles!cif_records_rejected_by_fkey(full_name, email)
         `)
-        .eq("cif_status", "archived")
+        .eq("director_decision", "archived")
         .order("rejected_at", { ascending: false });
 
       if (error) throw error;
