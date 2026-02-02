@@ -546,7 +546,7 @@ export const cifService = {
           created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email),
           feasibility:feasibility_analyses(*)
         `)
-        .eq("current_stage", "tech_feasibility")
+        .eq("current_stage", "financial_section")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -582,7 +582,7 @@ export const cifService = {
           created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email),
           feasibility:feasibility_analyses(*)
         `)
-        .eq("current_stage", "financial_section")
+        .eq("current_stage", "admin_approval")
         .order("created_at", { ascending: false });
 
       if (error) throw error;

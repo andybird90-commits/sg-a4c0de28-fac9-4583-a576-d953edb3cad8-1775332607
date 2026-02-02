@@ -132,12 +132,6 @@ export default function CIFDetailPage() {
     setUploading(true);
 
     try {
-      // Create bucket if it doesn't exist (will fail silently if it already exists)
-      const { error: bucketError } = await supabase.storage.createBucket("cif-documents", {
-        public: false,
-        fileSizeLimit: 10485760, // 10MB
-      });
-
       // Upload file to Supabase Storage
       const fileExt = file.name.split(".").pop();
       const fileName = `${cif.id}/${docType}_${Date.now()}.${fileExt}`;
