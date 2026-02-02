@@ -187,7 +187,14 @@ export default function MessagesPage() {
     const isUnread = type === "inbox" && !message.recipients.find(r => r.recipient_id === profile?.id)?.read_at;
     
     return (
-      <Card className={`cursor-pointer hover:bg-gray-50 transition-colors ${isUnread ? "border-l-4 border-l-blue-500" : ""}`}>
+      <Card 
+        className={`cursor-pointer hover:bg-gray-50 transition-colors ${isUnread ? "border-l-4 border-l-blue-500" : ""}`}
+        onClick={() => {
+          if (type === "inbox" && isUnread) {
+            handleMarkAsRead(message.id);
+          }
+        }}
+      >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3 flex-1">
@@ -230,11 +237,7 @@ export default function MessagesPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent onClick={() => {
-          if (type === "inbox" && isUnread) {
-            handleMarkAsRead(message.id);
-          }
-        }}>
+        <CardContent>
           <p className="text-sm text-gray-600 line-clamp-2">{message.body}</p>
           {message.mentions && message.mentions.length > 0 && (
             <div className="flex items-center gap-1 mt-2">
