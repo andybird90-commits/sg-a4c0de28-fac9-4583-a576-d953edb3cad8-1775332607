@@ -332,18 +332,46 @@ export async function refreshAllPipelinePredictions(): Promise<void> {
 export async function getPipelineSummary() {
   const { data: entries } = await supabase
     .from("pipeline_entries")
-    .select("predicted_revenue, expected_accounts_filing_date, filing_confidence_score");
+    .select("predicted_revenue, expected_accounts_filing_date, filing_confidence_score, pipeline_start_date");
 
-  if (!entries) return { totalRevenue: 0, count: 0, avgConfidence: 0 };
+  if (!entries) return { 
+    totalRevenue: 0, 
+    count: 0, 
+    avgConfidence: 0,
+    byMonth: {},
+    byQuarter: {} 
+  };
 
   const totalRevenue = entries.reduce((sum, e) => sum + (e.predicted_revenue || 0), 0);
   const avgConfidence =
-    entries.reduce((sum, e) => sum + (e.filing_confidence_score || 0), 0) / entries.length || 0;
+    entries.reduce((sum, e) => sum + (e.filing_confidence_score || 0), 0) / (entries.length || 1);
+
+  // Calculate by Month and Quarter
+  const byMonth: Record<string, number> = {};
+  const byQuarter: Record<string, number> = {};
+
+  entries.forEach(entry => {
+    if (entry.predicted_revenue && entry.expected_accounts_filing_date) {
+      const date = new Date(entry.expected_accounts_filing_date);
+      const revenue = entry.predicted_revenue;
+      
+      // Monthly: "Jan 2024"
+      const monthKey = date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+      byMonth[monthKey] = (byMonth[monthKey] || 0) + revenue;
+
+      // Quarterly: "Q1 2024"
+      const quarter = Math.floor(date.getMonth() / 3) + 1;
+      const quarterKey = `Q${quarter} ${date.getFullYear()}`;
+      byQuarter[quarterKey] = (byQuarter[quarterKey] || 0) + revenue;
+    }
+  });
 
   return {
     totalRevenue,
     count: entries.length,
     avgConfidence: Math.round(avgConfidence),
+    byMonth,
+    byQuarter,
     byStatus: {
       forecasted: entries.length, 
     },
