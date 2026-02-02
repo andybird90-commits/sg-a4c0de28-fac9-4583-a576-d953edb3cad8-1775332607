@@ -131,7 +131,7 @@ export class ClaimService {
           director:director_id (id, full_name, email, avatar_url)
         `)
         .eq("id", claimId)
-        .single();
+        .maybeSingle();
 
       if (claimError) throw claimError;
       if (!claim) return null;
