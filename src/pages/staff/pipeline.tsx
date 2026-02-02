@@ -1,13 +1,23 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import StaffLayout from "@/components/staff/StaffLayout";
+import { StaffLayout } from "@/components/staff/StaffLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, TrendingUp, RefreshCw, Filter, Download } from "lucide-react";
+import { Calendar, TrendingUp, RefreshCw, Filter, Pencil, Save, X } from "lucide-react";
 import { pipelineService, PipelineWithDetails } from "@/services/pipelineService";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfMonth, endOfMonth, addMonths, eachMonthOfInterval } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, eachMonthOfInterval, parseISO } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function PipelinePage() {
   const router = useRouter();
@@ -16,9 +26,19 @@ export default function PipelinePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [pipeline, setPipeline] = useState<PipelineWithDetails[]>([]);
   const [summary, setSummary] = useState<any>(null);
+  
+  // Filters
   const [filterStartDate, setFilterStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [filterEndDate, setFilterEndDate] = useState(format(addMonths(new Date(), 6), "yyyy-MM-dd"));
   const [minConfidence, setMinConfidence] = useState(0);
+
+  // Editing State
+  const [editingEntry, setEditingEntry] = useState<PipelineWithDetails | null>(null);
+  const [editForm, setEditForm] = useState({
+    predicted_revenue: 0,
+    expected_accounts_filing_date: "",
+    filing_confidence_score: 0
+  });
 
   useEffect(() => {
     loadPipeline();
@@ -74,9 +94,40 @@ export default function PipelinePage() {
     }
   }
 
+  function handleEditClick(entry: PipelineWithDetails, e: React.MouseEvent) {
+    e.stopPropagation(); // Prevent navigation
+    setEditingEntry(entry);
+    setEditForm({
+      predicted_revenue: entry.predicted_revenue || 0,
+      expected_accounts_filing_date: entry.expected_accounts_filing_date || "",
+      filing_confidence_score: entry.filing_confidence_score || 0
+    });
+  }
+
+  async function handleSaveEdit() {
+    if (!editingEntry) return;
+    try {
+      await pipelineService.updatePipelineEntry(editingEntry.id, {
+        predicted_revenue: editForm.predicted_revenue,
+        expected_accounts_filing_date: editForm.expected_accounts_filing_date,
+        filing_confidence_score: editForm.filing_confidence_score,
+        // Also update pipeline start date based on new filing date (1 month prior)
+        pipeline_start_date: pipelineService.calculatePipelineStartDate(new Date(editForm.expected_accounts_filing_date)).toISOString().split('T')[0]
+      });
+      
+      toast({ title: "Saved", description: "Pipeline entry updated successfully" });
+      setEditingEntry(null);
+      loadPipeline();
+      loadSummary();
+    } catch (error) {
+      console.error("Error updating:", error);
+      toast({ title: "Error", description: "Failed to update entry", variant: "destructive" });
+    }
+  }
+
   // Generate months for Gantt view
-  const startDate = new Date(filterStartDate);
-  const endDate = new Date(filterEndDate);
+  const startDate = parseISO(filterStartDate);
+  const endDate = parseISO(filterEndDate);
   const months = eachMonthOfInterval({ start: startDate, end: endDate });
 
   // Calculate revenue by month
@@ -91,16 +142,10 @@ export default function PipelinePage() {
     return { month, revenue, count: monthPipeline.length };
   });
 
-  function getConfidenceColor(confidence: number) {
-    if (confidence >= 70) return "text-green-600 bg-green-50";
-    if (confidence >= 40) return "text-yellow-600 bg-yellow-50";
-    return "text-red-600 bg-red-50";
-  }
-
   function getConfidenceBadge(confidence: number) {
-    if (confidence >= 70) return "default";
-    if (confidence >= 40) return "secondary";
-    return "destructive";
+    if (confidence >= 70) return "default"; // dark/black
+    if (confidence >= 40) return "secondary"; // gray
+    return "destructive"; // red
   }
 
   return (
@@ -235,7 +280,7 @@ export default function PipelinePage() {
                 return (
                   <div
                     key={entry.id}
-                    className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                    className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer group"
                     onClick={() => {
                       if (entry.claim_id) {
                         router.push(`/staff/claims/${entry.claim_id}`);
@@ -268,13 +313,22 @@ export default function PipelinePage() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex flex-col items-end">
                         <div className="text-2xl font-bold">
                           £{(entry.predicted_revenue || 0).toLocaleString()}
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">
+                        <div className="text-sm text-muted-foreground mt-1 mb-2">
                           Predicted Revenue
                         </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => handleEditClick(entry, e)}
+                        >
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Edit Manual Entry
+                        </Button>
                       </div>
                     </div>
 
@@ -297,6 +351,52 @@ export default function PipelinePage() {
             </div>
           )}
         </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={!!editingEntry} onOpenChange={(open) => !open && setEditingEntry(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Pipeline Entry</DialogTitle>
+              <DialogDescription>
+                Manually update predictions for {editingEntry?.organisation?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Predicted Revenue (£)</Label>
+                <Input 
+                  type="number" 
+                  value={editForm.predicted_revenue} 
+                  onChange={(e) => setEditForm({...editForm, predicted_revenue: Number(e.target.value)})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Expected Filing Date</Label>
+                <Input 
+                  type="date" 
+                  value={editForm.expected_accounts_filing_date} 
+                  onChange={(e) => setEditForm({...editForm, expected_accounts_filing_date: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Confidence Score (0-100)</Label>
+                <Input 
+                  type="number" 
+                  min="0" max="100"
+                  value={editForm.filing_confidence_score} 
+                  onChange={(e) => setEditForm({...editForm, filing_confidence_score: Number(e.target.value)})}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Auto-calculated based on {editingEntry?.years_trading} years trading and filing history.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingEntry(null)}>Cancel</Button>
+              <Button onClick={handleSaveEdit}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </StaffLayout>
   );
