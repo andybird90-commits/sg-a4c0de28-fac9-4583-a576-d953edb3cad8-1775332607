@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { messageService, MessageWithDetails } from "@/services/messageService";
 import { Inbox, Send, Reply, Users, AtSign, Loader2 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
-import { StaffLayout } from "@/components/StaffLayout";
+import { StaffLayout } from "@/components/staff/StaffLayout";
 import { useStaffStatus } from "@/hooks/useStaffStatus";
 
 export default function MessagesPage() {
