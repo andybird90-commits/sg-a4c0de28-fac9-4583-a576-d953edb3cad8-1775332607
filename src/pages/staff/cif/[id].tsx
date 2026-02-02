@@ -15,7 +15,7 @@ import { cifService, type CIFWithDetails } from "@/services/cifService";
 import { useApp } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function CIFDetailPage() {
   const router = useRouter();
