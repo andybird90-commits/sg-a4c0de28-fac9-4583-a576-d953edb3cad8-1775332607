@@ -69,6 +69,7 @@ export type Database = {
           admin_last_updated: string | null
           apportionment_assumptions: string | null
           bdm_last_updated: string | null
+          bdm_section_created_by: string | null
           business_background: string | null
           cif_status: string
           consumables_estimate: number | null
@@ -80,6 +81,7 @@ export type Database = {
           director_id: string | null
           expected_feasibility_date: string | null
           finance_last_updated: string | null
+          financial_section_created_by: string | null
           financial_year: string | null
           has_claimed_before: boolean | null
           id: string
@@ -97,6 +99,10 @@ export type Database = {
           prospect_id: string
           rd_themes: string[] | null
           ready_to_submit: boolean | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rejected_to_stage: string | null
+          rejection_reason: string | null
           section1_completed_at: string | null
           section1_completed_by: string | null
           section2_feasibility_id: string | null
@@ -108,6 +114,7 @@ export type Database = {
           staff_cost_estimate: number | null
           subcontractor_estimate: number | null
           tech_last_updated: string | null
+          tech_section_created_by: string | null
           updated_at: string
         }
         Insert: {
@@ -118,6 +125,7 @@ export type Database = {
           admin_last_updated?: string | null
           apportionment_assumptions?: string | null
           bdm_last_updated?: string | null
+          bdm_section_created_by?: string | null
           business_background?: string | null
           cif_status?: string
           consumables_estimate?: number | null
@@ -129,6 +137,7 @@ export type Database = {
           director_id?: string | null
           expected_feasibility_date?: string | null
           finance_last_updated?: string | null
+          financial_section_created_by?: string | null
           financial_year?: string | null
           has_claimed_before?: boolean | null
           id?: string
@@ -146,6 +155,10 @@ export type Database = {
           prospect_id: string
           rd_themes?: string[] | null
           ready_to_submit?: boolean | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejected_to_stage?: string | null
+          rejection_reason?: string | null
           section1_completed_at?: string | null
           section1_completed_by?: string | null
           section2_feasibility_id?: string | null
@@ -157,6 +170,7 @@ export type Database = {
           staff_cost_estimate?: number | null
           subcontractor_estimate?: number | null
           tech_last_updated?: string | null
+          tech_section_created_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -167,6 +181,7 @@ export type Database = {
           admin_last_updated?: string | null
           apportionment_assumptions?: string | null
           bdm_last_updated?: string | null
+          bdm_section_created_by?: string | null
           business_background?: string | null
           cif_status?: string
           consumables_estimate?: number | null
@@ -178,6 +193,7 @@ export type Database = {
           director_id?: string | null
           expected_feasibility_date?: string | null
           finance_last_updated?: string | null
+          financial_section_created_by?: string | null
           financial_year?: string | null
           has_claimed_before?: boolean | null
           id?: string
@@ -195,6 +211,10 @@ export type Database = {
           prospect_id?: string
           rd_themes?: string[] | null
           ready_to_submit?: boolean | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejected_to_stage?: string | null
+          rejection_reason?: string | null
           section1_completed_at?: string | null
           section1_completed_by?: string | null
           section2_feasibility_id?: string | null
@@ -206,12 +226,27 @@ export type Database = {
           staff_cost_estimate?: number | null
           subcontractor_estimate?: number | null
           tech_last_updated?: string | null
+          tech_section_created_by?: string | null
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "cif_records_bdm_section_created_by_fkey"
+            columns: ["bdm_section_created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "cif_records_director_id_fkey"
             columns: ["director_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_records_financial_section_created_by_fkey"
+            columns: ["financial_section_created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -235,6 +270,13 @@ export type Database = {
             columns: ["prospect_id"]
             isOneToOne: false
             referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_records_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -263,6 +305,61 @@ export type Database = {
             columns: ["section4_completed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_records_tech_section_created_by_fkey"
+            columns: ["tech_section_created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cif_state_changes: {
+        Row: {
+          change_type: string
+          changed_by: string
+          cif_id: string
+          comments: string | null
+          created_at: string
+          from_stage: string | null
+          id: string
+          to_stage: string
+        }
+        Insert: {
+          change_type: string
+          changed_by: string
+          cif_id: string
+          comments?: string | null
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          to_stage: string
+        }
+        Update: {
+          change_type?: string
+          changed_by?: string
+          cif_id?: string
+          comments?: string | null
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cif_state_changes_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_state_changes_cif_id_fkey"
+            columns: ["cif_id"]
+            isOneToOne: false
+            referencedRelation: "cif_records"
             referencedColumns: ["id"]
           },
         ]

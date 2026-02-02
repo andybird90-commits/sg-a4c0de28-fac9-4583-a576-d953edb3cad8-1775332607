@@ -450,29 +450,56 @@ export const cifService = {
   },
 
   /**
-   * Admin reject CIF
+   * Admin reject CIF with multiple options
    */
   async rejectCIF(
     cifId: string,
-    rejectToStage: "bdm_section" | "tech_feasibility" | "financial_section" | "rejected",
-    reason?: string
+    rejectionType: "send_back" | "archive" | "delete",
+    rejectToStage?: "bdm_section" | "tech_feasibility" | "financial_section",
+    reason?: string,
+    rejectedBy?: string
   ): Promise<CIFRecord | null> {
     try {
+      // Handle deletion
+      if (rejectionType === "delete") {
+        const { error: deleteError } = await supabase
+          .from("cif_records")
+          .delete()
+          .eq("id", cifId);
+
+        if (deleteError) throw deleteError;
+        return null;
+      }
+
       const updateData: CIFUpdate = {
         admin_last_updated: new Date().toISOString(),
+        rejection_reason: reason,
+        rejected_by: rejectedBy,
+        rejected_at: new Date().toISOString(),
       };
       
-      if (rejectToStage === "rejected") {
-        updateData.cif_status = "rejected";
+      if (rejectionType === "archive") {
+        // Archive the CIF
+        updateData.cif_status = "archived";
         updateData.current_stage = "rejected";
-        updateData.director_decision = "rejected";
+        updateData.director_decision = "archived";
         updateData.director_comment = reason;
-      } else {
+      } else if (rejectionType === "send_back" && rejectToStage) {
+        // Send back to specific stage
         updateData.current_stage = rejectToStage;
         updateData.cif_status = "in_progress";
-        // Reset approval flags?
-        if (rejectToStage === 'bdm_section') {
-           updateData.section1_completed_at = null; // Re-open section 1?
+        updateData.rejected_to_stage = rejectToStage;
+        updateData.director_decision = "sent_back";
+        updateData.director_comment = reason;
+        
+        // Reset completion flags for the rejected stage
+        if (rejectToStage === "bdm_section") {
+          updateData.section1_completed_at = null;
+        } else if (rejectToStage === "tech_feasibility") {
+          updateData.section2_feasibility_id = null;
+        } else if (rejectToStage === "financial_section") {
+          updateData.section3_completed_at = null;
+          updateData.ready_to_submit = false;
         }
       }
 
@@ -484,6 +511,19 @@ export const cifService = {
         .single();
 
       if (error) throw error;
+
+      // Log state change
+      if (data && rejectedBy) {
+        await supabase.from("cif_state_changes").insert({
+          cif_id: cifId,
+          from_stage: data.current_stage,
+          to_stage: rejectToStage || "rejected",
+          changed_by: rejectedBy,
+          change_type: rejectionType === "archive" ? "approval" : "rejection",
+          comments: reason,
+        });
+      }
+
       return data;
     } catch (error) {
       console.error("Error rejecting CIF:", error);
@@ -505,6 +545,7 @@ export const cifService = {
           feasibility:feasibility_analyses(*)
         `)
         .eq("current_stage", "bdm_section")
+        .neq("cif_status", "archived")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -515,10 +556,9 @@ export const cifService = {
           ...item,
           created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
           prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects,
-          // Map feasibility fields if they exist
           technical_understanding: feasibility?.technical_reasoning,
-          challenges_uncertainties: feasibility?.technical_challenges, // Note: Schema check needed for exact col name
-          qualifying_activities: feasibility?.qualifying_activities, // Note: Check schema type (jsonb vs array)
+          challenges_uncertainties: feasibility?.technical_challenges,
+          qualifying_activities: feasibility?.qualifying_activities,
           rd_projects_list: feasibility?.rd_projects_list,
           feasibility_status: feasibility?.feasibility_status,
           estimated_claim_band: feasibility?.estimated_claim_band,
@@ -547,6 +587,7 @@ export const cifService = {
           feasibility:feasibility_analyses(*)
         `)
         .eq("current_stage", "financial_section")
+        .neq("cif_status", "archived")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -560,7 +601,6 @@ export const cifService = {
           technical_understanding: feasibility?.technical_reasoning,
           feasibility_status: feasibility?.feasibility_status,
           estimated_claim_band: feasibility?.estimated_claim_band,
-          // Map other fields similarly
         };
       }) as CIFWithDetails[];
     } catch (error) {
@@ -583,6 +623,7 @@ export const cifService = {
           feasibility:feasibility_analyses(*)
         `)
         .eq("current_stage", "admin_approval")
+        .neq("cif_status", "archived")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -605,7 +646,7 @@ export const cifService = {
   },
 
   /**
-   * Get rejected CIFs
+   * Get rejected CIFs (not archived)
    */
   async getRejectedCIFs(): Promise<CIFWithDetails[]> {
     try {
@@ -615,9 +656,11 @@ export const cifService = {
           *,
           prospects(*),
           created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email),
-          feasibility:feasibility_analyses(*)
+          feasibility:feasibility_analyses(*),
+          rejected_by_profile:profiles!cif_records_rejected_by_fkey(full_name, email)
         `)
         .eq("current_stage", "rejected")
+        .neq("cif_status", "archived")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -636,6 +679,66 @@ export const cifService = {
     } catch (error) {
       console.error("Error fetching rejected CIFs:", error);
       return [];
+    }
+  },
+
+  /**
+   * Get archived CIFs
+   */
+  async getArchivedCIFs(): Promise<CIFWithDetails[]> {
+    try {
+      const { data, error } = await supabase
+        .from("cif_records")
+        .select(`
+          *,
+          prospects(*),
+          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email),
+          feasibility:feasibility_analyses(*),
+          rejected_by_profile:profiles!cif_records_rejected_by_fkey(full_name, email)
+        `)
+        .eq("cif_status", "archived")
+        .order("rejected_at", { ascending: false });
+
+      if (error) throw error;
+
+      return (data || []).map(item => {
+        const feasibility = Array.isArray(item.feasibility) ? item.feasibility[0] : item.feasibility;
+        return {
+          ...item,
+          created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
+          prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects,
+          technical_understanding: feasibility?.technical_reasoning,
+          feasibility_status: feasibility?.feasibility_status,
+          estimated_claim_band: feasibility?.estimated_claim_band,
+        };
+      }) as CIFWithDetails[];
+    } catch (error) {
+      console.error("Error fetching archived CIFs:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Reactivate archived CIF
+   */
+  async reactivateCIF(cifId: string, reactivateToStage: "bdm_section" | "tech_feasibility" | "financial_section" | "admin_approval"): Promise<CIFRecord | null> {
+    try {
+      const { data, error } = await supabase
+        .from("cif_records")
+        .update({
+          cif_status: "in_progress",
+          current_stage: reactivateToStage,
+          admin_last_updated: new Date().toISOString(),
+        })
+        .eq("id", cifId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("Error reactivating CIF:", error);
+      return null;
     }
   },
 

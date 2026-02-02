@@ -10,12 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, CheckCircle, XCircle, Upload, FileText } from "lucide-react";
+import { ArrowLeft, Save, CheckCircle, XCircle, Upload, FileText, AlertTriangle } from "lucide-react";
 import { cifService, type CIFWithDetails } from "@/services/cifService";
 import { useApp } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function CIFDetailPage() {
   const router = useRouter();
@@ -26,6 +27,12 @@ export default function CIFDetailPage() {
   const [cif, setCif] = useState<CIFWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Rejection modal state
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectionType, setRejectionType] = useState<"send_back" | "archive" | "delete">("send_back");
+  const [rejectToStage, setRejectToStage] = useState<"bdm_section" | "tech_feasibility" | "financial_section">("bdm_section");
+  const [rejectionReason, setRejectionReason] = useState("");
 
   // Technical Form State
   const [techUnderstanding, setTechUnderstanding] = useState("");
@@ -334,14 +341,38 @@ export default function CIFDetailPage() {
   };
 
   const handleRejectCIF = async () => {
-    if (!cif) return;
+    if (!cif || !profile?.id) return;
+
+    if (rejectionType === "send_back" && !rejectToStage) {
+      toast({ title: "Error", description: "Please select a stage to send back to", variant: "destructive" });
+      return;
+    }
+
+    if (!rejectionReason.trim()) {
+      toast({ title: "Error", description: "Please provide a reason for rejection", variant: "destructive" });
+      return;
+    }
 
     setSaving(true);
     try {
-      const result = await cifService.rejectCIF(cif.id, "rejected", "Rejected by admin");
+      const result = await cifService.rejectCIF(
+        cif.id, 
+        rejectionType,
+        rejectionType === "send_back" ? rejectToStage : undefined,
+        rejectionReason,
+        profile.id
+      );
 
-      if (result) {
-        toast({ title: "Success", description: "CIF rejected" });
+      if (rejectionType === "delete" || result) {
+        toast({ 
+          title: "Success", 
+          description: rejectionType === "delete" 
+            ? "CIF deleted successfully" 
+            : rejectionType === "archive"
+            ? "CIF archived successfully"
+            : `CIF sent back to ${rejectToStage.replace(/_/g, " ")}`
+        });
+        setShowRejectModal(false);
         router.push("/staff/cif");
       } else {
         toast({ title: "Error", description: "Failed to reject CIF", variant: "destructive" });
@@ -856,11 +887,34 @@ export default function CIFDetailPage() {
                 <CardDescription>Final review and claim creation</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                
+                {cif.rejection_reason && (
+                  <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg mb-4">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-orange-900">Previous Rejection</p>
+                        <p className="text-sm text-orange-700 mt-1">{cif.rejection_reason}</p>
+                        {cif.rejected_at && (
+                          <p className="text-xs text-orange-600 mt-1">
+                            Rejected on {new Date(cif.rejected_at).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
                       <p className="font-semibold">BDM Section</p>
                       <p className="text-sm text-muted-foreground">Business development completed</p>
+                      {cif.created_by_profile && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          By: {cif.created_by_profile.full_name || cif.created_by_profile.email}
+                        </p>
+                      )}
                     </div>
                     <CheckCircle className="h-6 w-6 text-green-500" />
                   </div>
@@ -916,7 +970,11 @@ export default function CIFDetailPage() {
                       <CheckCircle className="h-4 w-4 mr-2" />
                       {saving ? "Approving..." : "Approve & Create Claim"}
                     </Button>
-                    <Button onClick={handleRejectCIF} disabled={saving} variant="destructive">
+                    <Button 
+                      onClick={() => setShowRejectModal(true)} 
+                      disabled={saving} 
+                      variant="destructive"
+                    >
                       <XCircle className="h-4 w-4 mr-2" />
                       Reject
                     </Button>
@@ -940,6 +998,105 @@ export default function CIFDetailPage() {
                     </p>
                   </div>
                 )}
+
+                {/* Rejection Modal */}
+                <AlertDialog open={showRejectModal} onOpenChange={setShowRejectModal}>
+                  <AlertDialogContent className="max-w-2xl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Reject CIF</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Choose how to handle this rejection. All actions require a reason.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label>Rejection Type</Label>
+                        <Select 
+                          value={rejectionType} 
+                          onValueChange={(v: "send_back" | "archive" | "delete") => setRejectionType(v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="send_back">Send Back to Stage (for revision)</SelectItem>
+                            <SelectItem value="archive">Archive (may return later)</SelectItem>
+                            <SelectItem value="delete">Delete Permanently</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {rejectionType === "send_back" && (
+                        <div className="space-y-2">
+                          <Label>Send Back To</Label>
+                          <Select 
+                            value={rejectToStage} 
+                            onValueChange={(v: "bdm_section" | "tech_feasibility" | "financial_section") => setRejectToStage(v)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="bdm_section">Job Board A (BDM Section)</SelectItem>
+                              <SelectItem value="tech_feasibility">Job Board B (Technical Feasibility)</SelectItem>
+                              <SelectItem value="financial_section">Job Board C (Financial Section)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            The responsible staff member will be notified to revise this section.
+                          </p>
+                        </div>
+                      )}
+
+                      {rejectionType === "archive" && (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm text-blue-900">
+                            <strong>Archive:</strong> The CIF will be moved to the archive. You can reactivate it later if the prospect returns.
+                          </p>
+                        </div>
+                      )}
+
+                      {rejectionType === "delete" && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-900">
+                            <strong>Warning:</strong> This action cannot be undone. The CIF and all associated data will be permanently deleted.
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label>Reason for Rejection *</Label>
+                        <Textarea
+                          placeholder="Provide detailed feedback..."
+                          value={rejectionReason}
+                          onChange={(e) => setRejectionReason(e.target.value)}
+                          rows={4}
+                        />
+                      </div>
+                    </div>
+
+                    <AlertDialogFooter>
+                      <AlertDialogCancel onClick={() => {
+                        setShowRejectModal(false);
+                        setRejectionReason("");
+                        setRejectionType("send_back");
+                      }}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleRejectCIF}
+                        disabled={saving || !rejectionReason.trim()}
+                        className={rejectionType === "delete" ? "bg-red-600 hover:bg-red-700" : ""}
+                      >
+                        {saving ? "Processing..." : 
+                          rejectionType === "delete" ? "Delete Permanently" :
+                          rejectionType === "archive" ? "Archive CIF" :
+                          "Send Back"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardContent>
             </Card>
           </TabsContent>
