@@ -26,7 +26,12 @@ import {
   MessageSquare,
   Link as LinkIcon,
   ExternalLink,
-  Shield
+  Shield,
+  Info,
+  Users,
+  Calendar,
+  DollarSign,
+  Lightbulb
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -429,8 +434,12 @@ export default function RDReviewProjectPage() {
           </div>
 
           {/* Content Tabs */}
-          <Tabs defaultValue="evidence" className="space-y-6">
+          <Tabs defaultValue="details" className="space-y-6">
             <TabsList>
+              <TabsTrigger value="details">
+                <Info className="w-4 h-4 mr-2" />
+                Project Details
+              </TabsTrigger>
               <TabsTrigger value="evidence">
                 <FileText className="w-4 h-4 mr-2" />
                 Evidence ({evidence.length})
@@ -440,6 +449,185 @@ export default function RDReviewProjectPage() {
                 Comments ({comments.length})
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="details" className="space-y-6">
+              {/* Overview Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Info className="w-5 h-5" />
+                    Project Overview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label className="text-sm font-semibold text-muted-foreground">Project Name</Label>
+                      <p className="mt-1">{project.name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold text-muted-foreground">Status</Label>
+                      <div className="mt-1">
+                        <Badge className={statusColors[project.status]}>
+                          {statusLabels[project.status]}
+                        </Badge>
+                      </div>
+                    </div>
+                    {project.sector && (
+                      <div>
+                        <Label className="text-sm font-semibold text-muted-foreground">Sector</Label>
+                        <p className="mt-1">{project.sector}</p>
+                      </div>
+                    )}
+                    {project.stage && (
+                      <div>
+                        <Label className="text-sm font-semibold text-muted-foreground">Development Stage</Label>
+                        <p className="mt-1">{project.stage}</p>
+                      </div>
+                    )}
+                  </div>
+                  {project.description && (
+                    <div>
+                      <Label className="text-sm font-semibold text-muted-foreground">Description</Label>
+                      <p className="mt-1 text-sm">{project.description}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Technical Details Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5" />
+                    R&D Technical Details
+                  </CardTitle>
+                  <CardDescription>
+                    Technical challenges and innovations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {project.rd_challenges && (
+                    <div>
+                      <Label className="text-sm font-semibold text-muted-foreground">R&D Challenges</Label>
+                      <p className="mt-1 text-sm whitespace-pre-wrap">{project.rd_challenges}</p>
+                    </div>
+                  )}
+                  {project.innovations && (
+                    <div>
+                      <Label className="text-sm font-semibold text-muted-foreground">Key Innovations</Label>
+                      <p className="mt-1 text-sm whitespace-pre-wrap">{project.innovations}</p>
+                    </div>
+                  )}
+                  {project.technical_uncertainties && (
+                    <div>
+                      <Label className="text-sm font-semibold text-muted-foreground">Technical Uncertainties</Label>
+                      <p className="mt-1 text-sm whitespace-pre-wrap">{project.technical_uncertainties}</p>
+                    </div>
+                  )}
+                  {!project.rd_challenges && !project.innovations && !project.technical_uncertainties && (
+                    <p className="text-sm text-muted-foreground">No technical details provided yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Timeline & Budget Card */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      Project Timeline
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {project.start_date && (
+                      <div>
+                        <Label className="text-sm font-semibold text-muted-foreground">Start Date</Label>
+                        <p className="mt-1">{new Date(project.start_date).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                    {project.end_date && (
+                      <div>
+                        <Label className="text-sm font-semibold text-muted-foreground">End Date</Label>
+                        <p className="mt-1">{new Date(project.end_date).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                    {!project.start_date && !project.end_date && (
+                      <p className="text-sm text-muted-foreground">No timeline information provided.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5" />
+                      Budget Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {project.total_budget && (
+                      <div>
+                        <Label className="text-sm font-semibold text-muted-foreground">Total Budget</Label>
+                        <p className="mt-1 text-lg font-semibold">
+                          £{project.total_budget.toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                    {project.rd_budget && (
+                      <div>
+                        <Label className="text-sm font-semibold text-muted-foreground">R&D Budget</Label>
+                        <p className="mt-1 text-lg font-semibold">
+                          £{project.rd_budget.toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                    {!project.total_budget && !project.rd_budget && (
+                      <p className="text-sm text-muted-foreground">No budget information provided.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Team Members Card */}
+              {project.team_members && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      Team Members
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm whitespace-pre-wrap">{project.team_members}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Metadata */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Record Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Created:</span>
+                    <span>{new Date(project.created_at).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Last Updated:</span>
+                    <span>{new Date(project.updated_at).toLocaleString()}</span>
+                  </div>
+                  {project.submitted_at && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Submitted for Review:</span>
+                      <span>{new Date(project.submitted_at).toLocaleString()}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="evidence">
               <Card>
