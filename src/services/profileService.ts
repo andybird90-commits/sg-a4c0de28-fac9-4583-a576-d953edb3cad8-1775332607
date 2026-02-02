@@ -1,12 +1,37 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ProfileWithOrg } from "@/lib/auth/roles";
 
+export interface Profile {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  internal_role?: string | null;
+}
+
 /**
  * Profile Service
  * Handles fetching user profiles with organisation information
  */
 
 export const profileService = {
+  /**
+   * Get all profiles for @mentions
+   */
+  async getAllProfiles(): Promise<Profile[]> {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, email, full_name, avatar_url, internal_role")
+      .order("full_name");
+
+    if (error) {
+      console.error("Error fetching all profiles:", error);
+      return [];
+    }
+
+    return data || [];
+  },
+
   /**
    * Get current user's profile with organisation information
    * Returns combined profile + organisation data needed for staff detection

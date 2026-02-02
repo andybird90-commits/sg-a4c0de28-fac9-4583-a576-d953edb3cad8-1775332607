@@ -149,7 +149,11 @@ export async function sendMessage(
   recipientIds: string[],
   subject: string,
   body: string,
-  parentMessageId?: string
+  parentMessageId?: string,
+  context?: {
+    entity_type: "organisation" | "project" | "evidence" | "claim" | "cif";
+    entity_id: string;
+  }
 ): Promise<MessageWithDetails> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
@@ -180,7 +184,9 @@ export async function sendMessage(
       subject,
       body,
       parent_message_id: parentMessageId || null,
-      is_staff_sender: isStaff
+      is_staff_sender: isStaff,
+      entity_type: context?.entity_type,
+      entity_id: context?.entity_id
     })
     .select(`
       *,
@@ -244,6 +250,38 @@ export async function sendMessage(
     .single();
 
   return completeMessage as MessageWithDetails;
+}
+
+/**
+ * Helper to resolve Org ID from an entity
+ */
+export async function resolveOrgId(
+  entityType: "organisation" | "project" | "evidence" | "claim" | "cif", 
+  entityId: string
+): Promise<string | null> {
+  if (entityType === "organisation") return entityId;
+  
+  try {
+    if (entityType === "project") {
+      const { data } = await supabase.from("projects").select("org_id").eq("id", entityId).single();
+      return data?.org_id || null;
+    }
+    if (entityType === "claim") {
+      const { data } = await supabase.from("claims").select("org_id").eq("id", entityId).single();
+      return data?.org_id || null;
+    }
+    if (entityType === "cif") {
+      const { data } = await supabase.from("cif_records").select("org_id").eq("id", entityId).single();
+      return data?.org_id || null;
+    }
+    // For evidence, it might be linked to project or claim, complicated. 
+    // Assuming evidence table has org_id or we skip evidence for now if not direct.
+    // Let's check schema for evidence if needed, but for now return null if unsure.
+    return null;
+  } catch (e) {
+    console.error("Error resolving org ID:", e);
+    return null;
+  }
 }
 
 /**
@@ -380,4 +418,5 @@ export const messageService = {
   markMessageAsRead,
   getUnreadCount,
   searchUsersForMention,
+  resolveOrgId,
 };

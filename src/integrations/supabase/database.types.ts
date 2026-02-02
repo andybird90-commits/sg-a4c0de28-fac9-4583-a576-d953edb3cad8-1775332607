@@ -1359,6 +1359,8 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          entity_id: string | null
+          entity_type: string | null
           id: string
           is_staff_sender: boolean
           org_id: string
@@ -1371,6 +1373,8 @@ export type Database = {
         Insert: {
           body: string
           created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           is_staff_sender?: boolean
           org_id: string
@@ -1383,6 +1387,8 @@ export type Database = {
         Update: {
           body?: string
           created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           is_staff_sender?: boolean
           org_id?: string

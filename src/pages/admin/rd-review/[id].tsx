@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MessageWidget } from "@/components/MessageWidget";
 import { 
   ArrowLeft, 
   Building2, 
@@ -400,8 +401,15 @@ export default function RDReviewProjectPage() {
           {/* Project Info */}
           <div className="mb-6">
             <div className="flex items-start justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold mb-2">{project.name}</h1>
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold">{project.name}</h1>
+                  <MessageWidget
+                    entityType="project"
+                    entityId={project.id}
+                    entityName={project.name}
+                  />
+                </div>
                 {project.description && (
                   <p className="text-muted-foreground">{project.description}</p>
                 )}

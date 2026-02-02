@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, Building2, Eye, Calendar, DollarSign, Users, AlertCircle } from "lucide-react";
+import { MessageWidget } from "@/components/MessageWidget";
 import type { Database } from "@/integrations/supabase/types";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"] & {
@@ -231,8 +232,16 @@ export default function RDReviewPage() {
                                 Review
                               </Button>
                             </Link>
+                            <MessageWidget
+                              entityType="project"
+                              entityId={project.id}
+                              entityName={project.name}
+                            />
                           </div>
                         </CardHeader>
+                        <CardContent>
+                          
+                        </CardContent>
                       </Card>
                     ))}
                   </div>
