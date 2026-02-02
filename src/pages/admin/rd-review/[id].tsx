@@ -31,7 +31,8 @@ import {
   Users,
   Calendar,
   DollarSign,
-  Lightbulb
+  Lightbulb,
+  AlertTriangle
 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -342,6 +343,24 @@ export default function RDReviewProjectPage() {
             </Button>
           </Link>
 
+          {/* Draft Status Alert */}
+          {project.status === "draft" && (
+            <div className="mb-6 p-4 border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-100">
+                    Draft Project - Not Yet Submitted
+                  </h3>
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200 mt-1">
+                    This project is still in draft status. The client has not submitted it for review yet. 
+                    You can view the details but cannot perform review actions until the client submits it.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Company Banner */}
           <Card className="mb-6 border-2">
             <CardContent className="pt-6">
@@ -397,40 +416,42 @@ export default function RDReviewProjectPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 flex-wrap">
-              {project.status === "ready_for_review" && (
-                <Button onClick={handleStartReview} disabled={submitting}>
-                  Start Review
-                </Button>
-              )}
-              {["ready_for_review", "in_review"].includes(project.status) && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowSendBackDialog(true)}
-                    disabled={submitting}
-                  >
-                    Send Back for Edits
+            {project.status !== "draft" && (
+              <div className="flex gap-3 flex-wrap">
+                {project.status === "ready_for_review" && (
+                  <Button onClick={handleStartReview} disabled={submitting}>
+                    Start Review
                   </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setShowRejectDialog(true)}
-                    disabled={submitting}
-                  >
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Mark Not Qualifying
-                  </Button>
-                  <Button
-                    onClick={() => setShowTransferDialog(true)}
-                    disabled={!canTransfer || submitting}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Transfer to Conexa RD Pro
-                  </Button>
-                </>
-              )}
-            </div>
+                )}
+                {["ready_for_review", "in_review"].includes(project.status) && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowSendBackDialog(true)}
+                      disabled={submitting}
+                    >
+                      Send Back for Edits
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowRejectDialog(true)}
+                      disabled={submitting}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Mark Not Qualifying
+                    </Button>
+                    <Button
+                      onClick={() => setShowTransferDialog(true)}
+                      disabled={!canTransfer || submitting}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Transfer to Conexa RD Pro
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Content Tabs */}

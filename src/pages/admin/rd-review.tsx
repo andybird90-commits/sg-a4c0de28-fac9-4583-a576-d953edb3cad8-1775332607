@@ -44,7 +44,7 @@ export default function RDReviewPage() {
   const { user } = useApp();
   const [projects, setProjects] = useState<SidekickProject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("ready_for_review");
+  const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -59,7 +59,7 @@ export default function RDReviewPage() {
     const fetchProjects = async () => {
       setLoading(true);
       try {
-        const data = await sidekickProjectService.getProjectsForReview(statusFilter);
+        const data = await sidekickProjectService.getProjectsForReview(statusFilter || undefined);
         setProjects(data);
       } catch (error) {
         console.error("Error fetching projects for review:", error);
@@ -91,10 +91,11 @@ export default function RDReviewPage() {
 
             <Tabs value={statusFilter} onValueChange={setStatusFilter} className="space-y-6">
               <TabsList>
+                <TabsTrigger value="">All Projects</TabsTrigger>
+                <TabsTrigger value="draft">Draft</TabsTrigger>
                 <TabsTrigger value="ready_for_review">Ready for Review</TabsTrigger>
                 <TabsTrigger value="in_review">In Review</TabsTrigger>
                 <TabsTrigger value="needs_changes">Needs Changes</TabsTrigger>
-                <TabsTrigger value="">All Statuses</TabsTrigger>
               </TabsList>
 
               <TabsContent value={statusFilter}>

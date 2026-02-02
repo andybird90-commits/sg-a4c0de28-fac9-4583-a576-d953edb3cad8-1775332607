@@ -68,8 +68,6 @@ export const sidekickProjectService = {
 
     if (statusFilter) {
       query = query.eq("status", statusFilter);
-    } else {
-      query = query.in("status", ["ready_for_review", "in_review", "needs_changes"]);
     }
 
     const { data, error } = await query.order("ready_for_review_at", { ascending: false });
