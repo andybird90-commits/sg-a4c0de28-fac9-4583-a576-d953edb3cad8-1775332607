@@ -10,14 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, CheckCircle, XCircle, Upload, FileText, AlertTriangle, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, CheckCircle, XCircle, Upload, FileText, AlertTriangle } from "lucide-react";
 import { cifService, type CIFWithDetails } from "@/services/cifService";
 import { useApp } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function CIFDetailPage() {
   const router = useRouter();
@@ -63,12 +62,6 @@ export default function CIFDetailPage() {
   const [uploadingLOA, setUploadingLOA] = useState(false);
   const [uploadingASS, setUploadingASS] = useState(false);
   const [documents, setDocuments] = useState<any[]>([]);
-
-  // AI Sidekick state
-  const [sidekickLoading, setSidekickLoading] = useState(false);
-  const [sidekickResponse, setSidekickResponse] = useState<string>("");
-  const [showSidekick, setShowSidekick] = useState(false);
-  const [sidekickType, setSidekickType] = useState<"bdm" | "technical" | "financial">("bdm");
 
   useEffect(() => {
     if (!isStaff) {
@@ -146,7 +139,6 @@ export default function CIFDetailPage() {
     setUploading(true);
 
     try {
-      // Upload file to Supabase Storage
       const fileExt = file.name.split(".").pop();
       const fileName = `${cif.id}/${docType}_${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
@@ -159,7 +151,6 @@ export default function CIFDetailPage() {
         return;
       }
 
-      // Save document reference in database
       const { error: dbError } = await supabase.from("cif_documents").insert({
         cif_id: cif.id,
         doc_type: docType,
@@ -171,7 +162,6 @@ export default function CIFDetailPage() {
       if (dbError) {
         toast({ title: "Error", description: "Failed to save document reference", variant: "destructive" });
         console.error("Database error:", dbError);
-        // Clean up uploaded file
         await supabase.storage.from("cif-documents").remove([fileName]);
         return;
       }
@@ -190,7 +180,6 @@ export default function CIFDetailPage() {
     if (!cif) return;
 
     try {
-      // Delete from storage
       const { error: storageError } = await supabase.storage
         .from("cif-documents")
         .remove([filePath]);
@@ -199,7 +188,6 @@ export default function CIFDetailPage() {
         console.error("Storage delete error:", storageError);
       }
 
-      // Delete from database
       const { error: dbError } = await supabase
         .from("cif_documents")
         .delete()
@@ -229,7 +217,6 @@ export default function CIFDetailPage() {
         return;
       }
 
-      // Create download link
       const url = URL.createObjectURL(data);
       const a = document.createElement("a");
       a.href = url;
@@ -241,86 +228,6 @@ export default function CIFDetailPage() {
     } catch (error) {
       console.error("Error downloading document:", error);
       toast({ title: "Error", description: "Failed to download document", variant: "destructive" });
-    }
-  };
-
-  const handleSidekickRequest = async (type: "bdm" | "technical" | "financial") => {
-    if (!cif) return;
-
-    setSidekickType(type);
-    setShowSidekick(true);
-    setSidekickLoading(true);
-    setSidekickResponse("");
-
-    try {
-      const prospect = cif.prospects;
-      const companyName = prospect?.company_name || "Unknown Company";
-      
-      let prompt = "";
-      
-      if (type === "bdm") {
-        prompt = `Provide a brief company background analysis for ${companyName}${prospect?.company_number ? ` (Company #${prospect.company_number})` : ""}. Include:
-- Brief company history and main business activities
-- Recent news or developments (if any publicly available)
-- Industry context and market position
-- Any notable achievements or challenges
-
-Keep it concise and helpful for business development purposes.`;
-      } else if (type === "technical") {
-        const rdThemes = cif.rd_themes?.join(", ") || "Not specified";
-        const projectOverview = cif.project_overview || cif.business_background || "Not provided";
-        
-        prompt = `Analyze the R&D feasibility for this claim:
-
-Company: ${companyName}
-R&D Themes: ${rdThemes}
-Project Description: ${projectOverview}
-
-Provide:
-- Assessment of whether activities appear to qualify as R&D
-- Potential technical challenges or uncertainties that support the claim
-- Red flags or concerns to investigate
-- Estimated claim strength (Low/Medium/High)
-
-This is preliminary guidance only - final determination requires detailed review.`;
-      } else if (type === "financial") {
-        const claimBand = cif.estimated_claim_band || "Not estimated";
-        const staffCost = cif.staff_cost_estimate || 0;
-        const totalCosts = (cif.staff_cost_estimate || 0) + (cif.subcontractor_estimate || 0) + (cif.consumables_estimate || 0) + (cif.software_estimate || 0);
-        
-        prompt = `Provide financial guidance for this R&D claim:
-
-Company: ${companyName}
-Estimated Claim Band: ${claimBand}
-Total Estimated Costs: £${totalCosts.toLocaleString()}
-
-Provide:
-- Typical fee structure guidance (percentage-based)
-- Estimated fee range based on claim band
-- Factors that might affect fee negotiation
-- Risk considerations for pricing
-
-This is indicative guidance only - actual fees require detailed commercial negotiation.`;
-      }
-
-      // Call OpenAI API via our backend
-      const response = await fetch("/api/sidekick/assist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, type }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to get AI assistance");
-      }
-
-      const data = await response.json();
-      setSidekickResponse(data.response);
-    } catch (error) {
-      console.error("Error getting sidekick assistance:", error);
-      setSidekickResponse("Sorry, I couldn't provide assistance at this time. Please try again later.");
-    } finally {
-      setSidekickLoading(false);
     }
   };
 
@@ -414,7 +321,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
       if (result) {
         toast({ 
           title: "Success", 
-          description: `CIF approved and claim created: ${result.claim.title}` 
+          description: `CIF approved and claim created: ${result.claim.title || 'Claim #' + result.claim.id.slice(0, 8)}` 
         });
         router.push("/staff/cif");
       } else {
@@ -489,6 +396,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
 
   const prospect = cif.prospects;
   const companyName = prospect?.company_name || "Unknown Company";
+  const canEdit = cif.current_stage !== "approved" && cif.current_stage !== "rejected";
 
   return (
     <StaffLayout>
@@ -539,7 +447,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
 
         <Tabs defaultValue="bdm" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="bdm">BDM Section</TabsTrigger>
+            <TabsTrigger value="bdm">BDM</TabsTrigger>
             <TabsTrigger value="technical">Technical</TabsTrigger>
             <TabsTrigger value="financial">Financial</TabsTrigger>
             <TabsTrigger value="admin">Admin</TabsTrigger>
@@ -548,10 +456,27 @@ This is indicative guidance only - actual fees require detailed commercial negot
           <TabsContent value="bdm" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>BDM Section A</CardTitle>
+                <CardTitle>BDM Section</CardTitle>
                 <CardDescription>Initial business development information</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {cif.company_research && (
+                  <>
+                    <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-lg">
+                      <div className="flex items-start gap-3 mb-2">
+                        <div className="text-2xl">🤖</div>
+                        <div>
+                          <h3 className="font-semibold text-blue-900">Company Research Summary</h3>
+                          <p className="text-xs text-blue-600">Generated by RD Sidekick</p>
+                        </div>
+                      </div>
+                      <div className="text-sm text-blue-900 whitespace-pre-wrap mt-3">
+                        {cif.company_research}
+                      </div>
+                    </div>
+                    <Separator />
+                  </>
+                )}
                 <div>
                   <Label className="font-semibold">Business Background</Label>
                   <p className="text-sm mt-1">{cif.business_background || "Not provided"}</p>
@@ -585,21 +510,8 @@ This is indicative guidance only - actual fees require detailed commercial negot
           <TabsContent value="technical" className="mt-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Technical Feasibility Assessment</CardTitle>
-                    <CardDescription>Complete technical review and feasibility determination</CardDescription>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="group bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-2 border-blue-200 hover:border-blue-300 transition-all"
-                    onClick={() => handleSidekickRequest("technical")}
-                  >
-                    <Sparkles className="h-5 w-5 mr-2 text-blue-600 group-hover:animate-pulse" />
-                    <span className="font-semibold text-blue-700">Ask RD Sidekick</span>
-                  </Button>
-                </div>
+                <CardTitle>Technical Feasibility Assessment</CardTitle>
+                <CardDescription>Complete technical review and feasibility determination</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -610,7 +522,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                     value={techUnderstanding}
                     onChange={(e) => setTechUnderstanding(e.target.value)}
                     rows={4}
-                    disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}
+                    disabled={!canEdit}
                   />
                 </div>
 
@@ -622,7 +534,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                     value={techChallenges}
                     onChange={(e) => setTechChallenges(e.target.value)}
                     rows={3}
-                    disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}
+                    disabled={!canEdit}
                   />
                 </div>
 
@@ -634,7 +546,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                     value={techActivities}
                     onChange={(e) => setTechActivities(e.target.value)}
                     rows={3}
-                    disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}
+                    disabled={!canEdit}
                   />
                 </div>
 
@@ -646,14 +558,14 @@ This is indicative guidance only - actual fees require detailed commercial negot
                     value={techProjects}
                     onChange={(e) => setTechProjects(e.target.value)}
                     rows={3}
-                    disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}
+                    disabled={!canEdit}
                   />
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="tech-status">Feasibility Status *</Label>
-                    <Select value={techStatus} onValueChange={(v: "qualified" | "not_qualified" | "needs_more_info") => setTechStatus(v)} disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}>
+                    <Select value={techStatus} onValueChange={(v: "qualified" | "not_qualified" | "needs_more_info") => setTechStatus(v)} disabled={!canEdit}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -667,7 +579,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
 
                   <div className="space-y-2">
                     <Label htmlFor="tech-claim-band">Estimated Claim Band</Label>
-                    <Select value={techClaimBand} onValueChange={(v: any) => setTechClaimBand(v)} disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}>
+                    <Select value={techClaimBand} onValueChange={(v: any) => setTechClaimBand(v)} disabled={!canEdit}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select band" />
                       </SelectTrigger>
@@ -683,7 +595,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
 
                   <div className="space-y-2">
                     <Label htmlFor="tech-risk">Risk Rating</Label>
-                    <Select value={techRiskRating} onValueChange={(v: any) => setTechRiskRating(v)} disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}>
+                    <Select value={techRiskRating} onValueChange={(v: any) => setTechRiskRating(v)} disabled={!canEdit}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select risk" />
                       </SelectTrigger>
@@ -704,7 +616,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                     value={techNotesForFinance}
                     onChange={(e) => setTechNotesForFinance(e.target.value)}
                     rows={2}
-                    disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}
+                    disabled={!canEdit}
                   />
                 </div>
 
@@ -716,11 +628,11 @@ This is indicative guidance only - actual fees require detailed commercial negot
                     value={techMissingInfo}
                     onChange={(e) => setTechMissingInfo(e.target.value)}
                     rows={2}
-                    disabled={cif.current_stage !== "bdm_section" && cif.current_stage !== "tech_feasibility"}
+                    disabled={!canEdit}
                   />
                 </div>
 
-                {(cif.current_stage === "bdm_section" || cif.current_stage === "tech_feasibility") && (
+                {canEdit && (cif.current_stage === "bdm_section" || cif.current_stage === "tech_feasibility") && (
                   <Button onClick={handleCompleteTechnical} disabled={saving} className="w-full">
                     <Save className="h-4 w-4 mr-2" />
                     {saving ? "Saving..." : "Complete Technical Section"}
@@ -733,21 +645,8 @@ This is indicative guidance only - actual fees require detailed commercial negot
           <TabsContent value="financial" className="mt-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Financial Section</CardTitle>
-                    <CardDescription>Complete financial estimates and compliance documentation</CardDescription>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="group bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border-2 border-green-200 hover:border-green-300 transition-all"
-                    onClick={() => handleSidekickRequest("financial")}
-                  >
-                    <Sparkles className="h-5 w-5 mr-2 text-green-600 group-hover:animate-pulse" />
-                    <span className="font-semibold text-green-700">Ask RD Sidekick</span>
-                  </Button>
-                </div>
+                <CardTitle>Financial Section</CardTitle>
+                <CardDescription>Complete financial estimates and compliance documentation</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -757,7 +656,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                     placeholder="e.g. YE 31-03-2024 or 2023/24"
                     value={financialYear}
                     onChange={(e) => setFinancialYear(e.target.value)}
-                    disabled={cif.current_stage !== "financial_section"}
+                    disabled={!canEdit || cif.current_stage !== "financial_section"}
                   />
                 </div>
 
@@ -770,7 +669,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                       placeholder="0.00"
                       value={staffCost}
                       onChange={(e) => setStaffCost(e.target.value)}
-                      disabled={cif.current_stage !== "financial_section"}
+                      disabled={!canEdit || cif.current_stage !== "financial_section"}
                     />
                   </div>
 
@@ -782,7 +681,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                       placeholder="0.00"
                       value={subcontractorCost}
                       onChange={(e) => setSubcontractorCost(e.target.value)}
-                      disabled={cif.current_stage !== "financial_section"}
+                      disabled={!canEdit || cif.current_stage !== "financial_section"}
                     />
                   </div>
 
@@ -794,7 +693,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                       placeholder="0.00"
                       value={consumablesCost}
                       onChange={(e) => setConsumablesCost(e.target.value)}
-                      disabled={cif.current_stage !== "financial_section"}
+                      disabled={!canEdit || cif.current_stage !== "financial_section"}
                     />
                   </div>
 
@@ -806,7 +705,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                       placeholder="0.00"
                       value={softwareCost}
                       onChange={(e) => setSoftwareCost(e.target.value)}
-                      disabled={cif.current_stage !== "financial_section"}
+                      disabled={!canEdit || cif.current_stage !== "financial_section"}
                     />
                   </div>
                 </div>
@@ -819,7 +718,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                     value={apportionment}
                     onChange={(e) => setApportionment(e.target.value)}
                     rows={3}
-                    disabled={cif.current_stage !== "financial_section"}
+                    disabled={!canEdit || cif.current_stage !== "financial_section"}
                   />
                 </div>
 
@@ -836,7 +735,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                         placeholder="Accountant name"
                         value={accountantName}
                         onChange={(e) => setAccountantName(e.target.value)}
-                        disabled={cif.current_stage !== "financial_section"}
+                        disabled={!canEdit || cif.current_stage !== "financial_section"}
                       />
                     </div>
 
@@ -847,7 +746,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                         placeholder="Accounting firm"
                         value={accountantFirm}
                         onChange={(e) => setAccountantFirm(e.target.value)}
-                        disabled={cif.current_stage !== "financial_section"}
+                        disabled={!canEdit || cif.current_stage !== "financial_section"}
                       />
                     </div>
 
@@ -859,7 +758,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                         placeholder="accountant@firm.com"
                         value={accountantEmail}
                         onChange={(e) => setAccountantEmail(e.target.value)}
-                        disabled={cif.current_stage !== "financial_section"}
+                        disabled={!canEdit || cif.current_stage !== "financial_section"}
                       />
                     </div>
 
@@ -870,7 +769,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                         placeholder="+44 20 1234 5678"
                         value={accountantPhone}
                         onChange={(e) => setAccountantPhone(e.target.value)}
-                        disabled={cif.current_stage !== "financial_section"}
+                        disabled={!canEdit || cif.current_stage !== "financial_section"}
                       />
                     </div>
                   </div>
@@ -893,13 +792,13 @@ This is indicative guidance only - actual fees require detailed commercial negot
                           if (file) handleFileUpload(file, "loa");
                         }}
                         className="hidden"
-                        disabled={cif.current_stage !== "financial_section" || uploadingLOA}
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
                       />
                       <Button
                         variant="outline"
                         className="w-full"
                         onClick={() => document.getElementById("loa-upload")?.click()}
-                        disabled={cif.current_stage !== "financial_section" || uploadingLOA}
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
                       >
                         <Upload className="h-4 w-4 mr-2" />
                         {uploadingLOA ? "Uploading..." : "Upload Letter of Authority"}
@@ -917,13 +816,13 @@ This is indicative guidance only - actual fees require detailed commercial negot
                           if (file) handleFileUpload(file, "anti_slavery");
                         }}
                         className="hidden"
-                        disabled={cif.current_stage !== "financial_section" || uploadingASS}
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
                       />
                       <Button
                         variant="outline"
                         className="w-full"
                         onClick={() => document.getElementById("ass-upload")?.click()}
-                        disabled={cif.current_stage !== "financial_section" || uploadingASS}
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
                       >
                         <Upload className="h-4 w-4 mr-2" />
                         {uploadingASS ? "Uploading..." : "Upload Anti-Slavery Statement"}
@@ -955,7 +854,7 @@ This is indicative guidance only - actual fees require detailed commercial negot
                             >
                               Download
                             </Button>
-                            {cif.current_stage === "financial_section" && (
+                            {canEdit && cif.current_stage === "financial_section" && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -976,14 +875,14 @@ This is indicative guidance only - actual fees require detailed commercial negot
                     id="ready-submit"
                     checked={readyToSubmit}
                     onCheckedChange={(checked) => setReadyToSubmit(checked as boolean)}
-                    disabled={cif.current_stage !== "financial_section"}
+                    disabled={!canEdit || cif.current_stage !== "financial_section"}
                   />
                   <Label htmlFor="ready-submit" className="cursor-pointer">
                     Ready to submit to admin for approval
                   </Label>
                 </div>
 
-                {cif.current_stage === "financial_section" && (
+                {canEdit && cif.current_stage === "financial_section" && (
                   <Button onClick={handleCompleteFinancial} disabled={saving} className="w-full">
                     <Save className="h-4 w-4 mr-2" />
                     {saving ? "Saving..." : "Complete Financial Section"}
@@ -1001,13 +900,15 @@ This is indicative guidance only - actual fees require detailed commercial negot
               </CardHeader>
               <CardContent className="space-y-4">
                 
-                {cif.rejection_reason && (
+                {cif.rejection_reason && !cif.rejection_reason.includes("[ARCHIVED]") && cif.current_stage !== "approved" && (
                   <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg mb-4">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
                       <div>
                         <p className="font-semibold text-orange-900">Previous Rejection</p>
-                        <p className="text-sm text-orange-700 mt-1">{cif.rejection_reason}</p>
+                        <p className="text-sm text-orange-700 mt-1">
+                          {cif.rejection_reason.replace("[SENT_BACK]", "").trim()}
+                        </p>
                         {cif.rejected_at && (
                           <p className="text-xs text-orange-600 mt-1">
                             Rejected on {new Date(cif.rejected_at).toLocaleDateString()}
@@ -1112,7 +1013,6 @@ This is indicative guidance only - actual fees require detailed commercial negot
                   </div>
                 )}
 
-                {/* Rejection Modal */}
                 <AlertDialog open={showRejectModal} onOpenChange={setShowRejectModal}>
                   <AlertDialogContent className="max-w-2xl">
                     <AlertDialogHeader>
@@ -1151,9 +1051,9 @@ This is indicative guidance only - actual fees require detailed commercial negot
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="bdm_section">Job Board A (BDM Section)</SelectItem>
-                              <SelectItem value="tech_feasibility">Job Board B (Technical Feasibility)</SelectItem>
-                              <SelectItem value="financial_section">Job Board C (Financial Section)</SelectItem>
+                              <SelectItem value="bdm_section">BDM Section</SelectItem>
+                              <SelectItem value="tech_feasibility">Technical Feasibility</SelectItem>
+                              <SelectItem value="financial_section">Financial Section</SelectItem>
                             </SelectContent>
                           </Select>
                           <p className="text-xs text-muted-foreground">
@@ -1214,61 +1114,6 @@ This is indicative guidance only - actual fees require detailed commercial negot
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* AI Sidekick Dialog */}
-        <Dialog open={showSidekick} onOpenChange={setShowSidekick}>
-          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-blue-500 rounded-full blur-md opacity-50 animate-pulse"></div>
-                  <div className="relative bg-gradient-to-br from-purple-500 to-blue-600 text-white rounded-full p-3">
-                    <Sparkles className="h-6 w-6" />
-                  </div>
-                </div>
-                <div>
-                  <DialogTitle className="text-2xl">
-                    RD Sidekick {sidekickType === "bdm" ? "🔍" : sidekickType === "technical" ? "🔬" : "💰"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {sidekickType === "bdm" && "Company background and market intelligence"}
-                    {sidekickType === "technical" && "R&D feasibility analysis"}
-                    {sidekickType === "financial" && "Fee estimation guidance"}
-                  </DialogDescription>
-                </div>
-              </div>
-            </DialogHeader>
-            
-            <div className="py-6">
-              {sidekickLoading ? (
-                <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                  <Loader2 className="h-12 w-12 text-purple-600 animate-spin" />
-                  <p className="text-muted-foreground animate-pulse">
-                    RD Sidekick is analyzing...
-                  </p>
-                </div>
-              ) : (
-                <div className="prose prose-sm max-w-none">
-                  <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-6 border-2 border-purple-200">
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {sidekickResponse || "No response available"}
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                      <div className="text-xs text-yellow-800">
-                        <strong>Disclaimer:</strong> This guidance is provided by AI and should be used as a preliminary assessment only. 
-                        Always conduct thorough due diligence and follow company procedures for final decisions.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </StaffLayout>
   );
