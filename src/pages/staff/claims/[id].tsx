@@ -540,9 +540,9 @@ export default function ClaimDetailPage() {
       const fileName = `${claim.id}_${Date.now()}.${fileExt}`;
       const filePath = `claim_documents/${fileName}`;
 
-      // Upload to storage bucket
+      // Upload to evidence-files storage bucket
       const { error: uploadError } = await supabase.storage
-        .from("documents")
+        .from("evidence-files")
         .upload(filePath, selectedFile, {
           cacheControl: "3600",
           upsert: false,
