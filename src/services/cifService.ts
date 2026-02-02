@@ -476,20 +476,23 @@ export const cifService = {
         rejection_reason: reason,
         rejected_by: rejectedBy,
         rejected_at: new Date().toISOString(),
+        director_decision: "rejected", // Always use 'rejected' for director_decision
       };
       
       if (rejectionType === "archive") {
-        // Archive the CIF - use 'rejected' status (allowed value) and set current_stage to 'rejected'
+        // Archive the CIF - use 'rejected' status and set current_stage to 'rejected'
+        // Add "[ARCHIVED]" prefix to rejection_reason to distinguish archived items
         updateData.cif_status = "rejected";
         updateData.current_stage = "rejected";
-        updateData.director_decision = "archived";
+        updateData.rejection_reason = `[ARCHIVED] ${reason || ""}`;
         updateData.director_comment = reason;
       } else if (rejectionType === "send_back" && rejectToStage) {
         // Send back to specific stage
+        // Add "[SENT_BACK]" prefix to rejection_reason to distinguish sent back items
         updateData.current_stage = rejectToStage;
         updateData.cif_status = "in_progress";
         updateData.rejected_to_stage = rejectToStage;
-        updateData.director_decision = "sent_back";
+        updateData.rejection_reason = `[SENT_BACK] ${reason || ""}`;
         updateData.director_comment = reason;
         
         // Reset completion flags for the rejected stage
@@ -659,8 +662,7 @@ export const cifService = {
           feasibility:feasibility_analyses(*),
           rejected_by_profile:profiles!cif_records_rejected_by_fkey(full_name, email)
         `)
-        .eq("current_stage", "rejected")
-        .neq("director_decision", "archived")
+        .ilike("rejection_reason", "[SENT_BACK]%")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -696,7 +698,7 @@ export const cifService = {
           feasibility:feasibility_analyses(*),
           rejected_by_profile:profiles!cif_records_rejected_by_fkey(full_name, email)
         `)
-        .eq("director_decision", "archived")
+        .ilike("rejection_reason", "[ARCHIVED]%")
         .order("rejected_at", { ascending: false });
 
       if (error) throw error;
