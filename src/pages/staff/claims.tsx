@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import StaffLayout from "@/components/staff/StaffLayout";
+import { StaffLayout } from "@/components/staff/StaffLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -33,8 +33,17 @@ import {
 import { useRouter } from "next/router";
 import { useToast } from "@/hooks/use-toast";
 import { claimService, ClaimWithDetails } from "@/services/claimService";
-import { formatCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 export default function ClaimsPage() {
   const router = useRouter();
@@ -93,7 +102,7 @@ export default function ClaimsPage() {
   };
 
   return (
-    <StaffLayout title="Claims Management">
+    <StaffLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
