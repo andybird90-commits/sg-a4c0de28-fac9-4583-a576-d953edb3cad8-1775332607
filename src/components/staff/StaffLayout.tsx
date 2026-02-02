@@ -18,7 +18,8 @@ import {
   Briefcase,
   Shield,
   Archive,
-  TrendingUp
+  TrendingUp,
+  MessageSquare
 } from "lucide-react";
 import { useState } from "react";
 
@@ -96,6 +97,11 @@ export function StaffLayout({ children }: StaffLayoutProps) {
       path: "/staff/clients", 
       label: "Clients", 
       icon: Users 
+    },
+    { 
+      path: "/messages", 
+      label: "Messages", 
+      icon: MessageSquare 
     },
     { 
       path: "/staff/cif-archive", 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
+import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,12 +12,16 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { messageService, MessageWithDetails } from "@/services/messageService";
 import { Inbox, Send, Reply, Users, AtSign, Loader2 } from "lucide-react";
-import { useAppContext } from "@/contexts/AppContext";
+import { useApp } from "@/contexts/AppContext";
 
 export default function MessagesPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { profile, organisation } = useAppContext();
+  const { user, currentOrg } = useApp();
+  
+  // Map context values to match component expectations
+  const profile = user;
+  const organisation = currentOrg;
   
   const [inbox, setInbox] = useState<MessageWithDetails[]>([]);
   const [sent, setSent] = useState<MessageWithDetails[]>([]);
