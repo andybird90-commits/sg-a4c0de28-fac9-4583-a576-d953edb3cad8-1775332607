@@ -19,9 +19,11 @@ import {
   Shield,
   Archive,
   TrendingUp,
-  MessageSquare
+  MessageSquare,
+  Bell
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 interface StaffLayoutProps {
   children: React.ReactNode;
@@ -31,6 +33,28 @@ export function StaffLayout({ children }: StaffLayoutProps) {
   const router = useRouter();
   const { user, profileWithOrg, isStaff, loading } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread message count
+  useEffect(() => {
+    if (user) {
+      const fetchUnreadCount = async () => {
+        try {
+          const { getUnreadCount } = await import("@/services/messageService");
+          const count = await getUnreadCount();
+          setUnreadCount(count);
+        } catch (error) {
+          console.error("Error fetching unread count:", error);
+        }
+      };
+      
+      fetchUnreadCount();
+      
+      // Poll every 30 seconds for new messages
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   // Loading state
   if (loading) {
@@ -138,6 +162,20 @@ export function StaffLayout({ children }: StaffLayoutProps) {
 
             {/* User Info */}
             <div className="flex items-center gap-4">
+              <Link href="/messages">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="relative"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
               <div className="hidden sm:block text-right">
                 <div className="text-sm font-medium text-slate-900">
                   {profileWithOrg?.full_name || user.email}

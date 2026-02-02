@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Home, Camera, Lightbulb, FolderOpen, Layers, Menu, Settings, LogOut, Building2, BarChart3, Users, Shield, FileText, MessageSquare } from "lucide-react";
+import { Home, Camera, Lightbulb, FolderOpen, Layers, Menu, Settings, LogOut, Building2, BarChart3, Users, Shield, FileText, MessageSquare, Bell } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { authService } from "@/services/authService";
 import { NotificationToast } from "./NotificationToast";
@@ -21,9 +21,31 @@ export function Layout({ children, showNav = true }: LayoutProps) {
   const { user, currentOrg, organisations, organisationsLoading } = useApp();
   const { isOnline, syncingCount } = useOfflineQueue();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Check if user is admin
   const isAdmin = user?.email === "andy.bird@rdmande.uk";
+
+  // Fetch unread message count
+  useEffect(() => {
+    if (user) {
+      const fetchUnreadCount = async () => {
+        try {
+          const { getUnreadCount } = await import("@/services/messageService");
+          const count = await getUnreadCount();
+          setUnreadCount(count);
+        } catch (error) {
+          console.error("Error fetching unread count:", error);
+        }
+      };
+      
+      fetchUnreadCount();
+      
+      // Poll every 30 seconds for new messages
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     await authService.signOut();
@@ -182,15 +204,31 @@ export function Layout({ children, showNav = true }: LayoutProps) {
 
             {/* Desktop Logout Button */}
             {user && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="hidden lg:flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </Button>
+              <div className="hidden lg:flex items-center gap-2">
+                <Link href="/messages">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="relative"
+                  >
+                    <Bell className="h-4 w-4" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
             )}
           </div>
         </div>
