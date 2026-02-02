@@ -13,11 +13,14 @@ import { useToast } from "@/hooks/use-toast";
 import { messageService, MessageWithDetails } from "@/services/messageService";
 import { Inbox, Send, Reply, Users, AtSign, Loader2 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
+import { StaffLayout } from "@/components/StaffLayout";
+import { useStaffStatus } from "@/hooks/useStaffStatus";
 
 export default function MessagesPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, currentOrg } = useApp();
+  const isStaff = useStaffStatus();
   
   // Map context values to match component expectations
   const profile = user;
@@ -255,154 +258,308 @@ export default function MessagesPage() {
   if (!profile) return null;
 
   return (
-    <Layout>
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">Messages</h1>
-            <p className="text-gray-600">Send and receive messages with staff and clients</p>
-          </div>
-          <Button onClick={handleCompose}>
-            <Send className="h-4 w-4 mr-2" />
-            Compose
-          </Button>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="inbox" className="flex items-center gap-2">
-              <Inbox className="h-4 w-4" />
-              Inbox ({inbox.filter(m => !m.recipients.find(r => r.recipient_id === profile?.id)?.read_at).length})
-            </TabsTrigger>
-            <TabsTrigger value="sent" className="flex items-center gap-2">
-              <Send className="h-4 w-4" />
-              Sent ({sent.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="inbox" className="space-y-4">
-            {loading ? (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
-              </div>
-            ) : inbox.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <Inbox className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-600">No messages in your inbox</p>
-                </CardContent>
-              </Card>
-            ) : (
-              inbox.map(message => (
-                <MessageCard key={message.id} message={message} type="inbox" />
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="sent" className="space-y-4">
-            {loading ? (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
-              </div>
-            ) : sent.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <Send className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-600">No sent messages</p>
-                </CardContent>
-              </Card>
-            ) : (
-              sent.map(message => (
-                <MessageCard key={message.id} message={message} type="sent" />
-              ))
-            )}
-          </TabsContent>
-        </Tabs>
-
-        {/* Compose Dialog */}
-        <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{replyTo ? "Reply to Message" : "Compose Message"}</DialogTitle>
-              <DialogDescription>
-                Send a message to staff or clients. Use @mentions to notify specific users.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
+    <>
+      {isStaff ? (
+        <StaffLayout>
+          <div className="container mx-auto py-8 px-4 max-w-6xl">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <label className="text-sm font-medium mb-1 block">Recipients (User IDs, comma-separated)</label>
-                <Input
-                  placeholder="Enter user IDs..."
-                  value={recipients}
-                  onChange={(e) => setRecipients(e.target.value)}
-                  disabled={!!replyTo}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Tip: Use the search feature to find user IDs
-                </p>
+                <h1 className="text-3xl font-bold">Messages</h1>
+                <p className="text-gray-600">Send and receive messages with staff and clients</p>
               </div>
-
-              <div>
-                <label className="text-sm font-medium mb-1 block">Subject</label>
-                <Input
-                  placeholder="Enter subject..."
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                />
-              </div>
-
-              <div className="relative">
-                <label className="text-sm font-medium mb-1 block">Message</label>
-                <Textarea
-                  placeholder="Type your message... Use @ to mention someone"
-                  value={body}
-                  onChange={(e) => handleBodyChange(e.target.value)}
-                  rows={8}
-                />
-                
-                {/* Mention Autocomplete */}
-                {showMentions && mentionResults.length > 0 && (
-                  <Card className="absolute z-10 w-full mt-1 max-h-48 overflow-y-auto">
-                    <CardContent className="p-0">
-                      {mentionResults.map(user => (
-                        <button
-                          key={user.id}
-                          className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
-                          onClick={() => insertMention(user)}
-                        >
-                          <AtSign className="h-4 w-4 text-blue-500" />
-                          <span>{user.name}</span>
-                          <Badge variant="outline" className="ml-auto text-xs">{user.role}</Badge>
-                        </button>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
+              <Button onClick={handleCompose}>
+                <Send className="h-4 w-4 mr-2" />
+                Compose
+              </Button>
             </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setComposeOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSend} disabled={sending}>
-                {sending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Sending...
-                  </>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-6">
+                <TabsTrigger value="inbox" className="flex items-center gap-2">
+                  <Inbox className="h-4 w-4" />
+                  Inbox ({inbox.filter(m => !m.recipients.find(r => r.recipient_id === profile?.id)?.read_at).length})
+                </TabsTrigger>
+                <TabsTrigger value="sent" className="flex items-center gap-2">
+                  <Send className="h-4 w-4" />
+                  Sent ({sent.length})
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="inbox" className="space-y-4">
+                {loading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+                  </div>
+                ) : inbox.length === 0 ? (
+                  <Card>
+                    <CardContent className="text-center py-12">
+                      <Inbox className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600">No messages in your inbox</p>
+                    </CardContent>
+                  </Card>
                 ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Send
-                  </>
+                  inbox.map(message => (
+                    <MessageCard key={message.id} message={message} type="inbox" />
+                  ))
                 )}
+              </TabsContent>
+
+              <TabsContent value="sent" className="space-y-4">
+                {loading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+                  </div>
+                ) : sent.length === 0 ? (
+                  <Card>
+                    <CardContent className="text-center py-12">
+                      <Send className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600">No sent messages</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  sent.map(message => (
+                    <MessageCard key={message.id} message={message} type="sent" />
+                  ))
+                )}
+              </TabsContent>
+            </Tabs>
+
+            {/* Compose Dialog */}
+            <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>{replyTo ? "Reply to Message" : "Compose Message"}</DialogTitle>
+                  <DialogDescription>
+                    Send a message to staff or clients. Use @mentions to notify specific users.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Recipients (User IDs, comma-separated)</label>
+                    <Input
+                      placeholder="Enter user IDs..."
+                      value={recipients}
+                      onChange={(e) => setRecipients(e.target.value)}
+                      disabled={!!replyTo}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Tip: Use the search feature to find user IDs
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Subject</label>
+                    <Input
+                      placeholder="Enter subject..."
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <label className="text-sm font-medium mb-1 block">Message</label>
+                    <Textarea
+                      placeholder="Type your message... Use @ to mention someone"
+                      value={body}
+                      onChange={(e) => handleBodyChange(e.target.value)}
+                      rows={8}
+                    />
+                    
+                    {/* Mention Autocomplete */}
+                    {showMentions && mentionResults.length > 0 && (
+                      <Card className="absolute z-10 w-full mt-1 max-h-48 overflow-y-auto">
+                        <CardContent className="p-0">
+                          {mentionResults.map(user => (
+                            <button
+                              key={user.id}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                              onClick={() => insertMention(user)}
+                            >
+                              <AtSign className="h-4 w-4 text-blue-500" />
+                              <span>{user.name}</span>
+                              <Badge variant="outline" className="ml-auto text-xs">{user.role}</Badge>
+                            </button>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setComposeOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSend} disabled={sending}>
+                    {sending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Send
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </StaffLayout>
+      ) : (
+        <Layout>
+          <div className="container mx-auto py-8 px-4 max-w-6xl">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold">Messages</h1>
+                <p className="text-gray-600">Send and receive messages with staff and clients</p>
+              </div>
+              <Button onClick={handleCompose}>
+                <Send className="h-4 w-4 mr-2" />
+                Compose
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </Layout>
+            </div>
+
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-6">
+                <TabsTrigger value="inbox" className="flex items-center gap-2">
+                  <Inbox className="h-4 w-4" />
+                  Inbox ({inbox.filter(m => !m.recipients.find(r => r.recipient_id === profile?.id)?.read_at).length})
+                </TabsTrigger>
+                <TabsTrigger value="sent" className="flex items-center gap-2">
+                  <Send className="h-4 w-4" />
+                  Sent ({sent.length})
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="inbox" className="space-y-4">
+                {loading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+                  </div>
+                ) : inbox.length === 0 ? (
+                  <Card>
+                    <CardContent className="text-center py-12">
+                      <Inbox className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600">No messages in your inbox</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  inbox.map(message => (
+                    <MessageCard key={message.id} message={message} type="inbox" />
+                  ))
+                )}
+              </TabsContent>
+
+              <TabsContent value="sent" className="space-y-4">
+                {loading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400" />
+                  </div>
+                ) : sent.length === 0 ? (
+                  <Card>
+                    <CardContent className="text-center py-12">
+                      <Send className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600">No sent messages</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  sent.map(message => (
+                    <MessageCard key={message.id} message={message} type="sent" />
+                  ))
+                )}
+              </TabsContent>
+            </Tabs>
+
+            {/* Compose Dialog */}
+            <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>{replyTo ? "Reply to Message" : "Compose Message"}</DialogTitle>
+                  <DialogDescription>
+                    Send a message to staff or clients. Use @mentions to notify specific users.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Recipients (User IDs, comma-separated)</label>
+                    <Input
+                      placeholder="Enter user IDs..."
+                      value={recipients}
+                      onChange={(e) => setRecipients(e.target.value)}
+                      disabled={!!replyTo}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Tip: Use the search feature to find user IDs
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Subject</label>
+                    <Input
+                      placeholder="Enter subject..."
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <label className="text-sm font-medium mb-1 block">Message</label>
+                    <Textarea
+                      placeholder="Type your message... Use @ to mention someone"
+                      value={body}
+                      onChange={(e) => handleBodyChange(e.target.value)}
+                      rows={8}
+                    />
+                    
+                    {/* Mention Autocomplete */}
+                    {showMentions && mentionResults.length > 0 && (
+                      <Card className="absolute z-10 w-full mt-1 max-h-48 overflow-y-auto">
+                        <CardContent className="p-0">
+                          {mentionResults.map(user => (
+                            <button
+                              key={user.id}
+                              className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                              onClick={() => insertMention(user)}
+                            >
+                              <AtSign className="h-4 w-4 text-blue-500" />
+                              <span>{user.name}</span>
+                              <Badge variant="outline" className="ml-auto text-xs">{user.role}</Badge>
+                            </button>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setComposeOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSend} disabled={sending}>
+                    {sending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Send
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </Layout>
+      )}
+    </>
   );
 }
