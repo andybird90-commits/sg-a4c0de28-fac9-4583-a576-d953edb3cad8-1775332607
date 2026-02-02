@@ -589,13 +589,21 @@ export type Database = {
       claim_projects: {
         Row: {
           advance_in_science: string | null
+          approval_status: Json | null
+          approved_at: string | null
+          assigned_to_user_id: string | null
           auto_synced: boolean | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
           challenges_uncertainties: string | null
           claim_id: string
+          client_feedback: string | null
           consumables_cost: number | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string | null
+          due_date: string | null
           end_date: string | null
           id: string
           last_synced_at: string | null
@@ -604,6 +612,8 @@ export type Database = {
           project_code: string | null
           qualifying_activities: string[] | null
           rd_theme: string | null
+          revision_count: number | null
+          sent_to_client_at: string | null
           software_cost: number | null
           source_project_id: string | null
           source_sidekick_project_id: string | null
@@ -611,20 +621,31 @@ export type Database = {
           start_date: string | null
           status: string
           subcontractor_cost: number | null
+          submitted_to_team_at: string | null
+          team_started_at: string | null
           technical_reviewer: string | null
           technical_understanding: string | null
           total_qualifying_cost: number | null
           updated_at: string
+          workflow_status: string | null
         }
         Insert: {
           advance_in_science?: string | null
+          approval_status?: Json | null
+          approved_at?: string | null
+          assigned_to_user_id?: string | null
           auto_synced?: boolean | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           challenges_uncertainties?: string | null
           claim_id: string
+          client_feedback?: string | null
           consumables_cost?: number | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
+          due_date?: string | null
           end_date?: string | null
           id?: string
           last_synced_at?: string | null
@@ -633,6 +654,8 @@ export type Database = {
           project_code?: string | null
           qualifying_activities?: string[] | null
           rd_theme?: string | null
+          revision_count?: number | null
+          sent_to_client_at?: string | null
           software_cost?: number | null
           source_project_id?: string | null
           source_sidekick_project_id?: string | null
@@ -640,20 +663,31 @@ export type Database = {
           start_date?: string | null
           status?: string
           subcontractor_cost?: number | null
+          submitted_to_team_at?: string | null
+          team_started_at?: string | null
           technical_reviewer?: string | null
           technical_understanding?: string | null
           total_qualifying_cost?: number | null
           updated_at?: string
+          workflow_status?: string | null
         }
         Update: {
           advance_in_science?: string | null
+          approval_status?: Json | null
+          approved_at?: string | null
+          assigned_to_user_id?: string | null
           auto_synced?: boolean | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           challenges_uncertainties?: string | null
           claim_id?: string
+          client_feedback?: string | null
           consumables_cost?: number | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
+          due_date?: string | null
           end_date?: string | null
           id?: string
           last_synced_at?: string | null
@@ -662,6 +696,8 @@ export type Database = {
           project_code?: string | null
           qualifying_activities?: string[] | null
           rd_theme?: string | null
+          revision_count?: number | null
+          sent_to_client_at?: string | null
           software_cost?: number | null
           source_project_id?: string | null
           source_sidekick_project_id?: string | null
@@ -669,12 +705,22 @@ export type Database = {
           start_date?: string | null
           status?: string
           subcontractor_cost?: number | null
+          submitted_to_team_at?: string | null
+          team_started_at?: string | null
           technical_reviewer?: string | null
           technical_understanding?: string | null
           total_qualifying_cost?: number | null
           updated_at?: string
+          workflow_status?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "claim_projects_assigned_to_user_id_fkey"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "claim_projects_claim_id_fkey"
             columns: ["claim_id"]
@@ -1457,6 +1503,148 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      project_collaborators: {
+        Row: {
+          added_at: string | null
+          added_by: string | null
+          claim_project_id: string
+          id: string
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          added_by?: string | null
+          claim_project_id: string
+          id?: string
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string | null
+          claim_project_id?: string
+          id?: string
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_collaborators_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_collaborators_claim_project_id_fkey"
+            columns: ["claim_project_id"]
+            isOneToOne: false
+            referencedRelation: "claim_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_collaborators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_comments: {
+        Row: {
+          claim_project_id: string
+          comment_text: string
+          comment_type: string
+          created_at: string | null
+          id: string
+          section_reference: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          claim_project_id: string
+          comment_text: string
+          comment_type: string
+          created_at?: string | null
+          id?: string
+          section_reference?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          claim_project_id?: string
+          comment_text?: string
+          comment_type?: string
+          created_at?: string | null
+          id?: string
+          section_reference?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_comments_claim_project_id_fkey"
+            columns: ["claim_project_id"]
+            isOneToOne: false
+            referencedRelation: "claim_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_status_history: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          claim_project_id: string
+          from_status: string | null
+          id: string
+          notes: string | null
+          to_status: string
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          claim_project_id: string
+          from_status?: string | null
+          id?: string
+          notes?: string | null
+          to_status: string
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          claim_project_id?: string
+          from_status?: string | null
+          id?: string
+          notes?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_status_history_claim_project_id_fkey"
+            columns: ["claim_project_id"]
+            isOneToOne: false
+            referencedRelation: "claim_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects: {
         Row: {

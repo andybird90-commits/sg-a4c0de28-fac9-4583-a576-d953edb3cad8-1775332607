@@ -563,6 +563,462 @@ export class ClaimService {
       throw error;
     }
   }
+
+  // ============================================================================
+  // PROJECT WORKFLOW MANAGEMENT
+  // ============================================================================
+
+  /**
+   * Client sends project to team for R&D review
+   */
+  async sendProjectToTeam(projectId: string, userId: string): Promise<ClaimProject> {
+    try {
+      const { data, error } = await supabase
+        .from("claim_projects")
+        .update({
+          workflow_status: "submitted_to_team",
+          submitted_to_team_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", projectId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log status change
+      await this.logStatusChange(projectId, "draft", "submitted_to_team", userId, "Client submitted project for team review");
+
+      return data;
+    } catch (error) {
+      console.error("[claimService.sendProjectToTeam] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Team member claims a project for review
+   */
+  async claimProject(projectId: string, userId: string): Promise<ClaimProject> {
+    try {
+      const { data, error } = await supabase
+        .from("claim_projects")
+        .update({
+          workflow_status: "team_in_progress",
+          assigned_to_user_id: userId,
+          team_started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", projectId)
+        .eq("workflow_status", "submitted_to_team")
+        .is("assigned_to_user_id", null)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!data) throw new Error("Project already claimed or not available");
+
+      // Log status change
+      await this.logStatusChange(projectId, "submitted_to_team", "team_in_progress", userId, "Team member claimed project");
+
+      return data;
+    } catch (error) {
+      console.error("[claimService.claimProject] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Team sends project to client for review
+   */
+  async sendProjectToClient(projectId: string, userId: string): Promise<ClaimProject> {
+    try {
+      const { data, error } = await supabase
+        .from("claim_projects")
+        .update({
+          workflow_status: "awaiting_client_review",
+          sent_to_client_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", projectId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log status change
+      await this.logStatusChange(projectId, "team_in_progress", "awaiting_client_review", userId, "Team submitted project for client review");
+
+      return data;
+    } catch (error) {
+      console.error("[claimService.sendProjectToClient] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Client approves project (full or partial)
+   */
+  async approveProject(
+    projectId: string, 
+    userId: string, 
+    approvalSections: Record<string, string>
+  ): Promise<ClaimProject> {
+    try {
+      const allApproved = Object.values(approvalSections).every(status => status === "approved");
+      
+      const { data, error } = await supabase
+        .from("claim_projects")
+        .update({
+          workflow_status: allApproved ? "approved" : "revision_requested",
+          approval_sections: approvalSections,
+          approved_at: allApproved ? new Date().toISOString() : null,
+          sla_met: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", projectId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log status change
+      const statusMessage = allApproved ? "Client approved all sections" : "Client requested revisions on some sections";
+      await this.logStatusChange(projectId, "awaiting_client_review", allApproved ? "approved" : "revision_requested", userId, statusMessage);
+
+      return data;
+    } catch (error) {
+      console.error("[claimService.approveProject] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Client requests changes to project
+   */
+  async requestRevisions(
+    projectId: string,
+    userId: string,
+    feedback: string,
+    sectionsNeedingRevision: string[]
+  ): Promise<ClaimProject> {
+    try {
+      // Get current approval sections
+      const { data: project } = await supabase
+        .from("claim_projects")
+        .select("approval_sections")
+        .eq("id", projectId)
+        .single();
+
+      const approvalSections = project?.approval_sections || {};
+      
+      // Mark requested sections as needs_revision
+      sectionsNeedingRevision.forEach(section => {
+        approvalSections[section] = "needs_revision";
+      });
+
+      const { data, error } = await supabase
+        .from("claim_projects")
+        .update({
+          workflow_status: "revision_requested",
+          approval_sections: approvalSections,
+          revision_count: supabase.raw("revision_count + 1"),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", projectId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add feedback comment
+      await this.addProjectComment(projectId, userId, "client_feedback", feedback);
+
+      // Log status change
+      await this.logStatusChange(projectId, "awaiting_client_review", "revision_requested", userId, `Client requested revisions: ${sectionsNeedingRevision.join(", ")}`);
+
+      return data;
+    } catch (error) {
+      console.error("[claimService.requestRevisions] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Team resubmits project after revisions
+   */
+  async resubmitProject(projectId: string, userId: string): Promise<ClaimProject> {
+    try {
+      const { data, error } = await supabase
+        .from("claim_projects")
+        .update({
+          workflow_status: "awaiting_client_review",
+          sent_to_client_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", projectId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log status change
+      await this.logStatusChange(projectId, "revision_requested", "awaiting_client_review", userId, "Team resubmitted project after revisions");
+
+      return data;
+    } catch (error) {
+      console.error("[claimService.resubmitProject] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cancel/withdraw project
+   */
+  async cancelProject(projectId: string, userId: string, reason: string): Promise<ClaimProject> {
+    try {
+      const { data: project } = await supabase
+        .from("claim_projects")
+        .select("workflow_status")
+        .eq("id", projectId)
+        .single();
+
+      const previousStatus = project?.workflow_status || "draft";
+
+      const { data, error } = await supabase
+        .from("claim_projects")
+        .update({
+          workflow_status: "cancelled",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", projectId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add cancellation comment
+      await this.addProjectComment(projectId, userId, "cancellation", reason);
+
+      // Log status change
+      await this.logStatusChange(projectId, previousStatus, "cancelled", userId, `Project cancelled: ${reason}`);
+
+      return data;
+    } catch (error) {
+      console.error("[claimService.cancelProject] Error:", error);
+      throw error;
+    }
+  }
+
+  // ============================================================================
+  // COLLABORATORS
+  // ============================================================================
+
+  /**
+   * Add collaborator to project
+   */
+  async addCollaborator(projectId: string, userId: string, addedBy: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from("project_collaborators")
+        .insert({
+          claim_project_id: projectId,
+          user_id: userId,
+          added_by: addedBy,
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("[claimService.addCollaborator] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove collaborator from project
+   */
+  async removeCollaborator(projectId: string, userId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from("project_collaborators")
+        .delete()
+        .eq("claim_project_id", projectId)
+        .eq("user_id", userId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("[claimService.removeCollaborator] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get project collaborators
+   */
+  async getCollaborators(projectId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from("project_collaborators")
+        .select(`
+          *,
+          user:user_id (id, full_name, email, avatar_url)
+        `)
+        .eq("claim_project_id", projectId);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("[claimService.getCollaborators] Error:", error);
+      throw error;
+    }
+  }
+
+  // ============================================================================
+  // COMMENTS & FEEDBACK
+  // ============================================================================
+
+  /**
+   * Add comment/feedback to project
+   */
+  async addProjectComment(
+    projectId: string,
+    userId: string,
+    commentType: string,
+    commentText: string
+  ): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from("project_comments")
+        .insert({
+          claim_project_id: projectId,
+          user_id: userId,
+          comment_type: commentType,
+          comment_text: commentText,
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("[claimService.addProjectComment] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get project comments
+   */
+  async getProjectComments(projectId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from("project_comments")
+        .select(`
+          *,
+          user:user_id (id, full_name, email, avatar_url)
+        `)
+        .eq("claim_project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("[claimService.getProjectComments] Error:", error);
+      throw error;
+    }
+  }
+
+  // ============================================================================
+  // STATUS HISTORY
+  // ============================================================================
+
+  /**
+   * Log status change to history
+   */
+  private async logStatusChange(
+    projectId: string,
+    oldStatus: string,
+    newStatus: string,
+    changedBy: string,
+    notes?: string
+  ): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from("project_status_history")
+        .insert({
+          claim_project_id: projectId,
+          old_status: oldStatus,
+          new_status: newStatus,
+          changed_by: changedBy,
+          notes: notes,
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("[claimService.logStatusChange] Error:", error);
+      // Don't throw - logging failures shouldn't break main flow
+    }
+  }
+
+  /**
+   * Get status history for project
+   */
+  async getStatusHistory(projectId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from("project_status_history")
+        .select(`
+          *,
+          user:changed_by (id, full_name, email, avatar_url)
+        `)
+        .eq("claim_project_id", projectId)
+        .order("changed_at", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("[claimService.getStatusHistory] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get projects by workflow status (for filtered views)
+   */
+  async getProjectsByStatus(claimId: string, status: string): Promise<ClaimProject[]> {
+    try {
+      const { data, error } = await supabase
+        .from("claim_projects")
+        .select("*")
+        .eq("claim_id", claimId)
+        .eq("workflow_status", status)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("[claimService.getProjectsByStatus] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get overdue projects (SLA breach)
+   */
+  async getOverdueProjects(claimId: string): Promise<ClaimProject[]> {
+    try {
+      const { data, error } = await supabase
+        .from("claim_projects")
+        .select("*")
+        .eq("claim_id", claimId)
+        .lt("due_date", new Date().toISOString())
+        .in("workflow_status", ["submitted_to_team", "team_in_progress"])
+        .order("due_date", { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("[claimService.getOverdueProjects] Error:", error);
+      throw error;
+    }
+  }
 }
 
 export const claimService = new ClaimService();
