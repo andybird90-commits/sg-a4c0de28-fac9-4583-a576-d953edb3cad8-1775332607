@@ -263,15 +263,15 @@ export async function resolveOrgId(
   
   try {
     if (entityType === "project") {
-      const { data } = await supabase.from("projects").select("org_id").eq("id", entityId).single();
+      const { data } = await supabase.from("projects").select("org_id").eq("id", entityId).maybeSingle();
       return data?.org_id || null;
     }
     if (entityType === "claim") {
-      const { data } = await supabase.from("claims").select("org_id").eq("id", entityId).single();
+      const { data } = await supabase.from("claims").select("org_id").eq("id", entityId).maybeSingle();
       return data?.org_id || null;
     }
     if (entityType === "cif") {
-      const { data } = await supabase.from("cif_records").select("org_id").eq("id", entityId).single();
+      const { data } = await supabase.from("cif_records").select("org_id").eq("id", entityId).maybeSingle();
       return data?.org_id || null;
     }
     // For evidence, it might be linked to project or claim, complicated. 
