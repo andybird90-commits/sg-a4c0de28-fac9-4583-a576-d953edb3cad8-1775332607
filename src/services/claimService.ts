@@ -9,6 +9,8 @@ type ClaimProject = Database["public"]["Tables"]["claim_projects"]["Row"];
 type ClaimProjectInsert = Database["public"]["Tables"]["claim_projects"]["Insert"];
 type ClaimProjectUpdate = Database["public"]["Tables"]["claim_projects"]["Update"];
 
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+
 type ClaimCost = Database["public"]["Tables"]["claim_costs"]["Row"];
 type ClaimCostInsert = Database["public"]["Tables"]["claim_costs"]["Insert"];
 
@@ -17,26 +19,15 @@ type ClaimDocumentInsert = Database["public"]["Tables"]["claim_documents"]["Inse
 
 export interface ClaimWithDetails extends Claim {
   organisations?: {
-    id: string;
     name: string;
     organisation_code: string;
   } | null;
-  bd_owner?: {
-    id: string;
-    full_name: string | null;
-    email: string | null;
-  } | null;
-  technical_lead?: {
-    id: string;
-    full_name: string | null;
-    email: string | null;
-  } | null;
-  cost_lead?: {
-    id: string;
-    full_name: string | null;
-    email: string | null;
-  } | null;
   projects?: ClaimProject[];
+  costs?: ClaimCost[];
+  documents?: ClaimDocument[];
+  bd_owner?: Profile | null;
+  technical_lead?: Profile | null;
+  cost_lead?: Profile | null;
   total_costs?: number;
   document_count?: number;
 }

@@ -90,7 +90,6 @@ export default function ProjectsPage() {
             description: p.description,
             created_at: p.created_at,
             type: "regular" as const,
-            sector: p.sector,
           }))
         ];
 

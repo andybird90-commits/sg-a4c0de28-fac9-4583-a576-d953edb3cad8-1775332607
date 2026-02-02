@@ -63,6 +63,7 @@ import {
   Clock,
   Building2,
   Briefcase,
+  AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -92,11 +93,15 @@ export default function ClaimDetailPage() {
     description: "",
     start_date: "",
     end_date: "",
-    rd_theme: "Engineering",
+    rd_theme: "",
+    technical_understanding: "",
+    challenges_uncertainties: "",
+    qualifying_activities: "",
   });
 
   // Cost management state
   const [showCostDialog, setShowCostDialog] = useState(false);
+  const [editingCost, setEditingCost] = useState<any>(null);
   const [costForm, setCostForm] = useState({
     cost_type: "staff",
     description: "",
@@ -145,13 +150,25 @@ export default function ClaimDetailPage() {
         description: projectForm.description,
         start_date: projectForm.start_date || null,
         end_date: projectForm.end_date || null,
-        rd_theme: projectForm.rd_theme,
+        rd_theme: projectForm.rd_theme || null,
+        technical_understanding: projectForm.technical_understanding || null,
+        challenges_uncertainties: projectForm.challenges_uncertainties || null,
+        qualifying_activities: projectForm.qualifying_activities ? projectForm.qualifying_activities.split("\n").filter(Boolean) : null,
         created_by: profile.id,
       });
 
       toast({ title: "Success", description: "Project created successfully" });
       setShowProjectDialog(false);
-      setProjectForm({ name: "", description: "", start_date: "", end_date: "", rd_theme: "Engineering" });
+      setProjectForm({
+        name: "",
+        description: "",
+        start_date: "",
+        end_date: "",
+        rd_theme: "",
+        technical_understanding: "",
+        challenges_uncertainties: "",
+        qualifying_activities: "",
+      });
       if (id && typeof id === "string") loadClaim(id);
     } catch (error) {
       toast({
@@ -171,13 +188,25 @@ export default function ClaimDetailPage() {
         description: projectForm.description,
         start_date: projectForm.start_date || null,
         end_date: projectForm.end_date || null,
-        rd_theme: projectForm.rd_theme,
+        rd_theme: projectForm.rd_theme || null,
+        technical_understanding: projectForm.technical_understanding || null,
+        challenges_uncertainties: projectForm.challenges_uncertainties || null,
+        qualifying_activities: projectForm.qualifying_activities ? projectForm.qualifying_activities.split("\n").filter(Boolean) : null,
       });
 
       toast({ title: "Success", description: "Project updated successfully" });
       setShowProjectDialog(false);
       setEditingProject(null);
-      setProjectForm({ name: "", description: "", start_date: "", end_date: "", rd_theme: "Engineering" });
+      setProjectForm({
+        name: "",
+        description: "",
+        start_date: "",
+        end_date: "",
+        rd_theme: "",
+        technical_understanding: "",
+        challenges_uncertainties: "",
+        qualifying_activities: "",
+      });
       if (id && typeof id === "string") loadClaim(id);
     } catch (error) {
       toast({
@@ -226,6 +255,48 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: "Failed to create cost entry",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateCost = async () => {
+    if (!editingCost) return;
+
+    try {
+      await claimService.updateCost(editingCost.id, {
+        cost_type: costForm.cost_type as any,
+        description: costForm.description,
+        amount: parseFloat(costForm.amount),
+        cost_date: costForm.cost_date || null,
+        project_id: costForm.project_id || null,
+      });
+
+      toast({ title: "Success", description: "Cost entry updated successfully" });
+      setShowCostDialog(false);
+      setEditingCost(null);
+      setCostForm({ cost_type: "staff", description: "", amount: "", cost_date: "", project_id: "" });
+      if (id && typeof id === "string") loadClaim(id);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update cost entry",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCost = async (costId: string) => {
+    if (!confirm("Are you sure you want to delete this cost entry?")) return;
+
+    try {
+      await claimService.deleteCost(costId);
+      toast({ title: "Success", description: "Cost entry deleted successfully" });
+      if (id && typeof id === "string") loadClaim(id);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete cost entry",
         variant: "destructive",
       });
     }
@@ -502,17 +573,26 @@ export default function ClaimDetailPage() {
                     <DialogTrigger asChild>
                       <Button onClick={() => {
                         setEditingProject(null);
-                        setProjectForm({ name: "", description: "", start_date: "", end_date: "", rd_theme: "Engineering" });
+                        setProjectForm({
+                          name: "",
+                          description: "",
+                          start_date: "",
+                          end_date: "",
+                          rd_theme: "",
+                          technical_understanding: "",
+                          challenges_uncertainties: "",
+                          qualifying_activities: "",
+                        });
                       }}>
                         <Plus className="mr-2 h-4 w-4" />
                         Add Project
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>{editingProject ? "Edit Project" : "Add New Project"}</DialogTitle>
                         <DialogDescription>
-                          Provide details about the R&D project for this claim
+                          Provide comprehensive details about the R&D project for this claim
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
@@ -526,13 +606,13 @@ export default function ClaimDetailPage() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="project-description">Description *</Label>
+                          <Label htmlFor="project-description">Project Description *</Label>
                           <Textarea
                             id="project-description"
                             value={projectForm.description}
                             onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
-                            placeholder="Describe the R&D activities, challenges, and uncertainties..."
-                            rows={4}
+                            placeholder="High-level overview of the project..."
+                            rows={3}
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -561,7 +641,37 @@ export default function ClaimDetailPage() {
                             id="rd-theme"
                             value={projectForm.rd_theme}
                             onChange={(e) => setProjectForm({ ...projectForm, rd_theme: e.target.value })}
-                            placeholder="e.g. Engineering, Software, Science"
+                            placeholder="e.g., Software Engineering, Materials Science"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="technical-understanding">Technical Understanding</Label>
+                          <Textarea
+                            id="technical-understanding"
+                            value={projectForm.technical_understanding}
+                            onChange={(e) => setProjectForm({ ...projectForm, technical_understanding: e.target.value })}
+                            placeholder="Describe the technical knowledge and baseline competence..."
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="challenges">Challenges & Uncertainties</Label>
+                          <Textarea
+                            id="challenges"
+                            value={projectForm.challenges_uncertainties}
+                            onChange={(e) => setProjectForm({ ...projectForm, challenges_uncertainties: e.target.value })}
+                            placeholder="What were the scientific or technological uncertainties?"
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="qualifying-activities">Qualifying Activities (one per line)</Label>
+                          <Textarea
+                            id="qualifying-activities"
+                            value={projectForm.qualifying_activities}
+                            onChange={(e) => setProjectForm({ ...projectForm, qualifying_activities: e.target.value })}
+                            placeholder="Research into novel algorithms&#10;Design of experimental test rigs&#10;Prototyping and iterative testing"
+                            rows={4}
                           />
                         </div>
                       </div>
@@ -587,7 +697,7 @@ export default function ClaimDetailPage() {
                             <div className="flex-1">
                               <h3 className="text-lg font-semibold mb-2">{project.name}</h3>
                               <p className="text-slate-600 mb-3">{project.description}</p>
-                              <div className="flex items-center gap-4 text-sm text-slate-500">
+                              <div className="flex items-center gap-4 text-sm text-slate-500 mb-3">
                                 {project.start_date && (
                                   <span className="flex items-center gap-1">
                                     <Calendar className="h-4 w-4" />
@@ -599,6 +709,28 @@ export default function ClaimDetailPage() {
                                   <Badge variant="outline">{project.rd_theme}</Badge>
                                 )}
                               </div>
+                              {project.technical_understanding && (
+                                <div className="mb-2">
+                                  <p className="text-sm font-medium text-slate-700">Technical Understanding:</p>
+                                  <p className="text-sm text-slate-600">{project.technical_understanding}</p>
+                                </div>
+                              )}
+                              {project.challenges_uncertainties && (
+                                <div className="mb-2">
+                                  <p className="text-sm font-medium text-slate-700">Challenges:</p>
+                                  <p className="text-sm text-slate-600">{project.challenges_uncertainties}</p>
+                                </div>
+                              )}
+                              {project.qualifying_activities && Array.isArray(project.qualifying_activities) && project.qualifying_activities.length > 0 && (
+                                <div className="mb-2">
+                                  <p className="text-sm font-medium text-slate-700">Qualifying Activities:</p>
+                                  <ul className="list-disc list-inside text-sm text-slate-600">
+                                    {project.qualifying_activities.map((activity, idx) => (
+                                      <li key={idx}>{activity}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                             </div>
                             <div className="flex items-center gap-2">
                               <Button
@@ -611,7 +743,10 @@ export default function ClaimDetailPage() {
                                     description: project.description || "",
                                     start_date: project.start_date || "",
                                     end_date: project.end_date || "",
-                                    rd_theme: project.rd_theme || "Engineering",
+                                    rd_theme: project.rd_theme || "",
+                                    technical_understanding: project.technical_understanding || "",
+                                    challenges_uncertainties: project.challenges_uncertainties || "",
+                                    qualifying_activities: Array.isArray(project.qualifying_activities) ? project.qualifying_activities.join("\n") : "",
                                   });
                                   setShowProjectDialog(true);
                                 }}
@@ -653,15 +788,18 @@ export default function ClaimDetailPage() {
                   </div>
                   <Dialog open={showCostDialog} onOpenChange={setShowCostDialog}>
                     <DialogTrigger asChild>
-                      <Button>
+                      <Button onClick={() => {
+                        setEditingCost(null);
+                        setCostForm({ cost_type: "staff", description: "", amount: "", cost_date: "", project_id: "" });
+                      }}>
                         <Plus className="mr-2 h-4 w-4" />
                         Add Cost
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Add Cost Entry</DialogTitle>
-                        <DialogDescription>Record a new R&D cost entry</DialogDescription>
+                        <DialogTitle>{editingCost ? "Edit Cost Entry" : "Add Cost Entry"}</DialogTitle>
+                        <DialogDescription>Record an R&D cost entry</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
                         <div>
@@ -716,7 +854,7 @@ export default function ClaimDetailPage() {
                             />
                           </div>
                           <div>
-                            <Label htmlFor="cost-date">Date *</Label>
+                            <Label htmlFor="cost-date">Date</Label>
                             <Input
                               id="cost-date"
                               type="date"
@@ -730,7 +868,9 @@ export default function ClaimDetailPage() {
                         <Button variant="outline" onClick={() => setShowCostDialog(false)}>
                           Cancel
                         </Button>
-                        <Button onClick={handleCreateCost}>Add Cost</Button>
+                        <Button onClick={editingCost ? handleUpdateCost : handleCreateCost}>
+                          {editingCost ? "Update Cost" : "Add Cost"}
+                        </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
@@ -749,7 +889,75 @@ export default function ClaimDetailPage() {
                   </div>
                 </div>
 
-                <p className="text-sm text-slate-500 mb-4">Cost tracking will be displayed here. Feature coming soon.</p>
+                {claim.costs && claim.costs.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Project</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {claim.costs.map((cost) => (
+                        <TableRow key={cost.id}>
+                          <TableCell>{cost.cost_date ? format(new Date(cost.cost_date), "dd/MM/yyyy") : "N/A"}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{cost.cost_type}</Badge>
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">{cost.description}</TableCell>
+                          <TableCell>
+                            {cost.project_id ? (
+                              <span className="text-sm text-slate-600">
+                                {claim.projects?.find(p => p.id === cost.project_id)?.name || "Unknown"}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-slate-400">General</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">{formatCurrency(cost.amount)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingCost(cost);
+                                  setCostForm({
+                                    cost_type: cost.cost_type,
+                                    description: cost.description || "",
+                                    amount: cost.amount.toString(),
+                                    cost_date: cost.cost_date || "",
+                                    project_id: cost.project_id || "",
+                                  });
+                                  setShowCostDialog(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteCost(cost.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-12 text-slate-500">
+                    <PoundSterling className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                    <p>No costs recorded yet</p>
+                    <p className="text-sm">Add cost entries to track R&D expenditure</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -819,7 +1027,47 @@ export default function ClaimDetailPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-slate-500">Evidence management will be displayed here. Feature coming soon.</p>
+                {claim.documents && claim.documents.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Size</TableHead>
+                        <TableHead>Uploaded</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {claim.documents.map((doc) => (
+                        <TableRow key={doc.id}>
+                          <TableCell className="font-medium">{doc.title}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{doc.doc_type}</Badge>
+                          </TableCell>
+                          <TableCell>{((doc.file_size || 0) / 1024).toFixed(2)} KB</TableCell>
+                          <TableCell>{doc.created_at ? format(new Date(doc.created_at), "dd/MM/yyyy") : "N/A"}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="sm">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-12 text-slate-500">
+                    <FileText className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                    <p>No documents uploaded yet</p>
+                    <p className="text-sm">Upload supporting evidence for your R&D claim</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -832,7 +1080,62 @@ export default function ClaimDetailPage() {
                 <CardDescription>Manage team assignments and roles</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-slate-500">Team management features coming soon.</p>
+                <div className="space-y-4">
+                  <div className="grid gap-4">
+                    {claim.bd_owner && (
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-lg">
+                            {claim.bd_owner.full_name?.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-medium">{claim.bd_owner.full_name}</p>
+                            <p className="text-sm text-slate-600">{claim.bd_owner.email}</p>
+                            <Badge className="mt-1 bg-blue-100 text-blue-800">BD Owner</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {claim.technical_lead && (
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold text-lg">
+                            {claim.technical_lead.full_name?.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-medium">{claim.technical_lead.full_name}</p>
+                            <p className="text-sm text-slate-600">{claim.technical_lead.email}</p>
+                            <Badge className="mt-1 bg-purple-100 text-purple-800">Technical Lead</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {claim.cost_lead && (
+                      <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-lg">
+                            {claim.cost_lead.full_name?.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-medium">{claim.cost_lead.full_name}</p>
+                            <p className="text-sm text-slate-600">{claim.cost_lead.email}</p>
+                            <Badge className="mt-1 bg-orange-100 text-orange-800">Cost Lead</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {!claim.bd_owner && !claim.technical_lead && !claim.cost_lead && (
+                    <div className="text-center py-12 text-slate-500">
+                      <Users className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                      <p>No team members assigned yet</p>
+                      <p className="text-sm">Assign team members to manage this claim</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
