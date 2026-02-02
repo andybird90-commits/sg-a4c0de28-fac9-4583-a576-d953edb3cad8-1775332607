@@ -136,18 +136,20 @@ export default function ProjectDetailPage() {
         setComments(commentsData);
 
         // Check if this project is linked to a claim project
-        if (projectData?.claim_project_id) {
-          try {
-            const claimProj = await claimService.getProjectById(projectData.claim_project_id);
+        try {
+          // Find the claim project that was created from this sidekick project
+          const claimProjs = await claimService.getProjectsBySidekickId(id as string);
+          if (claimProjs && claimProjs.length > 0) {
+            const claimProj = claimProjs[0];
             setClaimProject(claimProj);
             
             // Initialize approval sections from claim project
             if (claimProj?.approval_status) {
               setApprovalSections(claimProj.approval_status as any);
             }
-          } catch (error) {
-            console.error("Error fetching claim project:", error);
           }
+        } catch (error) {
+          console.error("Error fetching claim project:", error);
         }
 
         // Fetch feasibility analysis separately

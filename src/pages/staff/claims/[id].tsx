@@ -69,6 +69,7 @@ import {
   Lock,
 } from "lucide-react";
 import { format } from "date-fns";
+import type { Database } from "@/integrations/supabase/types";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-GB", {
@@ -78,6 +79,108 @@ const formatCurrency = (amount: number) => {
     maximumFractionDigits: 0,
   }).format(amount);
 };
+
+type ClaimProject = Database["public"]["Tables"]["claim_projects"]["Row"];
+type ClaimDocument = Database["public"]["Tables"]["claim_documents"]["Row"];
+
+// Helper component for project cards with workflow actions
+function ProjectCard({ 
+  project, 
+  showClaimButton, 
+  showSendToClient 
+}: { 
+  project: ClaimProject; 
+  showClaimButton?: boolean;
+  showSendToClient?: boolean;
+}) {
+  const { user } = useApp();
+  const [claiming, setClaiming] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const handleClaimProject = async () => {
+    if (!user) return;
+    setClaiming(true);
+    try {
+      await claimService.claimProject(project.id, user.id);
+      window.location.reload();
+    } catch (error) {
+      console.error("Error claiming project:", error);
+      alert("Failed to claim project");
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  const handleSendToClient = async () => {
+    if (!user) return;
+    setSending(true);
+    try {
+      await claimService.sendProjectToClient(project.id, user.id);
+      window.location.reload();
+    } catch (error) {
+      console.error("Error sending to client:", error);
+      alert("Failed to send to client");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const getSLABadge = () => {
+    if (!project.due_date) return null;
+    const now = new Date();
+    const dueDate = new Date(project.due_date);
+    const hoursLeft = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    
+    if (hoursLeft < 0) {
+      return <Badge variant="destructive">Overdue</Badge>;
+    } else if (hoursLeft < 24) {
+      return <Badge className="bg-orange-500">{Math.floor(hoursLeft)}h left</Badge>;
+    } else {
+      return <Badge className="bg-green-500">{Math.floor(hoursLeft / 24)}d left</Badge>;
+    }
+  };
+
+  return (
+    <div className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <h4 className="font-medium break-words">{project.name}</h4>
+            <Badge variant="outline">{project.workflow_status || "draft"}</Badge>
+            {getSLABadge()}
+          </div>
+          {project.description && (
+            <p className="text-sm text-muted-foreground break-words mb-2">
+              {project.description}
+            </p>
+          )}
+          {project.rd_theme && (
+            <Badge variant="secondary" className="text-xs">
+              {project.rd_theme}
+            </Badge>
+          )}
+          {project.assigned_to_user_id && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Assigned to team member
+            </p>
+          )}
+        </div>
+        <div className="flex gap-2 flex-shrink-0">
+          {showClaimButton && !project.assigned_to_user_id && (
+            <Button onClick={handleClaimProject} disabled={claiming} size="sm">
+              {claiming ? "Claiming..." : "Claim Project"}
+            </Button>
+          )}
+          {showSendToClient && (
+            <Button onClick={handleSendToClient} disabled={sending} size="sm">
+              {sending ? "Sending..." : "Send to Client"}
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ClaimDetailPage() {
   const router = useRouter();
@@ -122,6 +225,12 @@ export default function ClaimDetailPage() {
   const [uploadingDocument, setUploadingDocument] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState("supporting_evidence");
+
+  // Derived state for projects to match the new UI code
+  const projects = claim?.projects || [];
+  const loadingProjects = loading;
+  // Alias for compatibility with the new UI code
+  const setShowAddProject = setShowProjectDialog;
 
   useEffect(() => {
     if (id && typeof id === "string") {
@@ -607,301 +716,118 @@ export default function ClaimDetailPage() {
           </TabsContent>
 
           {/* Projects Tab */}
-          <TabsContent value="projects" className="mt-6">
+          <TabsContent value="projects" className="space-y-6">
+            {/* Workflow Status Filter Tabs */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>R&D Projects</CardTitle>
-                    <CardDescription>Manage the R&D projects included in this claim</CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Download className="h-4 w-4 mr-2" />
-                          Import Sidekick Projects
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                          <DialogTitle>Import Sidekick Projects</DialogTitle>
-                          <DialogDescription>
-                            Select a sidekick project to import as a claim project
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-3 max-h-96 overflow-y-auto">
-                          {sidekickProjects.length === 0 ? (
-                            <p className="text-sm text-slate-500 text-center py-8">
-                              No sidekick projects available to import
-                            </p>
-                          ) : (
-                            sidekickProjects.map((sp) => (
-                              <div
-                                key={sp.id}
-                                className="border rounded-lg p-4 hover:bg-slate-50 transition-colors"
-                              >
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <h4 className="font-medium mb-1">{sp.name}</h4>
-                                    <p className="text-sm text-slate-600 mb-2">
-                                      {sp.description}
-                                    </p>
-                                    {sp.sector && (
-                                      <span className="text-xs bg-slate-100 px-2 py-1 rounded">
-                                        {sp.sector}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleImportSidekickProject(sp.id)}
-                                  >
-                                    Import
-                                  </Button>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                    <Dialog open={showProjectDialog} onOpenChange={setShowProjectDialog}>
-                      <DialogTrigger asChild>
-                        <Button onClick={() => {
-                          setEditingProject(null);
-                          setProjectForm({
-                            name: "",
-                            description: "",
-                            start_date: "",
-                            end_date: "",
-                            rd_theme: "",
-                            technical_understanding: "",
-                            challenges_uncertainties: "",
-                            qualifying_activities: "",
-                          });
-                        }}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Project
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>{editingProject ? "Edit Project" : "Add New Project"}</DialogTitle>
-                          <DialogDescription>
-                            Provide comprehensive details about the R&D project for this claim
-                          </DialogDescription>
-                        </DialogHeader>
-                        {editingProject && editingProject.auto_synced && (
-                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
-                            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-amber-900">Auto-Sync Will Be Disabled</p>
-                              <p className="text-xs text-amber-700 mt-1">
-                                This project is currently auto-synced from the client side. Once you make changes here, 
-                                auto-sync will be disabled and this project will become independent. Future client-side 
-                                updates will not affect your changes.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="project-name">Project Name *</Label>
-                            <Input
-                              id="project-name"
-                              value={projectForm.name}
-                              onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}
-                              placeholder="e.g., AI-Powered Quality Control System"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="project-description">Project Description *</Label>
-                            <Textarea
-                              id="project-description"
-                              value={projectForm.description}
-                              onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
-                              placeholder="High-level overview of the project..."
-                              rows={3}
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="start-date">Start Date</Label>
-                              <Input
-                                id="start-date"
-                                type="date"
-                                value={projectForm.start_date}
-                                onChange={(e) => setProjectForm({ ...projectForm, start_date: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="end-date">End Date</Label>
-                              <Input
-                                id="end-date"
-                                type="date"
-                                value={projectForm.end_date}
-                                onChange={(e) => setProjectForm({ ...projectForm, end_date: e.target.value })}
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <Label htmlFor="rd-theme">R&D Theme</Label>
-                            <Input
-                              id="rd-theme"
-                              value={projectForm.rd_theme}
-                              onChange={(e) => setProjectForm({ ...projectForm, rd_theme: e.target.value })}
-                              placeholder="e.g., Software Engineering, Materials Science"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="technical-understanding">Technical Understanding</Label>
-                            <Textarea
-                              id="technical-understanding"
-                              value={projectForm.technical_understanding}
-                              onChange={(e) => setProjectForm({ ...projectForm, technical_understanding: e.target.value })}
-                              placeholder="Describe the technical knowledge and baseline competence..."
-                              rows={3}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="challenges">Challenges & Uncertainties</Label>
-                            <Textarea
-                              id="challenges"
-                              value={projectForm.challenges_uncertainties}
-                              onChange={(e) => setProjectForm({ ...projectForm, challenges_uncertainties: e.target.value })}
-                              placeholder="What were the scientific or technological uncertainties?"
-                              rows={3}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="qualifying-activities">Qualifying Activities (one per line)</Label>
-                            <Textarea
-                              id="qualifying-activities"
-                              value={projectForm.qualifying_activities}
-                              onChange={(e) => setProjectForm({ ...projectForm, qualifying_activities: e.target.value })}
-                              placeholder="Research into novel algorithms&#10;Design of experimental test rigs&#10;Prototyping and iterative testing"
-                              rows={4}
-                            />
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setShowProjectDialog(false)}>
-                            Cancel
-                          </Button>
-                          <Button onClick={editingProject ? handleUpdateProject : handleCreateProject}>
-                            {editingProject ? "Update Project" : "Create Project"}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </div>
+                <CardTitle>Project Workflow</CardTitle>
+                <CardDescription>Manage projects through the review workflow</CardDescription>
               </CardHeader>
               <CardContent>
-                {claim.projects && claim.projects.length > 0 ? (
-                  <div className="space-y-4">
-                    {claim.projects.map((project) => (
-                      <Card key={project.id} className="border-l-4 border-l-blue-500">
-                        <CardContent className="pt-6">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="text-lg font-semibold">{project.name}</h3>
-                                {project.auto_synced ? (
-                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                    <RefreshCw className="h-3 w-3 mr-1" />
-                                    Auto-Synced
-                                  </Badge>
-                                ) : project.source_project_id || project.source_sidekick_project_id ? (
-                                  <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300">
-                                    <Lock className="h-3 w-3 mr-1" />
-                                    Independent
-                                  </Badge>
-                                ) : null}
-                              </div>
-                              <p className="text-slate-600 mb-3">{project.description}</p>
-                              <div className="flex items-center gap-4 text-sm text-slate-500 mb-3">
-                                {project.start_date && (
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="h-4 w-4" />
-                                    {format(new Date(project.start_date), "MMM yyyy")} - 
-                                    {project.end_date ? format(new Date(project.end_date), "MMM yyyy") : "Present"}
-                                  </span>
-                                )}
-                                {project.rd_theme && (
-                                  <Badge variant="outline">{project.rd_theme}</Badge>
-                                )}
-                                {project.deleted_at && (
-                                  <Badge variant="destructive" className="bg-red-100 text-red-800">
-                                    Deleted on Client Side
-                                  </Badge>
-                                )}
-                              </div>
-                              {project.technical_understanding && (
-                                <div className="mb-2">
-                                  <p className="text-sm font-medium text-slate-700">Technical Understanding:</p>
-                                  <p className="text-sm text-slate-600">{project.technical_understanding}</p>
-                                </div>
-                              )}
-                              {project.challenges_uncertainties && (
-                                <div className="mb-2">
-                                  <p className="text-sm font-medium text-slate-700">Challenges:</p>
-                                  <p className="text-sm text-slate-600">{project.challenges_uncertainties}</p>
-                                </div>
-                              )}
-                              {project.qualifying_activities && Array.isArray(project.qualifying_activities) && project.qualifying_activities.length > 0 && (
-                                <div className="mb-2">
-                                  <p className="text-sm font-medium text-slate-700">Qualifying Activities:</p>
-                                  <ul className="list-disc list-inside text-sm text-slate-600">
-                                    {project.qualifying_activities.map((activity, idx) => (
-                                      <li key={idx}>{activity}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingProject(project);
-                                  setProjectForm({
-                                    name: project.name || "",
-                                    description: project.description || "",
-                                    start_date: project.start_date || "",
-                                    end_date: project.end_date || "",
-                                    rd_theme: project.rd_theme || "",
-                                    technical_understanding: project.technical_understanding || "",
-                                    challenges_uncertainties: project.challenges_uncertainties || "",
-                                    qualifying_activities: Array.isArray(project.qualifying_activities) ? project.qualifying_activities.join("\n") : "",
-                                  });
-                                  setShowProjectDialog(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteProject(project.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-slate-500">
-                    <Briefcase className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-                    <p>No projects added yet</p>
-                    <p className="text-sm">Add your first R&D project to get started</p>
-                  </div>
-                )}
+                <Tabs defaultValue="all" className="space-y-4">
+                  <TabsList className="grid grid-cols-5 w-full">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="pending">
+                      Pending Review
+                      {projects.filter(p => p.workflow_status === "submitted_to_team").length > 0 && (
+                        <Badge variant="destructive" className="ml-2">
+                          {projects.filter(p => p.workflow_status === "submitted_to_team").length}
+                        </Badge>
+                      )}
+                    </TabsTrigger>
+                    <TabsTrigger value="in_progress">In Progress</TabsTrigger>
+                    <TabsTrigger value="awaiting_client">Awaiting Client</TabsTrigger>
+                    <TabsTrigger value="approved">Approved</TabsTrigger>
+                  </TabsList>
+
+                  {/* All Projects */}
+                  <TabsContent value="all" className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold">All Projects ({projects.length})</h3>
+                      <Button onClick={() => setShowAddProject(true)} size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Project
+                      </Button>
+                    </div>
+                    {loadingProjects ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      </div>
+                    ) : projects.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">No projects yet</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {projects.map((project) => (
+                          <ProjectCard key={project.id} project={project} />
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Pending Review */}
+                  <TabsContent value="pending" className="space-y-4">
+                    <h3 className="text-lg font-semibold">
+                      Pending Review ({projects.filter(p => p.workflow_status === "submitted_to_team").length})
+                    </h3>
+                    {projects.filter(p => p.workflow_status === "submitted_to_team").length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">No projects pending review</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {projects.filter(p => p.workflow_status === "submitted_to_team").map((project) => (
+                          <ProjectCard key={project.id} project={project} showClaimButton />
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* In Progress */}
+                  <TabsContent value="in_progress" className="space-y-4">
+                    <h3 className="text-lg font-semibold">
+                      In Progress ({projects.filter(p => p.workflow_status === "team_in_progress").length})
+                    </h3>
+                    {projects.filter(p => p.workflow_status === "team_in_progress").length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">No projects in progress</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {projects.filter(p => p.workflow_status === "team_in_progress").map((project) => (
+                          <ProjectCard key={project.id} project={project} showSendToClient />
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Awaiting Client */}
+                  <TabsContent value="awaiting_client" className="space-y-4">
+                    <h3 className="text-lg font-semibold">
+                      Awaiting Client ({projects.filter(p => ["awaiting_client_review", "revision_requested"].includes(p.workflow_status || "")).length})
+                    </h3>
+                    {projects.filter(p => ["awaiting_client_review", "revision_requested"].includes(p.workflow_status || "")).length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">No projects awaiting client review</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {projects.filter(p => ["awaiting_client_review", "revision_requested"].includes(p.workflow_status || "")).map((project) => (
+                          <ProjectCard key={project.id} project={project} />
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Approved */}
+                  <TabsContent value="approved" className="space-y-4">
+                    <h3 className="text-lg font-semibold">
+                      Approved ({projects.filter(p => p.workflow_status === "approved").length})
+                    </h3>
+                    {projects.filter(p => p.workflow_status === "approved").length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">No approved projects yet</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {projects.filter(p => p.workflow_status === "approved").map((project) => (
+                          <ProjectCard key={project.id} project={project} />
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </TabsContent>

@@ -267,6 +267,19 @@ export class ClaimService {
   }
 
   /**
+   * Find claim project linked to a sidekick project
+   */
+  async getProjectsBySidekickId(sidekickId: string) {
+    const { data, error } = await supabase
+      .from("claim_projects")
+      .select("*")
+      .eq("source_sidekick_project_id", sidekickId);
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
    * Create new project
    */
   async createProject(projectData: ClaimProjectInsert): Promise<ClaimProject> {
