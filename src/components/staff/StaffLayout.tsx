@@ -17,7 +17,8 @@ import {
   Home,
   Briefcase,
   Shield,
-  Archive
+  Archive,
+  TrendingUp
 } from "lucide-react";
 import { useState } from "react";
 
@@ -73,8 +74,13 @@ export function StaffLayout({ children }: StaffLayoutProps) {
   const navItems = [
     { 
       path: "/staff", 
-      label: "Home", 
-      icon: Home 
+      label: "Dashboard", 
+      icon: LayoutDashboard 
+    },
+    { 
+      path: "/staff/cif", 
+      label: "Onboarding", 
+      icon: Briefcase 
     },
     { 
       path: "/staff/claims", 
@@ -82,19 +88,19 @@ export function StaffLayout({ children }: StaffLayoutProps) {
       icon: FileText 
     },
     { 
-      path: "/staff/cif", 
-      label: "CIF Pipeline", 
-      icon: Briefcase 
-    },
-    { 
-      path: "/staff/cif-archive", 
-      label: "CIF Archive", 
-      icon: Archive 
+      path: "/staff/pipeline", 
+      label: "Pipeline", 
+      icon: TrendingUp 
     },
     { 
       path: "/staff/clients", 
       label: "Clients", 
       icon: Users 
+    },
+    { 
+      path: "/staff/cif-archive", 
+      label: "CIF Archive", 
+      icon: Archive 
     },
     { 
       path: "/staff/admin", 
