@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { StaffLayout } from "@/components/staff/StaffLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { claimService, ClaimWithDetails } from "@/services/claimService";
 import { useApp } from "@/contexts/AppContext";
+import { MessageWidget } from "@/components/MessageWidget";
 import {
   ArrowLeft,
   Plus,
@@ -142,41 +144,43 @@ function ProjectCard({
 
   return (
     <div className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <h4 className="font-medium break-words">{project.name}</h4>
-            <Badge variant="outline">{project.workflow_status || "draft"}</Badge>
-            {getSLABadge()}
+      <Link href={`/staff/claims/${project.claim_id}/projects/${project.id}`} className="block">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <h4 className="font-medium break-words">{project.name}</h4>
+              <Badge variant="outline">{project.workflow_status || "draft"}</Badge>
+              {getSLABadge()}
+            </div>
+            {project.description && (
+              <p className="text-sm text-muted-foreground break-words mb-2">
+                {project.description}
+              </p>
+            )}
+            {project.rd_theme && (
+              <Badge variant="secondary" className="text-xs">
+                {project.rd_theme}
+              </Badge>
+            )}
+            {project.assigned_to_user_id && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Assigned to team member
+              </p>
+            )}
           </div>
-          {project.description && (
-            <p className="text-sm text-muted-foreground break-words mb-2">
-              {project.description}
-            </p>
-          )}
-          {project.rd_theme && (
-            <Badge variant="secondary" className="text-xs">
-              {project.rd_theme}
-            </Badge>
-          )}
-          {project.assigned_to_user_id && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Assigned to team member
-            </p>
-          )}
         </div>
-        <div className="flex gap-2 flex-shrink-0">
-          {showClaimButton && !project.assigned_to_user_id && (
-            <Button onClick={handleClaimProject} disabled={claiming} size="sm">
-              {claiming ? "Claiming..." : "Claim Project"}
-            </Button>
-          )}
-          {showSendToClient && (
-            <Button onClick={handleSendToClient} disabled={sending} size="sm">
-              {sending ? "Sending..." : "Send to Client"}
-            </Button>
-          )}
-        </div>
+      </Link>
+      <div className="flex gap-2 flex-shrink-0 mt-2">
+        {showClaimButton && !project.assigned_to_user_id && (
+          <Button onClick={handleClaimProject} disabled={claiming} size="sm">
+            {claiming ? "Claiming..." : "Claim Project"}
+          </Button>
+        )}
+        {showSendToClient && (
+          <Button onClick={handleSendToClient} disabled={sending} size="sm">
+            {sending ? "Sending..." : "Send to Client"}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -546,9 +550,16 @@ export default function ClaimDetailPage() {
               Back
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">
-                {claim.organisations?.name || "Unknown Client"}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-slate-900">
+                  {claim.organisations?.name || "Unknown Client"}
+                </h1>
+                <MessageWidget
+                  entityType="claim"
+                  entityId={claim.id}
+                  entityName={`${claim.organisations?.name || "Claim"} - FY ${claim.claim_year}`}
+                />
+              </div>
               <p className="text-slate-600">
                 FY {claim.claim_year} • {claim.organisations?.organisation_code}
               </p>

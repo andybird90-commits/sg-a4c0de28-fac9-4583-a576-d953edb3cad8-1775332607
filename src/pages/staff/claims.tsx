@@ -33,6 +33,7 @@ import {
 import { useRouter } from "next/router";
 import { useToast } from "@/hooks/use-toast";
 import { claimService, ClaimWithDetails } from "@/services/claimService";
+import { MessageWidget } from "@/components/MessageWidget";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -239,7 +240,14 @@ export default function ClaimsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
+                        <div className="flex items-center justify-end gap-2">
+                          <MessageWidget
+                            entityType="claim"
+                            entityId={claim.id}
+                            entityName={`${claim.organisations?.name || "Claim"} - FY ${claim.claim_year}`}
+                          />
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
