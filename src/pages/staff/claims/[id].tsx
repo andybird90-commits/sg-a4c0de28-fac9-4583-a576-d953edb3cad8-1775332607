@@ -199,6 +199,13 @@ export default function ClaimDetailPage() {
   const [sidekickProjects, setSidekickProjects] = useState<any[]>([]);
   const [showImportDialog, setShowImportDialog] = useState(false);
 
+  // AI Sidekick state
+  const [aiAnalysis, setAiAnalysis] = useState<string>("");
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  const [showSendAnalysisDialog, setShowSendAnalysisDialog] = useState(false);
+  const [sendTo, setSendTo] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+
   // Project management state
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [editingProject, setEditingProject] = useState<any>(null);

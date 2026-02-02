@@ -22,7 +22,7 @@ export default async function handler(
     }
 
     // Fetch claim data with all related information
-    const { data: claim, error: claimError } = await supabase
+    const { data: rawClaim, error: claimError } = await supabase
       .from("claims")
       .select(`
         *,
@@ -53,9 +53,11 @@ export default async function handler(
       .eq("id", claimId)
       .single();
 
-    if (claimError || !claim) {
+    if (claimError || !rawClaim) {
       return res.status(404).json({ error: "Claim not found" });
     }
+
+    const claim = rawClaim as any; // Cast to any to avoid strict type checks for joined fields
 
     // Prepare claim summary for AI analysis
     const claimSummary = {
