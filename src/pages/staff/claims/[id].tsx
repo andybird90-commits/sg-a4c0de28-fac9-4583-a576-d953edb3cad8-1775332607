@@ -65,6 +65,8 @@ import {
   Building2,
   Briefcase,
   AlertCircle,
+  RefreshCw,
+  Lock,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -690,6 +692,19 @@ export default function ClaimDetailPage() {
                             Provide comprehensive details about the R&D project for this claim
                           </DialogDescription>
                         </DialogHeader>
+                        {editingProject && editingProject.auto_synced && (
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-amber-900">Auto-Sync Will Be Disabled</p>
+                              <p className="text-xs text-amber-700 mt-1">
+                                This project is currently auto-synced from the client side. Once you make changes here, 
+                                auto-sync will be disabled and this project will become independent. Future client-side 
+                                updates will not affect your changes.
+                              </p>
+                            </div>
+                          </div>
+                        )}
                         <div className="space-y-4">
                           <div>
                             <Label htmlFor="project-name">Project Name *</Label>
@@ -791,7 +806,20 @@ export default function ClaimDetailPage() {
                         <CardContent className="pt-6">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h3 className="text-lg font-semibold mb-2">{project.name}</h3>
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="text-lg font-semibold">{project.name}</h3>
+                                {project.auto_synced ? (
+                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                    <RefreshCw className="h-3 w-3 mr-1" />
+                                    Auto-Synced
+                                  </Badge>
+                                ) : project.source_project_id || project.source_sidekick_project_id ? (
+                                  <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300">
+                                    <Lock className="h-3 w-3 mr-1" />
+                                    Independent
+                                  </Badge>
+                                ) : null}
+                              </div>
                               <p className="text-slate-600 mb-3">{project.description}</p>
                               <div className="flex items-center gap-4 text-sm text-slate-500 mb-3">
                                 {project.start_date && (
@@ -803,6 +831,11 @@ export default function ClaimDetailPage() {
                                 )}
                                 {project.rd_theme && (
                                   <Badge variant="outline">{project.rd_theme}</Badge>
+                                )}
+                                {project.deleted_at && (
+                                  <Badge variant="destructive" className="bg-red-100 text-red-800">
+                                    Deleted on Client Side
+                                  </Badge>
                                 )}
                               </div>
                               {project.technical_understanding && (

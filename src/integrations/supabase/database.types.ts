@@ -589,6 +589,7 @@ export type Database = {
       claim_projects: {
         Row: {
           advance_in_science: string | null
+          auto_synced: boolean | null
           challenges_uncertainties: string | null
           claim_id: string
           consumables_cost: number | null
@@ -597,12 +598,15 @@ export type Database = {
           description: string | null
           end_date: string | null
           id: string
+          last_synced_at: string | null
           name: string
           org_id: string
           project_code: string | null
           qualifying_activities: string[] | null
           rd_theme: string | null
           software_cost: number | null
+          source_project_id: string | null
+          source_sidekick_project_id: string | null
           staff_cost: number | null
           start_date: string | null
           status: string
@@ -614,6 +618,7 @@ export type Database = {
         }
         Insert: {
           advance_in_science?: string | null
+          auto_synced?: boolean | null
           challenges_uncertainties?: string | null
           claim_id: string
           consumables_cost?: number | null
@@ -622,12 +627,15 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           id?: string
+          last_synced_at?: string | null
           name: string
           org_id: string
           project_code?: string | null
           qualifying_activities?: string[] | null
           rd_theme?: string | null
           software_cost?: number | null
+          source_project_id?: string | null
+          source_sidekick_project_id?: string | null
           staff_cost?: number | null
           start_date?: string | null
           status?: string
@@ -639,6 +647,7 @@ export type Database = {
         }
         Update: {
           advance_in_science?: string | null
+          auto_synced?: boolean | null
           challenges_uncertainties?: string | null
           claim_id?: string
           consumables_cost?: number | null
@@ -647,12 +656,15 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           id?: string
+          last_synced_at?: string | null
           name?: string
           org_id?: string
           project_code?: string | null
           qualifying_activities?: string[] | null
           rd_theme?: string | null
           software_cost?: number | null
+          source_project_id?: string | null
+          source_sidekick_project_id?: string | null
           staff_cost?: number | null
           start_date?: string | null
           status?: string
@@ -682,6 +694,20 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_projects_source_project_id_fkey"
+            columns: ["source_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_projects_source_sidekick_project_id_fkey"
+            columns: ["source_sidekick_project_id"]
+            isOneToOne: false
+            referencedRelation: "sidekick_projects"
             referencedColumns: ["id"]
           },
           {
