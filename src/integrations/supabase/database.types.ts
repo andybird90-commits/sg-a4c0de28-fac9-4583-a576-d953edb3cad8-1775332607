@@ -2178,15 +2178,23 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          end_date: string | null
           id: string
+          innovations: string | null
           internal_status: string | null
           name: string
+          rd_budget: number | null
+          rd_challenges: string | null
           ready_for_review_at: string | null
           reviewed_by_user_id: string | null
           sector: string | null
           stage: string | null
+          start_date: string | null
           status: string
           submitted_at: string | null
+          team_members: string | null
+          technical_uncertainties: string | null
+          total_budget: number | null
           updated_at: string
         }
         Insert: {
@@ -2197,15 +2205,23 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
+          end_date?: string | null
           id?: string
+          innovations?: string | null
           internal_status?: string | null
           name: string
+          rd_budget?: number | null
+          rd_challenges?: string | null
           ready_for_review_at?: string | null
           reviewed_by_user_id?: string | null
           sector?: string | null
           stage?: string | null
+          start_date?: string | null
           status?: string
           submitted_at?: string | null
+          team_members?: string | null
+          technical_uncertainties?: string | null
+          total_budget?: number | null
           updated_at?: string
         }
         Update: {
@@ -2216,15 +2232,23 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
+          end_date?: string | null
           id?: string
+          innovations?: string | null
           internal_status?: string | null
           name?: string
+          rd_budget?: number | null
+          rd_challenges?: string | null
           ready_for_review_at?: string | null
           reviewed_by_user_id?: string | null
           sector?: string | null
           stage?: string | null
+          start_date?: string | null
           status?: string
           submitted_at?: string | null
+          team_members?: string | null
+          technical_uncertainties?: string | null
+          total_budget?: number | null
           updated_at?: string
         }
         Relationships: [
