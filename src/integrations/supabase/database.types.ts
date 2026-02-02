@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -72,6 +72,7 @@ export type Database = {
           bdm_section_created_by: string | null
           business_background: string | null
           cif_status: string
+          company_research: string | null
           consumables_estimate: number | null
           created_at: string
           current_stage: string | null
@@ -128,6 +129,7 @@ export type Database = {
           bdm_section_created_by?: string | null
           business_background?: string | null
           cif_status?: string
+          company_research?: string | null
           consumables_estimate?: number | null
           created_at?: string
           current_stage?: string | null
@@ -184,6 +186,7 @@ export type Database = {
           bdm_section_created_by?: string | null
           business_background?: string | null
           cif_status?: string
+          company_research?: string | null
           consumables_estimate?: number | null
           created_at?: string
           current_stage?: string | null

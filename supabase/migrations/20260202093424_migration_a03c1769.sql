@@ -1,0 +1,1 @@
+ALTER TABLE cif_records ADD COLUMN company_research TEXT;
