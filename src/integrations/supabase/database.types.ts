@@ -920,6 +920,53 @@ export type Database = {
           },
         ]
       }
+      companies_house_filings: {
+        Row: {
+          accounts_filing_date: string
+          company_number: string
+          created_at: string
+          fetched_at: string
+          filing_lag_days: number | null
+          filing_type: string | null
+          id: string
+          org_id: string
+          period_end_date: string
+          period_start_date: string
+        }
+        Insert: {
+          accounts_filing_date: string
+          company_number: string
+          created_at?: string
+          fetched_at?: string
+          filing_lag_days?: number | null
+          filing_type?: string | null
+          id?: string
+          org_id: string
+          period_end_date: string
+          period_start_date: string
+        }
+        Update: {
+          accounts_filing_date?: string
+          company_number?: string
+          created_at?: string
+          fetched_at?: string
+          filing_lag_days?: number | null
+          filing_type?: string | null
+          id?: string
+          org_id?: string
+          period_end_date?: string
+          period_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_house_filings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       engagements: {
         Row: {
           created_at: string
@@ -1384,6 +1431,8 @@ export type Database = {
       }
       pipeline_entries: {
         Row: {
+          auto_created: boolean | null
+          average_filing_lag_days: number | null
           claim_id: string | null
           created_at: string
           created_by: string
@@ -1392,18 +1441,26 @@ export type Database = {
           expected_accounts_filing_date: string | null
           expected_fee: number | null
           expected_submission_date: string | null
+          filing_confidence_score: number | null
           filing_pattern: string | null
           id: string
+          last_companies_house_sync: string | null
+          manual_revenue_override: number | null
           notes: string | null
           org_id: string
           period_label: string | null
+          pipeline_start_date: string | null
+          predicted_revenue: number | null
           predictor_confidence: string | null
           predictor_last_run_at: string | null
           probability: number | null
           updated_at: string
           weighted_fee: number | null
+          years_trading: number | null
         }
         Insert: {
+          auto_created?: boolean | null
+          average_filing_lag_days?: number | null
           claim_id?: string | null
           created_at?: string
           created_by: string
@@ -1412,18 +1469,26 @@ export type Database = {
           expected_accounts_filing_date?: string | null
           expected_fee?: number | null
           expected_submission_date?: string | null
+          filing_confidence_score?: number | null
           filing_pattern?: string | null
           id?: string
+          last_companies_house_sync?: string | null
+          manual_revenue_override?: number | null
           notes?: string | null
           org_id: string
           period_label?: string | null
+          pipeline_start_date?: string | null
+          predicted_revenue?: number | null
           predictor_confidence?: string | null
           predictor_last_run_at?: string | null
           probability?: number | null
           updated_at?: string
           weighted_fee?: number | null
+          years_trading?: number | null
         }
         Update: {
+          auto_created?: boolean | null
+          average_filing_lag_days?: number | null
           claim_id?: string | null
           created_at?: string
           created_by?: string
@@ -1432,16 +1497,22 @@ export type Database = {
           expected_accounts_filing_date?: string | null
           expected_fee?: number | null
           expected_submission_date?: string | null
+          filing_confidence_score?: number | null
           filing_pattern?: string | null
           id?: string
+          last_companies_house_sync?: string | null
+          manual_revenue_override?: number | null
           notes?: string | null
           org_id?: string
           period_label?: string | null
+          pipeline_start_date?: string | null
+          predicted_revenue?: number | null
           predictor_confidence?: string | null
           predictor_last_run_at?: string | null
           probability?: number | null
           updated_at?: string
           weighted_fee?: number | null
+          years_trading?: number | null
         }
         Relationships: [
           {
@@ -2101,6 +2172,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_filing_confidence: {
+        Args: { p_org_id: string; p_years_trading: number }
+        Returns: number
+      }
+      calculate_pipeline_confidence: {
+        Args: { p_filing_history_count: number; p_years_trading: number }
+        Returns: number
+      }
+      get_average_filing_lag: { Args: { p_org_id: string }; Returns: number }
       is_org_client: { Args: { _org_id: string }; Returns: boolean }
       is_org_employee: { Args: { _org_id: string }; Returns: boolean }
       is_org_member: { Args: { _org_id: string }; Returns: boolean }
