@@ -8,6 +8,7 @@ import { sidekickProjectService } from "@/services/sidekickProjectService";
 import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
 import { sidekickCommentService } from "@/services/sidekickCommentService";
 import { feasibilityService, type FeasibilityAnalysis } from "@/services/feasibilityService";
+import { claimService } from "@/services/claimService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +17,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Lightbulb, FileText, MessageSquare, Send, Upload, Link as LinkIcon, Trash2, ExternalLink, Sparkles, Edit } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ArrowLeft, Lightbulb, FileText, MessageSquare, Send, Upload, Link as LinkIcon, Trash2, ExternalLink, Sparkles, Edit, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
@@ -26,6 +27,8 @@ type SidekickProjectComment = Database["public"]["Tables"]["sidekick_project_com
   author?: { email: string };
 };
 
+type ClaimProject = Database["public"]["Tables"]["claim_projects"]["Row"];
+
 const statusColors: Record<string, string> = {
   draft: "bg-gray-500",
   ready_for_review: "bg-blue-500",
@@ -33,6 +36,12 @@ const statusColors: Record<string, string> = {
   needs_changes: "bg-orange-500",
   rejected: "bg-red-500",
   transferred: "bg-green-500",
+  submitted_to_team: "bg-blue-500",
+  team_in_progress: "bg-yellow-500",
+  awaiting_client_review: "bg-purple-500",
+  revision_requested: "bg-orange-500",
+  approved: "bg-green-500",
+  cancelled: "bg-red-500",
 };
 
 const statusLabels: Record<string, string> = {
@@ -42,6 +51,12 @@ const statusLabels: Record<string, string> = {
   needs_changes: "Needs Changes",
   rejected: "Rejected",
   transferred: "Transferred to Conexa",
+  submitted_to_team: "With R&D Team",
+  team_in_progress: "Team Working",
+  awaiting_client_review: "Review Required",
+  revision_requested: "Revisions Requested",
+  approved: "Approved",
+  cancelled: "Cancelled",
 };
 
 export default function ProjectDetailPage() {
@@ -49,6 +64,7 @@ export default function ProjectDetailPage() {
   const { id } = router.query;
   const { user } = useApp();
   const [project, setProject] = useState<SidekickProject | null>(null);
+  const [claimProject, setClaimProject] = useState<ClaimProject | null>(null);
   const [evidence, setEvidence] = useState<SidekickEvidenceItem[]>([]);
   const [comments, setComments] = useState<SidekickProjectComment[]>([]);
   const [feasibilityAnalysis, setFeasibilityAnalysis] = useState<FeasibilityAnalysis | null>(null);
@@ -78,6 +94,22 @@ export default function ProjectDetailPage() {
   const [deletingProject, setDeletingProject] = useState(false);
   const [deletingEvidence, setDeletingEvidence] = useState<string | null>(null);
 
+  // Workflow state
+  const [sendToTeamDialog, setSendToTeamDialog] = useState(false);
+  const [reviewDialog, setReviewDialog] = useState(false);
+  const [revisionDialog, setRevisionDialog] = useState(false);
+  const [cancelDialog, setCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  
+  // Partial approval state
+  const [approvalSections, setApprovalSections] = useState({
+    basic_info: "approved",
+    technical_understanding: "pending",
+    challenges: "pending",
+    qualifying_activities: "pending",
+  });
+  const [revisionFeedback, setRevisionFeedback] = useState("");
+
   useEffect(() => {
     if (!user) {
       router.push("/auth/login");
@@ -103,12 +135,26 @@ export default function ProjectDetailPage() {
         setEvidence(evidenceData);
         setComments(commentsData);
 
-        // Fetch feasibility analysis separately to avoid blocking main data
+        // Check if this project is linked to a claim project
+        if (projectData?.claim_project_id) {
+          try {
+            const claimProj = await claimService.getProjectById(projectData.claim_project_id);
+            setClaimProject(claimProj);
+            
+            // Initialize approval sections from claim project
+            if (claimProj?.approval_status) {
+              setApprovalSections(claimProj.approval_status as any);
+            }
+          } catch (error) {
+            console.error("Error fetching claim project:", error);
+          }
+        }
+
+        // Fetch feasibility analysis separately
         setFeasibilityLoading(true);
         try {
           const analyses = await feasibilityService.getAnalysesByProject(id as string);
           if (analyses && analyses.length > 0) {
-            // Get the most recent analysis
             const sortedAnalyses = analyses.sort((a, b) => 
               new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             );
@@ -140,6 +186,107 @@ export default function ProjectDetailPage() {
       setEditProjectStage(project.stage || "");
     }
   }, [editingProject, project]);
+
+  const handleSendToTeam = async () => {
+    if (!claimProject || !user) return;
+
+    setSubmitting(true);
+    try {
+      await claimService.sendProjectToTeam(claimProject.id, user.id);
+      
+      // Refresh claim project
+      const updated = await claimService.getProjectById(claimProject.id);
+      setClaimProject(updated);
+      
+      setSendToTeamDialog(false);
+      alert("Project sent to R&D team! They have 3 days to review and respond.");
+    } catch (error) {
+      console.error("Error sending to team:", error);
+      alert("Failed to send project to team");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleApproveProject = async () => {
+    if (!claimProject || !user) return;
+
+    setSubmitting(true);
+    try {
+      await claimService.approveProject(claimProject.id, user.id, approvalSections);
+      
+      // Refresh claim project
+      const updated = await claimService.getProjectById(claimProject.id);
+      setClaimProject(updated);
+      
+      setReviewDialog(false);
+      
+      const allApproved = Object.values(approvalSections).every(s => s === "approved");
+      if (allApproved) {
+        alert("Project fully approved! ✅");
+      } else {
+        alert("Feedback sent to team. They'll address your revision requests.");
+      }
+    } catch (error) {
+      console.error("Error approving project:", error);
+      alert("Failed to approve project");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRequestRevisions = async () => {
+    if (!claimProject || !user || !revisionFeedback.trim()) return;
+
+    setSubmitting(true);
+    try {
+      const sectionsNeedingRevision = Object.entries(approvalSections)
+        .filter(([_, status]) => status === "needs_revision")
+        .map(([section, _]) => section);
+
+      await claimService.requestRevisions(
+        claimProject.id,
+        user.id,
+        revisionFeedback,
+        sectionsNeedingRevision
+      );
+      
+      // Refresh claim project
+      const updated = await claimService.getProjectById(claimProject.id);
+      setClaimProject(updated);
+      
+      setRevisionDialog(false);
+      setRevisionFeedback("");
+      alert("Revision request sent to team!");
+    } catch (error) {
+      console.error("Error requesting revisions:", error);
+      alert("Failed to request revisions");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCancelProject = async () => {
+    if (!claimProject || !user || !cancelReason.trim()) return;
+
+    setSubmitting(true);
+    try {
+      await claimService.cancelProject(claimProject.id, user.id, cancelReason);
+      
+      // Refresh claim project
+      const updated = await claimService.getProjectById(claimProject.id);
+      setClaimProject(updated);
+      
+      setCancelDialog(false);
+      setCancelReason("");
+      alert("Project cancelled");
+    } catch (error) {
+      console.error("Error cancelling project:", error);
+      alert("Failed to cancel project");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleMarkReadyForReview = async () => {
     if (!project) return;
@@ -180,11 +327,9 @@ export default function ProjectDetailPage() {
         rd_internal_only: false,
       });
 
-      // Refresh evidence
       const evidenceData = await sidekickEvidenceService.getEvidenceByProject(project.id);
       setEvidence(evidenceData);
 
-      // Reset form
       setEvidenceTitle("");
       setEvidenceBody("");
       setEvidenceUrl("");
@@ -210,11 +355,9 @@ export default function ProjectDetailPage() {
         body: commentBody,
       });
 
-      // Refresh comments
       const commentsData = await sidekickCommentService.getCommentsByProject(project.id);
       setComments(commentsData);
 
-      // Reset form
       setCommentBody("");
     } catch (error) {
       console.error("Error adding comment:", error);
@@ -229,7 +372,6 @@ export default function ProjectDetailPage() {
 
     setRunningFeasibility(true);
     try {
-      // Create analysis and link it to this project
       const analysis = await feasibilityService.submitForAnalysis({
         ideaDescription: project.description || project.name,
         sector: project.sector || undefined,
@@ -304,6 +446,22 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const getSLAStatus = () => {
+    if (!claimProject?.due_date) return null;
+    
+    const now = new Date();
+    const dueDate = new Date(claimProject.due_date);
+    const hoursLeft = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    
+    if (hoursLeft < 0) {
+      return { label: "Overdue", color: "bg-red-500", icon: XCircle };
+    } else if (hoursLeft < 24) {
+      return { label: `${Math.floor(hoursLeft)}h left`, color: "bg-orange-500", icon: AlertCircle };
+    } else {
+      return { label: `${Math.floor(hoursLeft / 24)}d left`, color: "bg-green-500", icon: Clock };
+    }
+  };
+
   if (!user) return null;
 
   if (loading) {
@@ -329,7 +487,12 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const canEdit = project.status === "draft" || project.status === "needs_changes";
+  const workflowStatus = claimProject?.workflow_status || project.status;
+  const canEdit = !claimProject || claimProject.workflow_status === "draft";
+  const canSendToTeam = claimProject && claimProject.workflow_status === "draft";
+  const needsClientReview = claimProject && claimProject.workflow_status === "awaiting_client_review";
+  const isApproved = claimProject && claimProject.workflow_status === "approved";
+  const slaStatus = getSLAStatus();
 
   return (
     <>
@@ -353,50 +516,64 @@ export default function ProjectDetailPage() {
                 <p className="text-sm sm:text-base text-muted-foreground mb-3 break-words">{project.description}</p>
               )}
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className={statusColors[project.status] || "bg-gray-500"}>
-                  {statusLabels[project.status] || project.status}
+                <Badge className={statusColors[workflowStatus] || "bg-gray-500"}>
+                  {statusLabels[workflowStatus] || workflowStatus}
                 </Badge>
+                {slaStatus && claimProject?.workflow_status === "team_in_progress" && (
+                  <Badge className={slaStatus.color} variant="outline">
+                    <slaStatus.icon className="h-3 w-3 mr-1" />
+                    {slaStatus.label}
+                  </Badge>
+                )}
                 {project.sector && <Badge variant="outline" className="text-xs">{project.sector}</Badge>}
                 {project.stage && <Badge variant="outline" className="text-xs">{project.stage}</Badge>}
               </div>
             </div>
             <div className="flex gap-2 flex-wrap sm:flex-nowrap flex-shrink-0">
               {canEdit && (
-                <>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setEditingProject(true)}
-                    className="flex-1 sm:flex-none"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">Edit Project</span>
-                    <span className="sm:hidden">Edit</span>
-                  </Button>
-                  {project.status === "draft" && (
-                    <Button 
-                      onClick={handleMarkReadyForReview} 
-                      disabled={submitting}
-                      size="sm"
-                      className="flex-1 sm:flex-none"
-                    >
-                      <span className="hidden sm:inline">Mark Ready for Review</span>
-                      <span className="sm:hidden">Ready</span>
-                    </Button>
-                  )}
-                </>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setEditingProject(true)}
+                  className="flex-1 sm:flex-none"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Edit</span>
+                </Button>
               )}
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={handleDeleteProject}
-                disabled={deletingProject}
-                className="flex-1 sm:flex-none"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Delete Project</span>
-                <span className="sm:hidden">Delete</span>
-              </Button>
+              {canSendToTeam && (
+                <Button 
+                  onClick={() => setSendToTeamDialog(true)}
+                  size="sm"
+                  className="flex-1 sm:flex-none"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Send to Team</span>
+                  <span className="sm:hidden">Send</span>
+                </Button>
+              )}
+              {needsClientReview && (
+                <Button 
+                  onClick={() => setReviewDialog(true)}
+                  size="sm"
+                  className="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Review Team's Work</span>
+                  <span className="sm:hidden">Review</span>
+                </Button>
+              )}
+              {claimProject && claimProject.workflow_status !== "cancelled" && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => setCancelDialog(true)}
+                  className="flex-1 sm:flex-none"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Cancel</span>
+                </Button>
+              )}
             </div>
           </div>
 
@@ -512,107 +689,109 @@ export default function ProjectDetailPage() {
 
             <TabsContent value="evidence">
               <div className="space-y-4 sm:space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg sm:text-xl">Add Evidence</CardTitle>
-                    <CardDescription className="text-sm">Upload files, add notes, or link external resources</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex gap-2 flex-wrap">
-                      <Button
-                        type="button"
-                        variant={evidenceType === "note" ? "default" : "outline"}
-                        onClick={() => setEvidenceType("note")}
-                        size="sm"
-                        className="flex-1 sm:flex-none"
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Note
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={evidenceType === "file" ? "default" : "outline"}
-                        onClick={() => setEvidenceType("file")}
-                        size="sm"
-                        className="flex-1 sm:flex-none"
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        File
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={evidenceType === "link" ? "default" : "outline"}
-                        onClick={() => setEvidenceType("link")}
-                        size="sm"
-                        className="flex-1 sm:flex-none"
-                      >
-                        <LinkIcon className="h-4 w-4 mr-2" />
-                        Link
-                      </Button>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <Label htmlFor="evidenceTitle" className="text-sm">Title</Label>
-                        <Input
-                          id="evidenceTitle"
-                          value={evidenceTitle}
-                          onChange={(e) => setEvidenceTitle(e.target.value)}
-                          placeholder="Brief title for this evidence"
-                          className="text-sm"
-                        />
+                {canEdit && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg sm:text-xl">Add Evidence</CardTitle>
+                      <CardDescription className="text-sm">Upload files, add notes, or link external resources</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          type="button"
+                          variant={evidenceType === "note" ? "default" : "outline"}
+                          onClick={() => setEvidenceType("note")}
+                          size="sm"
+                          className="flex-1 sm:flex-none"
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Note
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={evidenceType === "file" ? "default" : "outline"}
+                          onClick={() => setEvidenceType("file")}
+                          size="sm"
+                          className="flex-1 sm:flex-none"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          File
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={evidenceType === "link" ? "default" : "outline"}
+                          onClick={() => setEvidenceType("link")}
+                          size="sm"
+                          className="flex-1 sm:flex-none"
+                        >
+                          <LinkIcon className="h-4 w-4 mr-2" />
+                          Link
+                        </Button>
                       </div>
 
-                      {evidenceType === "note" && (
+                      <div className="space-y-3">
                         <div>
-                          <Label htmlFor="evidenceBody" className="text-sm">Description</Label>
-                          <Textarea
-                            id="evidenceBody"
-                            value={evidenceBody}
-                            onChange={(e) => setEvidenceBody(e.target.value)}
-                            placeholder="Describe your evidence..."
-                            rows={4}
-                            className="text-sm resize-none"
-                          />
-                        </div>
-                      )}
-
-                      {evidenceType === "file" && (
-                        <div>
-                          <Label htmlFor="evidenceFile" className="text-sm">Upload File</Label>
+                          <Label htmlFor="evidenceTitle" className="text-sm">Title</Label>
                           <Input
-                            id="evidenceFile"
-                            type="file"
-                            onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
+                            id="evidenceTitle"
+                            value={evidenceTitle}
+                            onChange={(e) => setEvidenceTitle(e.target.value)}
+                            placeholder="Brief title for this evidence"
                             className="text-sm"
                           />
                         </div>
-                      )}
 
-                      {evidenceType === "link" && (
-                        <div>
-                          <Label htmlFor="evidenceUrl" className="text-sm">External URL</Label>
-                          <Input
-                            id="evidenceUrl"
-                            value={evidenceUrl}
-                            onChange={(e) => setEvidenceUrl(e.target.value)}
-                            placeholder="https://..."
-                            className="text-sm"
-                          />
-                        </div>
-                      )}
+                        {evidenceType === "note" && (
+                          <div>
+                            <Label htmlFor="evidenceBody" className="text-sm">Description</Label>
+                            <Textarea
+                              id="evidenceBody"
+                              value={evidenceBody}
+                              onChange={(e) => setEvidenceBody(e.target.value)}
+                              placeholder="Describe your evidence..."
+                              rows={4}
+                              className="text-sm resize-none"
+                            />
+                          </div>
+                        )}
 
-                      <Button 
-                        onClick={handleAddEvidence} 
-                        disabled={submitting}
-                        className="w-full sm:w-auto"
-                        size="sm"
-                      >
-                        {submitting ? "Adding..." : "Add Evidence"}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                        {evidenceType === "file" && (
+                          <div>
+                            <Label htmlFor="evidenceFile" className="text-sm">Upload File</Label>
+                            <Input
+                              id="evidenceFile"
+                              type="file"
+                              onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
+                              className="text-sm"
+                            />
+                          </div>
+                        )}
+
+                        {evidenceType === "link" && (
+                          <div>
+                            <Label htmlFor="evidenceUrl" className="text-sm">External URL</Label>
+                            <Input
+                              id="evidenceUrl"
+                              value={evidenceUrl}
+                              onChange={(e) => setEvidenceUrl(e.target.value)}
+                              placeholder="https://..."
+                              className="text-sm"
+                            />
+                          </div>
+                        )}
+
+                        <Button 
+                          onClick={handleAddEvidence} 
+                          disabled={submitting}
+                          className="w-full sm:w-auto"
+                          size="sm"
+                        >
+                          {submitting ? "Adding..." : "Add Evidence"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 <Card>
                   <CardHeader>
@@ -646,15 +825,17 @@ export default function ProjectDetailPage() {
                                   {new Date(item.created_at).toLocaleDateString()}
                                 </p>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteEvidence(item.id)}
-                                disabled={deletingEvidence === item.id}
-                                className="flex-shrink-0"
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
+                              {canEdit && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteEvidence(item.id)}
+                                  disabled={deletingEvidence === item.id}
+                                  className="flex-shrink-0"
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -727,77 +908,233 @@ export default function ProjectDetailPage() {
             </TabsContent>
           </Tabs>
 
-        {/* Edit Project Dialog */}
-        <Dialog open={editingProject} onOpenChange={setEditingProject}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Edit className="h-5 w-5 text-primary" />
-                Edit Project
-              </DialogTitle>
-              <DialogDescription>
-                Update your project details below
-              </DialogDescription>
-            </DialogHeader>
+          {/* Send to Team Dialog */}
+          <Dialog open={sendToTeamDialog} onOpenChange={setSendToTeamDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Send Project to R&D Team?</DialogTitle>
+                <DialogDescription>
+                  Your project will be sent to your R&D team for technical review. They have 3 business days to complete their review and send it back to you.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSendToTeamDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSendToTeam} disabled={submitting}>
+                  {submitting ? "Sending..." : "Send to Team"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-project-name">Project Name</Label>
-                <Input
-                  id="edit-project-name"
-                  value={editProjectName}
-                  onChange={(e) => setEditProjectName(e.target.value)}
-                  placeholder="Enter project name"
-                />
+          {/* Review Dialog with Partial Approval */}
+          <Dialog open={reviewDialog} onOpenChange={setReviewDialog}>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Review Team's Work</DialogTitle>
+                <DialogDescription>
+                  Review each section and approve or request changes
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-4">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 border rounded-lg">
+                    <Checkbox
+                      checked={approvalSections.basic_info === "approved"}
+                      onCheckedChange={(checked) => 
+                        setApprovalSections(prev => ({
+                          ...prev,
+                          basic_info: checked ? "approved" : "needs_revision"
+                        }))
+                      }
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-medium">Basic Information</h4>
+                      <p className="text-sm text-muted-foreground">Project name, description, sector, stage</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 border rounded-lg">
+                    <Checkbox
+                      checked={approvalSections.technical_understanding === "approved"}
+                      onCheckedChange={(checked) => 
+                        setApprovalSections(prev => ({
+                          ...prev,
+                          technical_understanding: checked ? "approved" : "needs_revision"
+                        }))
+                      }
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-medium">Technical Understanding</h4>
+                      <p className="text-sm text-muted-foreground">Team's technical analysis and approach</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 border rounded-lg">
+                    <Checkbox
+                      checked={approvalSections.challenges === "approved"}
+                      onCheckedChange={(checked) => 
+                        setApprovalSections(prev => ({
+                          ...prev,
+                          challenges: checked ? "approved" : "needs_revision"
+                        }))
+                      }
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-medium">Challenges & Uncertainties</h4>
+                      <p className="text-sm text-muted-foreground">Technical challenges and risk assessment</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 border rounded-lg">
+                    <Checkbox
+                      checked={approvalSections.qualifying_activities === "approved"}
+                      onCheckedChange={(checked) => 
+                        setApprovalSections(prev => ({
+                          ...prev,
+                          qualifying_activities: checked ? "approved" : "needs_revision"
+                        }))
+                      }
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-medium">Qualifying Activities</h4>
+                      <p className="text-sm text-muted-foreground">R&D activities and eligibility assessment</p>
+                    </div>
+                  </div>
+                </div>
+
+                {Object.values(approvalSections).some(s => s === "needs_revision") && (
+                  <div className="space-y-2">
+                    <Label>Feedback for sections needing revision</Label>
+                    <Textarea
+                      value={revisionFeedback}
+                      onChange={(e) => setRevisionFeedback(e.target.value)}
+                      placeholder="Explain what needs to be changed..."
+                      rows={4}
+                    />
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="edit-project-description">Description</Label>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setReviewDialog(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleApproveProject}
+                  disabled={submitting || (Object.values(approvalSections).some(s => s === "needs_revision") && !revisionFeedback.trim())}
+                >
+                  {submitting ? "Submitting..." : Object.values(approvalSections).every(s => s === "approved") ? "Approve All" : "Submit Feedback"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Cancel Dialog */}
+          <Dialog open={cancelDialog} onOpenChange={setCancelDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Cancel Project?</DialogTitle>
+                <DialogDescription>
+                  Please provide a reason for cancelling this project
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
                 <Textarea
-                  id="edit-project-description"
-                  value={editProjectDescription}
-                  onChange={(e) => setEditProjectDescription(e.target.value)}
-                  placeholder="Enter project description"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Reason for cancellation..."
                   rows={4}
                 />
               </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCancelDialog(false)}>
+                  Keep Project
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={handleCancelProject}
+                  disabled={submitting || !cancelReason.trim()}
+                >
+                  {submitting ? "Cancelling..." : "Cancel Project"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
-              <div className="grid grid-cols-2 gap-4">
+          {/* Edit Project Dialog */}
+          <Dialog open={editingProject} onOpenChange={setEditingProject}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Edit className="h-5 w-5 text-primary" />
+                  Edit Project
+                </DialogTitle>
+                <DialogDescription>
+                  Update your project details below
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-project-sector">Sector</Label>
+                  <Label htmlFor="edit-project-name">Project Name</Label>
                   <Input
-                    id="edit-project-sector"
-                    value={editProjectSector}
-                    onChange={(e) => setEditProjectSector(e.target.value)}
-                    placeholder="e.g., Energy, Healthcare"
+                    id="edit-project-name"
+                    value={editProjectName}
+                    onChange={(e) => setEditProjectName(e.target.value)}
+                    placeholder="Enter project name"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="edit-project-stage">Stage</Label>
-                  <Input
-                    id="edit-project-stage"
-                    value={editProjectStage}
-                    onChange={(e) => setEditProjectStage(e.target.value)}
-                    placeholder="e.g., Concept, Development"
+                  <Label htmlFor="edit-project-description">Description</Label>
+                  <Textarea
+                    id="edit-project-description"
+                    value={editProjectDescription}
+                    onChange={(e) => setEditProjectDescription(e.target.value)}
+                    placeholder="Enter project description"
+                    rows={4}
                   />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-project-sector">Sector</Label>
+                    <Input
+                      id="edit-project-sector"
+                      value={editProjectSector}
+                      onChange={(e) => setEditProjectSector(e.target.value)}
+                      placeholder="e.g., Energy, Healthcare"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-project-stage">Stage</Label>
+                    <Input
+                      id="edit-project-stage"
+                      value={editProjectStage}
+                      onChange={(e) => setEditProjectStage(e.target.value)}
+                      placeholder="e.g., Concept, Development"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditingProject(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleEditProject}
-                disabled={submitting || !editProjectName.trim()}
-              >
-                {submitting ? "Saving..." : "Save Changes"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditingProject(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleEditProject}
+                  disabled={submitting || !editProjectName.trim()}
+                >
+                  {submitting ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </Layout>
     </>

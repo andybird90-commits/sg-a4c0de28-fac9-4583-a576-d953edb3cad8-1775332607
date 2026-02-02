@@ -671,7 +671,7 @@ export class ClaimService {
         .from("claim_projects")
         .update({
           workflow_status: allApproved ? "approved" : "revision_requested",
-          approval_sections: approvalSections,
+          approval_status: approvalSections,
           approved_at: allApproved ? new Date().toISOString() : null,
           sla_met: true,
           updated_at: new Date().toISOString(),
@@ -706,11 +706,11 @@ export class ClaimService {
       // Get current project data
       const { data: project } = await supabase
         .from("claim_projects")
-        .select("approval_sections, revision_count")
+        .select("approval_status, revision_count")
         .eq("id", projectId)
         .single();
 
-      const approvalSections = (project?.approval_sections as Record<string, string>) || {};
+      const approvalSections = (project?.approval_status as Record<string, string>) || {};
       const currentRevisionCount = project?.revision_count || 0;
       
       // Mark requested sections as needs_revision
@@ -722,7 +722,7 @@ export class ClaimService {
         .from("claim_projects")
         .update({
           workflow_status: "revision_requested",
-          approval_sections: approvalSections,
+          approval_status: approvalSections,
           revision_count: currentRevisionCount + 1,
           updated_at: new Date().toISOString(),
         })
