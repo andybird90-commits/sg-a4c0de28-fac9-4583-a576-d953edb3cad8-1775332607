@@ -280,9 +280,25 @@ export class ClaimService {
    */
   async createProject(projectData: ClaimProjectInsert): Promise<ClaimProject> {
     try {
+      // Ensure org_id is present if not provided in projectData
+      const dataToInsert = { ...projectData };
+      
+      if (!dataToInsert.org_id) {
+        // Fetch claim to get org_id
+        const { data: claim } = await supabase
+          .from("claims")
+          .select("org_id")
+          .eq("id", projectData.claim_id)
+          .single();
+          
+        if (claim) {
+          dataToInsert.org_id = claim.org_id;
+        }
+      }
+
       const { data, error } = await supabase
         .from("claim_projects")
-        .insert(projectData)
+        .insert(dataToInsert)
         .select()
         .single();
 
@@ -359,9 +375,24 @@ export class ClaimService {
    */
   async createCost(costData: ClaimCostInsert): Promise<ClaimCost> {
     try {
+      // Ensure org_id is present
+      const dataToInsert = { ...costData };
+      
+      if (!dataToInsert.org_id) {
+        const { data: claim } = await supabase
+          .from("claims")
+          .select("org_id")
+          .eq("id", costData.claim_id)
+          .single();
+          
+        if (claim) {
+          dataToInsert.org_id = claim.org_id;
+        }
+      }
+
       const { data, error } = await supabase
         .from("claim_costs")
-        .insert(costData)
+        .insert(dataToInsert)
         .select()
         .single();
 
@@ -463,9 +494,24 @@ export class ClaimService {
    */
   async createDocument(docData: ClaimDocumentInsert): Promise<ClaimDocument> {
     try {
+      // Ensure org_id is present
+      const dataToInsert = { ...docData };
+      
+      if (!dataToInsert.org_id) {
+        const { data: claim } = await supabase
+          .from("claims")
+          .select("org_id")
+          .eq("id", docData.claim_id)
+          .single();
+          
+        if (claim) {
+          dataToInsert.org_id = claim.org_id;
+        }
+      }
+
       const { data, error } = await supabase
         .from("claim_documents")
-        .insert(docData)
+        .insert(dataToInsert)
         .select()
         .single();
 

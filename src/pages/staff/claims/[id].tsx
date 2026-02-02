@@ -79,7 +79,7 @@ export default function ClaimDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { toast } = useToast();
-  const { profile } = useApp();
+  const { user: profile } = useApp();
   const [loading, setLoading] = useState(true);
   const [claim, setClaim] = useState<ClaimWithDetails | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
@@ -92,7 +92,7 @@ export default function ClaimDetailPage() {
     description: "",
     start_date: "",
     end_date: "",
-    rd_category: "research",
+    rd_theme: "Engineering",
   });
 
   // Cost management state
@@ -140,17 +140,18 @@ export default function ClaimDetailPage() {
     try {
       await claimService.createProject({
         claim_id: claim.id,
+        org_id: claim.org_id, // Pass org_id explicitly
         name: projectForm.name,
         description: projectForm.description,
-        start_date: projectForm.start_date,
-        end_date: projectForm.end_date,
-        rd_category: projectForm.rd_category as any,
+        start_date: projectForm.start_date || null,
+        end_date: projectForm.end_date || null,
+        rd_theme: projectForm.rd_theme, // Use rd_theme
         created_by: profile.id,
       });
 
       toast({ title: "Success", description: "Project created successfully" });
       setShowProjectDialog(false);
-      setProjectForm({ name: "", description: "", start_date: "", end_date: "", rd_category: "research" });
+      setProjectForm({ name: "", description: "", start_date: "", end_date: "", rd_theme: "Engineering" });
       if (id && typeof id === "string") loadClaim(id);
     } catch (error) {
       toast({
@@ -168,15 +169,15 @@ export default function ClaimDetailPage() {
       await claimService.updateProject(editingProject.id, {
         name: projectForm.name,
         description: projectForm.description,
-        start_date: projectForm.start_date,
-        end_date: projectForm.end_date,
-        rd_category: projectForm.rd_category as any,
+        start_date: projectForm.start_date || null,
+        end_date: projectForm.end_date || null,
+        rd_theme: projectForm.rd_theme,
       });
 
       toast({ title: "Success", description: "Project updated successfully" });
       setShowProjectDialog(false);
       setEditingProject(null);
-      setProjectForm({ name: "", description: "", start_date: "", end_date: "", rd_category: "research" });
+      setProjectForm({ name: "", description: "", start_date: "", end_date: "", rd_theme: "Engineering" });
       if (id && typeof id === "string") loadClaim(id);
     } catch (error) {
       toast({
@@ -209,11 +210,12 @@ export default function ClaimDetailPage() {
     try {
       await claimService.createCost({
         claim_id: claim.id,
+        org_id: claim.org_id, // Pass org_id
         project_id: costForm.project_id || null,
         cost_type: costForm.cost_type as any,
         description: costForm.description,
         amount: parseFloat(costForm.amount),
-        cost_date: costForm.cost_date,
+        cost_date: costForm.cost_date || null,
       });
 
       toast({ title: "Success", description: "Cost entry created successfully" });
@@ -243,7 +245,9 @@ export default function ClaimDetailPage() {
       // For now, create document record (file upload would go to Supabase Storage)
       await claimService.createDocument({
         claim_id: claim.id,
+        org_id: claim.org_id, // Pass org_id
         doc_type: documentType as any,
+        title: selectedFile.name, // Add title
         file_name: selectedFile.name,
         file_path: filePath,
         file_size: selectedFile.size,
@@ -552,16 +556,13 @@ export default function ClaimDetailPage() {
                           </div>
                         </div>
                         <div>
-                          <Label htmlFor="rd-category">R&D Category</Label>
-                          <Select value={projectForm.rd_category} onValueChange={(val) => setProjectForm({ ...projectForm, rd_category: val })}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="research">Pure Research</SelectItem>
-                              <SelectItem value="development">Applied Research/Development</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label htmlFor="rd-theme">R&D Theme</Label>
+                          <Input
+                            id="rd-theme"
+                            value={projectForm.rd_theme}
+                            onChange={(e) => setProjectForm({ ...projectForm, rd_theme: e.target.value })}
+                            placeholder="e.g. Engineering, Software, Science"
+                          />
                         </div>
                       </div>
                       <DialogFooter>
@@ -594,7 +595,9 @@ export default function ClaimDetailPage() {
                                     {project.end_date ? format(new Date(project.end_date), "MMM yyyy") : "Present"}
                                   </span>
                                 )}
-                                <Badge variant="outline">{project.rd_category}</Badge>
+                                {project.rd_theme && (
+                                  <Badge variant="outline">{project.rd_theme}</Badge>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -608,7 +611,7 @@ export default function ClaimDetailPage() {
                                     description: project.description || "",
                                     start_date: project.start_date || "",
                                     end_date: project.end_date || "",
-                                    rd_category: project.rd_category || "research",
+                                    rd_theme: project.rd_theme || "Engineering",
                                   });
                                   setShowProjectDialog(true);
                                 }}
