@@ -16,7 +16,8 @@ import {
   X,
   Home,
   Briefcase,
-  Shield
+  Shield,
+  Archive
 } from "lucide-react";
 import { useState } from "react";
 
@@ -84,6 +85,11 @@ export function StaffLayout({ children }: StaffLayoutProps) {
       path: "/staff/cif", 
       label: "CIF Pipeline", 
       icon: Briefcase 
+    },
+    { 
+      path: "/staff/cif-archive", 
+      label: "CIF Archive", 
+      icon: Archive 
     },
     { 
       path: "/staff/clients", 

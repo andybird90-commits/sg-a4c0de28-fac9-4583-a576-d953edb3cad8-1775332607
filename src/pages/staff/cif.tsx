@@ -25,6 +25,7 @@ export default function StaffCIFPage() {
   const [jobBoardB, setJobBoardB] = useState<CIFWithDetails[]>([]);
   const [jobBoardC, setJobBoardC] = useState<CIFWithDetails[]>([]);
   const [rejectedCIFs, setRejectedCIFs] = useState<CIFWithDetails[]>([]);
+  const [archivedCIFs, setArchivedCIFs] = useState<CIFWithDetails[]>([]);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -38,16 +39,18 @@ export default function StaffCIFPage() {
   const fetchAllBoards = async () => {
     setLoading(true);
     try {
-      const [boardA, boardB, boardC, rejected] = await Promise.all([
-      cifService.getJobBoardA(),
-      cifService.getJobBoardB(),
-      cifService.getJobBoardC(),
-      cifService.getRejectedCIFs()]
-      );
+      const [boardA, boardB, boardC, rejected, archived] = await Promise.all([
+        cifService.getJobBoardA(),
+        cifService.getJobBoardB(),
+        cifService.getJobBoardC(),
+        cifService.getRejectedCIFs(),
+        cifService.getArchivedCIFs()
+      ]);
       setJobBoardA(boardA);
       setJobBoardB(boardB);
       setJobBoardC(boardC);
       setRejectedCIFs(rejected);
+      setArchivedCIFs(archived);
     } catch (error) {
       toast({ title: "Error", description: "Failed to load CIF job boards", variant: "destructive" });
     } finally {
@@ -158,38 +161,46 @@ export default function StaffCIFPage() {
         </div>
 
         <Tabs defaultValue="board-a" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="board-a" className="relative">
               Job Board A
-              {jobBoardA.length > 0 &&
-              <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+              {jobBoardA.length > 0 && (
+                <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {jobBoardA.length}
                 </Badge>
-              }
+              )}
             </TabsTrigger>
             <TabsTrigger value="board-b" className="relative">
               Job Board B
-              {jobBoardB.length > 0 &&
-              <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+              {jobBoardB.length > 0 && (
+                <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {jobBoardB.length}
                 </Badge>
-              }
+              )}
             </TabsTrigger>
             <TabsTrigger value="board-c" className="relative">
               Job Board C
-              {jobBoardC.length > 0 &&
-              <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+              {jobBoardC.length > 0 && (
+                <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {jobBoardC.length}
                 </Badge>
-              }
+              )}
             </TabsTrigger>
             <TabsTrigger value="rejected" className="relative">
               Rejected
-              {rejectedCIFs.length > 0 &&
-              <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+              {rejectedCIFs.length > 0 && (
+                <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {rejectedCIFs.length}
                 </Badge>
-              }
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="archived" className="relative">
+              Archived
+              {archivedCIFs.length > 0 && (
+                <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+                  {archivedCIFs.length}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -273,22 +284,47 @@ export default function StaffCIFPage() {
               <CardHeader>
                 <CardTitle>Rejected CIFs</CardTitle>
                 <CardDescription>
-                  CIFs that did not qualify or were rejected during review
+                  CIFs that were rejected and sent back to specific stages for revision
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ?
-                <div className="text-center py-8 text-muted-foreground">Loading...</div> :
-                rejectedCIFs.length === 0 ?
-                <div className="text-center py-8 text-muted-foreground">
+                {loading ? (
+                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                ) : rejectedCIFs.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
                     <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     No rejected CIFs
-                  </div> :
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {rejectedCIFs.map(renderCIFCard)}
                   </div>
-                }
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="archived" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Archived CIFs</CardTitle>
+                <CardDescription>
+                  CIFs that have been archived - prospects that may return in the future
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                ) : archivedCIFs.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    No archived CIFs
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {archivedCIFs.map(renderCIFCard)}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
