@@ -396,8 +396,17 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
   const handleCreateCIF = async () => {
     if (!companyData || !profile?.id) return;
 
-    if (!businessBackground || !primaryContactName) {
-      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
+    // Detailed validation
+    const missingFields: string[] = [];
+    if (!businessBackground?.trim()) missingFields.push("Business Background");
+    if (!primaryContactName?.trim()) missingFields.push("Primary Contact Name");
+
+    if (missingFields.length > 0) {
+      toast({ 
+        title: "Missing Required Fields", 
+        description: `Please fill in: ${missingFields.join(", ")}`,
+        variant: "destructive" 
+      });
       return;
     }
 
