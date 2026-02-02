@@ -88,7 +88,7 @@ export class ClaimService {
 
       // Get project counts and total costs for each claim
       const claimsWithDetails = await Promise.all(
-        (data || []).map(async (claim) => {
+        (data as any[] || []).map(async (claim) => {
           const [projectsResult, costsResult, docsResult] = await Promise.all([
             supabase
               .from("claim_projects")
@@ -144,6 +144,8 @@ export class ClaimService {
       if (claimError) throw claimError;
       if (!claim) return null;
 
+      const typedClaim = claim as any;
+
       // Get related data
       const [projectsResult, costsResult, docsResult] = await Promise.all([
         supabase
@@ -164,7 +166,7 @@ export class ClaimService {
       const totalCosts = costsResult.data?.reduce((sum, cost) => sum + Number(cost.amount || 0), 0) || 0;
 
       return {
-        ...claim,
+        ...typedClaim,
         projects: projectsResult.data || [],
         total_costs: totalCosts,
         document_count: docsResult.data?.length || 0,
