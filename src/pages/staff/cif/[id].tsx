@@ -321,7 +321,7 @@ export default function CIFDetailPage() {
       if (result) {
         toast({ 
           title: "Success", 
-          description: `CIF approved and claim created: ${result.claim.title || 'Claim #' + result.claim.id.slice(0, 8)}` 
+          description: `CIF approved and claim created for FY ${result.claim?.claim_year || 'Unknown'}`
         });
         router.push("/staff/cif");
       } else {
@@ -456,8 +456,10 @@ export default function CIFDetailPage() {
           <TabsContent value="bdm" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>BDM Section</CardTitle>
-                <CardDescription>Initial business development information</CardDescription>
+                <CardTitle>Business Development</CardTitle>
+                <CardDescription>
+                  Review initial company information and research
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {cif.company_research && (
@@ -510,8 +512,10 @@ export default function CIFDetailPage() {
           <TabsContent value="technical" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Technical Feasibility Assessment</CardTitle>
-                <CardDescription>Complete technical review and feasibility determination</CardDescription>
+                <CardTitle>Technical Assessment</CardTitle>
+                <CardDescription>
+                  Evaluate R&D feasibility and project qualification
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -645,8 +649,10 @@ export default function CIFDetailPage() {
           <TabsContent value="financial" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Financial Section</CardTitle>
-                <CardDescription>Complete financial estimates and compliance documentation</CardDescription>
+                <CardTitle>Financial Information</CardTitle>
+                <CardDescription>
+                  Cost estimates and financial details
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">

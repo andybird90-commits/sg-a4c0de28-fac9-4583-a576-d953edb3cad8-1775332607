@@ -29,6 +29,7 @@ export interface CompaniesHouseData {
 
 export interface CIFWithDetails extends CIFRecord {
   prospects?: Prospect | null;
+  claim?: Database["public"]["Tables"]["claims"]["Row"] | null;
   created_by_profile?: {
     full_name: string | null;
     email: string | null;
@@ -43,7 +44,6 @@ export interface CIFWithDetails extends CIFRecord {
   risk_rating?: "low" | "medium" | "high" | null;
   notes_for_finance?: string | null;
   missing_information_flags?: string[] | null;
-  company_research?: string | null;
 }
 
 export const cifService = {
@@ -371,48 +371,89 @@ export const cifService = {
   },
 
   /**
-   * Admin approve CIF and auto-create claim
+   * Approve CIF (Director/Admin Decision) - Automatically creates claim
    */
-  async approveCIF(
-    cifId: string,
-    adminUserId: string
-  ): Promise<{ cif: CIFRecord; claim: any } | null> {
+  async approveCIF(cifId: string, approverId: string, comment?: string): Promise<CIFWithDetails | null> {
     try {
+      console.log("[cifService.approveCIF] Starting approval for CIF:", cifId);
+
+      // 1. Get CIF with prospect details
       const { data: cif, error: cifError } = await supabase
         .from("cif_records")
-        .select("*, prospects(*)")
+        .select(`
+          *,
+          prospects (
+            id,
+            company_name,
+            company_number,
+            org_id,
+            bd_owner_id,
+            technical_lead_id,
+            commercial_lead_id
+          )
+        `)
         .eq("id", cifId)
         .single();
 
-      if (cifError) throw cifError;
+      if (cifError || !cif) {
+        console.error("[cifService.approveCIF] Failed to fetch CIF:", cifError);
+        throw new Error("CIF not found");
+      }
 
-      const prospect = Array.isArray(cif.prospects) ? cif.prospects[0] : cif.prospects;
-      if (!prospect) throw new Error("Prospect not found");
+      const prospect = cif.prospects;
+      if (!prospect) {
+        throw new Error("No prospect linked to this CIF");
+      }
 
-      const yearStr = cif.financial_year || new Date().getFullYear().toString();
-      const claimYear = parseInt(yearStr.replace(/\D/g, "")) || new Date().getFullYear();
-      
-      let orgId = cif.org_id || prospect.org_id;
-      
+      console.log("[cifService.approveCIF] CIF data:", cif);
+      console.log("[cifService.approveCIF] Prospect data:", prospect);
+
+      let orgId = prospect.org_id;
+
+      // 2. Create organisation if it doesn't exist
       if (!orgId) {
-        // Create organisation if not exists (should have been created in tech stage but fallback here)
-        const { data: org } = await supabase
+        console.log("[cifService.approveCIF] Creating new organisation for prospect");
+        
+        const orgCode = prospect.company_number 
+          ? `CH-${prospect.company_number}`
+          : `PROSPECT-${prospect.id.substring(0, 8)}`;
+
+        const { data: newOrg, error: orgError } = await supabase
           .from("organisations")
           .insert({
             name: prospect.company_name,
-            organisation_code: prospect.company_name.substring(0, 3).toUpperCase() + Math.floor(Math.random() * 1000)
+            organisation_code: orgCode,
+            is_conexa_company: false,
           })
           .select()
           .single();
-        if (org) orgId = org.id;
-        
-        // Update prospect linkage
-        if (orgId) {
-          await supabase.from("prospects").update({ org_id: orgId }).eq("id", prospect.id);
+
+        if (orgError || !newOrg) {
+          console.error("[cifService.approveCIF] Failed to create organisation:", orgError);
+          throw new Error("Failed to create organisation");
+        }
+
+        orgId = newOrg.id;
+        console.log("[cifService.approveCIF] Created organisation:", orgId);
+
+        // Update prospect with org_id
+        const { error: prospectUpdateError } = await supabase
+          .from("prospects")
+          .update({ org_id: orgId })
+          .eq("id", prospect.id);
+
+        if (prospectUpdateError) {
+          console.error("[cifService.approveCIF] Failed to update prospect with org_id:", prospectUpdateError);
         }
       }
 
-      if (!orgId) throw new Error("Could not create organisation for claim");
+      // 3. Create claim
+      console.log("[cifService.approveCIF] Creating claim for organisation:", orgId);
+      
+      const currentYear = new Date().getFullYear();
+      const claimYear = cif.financial_year 
+        ? parseInt(cif.financial_year.split("-")[0]) 
+        : currentYear;
 
       const { data: claim, error: claimError } = await supabase
         .from("claims")
@@ -420,35 +461,74 @@ export const cifService = {
           org_id: orgId,
           claim_year: claimYear,
           status: "intake",
+          bd_owner_id: prospect.bd_owner_id,
+          technical_lead_id: prospect.technical_lead_id,
+          cost_lead_id: prospect.commercial_lead_id,
+          director_id: approverId,
+          notes: `Claim created from approved CIF ${cifId}. ${comment ? `Approval comment: ${comment}` : ""}`,
         })
         .select()
         .single();
 
-      if (claimError) throw claimError;
+      if (claimError || !claim) {
+        console.error("[cifService.approveCIF] Failed to create claim:", claimError);
+        throw new Error("Failed to create claim");
+      }
 
+      console.log("[cifService.approveCIF] Created claim:", claim.id);
+
+      // 4. Update CIF with approval and link to claim
       const { data: updatedCif, error: updateError } = await supabase
         .from("cif_records")
         .update({
+          director_id: approverId,
+          director_decision: "approved",
+          director_comment: comment,
+          director_decided_at: new Date().toISOString(),
           current_stage: "approved",
           cif_status: "approved",
+          org_id: orgId,
           linked_claim_id: claim.id,
           admin_last_updated: new Date().toISOString(),
-          director_decision: "approved",
-          director_decided_at: new Date().toISOString(),
-          director_id: adminUserId,
-          section4_completed_by: adminUserId,
-          section4_completed_at: new Date().toISOString()
+          rejection_reason: null,
+          rejected_by: null,
+          rejected_at: null,
+          rejected_to_stage: null,
         })
         .eq("id", cifId)
         .select()
         .single();
 
-      if (updateError) throw updateError;
+      if (updateError || !updatedCif) {
+        console.error("[cifService.approveCIF] Failed to update CIF:", updateError);
+        throw new Error("Failed to update CIF");
+      }
 
-      return { cif: updatedCif, claim };
+      // 5. Update prospect status
+      await supabase
+        .from("prospects")
+        .update({ 
+          status: "cif_approved",
+          org_id: orgId,
+        })
+        .eq("id", prospect.id);
+
+      // 6. Log state change
+      await supabase.from("cif_state_changes").insert({
+        cif_id: cifId,
+        from_stage: cif.current_stage,
+        to_stage: "approved",
+        changed_by: approverId,
+        change_type: "approval",
+        comments: comment,
+      });
+
+      console.log("[cifService.approveCIF] CIF approved successfully, claim created:", claim.id);
+
+      return updatedCif as CIFWithDetails;
     } catch (error) {
-      console.error("Error approving CIF:", error);
-      return null;
+      console.error("[cifService.approveCIF] Error approving CIF:", error);
+      throw error;
     }
   },
 
@@ -757,6 +837,7 @@ export const cifService = {
         .select(`
           *,
           prospects(*),
+          claim:claims!cif_records_linked_claim_id_fkey(*),
           created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email),
           feasibility:feasibility_analyses(*)
         `)
@@ -767,8 +848,12 @@ export const cifService = {
 
       if (data) {
         const feasibility = Array.isArray(data.feasibility) ? data.feasibility[0] : data.feasibility;
+        // Handle claim if it's an array (one-to-many returned by join) or object
+        const claimData = Array.isArray(data.claim) ? data.claim[0] : data.claim;
+        
         return {
           ...data,
+          claim: claimData,
           created_by_profile: Array.isArray(data.created_by_profile) ? data.created_by_profile[0] : data.created_by_profile,
           prospects: Array.isArray(data.prospects) ? data.prospects[0] : data.prospects,
           // Map feasibility fields

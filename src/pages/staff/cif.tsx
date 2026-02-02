@@ -338,6 +338,7 @@ export default function StaffCIFPage() {
 function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCancel: () => void;}) {
   const { profileWithOrg: profile } = useApp();
   const { toast } = useToast();
+  const router = useRouter();
 
   const [step, setStep] = useState<"lookup" | "bdm">("lookup");
   const [companyNumber, setCompanyNumber] = useState("");
@@ -346,6 +347,23 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
   const [saving, setSaving] = useState(false);
   const [researchSummary, setResearchSummary] = useState("");
   const [researchLoading, setResearchLoading] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
+  const [companyResearch, setCompanyResearch] = useState("");
+  const [formData, setFormData] = useState({
+    businessBackground: "",
+    projectOverview: "",
+    primaryContactName: "",
+    primaryContactPosition: "",
+    primaryContactEmail: "",
+    primaryContactPhone: "",
+    primaryContactLandline: "",
+    rdThemes: "",
+    expectedFeasibilityDate: "",
+    hasClaimedBefore: false,
+    previousClaimYearEndDate: "",
+    previousClaimValue: "",
+    previousClaimDateSubmitted: "",
+  });
 
   // BDM Form Fields
   const [businessBackground, setBusinessBackground] = useState("");
@@ -399,6 +417,51 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
     }
   };
 
+  const handleLookup = async () => {
+    if (!companyNumber.trim()) {
+      toast({ title: "Please enter a company number", variant: "destructive" });
+      return;
+    }
+
+    setLookingUp(true);
+    try {
+      const data = await cifService.lookupCompaniesHouse(companyNumber.trim());
+      if (data) {
+        setCompanyData(data);
+        toast({ title: "Company found!", description: data.company_name });
+        
+        // Automatically fetch AI research
+        setResearchLoading(true);
+        try {
+          const researchResponse = await fetch("/api/sidekick/research", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              companyName: data.company_name,
+              companyNumber: data.company_number,
+              industry: data.sic_codes?.[0] || "Unknown"
+            })
+          });
+          
+          if (researchResponse.ok) {
+            const researchData = await researchResponse.json();
+            setCompanyResearch(researchData.summary || "");
+          }
+        } catch (err) {
+          console.error("Research fetch error:", err);
+        } finally {
+          setResearchLoading(false);
+        }
+      } else {
+        toast({ title: "Company not found", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({ title: "Lookup failed", description: error.message, variant: "destructive" });
+    } finally {
+      setLookingUp(false);
+    }
+  };
+
   const performResearch = async (name: string, number: string) => {
     setResearchLoading(true);
     try {
@@ -425,14 +488,15 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
   const handleCreateCIF = async () => {
     if (!companyData || !profile?.id) return;
 
-    // Detailed validation
+    // Validate required fields
     const missingFields: string[] = [];
-    if (!businessBackground?.trim()) missingFields.push("Business Background");
-    if (!primaryContactName?.trim()) missingFields.push("Primary Contact Name");
-
+    if (!formData.businessBackground.trim()) missingFields.push("Business Background");
+    if (!formData.projectOverview.trim()) missingFields.push("Project Overview");
+    if (!formData.primaryContactName.trim()) missingFields.push("Primary Contact Name");
+    
     if (missingFields.length > 0) {
       toast({ 
-        title: "Missing Required Fields", 
+        title: "Missing required fields", 
         description: `Please fill in: ${missingFields.join(", ")}`,
         variant: "destructive" 
       });
@@ -441,76 +505,47 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
 
     setSaving(true);
     try {
-      console.log("[CIF Creation] Starting CIF creation with data:", {
-        companyData,
-        bdmFields: {
-          businessBackground,
-          primaryContactName,
-          primaryContactPosition,
-          primaryContactEmail,
-          primaryContactPhone,
-          primaryContactLandline,
-          hasClaimedBefore,
-          previousClaimYearEnd,
-          previousClaimValue,
-          previousClaimDateSubmitted,
-          rdThemes: rdThemes.split("\n").filter((t) => t.trim()),
-          expectedFeasibilityDate
-        }
-      });
-
-      console.log("[CIF Creation] Company data details:", {
-        company_name: companyData.company_name,
-        company_number: companyData.company_number,
-        status: companyData.company_status,
-        address: companyData.registered_address,
-        sic_codes: companyData.sic_codes,
-        incorporation: companyData.date_of_creation,
-        directors: companyData.number_of_directors,
-        employees: companyData.number_of_employees
-      });
-
       const result = await cifService.createCIF({
         prospectData: {
           company_name: companyData.company_name,
           company_number: companyData.company_number,
-          registered_address: JSON.stringify(companyData.registered_address),
-          sic_codes: companyData.sic_codes || [],
+          company_status: companyData.company_status,
+          registered_address: `${companyData.registered_address?.address_line_1 || ""}, ${companyData.registered_address?.locality || ""}, ${companyData.registered_address?.postal_code || ""}`.trim(),
+          sic_codes: companyData.sic_codes,
           incorporation_date: companyData.date_of_creation,
-          status: companyData.company_status,
           number_of_directors: companyData.number_of_directors,
-          number_of_employees: companyData.number_of_employees
+          number_of_employees: companyData.number_of_employees,
         },
         bdmSectionData: {
-          business_background: businessBackground,
-          primary_contact_name: primaryContactName,
-          primary_contact_position: primaryContactPosition || undefined,
-          primary_contact_email: primaryContactEmail || undefined,
-          primary_contact_phone: primaryContactPhone || undefined,
-          primary_contact_landline: primaryContactLandline || undefined,
-          has_claimed_before: hasClaimedBefore,
-          previous_claim_year_end_date: hasClaimedBefore && previousClaimYearEnd ? previousClaimYearEnd : undefined,
-          previous_claim_value: hasClaimedBefore && previousClaimValue ? parseFloat(previousClaimValue) : undefined,
-          previous_claim_date_submitted: hasClaimedBefore && previousClaimDateSubmitted ? previousClaimDateSubmitted : undefined,
-          rd_themes: rdThemes.split("\n").filter((t) => t.trim()),
-          expected_feasibility_date: expectedFeasibilityDate || undefined,
-          company_research: researchSummary // Save the research
+          business_background: formData.businessBackground,
+          project_overview: formData.projectOverview,
+          primary_contact_name: formData.primaryContactName,
+          primary_contact_position: formData.primaryContactPosition || undefined,
+          primary_contact_email: formData.primaryContactEmail || undefined,
+          primary_contact_phone: formData.primaryContactPhone || undefined,
+          primary_contact_landline: formData.primaryContactLandline || undefined,
+          rd_themes: formData.rdThemes ? formData.rdThemes.split("\n").filter(t => t.trim()) : undefined,
+          expected_feasibility_date: formData.expectedFeasibilityDate || undefined,
+          has_claimed_before: formData.hasClaimedBefore,
+          previous_claim_year_end_date: formData.previousClaimYearEndDate || undefined,
+          previous_claim_value: formData.previousClaimValue ? parseFloat(formData.previousClaimValue) : undefined,
+          previous_claim_date_submitted: formData.previousClaimDateSubmitted || undefined,
+          company_research: companyResearch,
         },
-        createdBy: profile.id
+        createdBy: profile.id,
       });
 
-      console.log("[CIF Creation] Result:", result);
-
       if (result) {
-        toast({ title: "Success", description: "CIF created successfully" });
-        onSuccess();
+        toast({ title: "CIF created successfully!", description: "Redirecting to CIF details..." });
+        setTimeout(() => {
+          router.push(`/staff/cif/${result.cif.id}`);
+        }, 1500);
       } else {
-        console.error("[CIF Creation] Result was null/undefined");
-        toast({ title: "Error", description: "Failed to create CIF - no result returned", variant: "destructive" });
+        throw new Error("Failed to create CIF");
       }
-    } catch (error) {
-      console.error("[CIF Creation] Error:", error);
-      toast({ title: "Error", description: `Failed to create CIF: ${error instanceof Error ? error.message : "Unknown error"}`, variant: "destructive" });
+    } catch (error: any) {
+      console.error("CIF creation error:", error);
+      toast({ title: "Failed to create CIF", description: error.message || "Unknown error", variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -562,154 +597,180 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
             </CardHeader>
           </Card>
 
-          {/* Research Section */}
-          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">🤖</span>
-              <h4 className="font-semibold text-blue-900">RD Sidekick Research</h4>
+          {/* Company Research Summary */}
+          {companyResearch && (
+            <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  RD Sidekick Research
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                  {companyResearch}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {researchLoading && (
+            <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
+              <CardContent className="py-8">
+                <div className="flex items-center justify-center gap-3">
+                  <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="text-blue-700 dark:text-blue-300 font-medium">
+                    RD Sidekick is researching this company...
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+            <div className="space-y-2">
+              <Label htmlFor="business-bg">Business Background *</Label>
+              <Textarea
+                id="business-bg"
+                placeholder="Brief description of the business and what they do..."
+                className="min-h-[100px]"
+                value={formData.businessBackground}
+                onChange={(e) => setFormData(prev => ({ ...prev, businessBackground: e.target.value }))}
+              />
             </div>
-            {researchLoading ? (
-              <div className="flex items-center gap-2 text-sm text-blue-700">
-                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-700"></div>
-                Analyzing company details...
+
+            <div className="space-y-2">
+              <Label htmlFor="project-overview">Project Overview *</Label>
+              <Textarea
+                id="project-overview"
+                placeholder="Description of the R&D project or technical challenges..."
+                className="min-h-[100px]"
+                value={formData.projectOverview}
+                onChange={(e) => setFormData(prev => ({ ...prev, projectOverview: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="contact-name">Primary Contact Name *</Label>
+                <Input
+                  id="contact-name"
+                  placeholder="Full name"
+                  value={formData.primaryContactName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, primaryContactName: e.target.value }))}
+                />
               </div>
-            ) : (
-              <div className="text-sm text-blue-800 whitespace-pre-wrap">
-                {researchSummary || "No research data available."}
+              <div className="space-y-2">
+                <Label htmlFor="contact-position">Primary Contact Position</Label>
+                <Input
+                  id="contact-position"
+                  placeholder="Job title"
+                  value={formData.primaryContactPosition}
+                  onChange={(e) => setFormData(prev => ({ ...prev, primaryContactPosition: e.target.value }))}
+                />
               </div>
-            )}
-          </div>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="business-bg">Business Background *</Label>
-            <Textarea
-            id="business-bg"
-            placeholder="Describe the company's business and industry..."
-            value={businessBackground}
-            onChange={(e) => setBusinessBackground(e.target.value)}
-            rows={3} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="contact-email">Primary Contact Email</Label>
+                <Input
+                  id="contact-email"
+                  type="email"
+                  placeholder="email@example.com"
+                  value={formData.primaryContactEmail}
+                  onChange={(e) => setFormData(prev => ({ ...prev, primaryContactEmail: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contact-phone">Primary Contact Phone</Label>
+                <Input
+                  id="contact-phone"
+                  placeholder="+44 1234 567890"
+                  value={formData.primaryContactPhone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, primaryContactPhone: e.target.value }))}
+                />
+              </div>
+            </div>
 
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="contact-landline">Primary Contact Landline</Label>
+              <Input
+                id="contact-landline"
+                placeholder="+44 20 1234 5678"
+                value={formData.primaryContactLandline}
+                onChange={(e) => setFormData(prev => ({ ...prev, primaryContactLandline: e.target.value }))}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="contact-name">Primary Contact Name *</Label>
-            <Input
-            id="contact-name"
-            placeholder="Contact person name"
-            value={primaryContactName}
-            onChange={(e) => setPrimaryContactName(e.target.value)} />
+            <div className="space-y-2">
+              <Label htmlFor="rd-themes">R&D Themes (one per line)</Label>
+              <Textarea
+                id="rd-themes"
+                placeholder="e.g. AI/ML&#10;Software Development&#10;Data Analytics"
+                className="min-h-[100px]"
+                value={formData.rdThemes}
+                onChange={(e) => setFormData(prev => ({ ...prev, rdThemes: e.target.value }))}
+              />
+            </div>
 
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="feasibility-date">Expected Feasibility Date</Label>
+              <Input
+                id="feasibility-date"
+                type="date"
+                value={formData.expectedFeasibilityDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, expectedFeasibilityDate: e.target.value }))}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="contact-position">Primary Contact Position</Label>
-            <Input
-            id="contact-position"
-            placeholder="e.g. Business Manager, CTO"
-            value={primaryContactPosition}
-            onChange={(e) => setPrimaryContactPosition(e.target.value)} />
-
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="contact-email">Primary Contact Email</Label>
-            <Input
-            id="contact-email"
-            type="email"
-            placeholder="contact@company.com"
-            value={primaryContactEmail}
-            onChange={(e) => setPrimaryContactEmail(e.target.value)} />
-
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="contact-phone">Primary Contact Phone</Label>
-            <Input
-            id="contact-phone"
-            placeholder="+44 7123 456789"
-            value={primaryContactPhone}
-            onChange={(e) => setPrimaryContactPhone(e.target.value)} />
-
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="contact-landline">Primary Contact Landline</Label>
-            <Input
-            id="contact-landline"
-            placeholder="+44 20 1234 5678"
-            value={primaryContactLandline}
-            onChange={(e) => setPrimaryContactLandline(e.target.value)} />
-
-          </div>
-
-          <div className="space-y-4 pt-2">
             <div className="flex items-center space-x-2">
-              <Checkbox
-              id="has-claimed"
-              checked={hasClaimedBefore}
-              onCheckedChange={(checked) => setHasClaimedBefore(checked === true)} />
-
-              <Label htmlFor="has-claimed" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Has the company claimed before?
-              </Label>
+              <input
+                type="checkbox"
+                id="claimed-before"
+                className="rounded border-gray-300"
+                checked={formData.hasClaimedBefore}
+                onChange={(e) => setFormData(prev => ({ ...prev, hasClaimedBefore: e.target.checked }))}
+              />
+              <Label htmlFor="claimed-before">Has the company claimed before?</Label>
             </div>
 
-            {hasClaimedBefore &&
-          <div className="space-y-4 pl-6 border-l-2 border-muted">
+            {formData.hasClaimedBefore && (
+              <div className="space-y-4 pl-6 border-l-2 border-blue-200">
                 <div className="space-y-2">
                   <Label htmlFor="prev-year-end">Previous Claim Year End Date</Label>
                   <Input
-                id="prev-year-end"
-                type="text"
-                value={previousClaimYearEnd}
-                onChange={(e) => setPreviousClaimYearEnd(e.target.value)} />
-
+                    id="prev-year-end"
+                    type="date"
+                    value={formData.previousClaimYearEndDate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, previousClaimYearEndDate: e.target.value }))}
+                  />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="prev-value">Previous Claim Value (£)</Label>
                   <Input
-                id="prev-value"
-                type="number"
-                placeholder="e.g. 32000"
-                value={previousClaimValue}
-                onChange={(e) => setPreviousClaimValue(e.target.value)} />
-
+                    id="prev-value"
+                    type="number"
+                    placeholder="25000"
+                    value={formData.previousClaimValue}
+                    onChange={(e) => setFormData(prev => ({ ...prev, previousClaimValue: e.target.value }))}
+                  />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="prev-submitted">Previous Claim Date Submitted</Label>
                   <Input
-                id="prev-submitted"
-                type="date"
-                value={previousClaimDateSubmitted}
-                onChange={(e) => setPreviousClaimDateSubmitted(e.target.value)} />
-
+                    id="prev-submitted"
+                    type="date"
+                    value={formData.previousClaimDateSubmitted}
+                    onChange={(e) => setFormData(prev => ({ ...prev, previousClaimDateSubmitted: e.target.value }))}
+                  />
                 </div>
               </div>
-          }
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="rd-themes">R&D Themes (one per line)</Label>
-            <Textarea
-            id="rd-themes"
-            placeholder="e.g. AI/ML&#10;Software Development&#10;Data Analytics"
-            value={rdThemes}
-            onChange={(e) => setRdThemes(e.target.value)}
-            rows={4} />
-
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="feasibility-date">Expected Feasibility Date</Label>
-            <Input
-            id="feasibility-date"
-            type="date"
-            value={expectedFeasibilityDate}
-            onChange={(e) => setExpectedFeasibilityDate(e.target.value)} />
-
-          </div>
+            )}
 
           <div className="flex gap-3 pt-4">
             <Button onClick={handleCreateCIF} disabled={saving} className="flex-1">
