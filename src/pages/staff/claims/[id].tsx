@@ -144,7 +144,7 @@ function ProjectCard({
 
   return (
     <div className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-      <Link href={`/staff/claims/${project.claim_id}/projects/${project.id}`} className="block">
+      <Link href={`/staff/claims/projects/${project.id}`} className="block">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
