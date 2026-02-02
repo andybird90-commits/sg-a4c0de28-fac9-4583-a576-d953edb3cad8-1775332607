@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Lightbulb, FileText, MessageSquare, Send, Upload, Link as LinkIcon, Trash2, ExternalLink, Sparkles, Edit, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import { MessageWidget } from "@/components/MessageWidget";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
 type SidekickEvidenceItem = Database["public"]["Tables"]["sidekick_evidence_items"]["Row"];
@@ -529,6 +530,11 @@ export default function ProjectDetailPage() {
                 )}
                 {project.sector && <Badge variant="outline" className="text-xs">{project.sector}</Badge>}
                 {project.stage && <Badge variant="outline" className="text-xs">{project.stage}</Badge>}
+                <MessageWidget
+                  entityType="project"
+                  entityId={project.id}
+                  entityName={project.name}
+                />
               </div>
             </div>
             <div className="flex gap-2 flex-wrap sm:flex-nowrap flex-shrink-0">

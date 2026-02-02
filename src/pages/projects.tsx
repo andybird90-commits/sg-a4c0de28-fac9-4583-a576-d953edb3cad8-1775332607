@@ -8,6 +8,7 @@ import { sidekickProjectService } from "@/services/sidekickProjectService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { MessageWidget } from "@/components/MessageWidget";
 import { Plus, FolderOpen, Clock, Lightbulb } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -155,50 +156,58 @@ export default function ProjectsPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {projects.map((project) => (
-                <Link 
-                  key={project.id} 
-                  href={project.type === "sidekick" ? `/evidence/sidekick/${project.id}` : `/projects/${project.id}`}
-                >
-                  <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                    <CardHeader>
-                      <div className="flex items-start justify-between mb-2">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          {project.type === "sidekick" && (
-                            <Lightbulb className="w-4 h-4 text-blue-500" />
-                          )}
-                          {project.name}
-                        </CardTitle>
+                <Card key={project.id} className="relative hover:shadow-lg transition-shadow h-full group">
+                  <Link 
+                    href={project.type === "sidekick" ? `/evidence/sidekick/${project.id}` : `/projects/${project.id}`}
+                    className="absolute inset-0 z-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg"
+                  >
+                    <span className="sr-only">View {project.name}</span>
+                  </Link>
+                  <CardHeader className="relative z-10 pointer-events-none">
+                    <div className="flex items-start justify-between mb-2">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {project.type === "sidekick" && (
+                          <Lightbulb className="w-4 h-4 text-blue-500" />
+                        )}
+                        {project.name}
+                      </CardTitle>
+                      <div className="flex items-center gap-2 pointer-events-auto">
                         {project.status && (
                           <Badge className={statusColors[project.status]}>
                             {statusLabels[project.status]}
                           </Badge>
                         )}
+                        <MessageWidget
+                          entityType="project"
+                          entityId={project.id}
+                          entityName={project.name}
+                        />
                       </div>
-                      <CardDescription className="line-clamp-2">
-                        {project.description || "No description"}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                        <Badge variant="outline" className="bg-blue-50">
-                          {project.type === "sidekick" ? "Sidekick" : "Project"}
-                        </Badge>
-                        {project.sector && (
-                          <span className="inline-flex items-center">
-                            {project.sector}
-                          </span>
-                        )}
-                        {project.stage && (
-                          <Badge variant="outline">{project.stage}</Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        {new Date(project.created_at).toLocaleDateString()}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                    </div>
+                    <CardDescription className="line-clamp-2">
+                      {project.description || "No description"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="relative z-10 pointer-events-none">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                      <Badge variant="outline" className="bg-blue-50">
+                        {project.type === "sidekick" ? "Sidekick" : "Project"}
+                      </Badge>
+                      {project.sector && (
+                        <span className="inline-flex items-center">
+                          {project.sector}
+                        </span>
+                      )}
+                      {project.stage && (
+                        <Badge variant="outline">{project.stage}</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+                      <Clock className="w-3 h-3" />
+                      {new Date(project.created_at).toLocaleDateString()}
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}

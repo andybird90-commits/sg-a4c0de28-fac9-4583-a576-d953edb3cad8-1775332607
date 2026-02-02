@@ -1,22 +1,25 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { StaffLayout } from "@/components/staff/StaffLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, CheckCircle, XCircle, Upload, FileText, AlertTriangle } from "lucide-react";
-import { cifService, type CIFWithDetails } from "@/services/cifService";
+import { supabase } from "@/integrations/supabase/client";
 import { useApp } from "@/contexts/AppContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase/client";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { cifService, type CIFWithDetails } from "@/services/cifService";
+import { MessageWidget } from "@/components/MessageWidget";
+import { ArrowLeft, Save, Upload, FileText, XCircle, AlertTriangle, CheckCircle } from "lucide-react";
 
 export default function CIFDetailPage() {
   const router = useRouter();
@@ -401,49 +404,27 @@ export default function CIFDetailPage() {
   return (
     <StaffLayout>
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.push("/staff/cif")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to CIF Pipeline
-          </Button>
-        </div>
-
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">{companyName}</h1>
-            <p className="text-muted-foreground mt-1">
-              CIF #{cif.id.slice(0, 8)} • FY: {cif.financial_year || "Not specified"}
-            </p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => router.push("/staff/cif")}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold">{companyName}</h1>
+                <MessageWidget
+                  entityType="cif"
+                  entityId={cif.id}
+                  entityName={companyName}
+                />
+              </div>
+              <p className="text-muted-foreground">
+                {cif?.primary_contact_name} • {cif?.primary_contact_email}
+              </p>
+            </div>
           </div>
-          <Badge className="text-base px-4 py-2">
-            {cif.current_stage?.replace(/_/g, " ").toUpperCase()}
-          </Badge>
         </div>
-
-        {prospect && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Company Details</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-semibold">Company Number:</span> {prospect.company_number}
-              </div>
-              <div>
-                <span className="font-semibold">Status:</span> {prospect.status}
-              </div>
-              <div className="col-span-2">
-                <span className="font-semibold">Registered Name:</span> {(prospect as any).registered_name || prospect.company_name}
-              </div>
-              {prospect.incorporation_date && (
-                <div>
-                  <span className="font-semibold">Incorporated:</span>{" "}
-                  {new Date(prospect.incorporation_date).toLocaleDateString()}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
 
         <Tabs defaultValue="bdm" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
