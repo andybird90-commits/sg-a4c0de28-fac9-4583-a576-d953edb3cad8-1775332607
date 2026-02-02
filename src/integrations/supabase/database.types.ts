@@ -367,6 +367,332 @@ export type Database = {
           },
         ]
       }
+      claim_costs: {
+        Row: {
+          amount: number
+          approved: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          claim_id: string
+          cost_date: string | null
+          cost_type: string
+          created_at: string
+          created_by: string | null
+          description: string
+          hourly_rate: number | null
+          hours_worked: number | null
+          id: string
+          invoice_reference: string | null
+          notes: string | null
+          org_id: string
+          period_end: string | null
+          period_start: string | null
+          project_id: string | null
+          staff_member_name: string | null
+          staff_role: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          claim_id: string
+          cost_date?: string | null
+          cost_type: string
+          created_at?: string
+          created_by?: string | null
+          description: string
+          hourly_rate?: number | null
+          hours_worked?: number | null
+          id?: string
+          invoice_reference?: string | null
+          notes?: string | null
+          org_id: string
+          period_end?: string | null
+          period_start?: string | null
+          project_id?: string | null
+          staff_member_name?: string | null
+          staff_role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          claim_id?: string
+          cost_date?: string | null
+          cost_type?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          hourly_rate?: number | null
+          hours_worked?: number | null
+          id?: string
+          invoice_reference?: string | null
+          notes?: string | null
+          org_id?: string
+          period_end?: string | null
+          period_start?: string | null
+          project_id?: string | null
+          staff_member_name?: string | null
+          staff_role?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_costs_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_costs_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_costs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_costs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_costs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "claim_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claim_documents: {
+        Row: {
+          claim_id: string
+          created_at: string
+          description: string | null
+          doc_type: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          is_confidential: boolean | null
+          mime_type: string | null
+          org_id: string
+          project_id: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          description?: string | null
+          doc_type: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          is_confidential?: boolean | null
+          mime_type?: string | null
+          org_id: string
+          project_id?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          description?: string | null
+          doc_type?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          is_confidential?: boolean | null
+          mime_type?: string | null
+          org_id?: string
+          project_id?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_documents_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_documents_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "claim_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_documents_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claim_projects: {
+        Row: {
+          advance_in_science: string | null
+          challenges_uncertainties: string | null
+          claim_id: string
+          consumables_cost: number | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          org_id: string
+          project_code: string | null
+          qualifying_activities: string[] | null
+          rd_theme: string | null
+          software_cost: number | null
+          staff_cost: number | null
+          start_date: string | null
+          status: string
+          subcontractor_cost: number | null
+          technical_reviewer: string | null
+          technical_understanding: string | null
+          total_qualifying_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          advance_in_science?: string | null
+          challenges_uncertainties?: string | null
+          claim_id: string
+          consumables_cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          org_id: string
+          project_code?: string | null
+          qualifying_activities?: string[] | null
+          rd_theme?: string | null
+          software_cost?: number | null
+          staff_cost?: number | null
+          start_date?: string | null
+          status?: string
+          subcontractor_cost?: number | null
+          technical_reviewer?: string | null
+          technical_understanding?: string | null
+          total_qualifying_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          advance_in_science?: string | null
+          challenges_uncertainties?: string | null
+          claim_id?: string
+          consumables_cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          org_id?: string
+          project_code?: string | null
+          qualifying_activities?: string[] | null
+          rd_theme?: string | null
+          software_cost?: number | null
+          staff_cost?: number | null
+          start_date?: string | null
+          status?: string
+          subcontractor_cost?: number | null
+          technical_reviewer?: string | null
+          technical_understanding?: string | null
+          total_qualifying_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_projects_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_projects_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_projects_technical_reviewer_fkey"
+            columns: ["technical_reviewer"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       claims: {
         Row: {
           actual_submission_date: string | null
