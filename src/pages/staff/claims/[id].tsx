@@ -461,6 +461,68 @@ export default function ClaimDetailPage() {
     }
   };
 
+  const handleGenerateAnalysis = async () => {
+    if (!claim) return;
+
+    try {
+      setLoadingAnalysis(true);
+      const response = await fetch("/api/claims/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ claimId: claim.id }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate analysis");
+
+      const data = await response.json();
+      setAiAnalysis(data.analysis);
+      toast({ title: "Success", description: "AI analysis generated successfully" });
+    } catch (error) {
+      console.error("Error generating analysis:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate AI analysis",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingAnalysis(false);
+    }
+  };
+
+  const handleSendAnalysis = async () => {
+    if (!claim || !profile || !aiAnalysis || !sendTo) return;
+
+    try {
+      setSendingMessage(true);
+
+      // Create message with AI analysis
+      const { error } = await supabase.from("messages").insert({
+        entity_type: "claim",
+        entity_id: claim.id,
+        sender_id: profile.id,
+        recipient_id: sendTo,
+        subject: `AI Analysis: ${claim.organisations?.name} - FY ${claim.claim_year}`,
+        body: aiAnalysis,
+        is_read: false,
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: "AI analysis sent successfully" });
+      setShowSendAnalysisDialog(false);
+      setSendTo("");
+    } catch (error) {
+      console.error("Error sending analysis:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send analysis",
+        variant: "destructive",
+      });
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
   const handleDocumentUpload = async () => {
     if (!claim || !selectedFile || !profile) return;
 
@@ -618,13 +680,11 @@ export default function ClaimDetailPage() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-orange-100 rounded-lg">
-                  <Users className="h-6 w-6 text-orange-600" />
+                  <RefreshCw className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Team Members</p>
-                  <p className="text-2xl font-bold">
-                    {[claim.bd_owner, claim.technical_lead, claim.cost_lead].filter(Boolean).length}
-                  </p>
+                  <p className="text-sm text-slate-600">AI Sidekick</p>
+                  <p className="text-2xl font-bold">Ready</p>
                 </div>
               </div>
             </CardContent>
@@ -638,7 +698,7 @@ export default function ClaimDetailPage() {
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="costs">Costs</TabsTrigger>
             <TabsTrigger value="evidence">Evidence</TabsTrigger>
-            <TabsTrigger value="team">Team</TabsTrigger>
+            <TabsTrigger value="sidekick">Sidekick</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -1138,70 +1198,162 @@ export default function ClaimDetailPage() {
             </Card>
           </TabsContent>
 
-          {/* Team Tab */}
-          <TabsContent value="team" className="mt-6">
+          {/* Sidekick Tab */}
+          <TabsContent value="sidekick" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Team Management</CardTitle>
-                <CardDescription>Manage team assignments and roles</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <RefreshCw className="h-5 w-5 text-orange-600" />
+                      AI Sidekick Analysis
+                    </CardTitle>
+                    <CardDescription>
+                      Get AI-powered insights and recommendations for this claim
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    {aiAnalysis && (
+                      <Dialog open={showSendAnalysisDialog} onOpenChange={setShowSendAnalysisDialog}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline">
+                            <Users className="mr-2 h-4 w-4" />
+                            Send Analysis
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Send AI Analysis</DialogTitle>
+                            <DialogDescription>
+                              Send this AI analysis as a message to a team member or client
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="send-to">Send To *</Label>
+                              <Select value={sendTo} onValueChange={setSendTo}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select recipient..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {claim.bd_owner && (
+                                    <SelectItem value={claim.bd_owner.id}>
+                                      {claim.bd_owner.full_name} (BD Owner)
+                                    </SelectItem>
+                                  )}
+                                  {claim.technical_lead && (
+                                    <SelectItem value={claim.technical_lead.id}>
+                                      {claim.technical_lead.full_name} (Technical Lead)
+                                    </SelectItem>
+                                  )}
+                                  {claim.cost_lead && (
+                                    <SelectItem value={claim.cost_lead.id}>
+                                      {claim.cost_lead.full_name} (Cost Lead)
+                                    </SelectItem>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label>Analysis Preview</Label>
+                              <div className="mt-2 p-4 bg-slate-50 rounded-lg max-h-64 overflow-y-auto">
+                                <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                                  {aiAnalysis.substring(0, 200)}...
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button 
+                              variant="outline" 
+                              onClick={() => setShowSendAnalysisDialog(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button 
+                              onClick={handleSendAnalysis} 
+                              disabled={!sendTo || sendingMessage}
+                            >
+                              {sendingMessage ? "Sending..." : "Send Message"}
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                    <Button 
+                      onClick={handleGenerateAnalysis} 
+                      disabled={loadingAnalysis}
+                    >
+                      {loadingAnalysis ? (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Generate Analysis
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="grid gap-4">
-                    {claim.bd_owner && (
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-lg">
-                            {claim.bd_owner.full_name?.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-medium">{claim.bd_owner.full_name}</p>
-                            <p className="text-sm text-slate-600">{claim.bd_owner.email}</p>
-                            <Badge className="mt-1 bg-blue-100 text-blue-800">BD Owner</Badge>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {claim.technical_lead && (
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold text-lg">
-                            {claim.technical_lead.full_name?.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-medium">{claim.technical_lead.full_name}</p>
-                            <p className="text-sm text-slate-600">{claim.technical_lead.email}</p>
-                            <Badge className="mt-1 bg-purple-100 text-purple-800">Technical Lead</Badge>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {claim.cost_lead && (
-                      <div className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-lg">
-                            {claim.cost_lead.full_name?.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-medium">{claim.cost_lead.full_name}</p>
-                            <p className="text-sm text-slate-600">{claim.cost_lead.email}</p>
-                            <Badge className="mt-1 bg-orange-100 text-orange-800">Cost Lead</Badge>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {!claim.bd_owner && !claim.technical_lead && !claim.cost_lead && (
-                    <div className="text-center py-12 text-slate-500">
-                      <Users className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-                      <p>No team members assigned yet</p>
-                      <p className="text-sm">Assign team members to manage this claim</p>
+                {!aiAnalysis && !loadingAnalysis && (
+                  <div className="text-center py-12 text-slate-500">
+                    <RefreshCw className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                    <p className="font-medium mb-2">No Analysis Generated Yet</p>
+                    <p className="text-sm mb-4">
+                      Click &quot;Generate Analysis&quot; to get AI-powered insights and recommendations
+                    </p>
+                    <div className="max-w-md mx-auto text-left space-y-2">
+                      <p className="text-sm font-medium">The AI will analyze:</p>
+                      <ul className="text-sm space-y-1 list-disc list-inside text-slate-600">
+                        <li>Technical quality and R&D qualification</li>
+                        <li>Documentation completeness</li>
+                        <li>Cost justification and categorization</li>
+                        <li>Potential HMRC audit risks</li>
+                        <li>Specific improvement recommendations</li>
+                      </ul>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {loadingAnalysis && (
+                  <div className="text-center py-12">
+                    <RefreshCw className="h-12 w-12 mx-auto mb-3 text-orange-600 animate-spin" />
+                    <p className="font-medium text-slate-900 mb-2">Analyzing Claim...</p>
+                    <p className="text-sm text-slate-600">
+                      AI is reviewing your projects, costs, and documentation
+                    </p>
+                  </div>
+                )}
+
+                {aiAnalysis && !loadingAnalysis && (
+                  <div className="prose max-w-none">
+                    <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
+                      <div className="flex items-start gap-3 mb-4">
+                        <div className="p-2 bg-orange-100 rounded-lg">
+                          <RefreshCw className="h-5 w-5 text-orange-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-900 mb-1">
+                            AI Analysis Results
+                          </h3>
+                          <p className="text-sm text-slate-600">
+                            Generated insights and recommendations for improvement
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-6 border border-orange-100">
+                        <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                          {aiAnalysis}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
