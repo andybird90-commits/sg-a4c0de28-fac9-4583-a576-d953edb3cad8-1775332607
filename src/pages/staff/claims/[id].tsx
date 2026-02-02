@@ -237,6 +237,7 @@ export default function ClaimDetailPage() {
   const [uploadingDocument, setUploadingDocument] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState("supporting_evidence");
+  const [documentProjectId, setDocumentProjectId] = useState("");
 
   // Derived state for projects to match the new UI code
   const projects = claim?.projects || [];
@@ -534,15 +535,26 @@ export default function ClaimDetailPage() {
     try {
       setUploadingDocument(true);
       
-      // Upload to Supabase Storage
+      // Upload file to Supabase Storage
       const fileExt = selectedFile.name.split(".").pop();
       const fileName = `${claim.id}_${Date.now()}.${fileExt}`;
       const filePath = `claim_documents/${fileName}`;
 
-      // For now, create document record (file upload would go to Supabase Storage)
+      // Upload to storage bucket
+      const { error: uploadError } = await supabase.storage
+        .from("documents")
+        .upload(filePath, selectedFile, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Create document record with project assignment
       await claimService.createDocument({
         claim_id: claim.id,
         org_id: claim.org_id,
+        project_id: documentProjectId || null,
         doc_type: documentType as any,
         title: selectedFile.name,
         file_name: selectedFile.name,
@@ -554,11 +566,13 @@ export default function ClaimDetailPage() {
       toast({ title: "Success", description: "Document uploaded successfully" });
       setShowDocumentDialog(false);
       setSelectedFile(null);
+      setDocumentProjectId("");
       if (id && typeof id === "string") loadClaim(id);
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Upload error:", error);
       toast({
         title: "Error",
-        description: "Failed to upload document",
+        description: error.message || "Failed to upload document",
         variant: "destructive",
       });
     } finally {
@@ -1127,6 +1141,22 @@ export default function ClaimDetailPage() {
                               <SelectItem value="technical_documentation">Technical Documentation</SelectItem>
                               <SelectItem value="correspondence">Correspondence</SelectItem>
                               <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="doc-project">Assign to Project (Optional)</Label>
+                          <Select value={documentProjectId} onValueChange={setDocumentProjectId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select project..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">General (not project-specific)</SelectItem>
+                              {claim.projects?.map((proj) => (
+                                <SelectItem key={proj.id} value={proj.id}>
+                                  {proj.name}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
