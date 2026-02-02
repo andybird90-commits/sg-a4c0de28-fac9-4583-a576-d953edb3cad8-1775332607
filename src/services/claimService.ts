@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { pipelineService } from "./pipelineService";
 
 type Claim = Database["public"]["Tables"]["claims"]["Row"];
 type ClaimInsert = Database["public"]["Tables"]["claims"]["Insert"];
@@ -180,6 +181,37 @@ export class ClaimService {
         .single();
 
       if (error) throw error;
+
+      // Auto-create pipeline entry if claim is enabled
+      if (data && data.status === "active") {
+        try {
+          // Get organisation's Companies House number
+          const { data: org } = await supabase
+            .from("organisations")
+            .select("id")
+            .eq("id", data.org_id)
+            .single();
+
+          if (org) {
+            // Get Companies House number from prospects (if available)
+            const { data: prospect } = await supabase
+              .from("prospects")
+              .select("company_number")
+              .eq("org_id", data.org_id)
+              .single();
+
+            await pipelineService.autoCreatePipelineEntry(
+              data.id,
+              data.org_id,
+              prospect?.company_number || null
+            );
+          }
+        } catch (pipelineError) {
+          console.error("Failed to auto-create pipeline entry:", pipelineError);
+          // Don't fail the whole claim creation if pipeline fails
+        }
+      }
+
       return data;
     } catch (error) {
       console.error("[claimService.createClaim] Error:", error);
@@ -200,6 +232,34 @@ export class ClaimService {
         .single();
 
       if (error) throw error;
+
+      // Auto-create pipeline entry if claim status changed to active
+      if (data && updates.status === "active") {
+        try {
+          const { data: org } = await supabase
+            .from("organisations")
+            .select("id")
+            .eq("id", data.org_id)
+            .single();
+
+          if (org) {
+            const { data: prospect } = await supabase
+              .from("prospects")
+              .select("company_number")
+              .eq("org_id", data.org_id)
+              .single();
+
+            await pipelineService.autoCreatePipelineEntry(
+              data.id,
+              data.org_id,
+              prospect?.company_number || null
+            );
+          }
+        } catch (pipelineError) {
+          console.error("Failed to auto-create pipeline entry:", pipelineError);
+        }
+      }
+
       return data;
     } catch (error) {
       console.error("[claimService.updateClaim] Error:", error);
