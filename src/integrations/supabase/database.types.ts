@@ -1383,6 +1383,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          incorporation_date: string | null
           is_conexa_company: boolean
           linked_at: string | null
           linked_by_user_id: string | null
@@ -1396,6 +1397,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          incorporation_date?: string | null
           is_conexa_company?: boolean
           linked_at?: string | null
           linked_by_user_id?: string | null
@@ -1409,6 +1411,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          incorporation_date?: string | null
           is_conexa_company?: boolean
           linked_at?: string | null
           linked_by_user_id?: string | null
