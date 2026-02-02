@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { claimService, ClaimWithDetails } from "@/services/claimService";
+import { messageService } from "@/services/messageService";
 import { useApp } from "@/contexts/AppContext";
 import { MessageWidget } from "@/components/MessageWidget";
 import {
@@ -502,18 +503,15 @@ export default function ClaimDetailPage() {
     try {
       setSendingMessage(true);
 
-      // Create message with AI analysis
-      const { error } = await supabase.from("messages").insert({
-        entity_type: "claim",
-        entity_id: claim.id,
-        sender_id: profile.id,
-        recipient_id: sendTo,
-        subject: `AI Analysis: ${claim.organisations?.name} - FY ${claim.claim_year}`,
-        body: aiAnalysis,
-        is_read: false,
-      });
-
-      if (error) throw error;
+      // Use messageService to handle message creation and recipient linking
+      await messageService.sendMessage(
+        claim.org_id,
+        [sendTo], // recipientIds
+        `AI Analysis: ${claim.organisations?.name} - FY ${claim.claim_year}`, // subject
+        aiAnalysis, // body
+        undefined, // parentMessageId
+        { entity_type: "claim", entity_id: claim.id } // context
+      );
 
       toast({ title: "Success", description: "AI analysis sent successfully" });
       setShowSendAnalysisDialog(false);
