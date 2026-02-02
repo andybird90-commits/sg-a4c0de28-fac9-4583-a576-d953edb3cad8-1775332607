@@ -159,5 +159,51 @@ export const organisationService = {
       ...data,
       is_active: data.status !== 'archived'
     } as Project;
+  },
+
+  /**
+   * Generate a unique organisation code
+   */
+  async generateOrganisationCode(name: string): Promise<string> {
+    // Remove spaces, special characters, and convert to uppercase
+    // Take first 8 letters of company name
+    let baseCode = name
+      .replace(/[^a-zA-Z0-9]/g, '') // Remove special chars and spaces
+      .toUpperCase()
+      .substring(0, 8);
+
+    // If less than 8 characters, pad with random letters
+    if (baseCode.length < 8) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      while (baseCode.length < 8) {
+        baseCode += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+    }
+
+    // Check if code already exists
+    const { data: existing } = await supabase
+      .from("organisations")
+      .select("id")
+      .eq("organisation_code", baseCode)
+      .single();
+
+    // If exists, append a number
+    if (existing) {
+      let counter = 1;
+      let newCode = baseCode;
+      while (existing) {
+        newCode = baseCode.substring(0, 6) + String(counter).padStart(2, '0');
+        const { data: check } = await supabase
+          .from("organisations")
+          .select("id")
+          .eq("organisation_code", newCode)
+          .single();
+        if (!check) break;
+        counter++;
+      }
+      return newCode;
+    }
+
+    return baseCode;
   }
 };

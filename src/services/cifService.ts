@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { organisationService } from "./organisationService";
 
 type CIFRecord = Database["public"]["Tables"]["cif_records"]["Row"];
 type CIFInsert = Database["public"]["Tables"]["cif_records"]["Insert"];
@@ -414,9 +415,7 @@ export const cifService = {
       if (!orgId) {
         console.log("[cifService.approveCIF] Creating new organisation for prospect");
         
-        const orgCode = prospect.company_number 
-          ? `CH-${prospect.company_number}`
-          : `PROSPECT-${prospect.id.substring(0, 8)}`;
+        const orgCode = await organisationService.generateOrganisationCode(prospect.company_name);
 
         const { data: newOrg, error: orgError } = await supabase
           .from("organisations")
