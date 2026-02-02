@@ -344,6 +344,8 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
   const [lookupLoading, setLookupLoading] = useState(false);
   const [companyData, setCompanyData] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [researchSummary, setResearchSummary] = useState("");
+  const [researchLoading, setResearchLoading] = useState(false);
 
   // BDM Form Fields
   const [businessBackground, setBusinessBackground] = useState("");
@@ -386,10 +388,37 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
       setCompanyData(data);
       setStep("bdm");
       toast({ title: "Success", description: "Company found and active" });
+
+      // Trigger auto-research
+      performResearch(data.company_name, data.company_number);
+
     } catch (error) {
       toast({ title: "Error", description: "Failed to lookup company", variant: "destructive" });
     } finally {
       setLookupLoading(false);
+    }
+  };
+
+  const performResearch = async (name: string, number: string) => {
+    setResearchLoading(true);
+    try {
+      const res = await fetch("/api/sidekick/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyName: name, companyNumber: number }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setResearchSummary(data.summary);
+        // Pre-fill business background if empty
+        if (!businessBackground) {
+           setBusinessBackground(data.summary);
+        }
+      }
+    } catch (err) {
+      console.error("Research failed", err);
+    } finally {
+      setResearchLoading(false);
     }
   };
 
@@ -464,7 +493,8 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
           previous_claim_value: hasClaimedBefore && previousClaimValue ? parseFloat(previousClaimValue) : undefined,
           previous_claim_date_submitted: hasClaimedBefore && previousClaimDateSubmitted ? previousClaimDateSubmitted : undefined,
           rd_themes: rdThemes.split("\n").filter((t) => t.trim()),
-          expected_feasibility_date: expectedFeasibilityDate || undefined
+          expected_feasibility_date: expectedFeasibilityDate || undefined,
+          company_research: researchSummary // Save the research
         },
         createdBy: profile.id
       });
@@ -531,6 +561,24 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
               </CardDescription>
             </CardHeader>
           </Card>
+
+          {/* Research Section */}
+          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xl">🤖</span>
+              <h4 className="font-semibold text-blue-900">RD Sidekick Research</h4>
+            </div>
+            {researchLoading ? (
+              <div className="flex items-center gap-2 text-sm text-blue-700">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-700"></div>
+                Analyzing company details...
+              </div>
+            ) : (
+              <div className="text-sm text-blue-800 whitespace-pre-wrap">
+                {researchSummary || "No research data available."}
+              </div>
+            )}
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="business-bg">Business Background *</Label>

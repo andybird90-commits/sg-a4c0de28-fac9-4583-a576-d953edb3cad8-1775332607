@@ -43,6 +43,7 @@ export interface CIFWithDetails extends CIFRecord {
   risk_rating?: "low" | "medium" | "high" | null;
   notes_for_finance?: string | null;
   missing_information_flags?: string[] | null;
+  company_research?: string | null;
 }
 
 export const cifService = {
@@ -113,6 +114,7 @@ export const cifService = {
       previous_claim_year_end_date?: string;
       previous_claim_value?: number;
       previous_claim_date_submitted?: string;
+      company_research?: string;
     };
     createdBy: string;
   }): Promise<{ cif: CIFRecord; prospect: Prospect } | null> {
@@ -180,6 +182,7 @@ export const cifService = {
         previous_claim_value: data.bdmSectionData.previous_claim_value,
         previous_claim_date_submitted: data.bdmSectionData.previous_claim_date_submitted,
         bdm_last_updated: new Date().toISOString(),
+        company_research: data.bdmSectionData.company_research,
       };
       console.log("[cifService.createCIF] CIF insert data:", cifData);
 
