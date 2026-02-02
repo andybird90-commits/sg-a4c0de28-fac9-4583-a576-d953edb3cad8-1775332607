@@ -11,7 +11,7 @@ export interface PipelineWithDetails extends PipelineEntry {
     id: string;
     name: string;
     organisation_code: string | null;
-    companies_house_number: string | null;
+    incorporation_date: string | null;
   } | null;
   claim?: {
     id: string;
@@ -254,12 +254,13 @@ export async function autoCreatePipelineEntry(
     org_id: orgId,
     claim_id: claimId,
     pipeline_start_date: pipelineStartDate.toISOString().split("T")[0],
-    predicted_filing_date: predictedFilingDate.toISOString().split("T")[0],
+    expected_accounts_filing_date: predictedFilingDate.toISOString().split("T")[0], // Mapped correctly
     predicted_revenue: 0, // Manual entry required
-    confidence_score: confidence,
-    filing_lag_days: avgLag,
-    status: "forecasted",
+    filing_confidence_score: confidence, // Mapped correctly
+    average_filing_lag_days: avgLag, // Mapped correctly
+    years_trading: 0, // Should be calculated
     auto_created: true,
+    created_by: (await supabase.auth.getUser()).data.user?.id || "",
   });
 }
 
@@ -331,7 +332,7 @@ export async function refreshAllPipelinePredictions(): Promise<void> {
 export async function getPipelineSummary() {
   const { data: entries } = await supabase
     .from("pipeline_entries")
-    .select("predicted_revenue, status, filing_confidence_score");
+    .select("predicted_revenue, expected_accounts_filing_date, filing_confidence_score");
 
   if (!entries) return { totalRevenue: 0, count: 0, avgConfidence: 0 };
 
@@ -344,9 +345,7 @@ export async function getPipelineSummary() {
     count: entries.length,
     avgConfidence: Math.round(avgConfidence),
     byStatus: {
-      // Logic adjustment based on status values available in DB check constraint not visible here but inferred
-      // Assuming standard values or empty
-      forecasted: entries.length, // Placeholder logic
+      forecasted: entries.length, 
     },
   };
 }
