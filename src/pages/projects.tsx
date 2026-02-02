@@ -8,10 +8,23 @@ import { sidekickProjectService } from "@/services/sidekickProjectService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FolderOpen, Clock } from "lucide-react";
+import { Plus, FolderOpen, Clock, Lightbulb } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import { supabase } from "@/integrations/supabase/client";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
+type RegularProject = Database["public"]["Tables"]["projects"]["Row"];
+
+interface CombinedProject {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  type: "sidekick" | "regular";
+  status?: string;
+  sector?: string | null;
+  stage?: string | null;
+}
 
 const statusColors: Record<string, string> = {
   draft: "bg-gray-500",
@@ -34,7 +47,7 @@ const statusLabels: Record<string, string> = {
 export default function ProjectsPage() {
   const router = useRouter();
   const { user, currentOrg } = useApp();
-  const [projects, setProjects] = useState<SidekickProject[]>([]);
+  const [projects, setProjects] = useState<CombinedProject[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,8 +62,42 @@ export default function ProjectsPage() {
 
     const fetchProjects = async () => {
       try {
-        const data = await sidekickProjectService.getProjectsByOrganisation(currentOrg.id);
-        setProjects(data);
+        // Fetch both sidekick projects and regular projects
+        const [sidekickData, regularData] = await Promise.all([
+          sidekickProjectService.getProjectsByOrganisation(currentOrg.id),
+          supabase
+            .from("projects")
+            .select("*")
+            .eq("org_id", currentOrg.id)
+            .order("created_at", { ascending: false })
+        ]);
+
+        // Combine both types
+        const combined: CombinedProject[] = [
+          ...sidekickData.map(p => ({
+            id: p.id,
+            name: p.name || "Untitled Project",
+            description: p.description,
+            created_at: p.created_at,
+            type: "sidekick" as const,
+            status: p.status,
+            sector: p.sector,
+            stage: p.stage,
+          })),
+          ...(regularData.data || []).map(p => ({
+            id: p.id,
+            name: p.name || "Untitled Project",
+            description: p.description,
+            created_at: p.created_at,
+            type: "regular" as const,
+            sector: p.sector,
+          }))
+        ];
+
+        // Sort by created_at
+        combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        
+        setProjects(combined);
       } catch (error) {
         console.error("Error fetching projects:", error);
       } finally {
@@ -109,21 +156,34 @@ export default function ProjectsPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {projects.map((project) => (
-                <Link key={project.id} href={`/projects/${project.id}`}>
+                <Link 
+                  key={project.id} 
+                  href={project.type === "sidekick" ? `/evidence/sidekick/${project.id}` : `/projects/${project.id}`}
+                >
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                     <CardHeader>
                       <div className="flex items-start justify-between mb-2">
-                        <CardTitle className="text-lg">{project.name}</CardTitle>
-                        <Badge className={statusColors[project.status]}>
-                          {statusLabels[project.status]}
-                        </Badge>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          {project.type === "sidekick" && (
+                            <Lightbulb className="w-4 h-4 text-blue-500" />
+                          )}
+                          {project.name}
+                        </CardTitle>
+                        {project.status && (
+                          <Badge className={statusColors[project.status]}>
+                            {statusLabels[project.status]}
+                          </Badge>
+                        )}
                       </div>
                       <CardDescription className="line-clamp-2">
                         {project.description || "No description"}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                        <Badge variant="outline" className="bg-blue-50">
+                          {project.type === "sidekick" ? "Sidekick" : "Project"}
+                        </Badge>
                         {project.sector && (
                           <span className="inline-flex items-center">
                             {project.sector}
