@@ -502,7 +502,7 @@ export default function ClaimDetailPage() {
                     <DialogTrigger asChild>
                       <Button onClick={() => {
                         setEditingProject(null);
-                        setProjectForm({ name: "", description: "", start_date: "", end_date: "", rd_category: "research" });
+                        setProjectForm({ name: "", description: "", start_date: "", end_date: "", rd_theme: "Engineering" });
                       }}>
                         <Plus className="mr-2 h-4 w-4" />
                         Add Project
