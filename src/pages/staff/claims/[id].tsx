@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { StaffLayout } from "@/components/staff/StaffLayout";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,6 +86,10 @@ export default function ClaimDetailPage() {
   const [claim, setClaim] = useState<ClaimWithDetails | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
 
+  // Available sidekick projects for import
+  const [sidekickProjects, setSidekickProjects] = useState<any[]>([]);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+
   // Project management state
   const [showProjectDialog, setShowProjectDialog] = useState(false);
   const [editingProject, setEditingProject] = useState<any>(null);
@@ -122,6 +127,12 @@ export default function ClaimDetailPage() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (claim?.org_id) {
+      loadSidekickProjects(claim.org_id);
+    }
+  }, [claim?.org_id]);
+
   const loadClaim = async (claimId: string) => {
     try {
       setLoading(true);
@@ -136,6 +147,39 @@ export default function ClaimDetailPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSidekickProjects = async (orgId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("sidekick_projects")
+        .select("*")
+        .eq("company_id", orgId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setSidekickProjects(data || []);
+    } catch (error) {
+      console.error("Error loading sidekick projects:", error);
+    }
+  };
+
+  const handleImportSidekickProject = async (sidekickProjectId: string) => {
+    if (!claim) return;
+
+    try {
+      await claimService.importSidekickProject(claim.id, claim.org_id, sidekickProjectId);
+      toast({ title: "Success", description: "Project imported successfully" });
+      if (id && typeof id === "string") loadClaim(id);
+      setShowImportDialog(false);
+    } catch (error) {
+      console.error("Error importing project:", error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to import project", 
+        variant: "destructive" 
+      });
     }
   };
 
@@ -569,122 +613,174 @@ export default function ClaimDetailPage() {
                     <CardTitle>R&D Projects</CardTitle>
                     <CardDescription>Manage the R&D projects included in this claim</CardDescription>
                   </div>
-                  <Dialog open={showProjectDialog} onOpenChange={setShowProjectDialog}>
-                    <DialogTrigger asChild>
-                      <Button onClick={() => {
-                        setEditingProject(null);
-                        setProjectForm({
-                          name: "",
-                          description: "",
-                          start_date: "",
-                          end_date: "",
-                          rd_theme: "",
-                          technical_understanding: "",
-                          challenges_uncertainties: "",
-                          qualifying_activities: "",
-                        });
-                      }}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Project
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>{editingProject ? "Edit Project" : "Add New Project"}</DialogTitle>
-                        <DialogDescription>
-                          Provide comprehensive details about the R&D project for this claim
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="project-name">Project Name *</Label>
-                          <Input
-                            id="project-name"
-                            value={projectForm.name}
-                            onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}
-                            placeholder="e.g., AI-Powered Quality Control System"
-                          />
+                  <div className="flex gap-2">
+                    <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Download className="h-4 w-4 mr-2" />
+                          Import Sidekick Projects
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Import Sidekick Projects</DialogTitle>
+                          <DialogDescription>
+                            Select a sidekick project to import as a claim project
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                          {sidekickProjects.length === 0 ? (
+                            <p className="text-sm text-slate-500 text-center py-8">
+                              No sidekick projects available to import
+                            </p>
+                          ) : (
+                            sidekickProjects.map((sp) => (
+                              <div
+                                key={sp.id}
+                                className="border rounded-lg p-4 hover:bg-slate-50 transition-colors"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h4 className="font-medium mb-1">{sp.name}</h4>
+                                    <p className="text-sm text-slate-600 mb-2">
+                                      {sp.description}
+                                    </p>
+                                    {sp.sector && (
+                                      <span className="text-xs bg-slate-100 px-2 py-1 rounded">
+                                        {sp.sector}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleImportSidekickProject(sp.id)}
+                                  >
+                                    Import
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
-                        <div>
-                          <Label htmlFor="project-description">Project Description *</Label>
-                          <Textarea
-                            id="project-description"
-                            value={projectForm.description}
-                            onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
-                            placeholder="High-level overview of the project..."
-                            rows={3}
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
+                      </DialogContent>
+                    </Dialog>
+                    <Dialog open={showProjectDialog} onOpenChange={setShowProjectDialog}>
+                      <DialogTrigger asChild>
+                        <Button onClick={() => {
+                          setEditingProject(null);
+                          setProjectForm({
+                            name: "",
+                            description: "",
+                            start_date: "",
+                            end_date: "",
+                            rd_theme: "",
+                            technical_understanding: "",
+                            challenges_uncertainties: "",
+                            qualifying_activities: "",
+                          });
+                        }}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Project
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>{editingProject ? "Edit Project" : "Add New Project"}</DialogTitle>
+                          <DialogDescription>
+                            Provide comprehensive details about the R&D project for this claim
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
                           <div>
-                            <Label htmlFor="start-date">Start Date</Label>
+                            <Label htmlFor="project-name">Project Name *</Label>
                             <Input
-                              id="start-date"
-                              type="date"
-                              value={projectForm.start_date}
-                              onChange={(e) => setProjectForm({ ...projectForm, start_date: e.target.value })}
+                              id="project-name"
+                              value={projectForm.name}
+                              onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}
+                              placeholder="e.g., AI-Powered Quality Control System"
                             />
                           </div>
                           <div>
-                            <Label htmlFor="end-date">End Date</Label>
+                            <Label htmlFor="project-description">Project Description *</Label>
+                            <Textarea
+                              id="project-description"
+                              value={projectForm.description}
+                              onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
+                              placeholder="High-level overview of the project..."
+                              rows={3}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="start-date">Start Date</Label>
+                              <Input
+                                id="start-date"
+                                type="date"
+                                value={projectForm.start_date}
+                                onChange={(e) => setProjectForm({ ...projectForm, start_date: e.target.value })}
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="end-date">End Date</Label>
+                              <Input
+                                id="end-date"
+                                type="date"
+                                value={projectForm.end_date}
+                                onChange={(e) => setProjectForm({ ...projectForm, end_date: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <Label htmlFor="rd-theme">R&D Theme</Label>
                             <Input
-                              id="end-date"
-                              type="date"
-                              value={projectForm.end_date}
-                              onChange={(e) => setProjectForm({ ...projectForm, end_date: e.target.value })}
+                              id="rd-theme"
+                              value={projectForm.rd_theme}
+                              onChange={(e) => setProjectForm({ ...projectForm, rd_theme: e.target.value })}
+                              placeholder="e.g., Software Engineering, Materials Science"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="technical-understanding">Technical Understanding</Label>
+                            <Textarea
+                              id="technical-understanding"
+                              value={projectForm.technical_understanding}
+                              onChange={(e) => setProjectForm({ ...projectForm, technical_understanding: e.target.value })}
+                              placeholder="Describe the technical knowledge and baseline competence..."
+                              rows={3}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="challenges">Challenges & Uncertainties</Label>
+                            <Textarea
+                              id="challenges"
+                              value={projectForm.challenges_uncertainties}
+                              onChange={(e) => setProjectForm({ ...projectForm, challenges_uncertainties: e.target.value })}
+                              placeholder="What were the scientific or technological uncertainties?"
+                              rows={3}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="qualifying-activities">Qualifying Activities (one per line)</Label>
+                            <Textarea
+                              id="qualifying-activities"
+                              value={projectForm.qualifying_activities}
+                              onChange={(e) => setProjectForm({ ...projectForm, qualifying_activities: e.target.value })}
+                              placeholder="Research into novel algorithms&#10;Design of experimental test rigs&#10;Prototyping and iterative testing"
+                              rows={4}
                             />
                           </div>
                         </div>
-                        <div>
-                          <Label htmlFor="rd-theme">R&D Theme</Label>
-                          <Input
-                            id="rd-theme"
-                            value={projectForm.rd_theme}
-                            onChange={(e) => setProjectForm({ ...projectForm, rd_theme: e.target.value })}
-                            placeholder="e.g., Software Engineering, Materials Science"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="technical-understanding">Technical Understanding</Label>
-                          <Textarea
-                            id="technical-understanding"
-                            value={projectForm.technical_understanding}
-                            onChange={(e) => setProjectForm({ ...projectForm, technical_understanding: e.target.value })}
-                            placeholder="Describe the technical knowledge and baseline competence..."
-                            rows={3}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="challenges">Challenges & Uncertainties</Label>
-                          <Textarea
-                            id="challenges"
-                            value={projectForm.challenges_uncertainties}
-                            onChange={(e) => setProjectForm({ ...projectForm, challenges_uncertainties: e.target.value })}
-                            placeholder="What were the scientific or technological uncertainties?"
-                            rows={3}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="qualifying-activities">Qualifying Activities (one per line)</Label>
-                          <Textarea
-                            id="qualifying-activities"
-                            value={projectForm.qualifying_activities}
-                            onChange={(e) => setProjectForm({ ...projectForm, qualifying_activities: e.target.value })}
-                            placeholder="Research into novel algorithms&#10;Design of experimental test rigs&#10;Prototyping and iterative testing"
-                            rows={4}
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowProjectDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={editingProject ? handleUpdateProject : handleCreateProject}>
-                          {editingProject ? "Update Project" : "Create Project"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setShowProjectDialog(false)}>
+                            Cancel
+                          </Button>
+                          <Button onClick={editingProject ? handleUpdateProject : handleCreateProject}>
+                            {editingProject ? "Update Project" : "Create Project"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>

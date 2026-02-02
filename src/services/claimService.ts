@@ -322,6 +322,39 @@ export class ClaimService {
   }
 
   /**
+   * Import sidekick project as a claim project
+   * Fetches the sidekick project and creates a new claim project record
+   */
+  async importSidekickProject(claimId: string, orgId: string, sidekickProjectId: string): Promise<ClaimProject> {
+    try {
+      // 1. Fetch the sidekick project
+      const { data: sp, error: spError } = await supabase
+        .from("sidekick_projects")
+        .select("*")
+        .eq("id", sidekickProjectId)
+        .single();
+
+      if (spError) throw spError;
+      if (!sp) throw new Error("Sidekick project not found");
+
+      // 2. Create the claim project
+      const projectData: ClaimProjectInsert = {
+        claim_id: claimId,
+        org_id: orgId,
+        name: sp.name,
+        description: sp.description,
+        rd_theme: sp.sector, // Map sector to rd_theme
+        // We can map other fields if they exist or leave them null for the user to fill
+      };
+
+      return await this.createProject(projectData);
+    } catch (error) {
+      console.error("[claimService.importSidekickProject] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Delete project
    */
   async deleteProject(projectId: string): Promise<void> {
