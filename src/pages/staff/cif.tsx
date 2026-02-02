@@ -163,7 +163,7 @@ export default function StaffCIFPage() {
         <Tabs defaultValue="board-a" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="board-a" className="relative">
-              Job Board A
+              BDM
               {jobBoardA.length > 0 && (
                 <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {jobBoardA.length}
@@ -171,7 +171,7 @@ export default function StaffCIFPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="board-b" className="relative">
-              Job Board B
+              Technical
               {jobBoardB.length > 0 && (
                 <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {jobBoardB.length}
@@ -179,7 +179,7 @@ export default function StaffCIFPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="board-c" className="relative">
-              Job Board C
+              Financial
               {jobBoardC.length > 0 && (
                 <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {jobBoardC.length}
@@ -207,7 +207,7 @@ export default function StaffCIFPage() {
           <TabsContent value="board-a" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Job Board A – Awaiting Technical Feasibility</CardTitle>
+                <CardTitle>BDM – Business Development</CardTitle>
                 <CardDescription>
                   CIFs that have completed BDM section and are ready for technical review
                 </CardDescription>
@@ -232,7 +232,7 @@ export default function StaffCIFPage() {
           <TabsContent value="board-b" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Job Board B – Awaiting Financial Section</CardTitle>
+                <CardTitle>Technical – Feasibility Assessment</CardTitle>
                 <CardDescription>
                   CIFs that have passed technical feasibility and need financial details
                 </CardDescription>
@@ -257,7 +257,7 @@ export default function StaffCIFPage() {
           <TabsContent value="board-c" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Job Board C – Awaiting Admin Sign-off</CardTitle>
+                <CardTitle>Financial – Cost Analysis</CardTitle>
                 <CardDescription>
                   CIFs ready for final admin approval and claim creation
                 </CardDescription>
