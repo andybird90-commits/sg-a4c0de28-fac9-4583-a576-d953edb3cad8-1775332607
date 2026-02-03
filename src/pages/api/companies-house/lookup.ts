@@ -19,12 +19,16 @@ export default async function handler(
 
   const { number, includeHistory } = req.query;
 
+  console.log("Companies House lookup request:", { number, includeHistory });
+
   if (!number || typeof number !== "string") {
     return res.status(400).json({ message: "Company number is required" });
   }
 
   try {
     const apiKey = process.env.COMPANIES_HOUSE_API_KEY;
+    
+    console.log("API Key configured:", !!apiKey);
     
     if (!apiKey) {
       console.error("COMPANIES_HOUSE_API_KEY not configured");
@@ -45,10 +49,22 @@ export default async function handler(
       }
     );
 
+    console.log("Companies House API response:", {
+      status: companyResponse.status,
+      statusText: companyResponse.statusText,
+      company: number
+    });
+
     if (!companyResponse.ok) {
       if (companyResponse.status === 404) {
+        console.log(`Company ${number} not found in Companies House`);
         return res.status(404).json({ message: "Company not found" });
       }
+      const errorText = await companyResponse.text();
+      console.error("Companies House API error:", {
+        status: companyResponse.status,
+        error: errorText
+      });
       throw new Error(`Companies House API error: ${companyResponse.status}`);
     }
 
