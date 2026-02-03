@@ -172,7 +172,7 @@ export default function StaffCIFPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="board-b" className="relative">
-              Technical
+              Feasibility
               {jobBoardB.length > 0 && (
                 <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {jobBoardB.length}
@@ -210,7 +210,7 @@ export default function StaffCIFPage() {
               <CardHeader>
                 <CardTitle>BDM – Business Development</CardTitle>
                 <CardDescription>
-                  CIFs that have completed BDM section and are ready for technical review
+                  CIFs that have completed BDM section and are ready for feasibility review
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -233,9 +233,9 @@ export default function StaffCIFPage() {
           <TabsContent value="board-b" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Technical – Feasibility Assessment</CardTitle>
+                <CardTitle>Feasibility – R&D Assessment</CardTitle>
                 <CardDescription>
-                  CIFs that have passed technical feasibility and need financial details
+                  CIFs that have passed feasibility assessment and need financial details
                 </CardDescription>
               </CardHeader>
               <CardContent>

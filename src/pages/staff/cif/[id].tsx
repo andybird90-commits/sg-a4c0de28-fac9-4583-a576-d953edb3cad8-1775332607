@@ -66,6 +66,10 @@ export default function CIFDetailPage() {
   const [uploadingASS, setUploadingASS] = useState(false);
   const [documents, setDocuments] = useState<any[]>([]);
 
+  // Add state for extracted feasibility analysis
+  const [feasibilityExtract, setFeasibilityExtract] = useState<string>("");
+  const [lastAccountsDate, setLastAccountsDate] = useState<string>("");
+
   useEffect(() => {
     if (!isStaff) {
       router.push("/home");
@@ -83,6 +87,25 @@ export default function CIFDetailPage() {
       const data = await cifService.getCIFById(cifId);
       if (data) {
         setCif(data);
+        
+        // Extract feasibility analysis from company research
+        if (data.company_research) {
+          const research = data.company_research;
+          const feasibilityMatch = research.match(/(?:Feasibility|R&D Potential|Technical Assessment)[:\s]*([^\n]+(?:\n(?!\n)[^\n]+)*)/i);
+          if (feasibilityMatch) {
+            setFeasibilityExtract(feasibilityMatch[1].trim());
+          } else {
+            // If no specific section, take first paragraph as summary
+            const firstPara = research.split('\n\n')[0];
+            setFeasibilityExtract(firstPara);
+          }
+        }
+
+        // Extract last accounts filed date from prospect data
+        if (data.prospects?.last_accounts_date) {
+          setLastAccountsDate(data.prospects.last_accounts_date);
+        }
+
         // Pre-populate form fields if data exists
         setTechUnderstanding(data.technical_understanding || "");
         setTechChallenges(data.challenges_uncertainties || "");
@@ -429,7 +452,7 @@ export default function CIFDetailPage() {
         <Tabs defaultValue="bdm" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="bdm">BDM</TabsTrigger>
-            <TabsTrigger value="technical">Technical</TabsTrigger>
+            <TabsTrigger value="feasibility">Feasibility</TabsTrigger>
             <TabsTrigger value="financial">Financial</TabsTrigger>
             <TabsTrigger value="admin">Admin</TabsTrigger>
           </TabsList>
@@ -490,15 +513,43 @@ export default function CIFDetailPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="technical" className="mt-6">
+          <TabsContent value="feasibility" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Technical Assessment</CardTitle>
+                <CardTitle>Feasibility Assessment</CardTitle>
                 <CardDescription>
                   Evaluate R&D feasibility and project qualification
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Company Info Banner */}
+                {lastAccountsDate && (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <p className="text-sm text-slate-700">
+                      <span className="font-semibold">Last Accounts Filed:</span> {new Date(lastAccountsDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+                )}
+
+                {/* AI Feasibility Extract */}
+                {feasibilityExtract && (
+                  <>
+                    <div className="p-4 bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg">
+                      <div className="flex items-start gap-3 mb-2">
+                        <div className="text-2xl">🔬</div>
+                        <div>
+                          <h3 className="font-semibold text-purple-900">RD Sidekick Feasibility Analysis</h3>
+                          <p className="text-xs text-purple-600">AI-generated preliminary assessment</p>
+                        </div>
+                      </div>
+                      <div className="text-sm text-purple-900 whitespace-pre-wrap mt-3">
+                        {feasibilityExtract}
+                      </div>
+                    </div>
+                    <Separator />
+                  </>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="tech-understanding">Technical Understanding *</Label>
                   <Textarea
@@ -906,61 +957,59 @@ export default function CIFDetailPage() {
                   </div>
                 )}
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-semibold">BDM Section</p>
-                      <p className="text-sm text-muted-foreground">Business development completed</p>
-                      {cif.created_by_profile && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          By: {cif.created_by_profile.full_name || cif.created_by_profile.email}
-                        </p>
-                      )}
-                    </div>
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-semibold">BDM Section</p>
+                    <p className="text-sm text-muted-foreground">Business development completed</p>
+                    {cif.created_by_profile && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        By: {cif.created_by_profile.full_name || cif.created_by_profile.email}
+                      </p>
+                    )}
+                  </div>
+                  <CheckCircle className="h-6 w-6 text-green-500" />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-semibold">Technical Feasibility</p>
+                    <p className="text-sm text-muted-foreground">
+                      Status: {cif.feasibility_status || "Pending"}
+                    </p>
+                  </div>
+                  {cif.feasibility_status === "qualified" ? (
                     <CheckCircle className="h-6 w-6 text-green-500" />
-                  </div>
+                  ) : (
+                    <XCircle className="h-6 w-6 text-red-500" />
+                  )}
+                </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-semibold">Technical Feasibility</p>
-                      <p className="text-sm text-muted-foreground">
-                        Status: {cif.feasibility_status || "Pending"}
-                      </p>
-                    </div>
-                    {cif.feasibility_status === "qualified" ? (
-                      <CheckCircle className="h-6 w-6 text-green-500" />
-                    ) : (
-                      <XCircle className="h-6 w-6 text-red-500" />
-                    )}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-semibold">Financial Section</p>
+                    <p className="text-sm text-muted-foreground">
+                      Ready: {cif.ready_to_submit ? "Yes" : "No"}
+                    </p>
                   </div>
+                  {cif.ready_to_submit ? (
+                    <CheckCircle className="h-6 w-6 text-green-500" />
+                  ) : (
+                    <XCircle className="h-6 w-6 text-orange-500" />
+                  )}
+                </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-semibold">Financial Section</p>
-                      <p className="text-sm text-muted-foreground">
-                        Ready: {cif.ready_to_submit ? "Yes" : "No"}
-                      </p>
-                    </div>
-                    {cif.ready_to_submit ? (
-                      <CheckCircle className="h-6 w-6 text-green-500" />
-                    ) : (
-                      <XCircle className="h-6 w-6 text-orange-500" />
-                    )}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-semibold">Required Documents</p>
+                    <p className="text-sm text-muted-foreground">
+                      {documents.length} document{documents.length !== 1 ? "s" : ""} uploaded
+                    </p>
                   </div>
-
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-semibold">Required Documents</p>
-                      <p className="text-sm text-muted-foreground">
-                        {documents.length} document{documents.length !== 1 ? "s" : ""} uploaded
-                      </p>
-                    </div>
-                    {documents.length >= 2 ? (
-                      <CheckCircle className="h-6 w-6 text-green-500" />
-                    ) : (
-                      <XCircle className="h-6 w-6 text-orange-500" />
-                    )}
-                  </div>
+                  {documents.length >= 2 ? (
+                    <CheckCircle className="h-6 w-6 text-green-500" />
+                  ) : (
+                    <XCircle className="h-6 w-6 text-orange-500" />
+                  )}
                 </div>
 
                 <Separator />
