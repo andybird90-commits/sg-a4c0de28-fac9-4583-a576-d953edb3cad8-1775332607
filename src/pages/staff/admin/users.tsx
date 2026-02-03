@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import StaffLayout from "@/components/staff/StaffLayout";
+import { StaffLayout } from "@/components/staff/StaffLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

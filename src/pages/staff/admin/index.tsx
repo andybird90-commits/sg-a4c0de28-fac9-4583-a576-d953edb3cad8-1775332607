@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import StaffLayout from "@/components/staff/StaffLayout";
+import { StaffLayout } from "@/components/staff/StaffLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Users, Settings, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
