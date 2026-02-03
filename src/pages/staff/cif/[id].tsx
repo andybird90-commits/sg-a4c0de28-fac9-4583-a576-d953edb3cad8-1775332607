@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cifService, type CIFWithDetails } from "@/services/cifService";
 import { MessageWidget } from "@/components/MessageWidget";
-import { ArrowLeft, Save, Upload, FileText, XCircle, AlertTriangle, CheckCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, Upload, FileText, XCircle, AlertTriangle, CheckCircle, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function CIFDetailPage() {
   const router = useRouter();
@@ -69,6 +69,7 @@ export default function CIFDetailPage() {
   // Add state for extracted feasibility analysis
   const [feasibilityExtract, setFeasibilityExtract] = useState<string>("");
   const [lastAccountsDate, setLastAccountsDate] = useState<string>("");
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     if (!isStaff) {
@@ -90,15 +91,45 @@ export default function CIFDetailPage() {
         
         // Extract feasibility analysis from company research
         if (data.company_research) {
-          const research = data.company_research;
-          const feasibilityMatch = research.match(/(?:Feasibility|R&D Potential|Technical Assessment)[:\s]*([^\n]+(?:\n(?!\n)[^\n]+)*)/i);
-          if (feasibilityMatch) {
-            setFeasibilityExtract(feasibilityMatch[1].trim());
-          } else {
-            // If no specific section, take first paragraph as summary
-            const firstPara = research.split('\n\n')[0];
-            setFeasibilityExtract(firstPara);
+          let research: any = data.company_research;
+          let extractedText = "";
+
+          // Handle JSON string
+          if (typeof research === "string") {
+            try {
+              if (research.trim().startsWith('{')) {
+                research = JSON.parse(research);
+              }
+            } catch (e) {
+              // Not JSON
+            }
           }
+
+          if (typeof research === 'object' && research !== null) {
+            extractedText = research.feasibility_analysis || 
+                          research.technical_feasibility || 
+                          research.rd_feasibility || 
+                          research.analysis?.feasibility || 
+                          research.assessment?.feasibility || "";
+          }
+
+          // Fallback to regex extraction if not found in object or if research is string
+          if (!extractedText && typeof data.company_research === 'string') {
+            const rawText = data.company_research;
+            // Capture everything after the header until the next major section (numbered list or double newline followed by bold)
+            // Or just capture the rest of the paragraph/section if it's simpler
+            const match = rawText.match(/(?:Feasibility|R&D Potential|Technical Assessment)[:\s]*([\s\S]*?)(?=\n\n\d+\.|\n\n\*\*|$)/i);
+            
+            if (match && match[1]) {
+              extractedText = match[1].trim();
+            } else {
+              // Fallback: take first 2 paragraphs
+              const parts = rawText.split('\n\n');
+              extractedText = parts.slice(0, 2).join('\n\n');
+            }
+          }
+
+          setFeasibilityExtract(extractedText);
         }
 
         // Extract last accounts filed date from prospect data
@@ -533,26 +564,47 @@ export default function CIFDetailPage() {
                 if (!feasibilityText) return null;
 
                 return (
-                  <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
-                    <CardHeader>
-                      <div className="flex items-start gap-3">
-                        <Sparkles className="h-5 w-5 text-purple-600 mt-1 flex-shrink-0" />
-                        <div className="flex-1">
-                          <CardTitle className="text-purple-900 dark:text-purple-100">
-                            RD Sidekick Feasibility Analysis
-                          </CardTitle>
-                          <CardDescription className="text-purple-700 dark:text-purple-300">
-                            AI-generated preliminary assessment
-                          </CardDescription>
+                  <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
+                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-purple-600" />
+                        <CardTitle className="text-purple-900 dark:text-purple-100">
+                          RD Sidekick Feasibility Analysis
+                        </CardTitle>
+                      </div>
+                      {feasibilityExtract && feasibilityExtract.length > 300 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsExpanded(!isExpanded)}
+                          className="text-purple-700 hover:text-purple-900 hover:bg-purple-100 dark:text-purple-400 dark:hover:text-purple-300"
+                        >
+                          {isExpanded ? (
+                            <>
+                              <ChevronUp className="h-4 w-4 mr-1" />
+                              Show Less
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-4 w-4 mr-1" />
+                              Show More
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </CardHeader>
+                    <CardContent className={isExpanded ? "" : "max-h-48 overflow-hidden relative"}>
+                      <CardDescription className="text-xs text-purple-600 mb-2">
+                        AI-generated preliminary assessment
+                      </CardDescription>
+                      <div className="prose prose-sm max-w-none dark:prose-invert">
+                        <div className="whitespace-pre-wrap text-purple-900 dark:text-purple-100">
+                          {isExpanded || !feasibilityExtract ? feasibilityExtract : `${feasibilityExtract.slice(0, 300)}...`}
                         </div>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <p className="text-purple-900 dark:text-purple-100 whitespace-pre-wrap">
-                          {feasibilityText}
-                        </p>
-                      </div>
+                      {!isExpanded && feasibilityExtract && feasibilityExtract.length > 300 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent dark:from-slate-950/50" />
+                      )}
                     </CardContent>
                   </Card>
                 );
