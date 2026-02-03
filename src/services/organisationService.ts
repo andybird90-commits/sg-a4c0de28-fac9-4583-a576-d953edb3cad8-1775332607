@@ -78,15 +78,15 @@ export const organisationService = {
       const { data, error } = await supabase
         .from("organisations")
         .select("*")
-        .eq("organisation_code", code.trim().toLowerCase())
+        .ilike("organisation_code", code)
         .maybeSingle();
 
       if (error) {
         console.error("Error fetching organisation by code:", error);
         return null;
       }
-      
-      return data as Organisation;
+
+      return data;
     } catch (err) {
       console.error("Exception in getOrganisationByCode:", err);
       return null;
