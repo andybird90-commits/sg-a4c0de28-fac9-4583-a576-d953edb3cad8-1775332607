@@ -118,12 +118,12 @@ export default function CIFDetailPage() {
             const researchData = await researchResponse.json();
             console.log("Research data received:", researchData);
 
-            if (researchData.summary) {
+            if (researchData.feasibility_summary || researchData.summary) {
               console.log("Attempting to save research to database...");
               
-              // Save the research to the database
+              // Save the entire research response as JSON
               const updateResult = await cifService.updateCIF(cifId, {
-                company_research: researchData.summary,
+                company_research: JSON.stringify(researchData),
               });
 
               console.log("Update result:", updateResult);
@@ -432,38 +432,32 @@ export default function CIFDetailPage() {
       try {
         console.log("Raw company_research:", cif.company_research);
         
-        // The company_research is the summary string from the AI
-        // Parse it as JSON to extract structured data
-        let parsed: any = typeof cif.company_research === "string"
+        // Parse the JSON string
+        const parsed = typeof cif.company_research === 'string' 
           ? JSON.parse(cif.company_research)
           : cif.company_research;
-
-        console.log("Parsed research:", parsed);
         
-        // If parsed is still a string, it might be double-encoded
-        if (typeof parsed === "string") {
-          parsed = JSON.parse(parsed);
-        }
-
-        console.log("Final parsed data:", parsed);
+        console.log("Parsed research:", parsed);
         console.log("Available keys:", Object.keys(parsed));
-
-        // Extract feasibility_summary from the parsed data
-        if (parsed.feasibility_summary) {
-          console.log("Found feasibility_summary:", parsed.feasibility_summary);
-          setFeasibilityExtract(
-            typeof parsed.feasibility_summary === "string"
-              ? parsed.feasibility_summary
-              : JSON.stringify(parsed.feasibility_summary, null, 2)
-          );
+        console.log("feasibility_summary:", parsed.feasibility_summary);
+        
+        // Extract the feasibility summary - handle both direct object and nested structure
+        const summary = parsed.feasibility_summary || parsed.summary || "";
+        
+        if (summary) {
+          console.log("✅ Found summary:", summary);
+          setFeasibilityExtract(summary);
         } else {
-          console.log("No feasibility_summary in parsed data");
+          console.log("❌ No summary found in:", parsed);
           setFeasibilityExtract("");
         }
       } catch (error) {
         console.error("Error parsing company_research:", error);
         setFeasibilityExtract("");
       }
+    } else {
+      console.log("No company_research data available");
+      setFeasibilityExtract("");
     }
   }, [cif?.company_research]);
 
