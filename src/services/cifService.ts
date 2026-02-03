@@ -24,6 +24,7 @@ export interface CompaniesHouseData {
   sic_codes?: string[];
   date_of_creation?: string;
   type?: string;
+  last_accounts_date?: string | null;
   number_of_directors?: number;
   number_of_employees?: number;
 }
@@ -97,6 +98,7 @@ export const cifService = {
       registered_address?: string;
       sic_codes?: string[];
       incorporation_date?: string;
+      last_accounts_date?: string | null;
       status?: string;
       number_of_directors?: number;
       number_of_employees?: number;
@@ -131,6 +133,7 @@ export const cifService = {
         registered_address: data.prospectData.registered_address,
         sic_codes: data.prospectData.sic_codes || [],
         incorporation_date: data.prospectData.incorporation_date || null,
+        last_accounts_date: data.prospectData.last_accounts_date || null,
         number_of_directors: data.prospectData.number_of_directors || null,
         number_of_employees: data.prospectData.number_of_employees || null,
         bd_owner_id: data.createdBy,

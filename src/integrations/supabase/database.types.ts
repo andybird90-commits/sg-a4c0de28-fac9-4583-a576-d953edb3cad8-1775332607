@@ -1925,6 +1925,7 @@ export type Database = {
           created_at: string
           id: string
           incorporation_date: string | null
+          last_accounts_date: string | null
           number_of_directors: number | null
           number_of_employees: number | null
           org_id: string | null
@@ -1946,6 +1947,7 @@ export type Database = {
           created_at?: string
           id?: string
           incorporation_date?: string | null
+          last_accounts_date?: string | null
           number_of_directors?: number | null
           number_of_employees?: number | null
           org_id?: string | null
@@ -1967,6 +1969,7 @@ export type Database = {
           created_at?: string
           id?: string
           incorporation_date?: string | null
+          last_accounts_date?: string | null
           number_of_directors?: number | null
           number_of_employees?: number | null
           org_id?: string | null

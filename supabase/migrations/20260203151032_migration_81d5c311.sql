@@ -1,0 +1,1 @@
+ALTER TABLE prospects ADD COLUMN last_accounts_date date;

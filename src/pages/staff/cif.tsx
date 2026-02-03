@@ -481,6 +481,7 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
           registered_address: `${companyData.registered_address?.address_line_1 || ""}, ${companyData.registered_address?.locality || ""}, ${companyData.registered_address?.postal_code || ""}`.trim(),
           sic_codes: companyData.sic_codes,
           incorporation_date: companyData.date_of_creation,
+          last_accounts_date: companyData.last_accounts_date,
           number_of_directors: companyData.number_of_directors,
           number_of_employees: companyData.number_of_employees,
         },

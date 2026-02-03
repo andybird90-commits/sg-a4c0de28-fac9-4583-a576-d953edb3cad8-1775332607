@@ -69,6 +69,7 @@ export default async function handler(
       sic_codes: companyData.sic_codes,
       date_of_creation: companyData.date_of_creation,
       type: companyData.type,
+      last_accounts_date: companyData.accounts?.last_accounts?.made_up_to || null,
     };
 
     // Fetch filing history if requested
