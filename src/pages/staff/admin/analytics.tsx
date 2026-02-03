@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { StaffLayout } from "@/components/staff/StaffLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { BarChart3, TrendingUp, Users, Building2, FileText, Clock } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Building2, FileText } from "lucide-react";
 
 interface AnalyticsData {
   totalUsers: number;
@@ -44,12 +44,12 @@ export default function AdminAnalytics() {
     try {
       setLoading(true);
 
-      // Get total counts
+      // Get total counts - select only ID for counting
       const [usersCount, orgsCount, claimsCount, evidenceCount] = await Promise.all([
-        supabase.from("profiles").select("*", { count: "exact", head: true }),
-        supabase.from("organisations").select("*", { count: "exact", head: true }),
-        supabase.from("claims").select("*", { count: "exact", head: true }),
-        supabase.from("evidence_items").select("*", { count: "exact", head: true }),
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("organisations").select("id", { count: "exact", head: true }),
+        supabase.from("claims").select("id", { count: "exact", head: true }),
+        supabase.from("evidence_items").select("id", { count: "exact", head: true }),
       ]);
 
       // Get recent activity (last 7 days)
@@ -60,11 +60,11 @@ export default function AdminAnalytics() {
       const [newUsers, newClaims] = await Promise.all([
         supabase
           .from("profiles")
-          .select("*", { count: "exact", head: true })
+          .select("id", { count: "exact", head: true })
           .gte("created_at", weekAgoISO),
         supabase
           .from("claims")
-          .select("*", { count: "exact", head: true })
+          .select("id", { count: "exact", head: true })
           .gte("created_at", weekAgoISO),
       ]);
 
@@ -78,12 +78,12 @@ export default function AdminAnalytics() {
           const [users, claims] = await Promise.all([
             supabase
               .from("organisation_users")
-              .select("*", { count: "exact", head: true })
-              .eq("organisation_id", org.id),
+              .select("id", { count: "exact", head: true })
+              .eq("org_id", org.id),
             supabase
               .from("claims")
-              .select("*", { count: "exact", head: true })
-              .eq("organisation_id", org.id),
+              .select("id", { count: "exact", head: true })
+              .eq("org_id", org.id),
           ]);
 
           return {
