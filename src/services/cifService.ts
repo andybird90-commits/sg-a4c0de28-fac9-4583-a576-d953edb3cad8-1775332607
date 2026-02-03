@@ -830,9 +830,14 @@ export const cifService = {
   },
 
   /**
-   * Update CIF record
+   * Update a CIF record with new data
    */
-  async updateCIF(cifId: string, updates: CIFUpdate): Promise<CIFRecord | null> {
+  async updateCIF(
+    cifId: string,
+    updates: CIFUpdate
+  ): Promise<CIFRecord | null> {
+    console.log("cifService.updateCIF called with:", { cifId, updates });
+    
     try {
       const { data, error } = await supabase
         .from("cif_records")
@@ -841,11 +846,18 @@ export const cifService = {
         .select()
         .single();
 
-      if (error) throw error;
+      console.log("updateCIF query result:", { data, error });
+
+      if (error) {
+        console.error("Error updating CIF:", error);
+        throw error;
+      }
+
+      console.log("CIF updated successfully:", data);
       return data;
     } catch (error) {
-      console.error("Error updating CIF:", error);
-      return null;
+      console.error("Exception in updateCIF:", error);
+      throw error;
     }
   },
 

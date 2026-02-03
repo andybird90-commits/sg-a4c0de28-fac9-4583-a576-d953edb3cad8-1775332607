@@ -87,46 +87,72 @@ export default function CIFDetailPage() {
 
     setLoading(true);
     try {
+      console.log("Fetching CIF:", cifId);
       const data = await cifService.getCIFById(cifId);
-      console.log("CIF data loaded:", data);
-      setCif(data);
-
-      // Trigger AI research if not done yet
-      // Check prospects for company details
-      const prospect = Array.isArray(data?.prospects) ? data?.prospects[0] : data?.prospects;
       
-      if (data && !data.company_research && prospect?.company_name) {
-        console.log("Starting AI research for:", prospect.company_name);
+      if (!data) {
+        router.push("/staff/cif");
+        return;
+      }
+
+      setCif(data);
+      console.log("CIF loaded:", data);
+
+      // Check if we need to run AI research
+      if (!data.company_research && data.prospects?.company_name && data.prospects?.company_number) {
+        console.log("Starting AI research for:", data.prospects.company_name);
+        
         try {
-          const response = await fetch("/api/sidekick/research", {
+          const researchResponse = await fetch("/api/sidekick/research", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              companyName: prospect.company_name,
-              companyNumber: prospect.company_number,
+              companyName: data.prospects.company_name,
+              companyNumber: data.prospects.company_number,
             }),
           });
 
-          console.log("Research response status:", response.status);
+          console.log("Research response status:", researchResponse.status);
 
-          if (response.ok) {
-            const researchData = await response.json();
+          if (researchResponse.ok) {
+            const researchData = await researchResponse.json();
             console.log("Research data received:", researchData);
 
-            // Store the ENTIRE research response as JSON string
-            const researchString = typeof researchData === "string" 
-              ? researchData 
-              : JSON.stringify(researchData);
+            if (researchData.summary) {
+              console.log("Attempting to save research to database...");
+              
+              // Save the research to the database
+              const updateResult = await cifService.updateCIF(cifId, {
+                company_research: researchData.summary,
+              });
 
-            await cifService.updateCIF(cifId, {
-              company_research: researchString,
-            });
+              console.log("Update result:", updateResult);
 
-            // Update local state
-            setCif((prev) => prev ? { ...prev, company_research: researchString } : null);
+              if (updateResult) {
+                console.log("Research saved successfully, refreshing CIF...");
+                // Refresh the CIF to show the new research
+                const updatedData = await cifService.getCIFById(cifId);
+                if (updatedData) {
+                  setCif(updatedData);
+                  console.log("CIF refreshed with research:", updatedData);
+                }
+              } else {
+                console.error("Failed to save research - updateResult was null/undefined");
+              }
+            } else {
+              console.warn("No summary in research response");
+            }
+          } else {
+            console.error("Research API call failed:", researchResponse.status);
           }
-        } catch (error) {
-          console.error("Research failed:", error);
+        } catch (researchError) {
+          console.error("Error during AI research:", researchError);
+        }
+      } else {
+        if (data.company_research) {
+          console.log("Research already exists in database");
+        } else {
+          console.log("Cannot run research - missing company data");
         }
       }
     } catch (error) {
