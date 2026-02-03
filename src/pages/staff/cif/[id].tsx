@@ -37,6 +37,9 @@ export default function CIFDetailPage() {
   const [rejectToStage, setRejectToStage] = useState<"bdm_section" | "tech_feasibility" | "financial_section">("bdm_section");
   const [rejectionReason, setRejectionReason] = useState("");
 
+  // Delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
   // BDM Form State
   const [bdmBusinessBackground, setBdmBusinessBackground] = useState("");
   const [bdmProjectOverview, setBdmProjectOverview] = useState("");
@@ -434,6 +437,36 @@ export default function CIFDetailPage() {
     }
   };
 
+  const handleDeleteCIF = async () => {
+    if (!cif || !profile?.id) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("cif_records")
+        .delete()
+        .eq("id", cif.id);
+
+      if (error) {
+        console.error("Delete error:", error);
+        toast({ title: "Error", description: "Failed to delete CIF", variant: "destructive" });
+        return;
+      }
+
+      toast({ 
+        title: "Success", 
+        description: "CIF deleted successfully"
+      });
+      setShowDeleteModal(false);
+      router.push("/staff/cif");
+    } catch (error) {
+      console.error("Error deleting CIF:", error);
+      toast({ title: "Error", description: "Failed to delete CIF", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (cif?.company_research) {
       try {
@@ -511,6 +544,16 @@ export default function CIFDetailPage() {
               </p>
             </div>
           </div>
+          {profile?.role === "admin" && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteModal(true)}
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              Delete CIF
+            </Button>
+          )}
         </div>
 
         <Tabs defaultValue="bdm" className="w-full">
@@ -1450,6 +1493,31 @@ export default function CIFDetailPage() {
                           rejectionType === "archive"
                           ? "Archive CIF"
                           : "Send Back"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Delete Confirmation Dialog */}
+                <AlertDialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete CIF Permanently?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the CIF record
+                        for <strong>{companyName}</strong> and remove all associated data from the database.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel onClick={() => setShowDeleteModal(false)}>
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteCIF}
+                        disabled={saving}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        {saving ? "Deleting..." : "Delete Permanently"}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
