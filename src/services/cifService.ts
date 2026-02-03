@@ -674,6 +674,46 @@ export const cifService = {
   },
 
   /**
+   * Get all CIF records for the CIF list
+   */
+  async getAllCIFs(): Promise<CIFWithDetails[]> {
+    try {
+      const { data, error } = await supabase
+        .from("cif_records")
+        .select(`
+          *,
+          prospects(*),
+          created_by_profile:profiles!cif_records_section1_completed_by_fkey(full_name, email),
+          feasibility:feasibility_analyses(*)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      return (data || []).map(item => {
+        const feasibility = Array.isArray(item.feasibility) ? item.feasibility[0] : item.feasibility;
+        return {
+          ...item,
+          created_by_profile: Array.isArray(item.created_by_profile) ? item.created_by_profile[0] : item.created_by_profile,
+          prospects: Array.isArray(item.prospects) ? item.prospects[0] : item.prospects,
+          technical_understanding: feasibility?.technical_reasoning,
+          challenges_uncertainties: feasibility?.technical_challenges,
+          qualifying_activities: feasibility?.qualifying_activities as string[] | null, // Cast jsonb to string[]
+          rd_projects_list: feasibility?.rd_projects_list as string[] | null,
+          feasibility_status: feasibility?.feasibility_status as any,
+          estimated_claim_band: feasibility?.estimated_claim_band as any,
+          risk_rating: feasibility?.risk_rating as any,
+          notes_for_finance: feasibility?.notes_for_finance,
+          missing_information_flags: feasibility?.missing_information_flags as string[] | null
+        } as CIFWithDetails;
+      }) as CIFWithDetails[];
+    } catch (error) {
+      console.error("Error fetching CIFs:", error);
+      return [];
+    }
+  },
+
+  /**
    * Get Job Board A (Awaiting Technical)
    */
   async getJobBoardA(): Promise<CIFWithDetails[]> {
