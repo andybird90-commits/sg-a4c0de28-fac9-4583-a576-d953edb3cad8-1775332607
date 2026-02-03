@@ -283,6 +283,32 @@ export default function CIFDetailPage() {
     }
   };
 
+  const handleCompleteBDM = async () => {
+    if (!cif || !profile?.id) return;
+
+    setSaving(true);
+    try {
+      const result = await cifService.completeBDMSection(
+        cif.id,
+        {
+          // BDM section fields
+        },
+        profile.id
+      );
+
+      if (result) {
+        toast({ title: "Success", description: "BDM section completed" });
+        fetchCIF(cif.id);
+      } else {
+        toast({ title: "Error", description: "Failed to complete BDM section", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to save BDM section", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleCompleteTechnical = async () => {
     if (!cif || !profile?.id) return;
 
