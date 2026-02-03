@@ -79,7 +79,7 @@ export const organisationService = {
         .from("organisations")
         .select("*")
         .eq("organisation_code", code.trim().toLowerCase())
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching organisation by code:", error);
