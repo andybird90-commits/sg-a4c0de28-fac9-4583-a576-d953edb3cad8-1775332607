@@ -99,16 +99,16 @@ export default function CIFDetailPage() {
       console.log("CIF loaded:", data);
 
       // Check if we need to run AI research
-      if (!data.company_research && data.prospects?.company_name && data.prospects?.company_number) {
-        console.log("Starting AI research for:", data.prospects.company_name);
+      if (!data.company_research && prospect?.company_name && prospect?.company_number) {
+        console.log("Starting AI research for:", prospect.company_name);
         
         try {
           const researchResponse = await fetch("/api/sidekick/research", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              companyName: data.prospects.company_name,
-              companyNumber: data.prospects.company_number,
+              companyName: prospect.company_name,
+              companyNumber: prospect.company_number,
             }),
           });
 
@@ -432,15 +432,23 @@ export default function CIFDetailPage() {
       try {
         console.log("Raw company_research:", cif.company_research);
         
-        // Parse the stored JSON string
-        const parsed: any = typeof cif.company_research === "string"
+        // The company_research is the summary string from the AI
+        // Parse it as JSON to extract structured data
+        let parsed: any = typeof cif.company_research === "string"
           ? JSON.parse(cif.company_research)
           : cif.company_research;
 
         console.log("Parsed research:", parsed);
+        
+        // If parsed is still a string, it might be double-encoded
+        if (typeof parsed === "string") {
+          parsed = JSON.parse(parsed);
+        }
+
+        console.log("Final parsed data:", parsed);
         console.log("Available keys:", Object.keys(parsed));
 
-        // Extract feasibility_summary
+        // Extract feasibility_summary from the parsed data
         if (parsed.feasibility_summary) {
           console.log("Found feasibility_summary:", parsed.feasibility_summary);
           setFeasibilityExtract(
