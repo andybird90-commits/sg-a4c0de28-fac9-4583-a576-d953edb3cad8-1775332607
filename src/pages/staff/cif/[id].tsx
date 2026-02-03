@@ -82,89 +82,55 @@ export default function CIFDetailPage() {
     }
   }, [id, isStaff]);
 
-  const fetchCIF = async (cifId: string) => {
+  const fetchCIF = async () => {
+    if (!id) return;
+
     setLoading(true);
     try {
-      const data = await cifService.getCIFById(cifId);
-      if (data) {
-        setCif(data);
-        
-        // Extract feasibility analysis from company research
-        if (data.company_research) {
-          let research: any = data.company_research;
-          let extractedText = "";
+      const data = await cifService.getCIFById(id as string);
+      console.log("CIF data loaded:", data);
+      setCif(data);
 
-          // Handle JSON string
-          if (typeof research === "string") {
-            try {
-              if (research.trim().startsWith('{')) {
-                research = JSON.parse(research);
-              }
-            } catch (e) {
-              // Not JSON
-            }
+      // Trigger AI research if not done yet
+      // Check prospects for company details
+      const prospect = Array.isArray(data?.prospects) ? data?.prospects[0] : data?.prospects;
+      
+      if (data && !data.company_research && prospect?.company_name) {
+        console.log("Starting AI research for:", prospect.company_name);
+        try {
+          const response = await fetch("/api/sidekick/research", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              companyName: prospect.company_name,
+              companyNumber: prospect.company_number,
+            }),
+          });
+
+          console.log("Research response status:", response.status);
+
+          if (response.ok) {
+            const researchData = await response.json();
+            console.log("Research data received:", researchData);
+
+            // Store the ENTIRE research response as JSON string
+            const researchString = typeof researchData === "string" 
+              ? researchData 
+              : JSON.stringify(researchData);
+
+            await cifService.updateCIF(id as string, {
+              company_research: researchString,
+            });
+
+            // Update local state
+            setCif((prev) => prev ? { ...prev, company_research: researchString } : null);
           }
-
-          if (typeof research === 'object' && research !== null) {
-            extractedText = research.feasibility_analysis || 
-                          research.technical_feasibility || 
-                          research.rd_feasibility || 
-                          research.analysis?.feasibility || 
-                          research.assessment?.feasibility || "";
-          }
-
-          // Fallback to regex extraction if not found in object or if research is string
-          if (!extractedText && typeof data.company_research === 'string') {
-            const rawText = data.company_research;
-            // Capture everything after the header until the next major section (numbered list or double newline followed by bold)
-            // Or just capture the rest of the paragraph/section if it's simpler
-            const match = rawText.match(/(?:Feasibility|R&D Potential|Technical Assessment)[:\s]*([\s\S]*?)(?=\n\n\d+\.|\n\n\*\*|$)/i);
-            
-            if (match && match[1]) {
-              extractedText = match[1].trim();
-            } else {
-              // Fallback: take first 2 paragraphs
-              const parts = rawText.split('\n\n');
-              extractedText = parts.slice(0, 2).join('\n\n');
-            }
-          }
-
-          setFeasibilityExtract(extractedText);
+        } catch (error) {
+          console.error("Research failed:", error);
         }
-
-        // Extract last accounts filed date from prospect data
-        if (data.prospects?.last_accounts_date) {
-          setLastAccountsDate(data.prospects.last_accounts_date);
-        }
-
-        // Pre-populate form fields if data exists
-        setTechUnderstanding(data.technical_understanding || "");
-        setTechChallenges(data.challenges_uncertainties || "");
-        setTechActivities(data.qualifying_activities?.join("\n") || "");
-        setTechProjects(data.rd_projects_list?.join("\n") || "");
-        if (data.feasibility_status) setTechStatus(data.feasibility_status);
-        if (data.estimated_claim_band) setTechClaimBand(data.estimated_claim_band);
-        if (data.risk_rating) setTechRiskRating(data.risk_rating);
-        setTechNotesForFinance(data.notes_for_finance || "");
-        setTechMissingInfo(data.missing_information_flags?.join("\n") || "");
-
-        setFinancialYear(data.financial_year || "");
-        setStaffCost(data.staff_cost_estimate?.toString() || "");
-        setSubcontractorCost(data.subcontractor_estimate?.toString() || "");
-        setConsumablesCost(data.consumables_estimate?.toString() || "");
-        setSoftwareCost(data.software_estimate?.toString() || "");
-        setApportionment(data.apportionment_assumptions || "");
-        setAccountantName(data.accountant_name || "");
-        setAccountantFirm(data.accountant_firm || "");
-        setAccountantEmail(data.accountant_email || "");
-        setAccountantPhone(data.accountant_phone || "");
-        setReadyToSubmit(data.ready_to_submit || false);
-      } else {
-        toast({ title: "Error", description: "CIF not found", variant: "destructive" });
-        router.push("/staff/cif");
       }
     } catch (error) {
-      toast({ title: "Error", description: "Failed to load CIF", variant: "destructive" });
+      console.error("Failed to load CIF:", error);
     } finally {
       setLoading(false);
     }
@@ -438,60 +404,30 @@ export default function CIFDetailPage() {
   useEffect(() => {
     if (cif?.company_research) {
       try {
-        let parsed: any = cif.company_research;
+        console.log("Raw company_research:", cif.company_research);
         
-        // Parse if it's a JSON string
-        if (typeof parsed === "string") {
-          try {
-            if (parsed.trim().startsWith('{')) {
-              parsed = JSON.parse(parsed);
-            }
-          } catch {
-            // If not JSON, treat as plain text
-          }
-        }
+        // Parse the stored JSON string
+        const parsed: any = typeof cif.company_research === "string"
+          ? JSON.parse(cif.company_research)
+          : cif.company_research;
 
-        // NEW: Try to extract from feasibility_summary field first
-        if (parsed?.feasibility_summary) {
-          setFeasibilityExtract(parsed.feasibility_summary);
-          return;
-        }
+        console.log("Parsed research:", parsed);
+        console.log("Available keys:", Object.keys(parsed));
 
-        // Try standard fields
-        const feasibilityText = 
-          parsed?.feasibility_analysis ||
-          parsed?.technical_feasibility ||
-          parsed?.rd_feasibility ||
-          parsed?.analysis?.feasibility ||
-          parsed?.assessment?.feasibility;
-
-        if (feasibilityText) {
-          setFeasibilityExtract(feasibilityText);
-          return;
-        }
-
-        // Try regex extraction from string content
-        if (typeof parsed === "string") {
-          const match = parsed.match(
-            /(?:Feasibility|R&D Potential|Technical Assessment)[:\s]*\n+([\s\S]+?)(?=\n\n\d+\.|$)/i
+        // Extract feasibility_summary
+        if (parsed.feasibility_summary) {
+          console.log("Found feasibility_summary:", parsed.feasibility_summary);
+          setFeasibilityExtract(
+            typeof parsed.feasibility_summary === "string"
+              ? parsed.feasibility_summary
+              : JSON.stringify(parsed.feasibility_summary, null, 2)
           );
-          if (match?.[1]) {
-            setFeasibilityExtract(match[1].trim());
-            return;
-          }
-
-          // Fallback: extract first 2 paragraphs
-          const paragraphs = parsed.split(/\n\n+/).filter((p: string) => p.trim().length > 50);
-          if (paragraphs.length > 0) {
-            setFeasibilityExtract(paragraphs.slice(0, 2).join("\n\n"));
-            return;
-          }
+        } else {
+          console.log("No feasibility_summary in parsed data");
+          setFeasibilityExtract("");
         }
-
-        // Final fallback
-        setFeasibilityExtract(typeof parsed === "string" ? parsed : JSON.stringify(parsed, null, 2));
       } catch (error) {
-        console.error("Error parsing company research:", error);
+        console.error("Error parsing company_research:", error);
         setFeasibilityExtract("");
       }
     }
