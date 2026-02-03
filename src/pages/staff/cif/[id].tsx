@@ -435,6 +435,68 @@ export default function CIFDetailPage() {
     }
   };
 
+  useEffect(() => {
+    if (cif?.company_research) {
+      try {
+        let parsed: any = cif.company_research;
+        
+        // Parse if it's a JSON string
+        if (typeof parsed === "string") {
+          try {
+            if (parsed.trim().startsWith('{')) {
+              parsed = JSON.parse(parsed);
+            }
+          } catch {
+            // If not JSON, treat as plain text
+          }
+        }
+
+        // NEW: Try to extract from feasibility_summary field first
+        if (parsed?.feasibility_summary) {
+          setFeasibilityExtract(parsed.feasibility_summary);
+          return;
+        }
+
+        // Try standard fields
+        const feasibilityText = 
+          parsed?.feasibility_analysis ||
+          parsed?.technical_feasibility ||
+          parsed?.rd_feasibility ||
+          parsed?.analysis?.feasibility ||
+          parsed?.assessment?.feasibility;
+
+        if (feasibilityText) {
+          setFeasibilityExtract(feasibilityText);
+          return;
+        }
+
+        // Try regex extraction from string content
+        if (typeof parsed === "string") {
+          const match = parsed.match(
+            /(?:Feasibility|R&D Potential|Technical Assessment)[:\s]*\n+([\s\S]+?)(?=\n\n\d+\.|$)/i
+          );
+          if (match?.[1]) {
+            setFeasibilityExtract(match[1].trim());
+            return;
+          }
+
+          // Fallback: extract first 2 paragraphs
+          const paragraphs = parsed.split(/\n\n+/).filter((p: string) => p.trim().length > 50);
+          if (paragraphs.length > 0) {
+            setFeasibilityExtract(paragraphs.slice(0, 2).join("\n\n"));
+            return;
+          }
+        }
+
+        // Final fallback
+        setFeasibilityExtract(typeof parsed === "string" ? parsed : JSON.stringify(parsed, null, 2));
+      } catch (error) {
+        console.error("Error parsing company research:", error);
+        setFeasibilityExtract("");
+      }
+    }
+  }, [cif?.company_research]);
+
   if (!isStaff || loading) {
     return (
       <StaffLayout>
@@ -1282,8 +1344,9 @@ export default function CIFDetailPage() {
                       >
                         {saving ? "Processing..." : 
                           rejectionType === "delete" ? "Delete Permanently" :
-                          rejectionType === "archive" ? "Archive CIF" :
-                          "Send Back"}
+                          rejectionType === "archive"
+                          ? "Archive CIF"
+                          : "Send Back"}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
