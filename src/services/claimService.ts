@@ -44,6 +44,13 @@ export class ClaimService {
     assigned_to_me?: boolean;
   }): Promise<ClaimWithDetails[]> {
     try {
+      // Validate session first
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("[claimService.getAllClaims] No active session");
+        return [];
+      }
+
       let query = supabase
         .from("claims")
         .select(`
@@ -120,6 +127,13 @@ export class ClaimService {
    */
   async getClaimById(claimId: string): Promise<ClaimWithDetails | null> {
     try {
+      // Validate session first
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("[claimService.getClaimById] No active session");
+        return null;
+      }
+
       const { data: claim, error: claimError } = await supabase
         .from("claims")
         .select(`
