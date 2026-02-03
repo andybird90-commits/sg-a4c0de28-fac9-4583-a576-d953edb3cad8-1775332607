@@ -346,9 +346,7 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
   const [lookupLoading, setLookupLoading] = useState(false);
   const [companyData, setCompanyData] = useState<any>(null);
   const [saving, setSaving] = useState(false);
-  const [researchSummary, setResearchSummary] = useState("");
   const [researchLoading, setResearchLoading] = useState(false);
-  const [lookingUp, setLookingUp] = useState(false);
   const [companyResearch, setCompanyResearch] = useState("");
   const [formData, setFormData] = useState({
     businessBackground: "",
@@ -366,20 +364,6 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
     previousClaimDateSubmitted: "",
   });
 
-  // BDM Form Fields
-  const [businessBackground, setBusinessBackground] = useState("");
-  const [primaryContactName, setPrimaryContactName] = useState("");
-  const [primaryContactPosition, setPrimaryContactPosition] = useState("");
-  const [primaryContactEmail, setPrimaryContactEmail] = useState("");
-  const [primaryContactPhone, setPrimaryContactPhone] = useState("");
-  const [primaryContactLandline, setPrimaryContactLandline] = useState("");
-  const [hasClaimedBefore, setHasClaimedBefore] = useState(false);
-  const [previousClaimYearEnd, setPreviousClaimYearEnd] = useState("");
-  const [previousClaimValue, setPreviousClaimValue] = useState("");
-  const [previousClaimDateSubmitted, setPreviousClaimDateSubmitted] = useState("");
-  const [rdThemes, setRdThemes] = useState("");
-  const [expectedFeasibilityDate, setExpectedFeasibilityDate] = useState("");
-
   const handleCompanyLookup = async () => {
     if (!companyNumber.trim()) {
       toast({ title: "Error", description: "Please enter a company number", variant: "destructive" });
@@ -387,8 +371,11 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
     }
 
     setLookupLoading(true);
+    setCompanyResearch(""); // Clear previous research
+    
     try {
-      const data = await cifService.lookupCompaniesHouse(companyNumber);
+      // Step 1: Lookup company in Companies House
+      const data = await cifService.lookupCompaniesHouse(companyNumber.trim());
 
       if (!data) {
         toast({ title: "Error", description: "Company not found", variant: "destructive" });
@@ -408,81 +395,61 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
       setStep("bdm");
       toast({ title: "Success", description: "Company found and active" });
 
-      // Trigger auto-research
-      performResearch(data.company_name, data.company_number);
+      // Step 2: Trigger AI research
+      setResearchLoading(true);
+      try {
+        console.log("Starting AI research for:", data.company_name);
+        
+        const researchResponse = await fetch("/api/sidekick/research", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            companyName: data.company_name,
+            companyNumber: data.company_number,
+            industry: data.sic_codes?.[0] || "Unknown"
+          })
+        });
 
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to lookup company", variant: "destructive" });
+        console.log("Research response status:", researchResponse.status);
+        
+        if (researchResponse.ok) {
+          const researchData = await researchResponse.json();
+          console.log("Research data received:", researchData);
+          
+          if (researchData.summary) {
+            setCompanyResearch(researchData.summary);
+            toast({ 
+              title: "Research Complete", 
+              description: "AI Sidekick has analyzed the company" 
+            });
+          } else {
+            console.warn("No summary in research response");
+          }
+        } else {
+          const errorText = await researchResponse.text();
+          console.error("Research API error:", researchResponse.status, errorText);
+          toast({
+            title: "Research Failed",
+            description: "Could not generate AI research. You can still complete the form manually.",
+            variant: "destructive"
+          });
+        }
+      } catch (researchError) {
+        console.error("Research fetch error:", researchError);
+        toast({
+          title: "Research Error",
+          description: "AI research failed. Please complete the form manually.",
+          variant: "destructive"
+        });
+      } finally {
+        setResearchLoading(false);
+      }
+
+    } catch (error: any) {
+      console.error("Company lookup error:", error);
+      toast({ title: "Error", description: error.message || "Failed to lookup company", variant: "destructive" });
     } finally {
       setLookupLoading(false);
-    }
-  };
-
-  const handleLookup = async () => {
-    if (!companyNumber.trim()) {
-      toast({ title: "Please enter a company number", variant: "destructive" });
-      return;
-    }
-
-    setLookingUp(true);
-    try {
-      const data = await cifService.lookupCompaniesHouse(companyNumber.trim());
-      if (data) {
-        setCompanyData(data);
-        toast({ title: "Company found!", description: data.company_name });
-        
-        // Automatically fetch AI research
-        setResearchLoading(true);
-        try {
-          const researchResponse = await fetch("/api/sidekick/research", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              companyName: data.company_name,
-              companyNumber: data.company_number,
-              industry: data.sic_codes?.[0] || "Unknown"
-            })
-          });
-          
-          if (researchResponse.ok) {
-            const researchData = await researchResponse.json();
-            setCompanyResearch(researchData.summary || "");
-          }
-        } catch (err) {
-          console.error("Research fetch error:", err);
-        } finally {
-          setResearchLoading(false);
-        }
-      } else {
-        toast({ title: "Company not found", variant: "destructive" });
-      }
-    } catch (error: any) {
-      toast({ title: "Lookup failed", description: error.message, variant: "destructive" });
-    } finally {
-      setLookingUp(false);
-    }
-  };
-
-  const performResearch = async (name: string, number: string) => {
-    setResearchLoading(true);
-    try {
-      const res = await fetch("/api/sidekick/research", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ companyName: name, companyNumber: number }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setResearchSummary(data.summary);
-        // Pre-fill business background if empty
-        if (!businessBackground) {
-           setBusinessBackground(data.summary);
-        }
-      }
-    } catch (err) {
-      console.error("Research failed", err);
-    } finally {
-      setResearchLoading(false);
     }
   };
 
@@ -598,8 +565,25 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
             </CardHeader>
           </Card>
 
-          {/* Company Research Summary */}
-          {companyResearch && (
+          {/* Loading State for Research */}
+          {researchLoading && (
+            <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
+              <CardContent className="py-8">
+                <div className="flex items-center justify-center gap-3">
+                  <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="text-blue-700 dark:text-blue-300 font-medium">
+                    RD Sidekick is researching this company...
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Research Results */}
+          {!researchLoading && companyResearch && (
             <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
@@ -613,22 +597,6 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
                 <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                   {companyResearch}
                 </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {researchLoading && (
-            <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
-              <CardContent className="py-8">
-                <div className="flex items-center justify-center gap-3">
-                  <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span className="text-blue-700 dark:text-blue-300 font-medium">
-                    RD Sidekick is researching this company...
-                  </span>
-                </div>
               </CardContent>
             </Card>
           )}
