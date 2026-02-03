@@ -17,14 +17,20 @@ interface Profile {
   email: string;
   full_name: string | null;
   internal_role: string | null;
-  organisation_id: string | null;
   created_at: string;
+  organisation_id?: string | null; // Added for UI helper
 }
 
 interface Organisation {
   id: string;
   name: string;
   organisation_code: string;
+}
+
+interface OrganisationUser {
+  user_id: string;
+  org_id: string;
+  role: string;
 }
 
 export default function UsersAdmin() {
@@ -44,7 +50,7 @@ export default function UsersAdmin() {
 
   const loadData = async () => {
     try {
-      const [usersRes, orgsRes] = await Promise.all([
+      const [usersRes, orgsRes, orgUsersRes] = await Promise.all([
         supabase
           .from("profiles")
           .select("*")
@@ -52,13 +58,26 @@ export default function UsersAdmin() {
         supabase
           .from("organisations")
           .select("*")
-          .order("name")
+          .order("name"),
+        supabase
+          .from("organisation_users")
+          .select("*")
       ]);
 
       if (usersRes.error) throw usersRes.error;
       if (orgsRes.error) throw orgsRes.error;
+      if (orgUsersRes.error) throw orgUsersRes.error;
 
-      setUsers(usersRes.data || []);
+      // Map users with their organisation
+      const mappedUsers = (usersRes.data || []).map(user => {
+        const orgUser = (orgUsersRes.data || []).find(ou => ou.user_id === user.id);
+        return {
+          ...user,
+          organisation_id: orgUser ? orgUser.org_id : null
+        };
+      });
+
+      setUsers(mappedUsers);
       setOrganisations(orgsRes.data || []);
     } catch (error) {
       console.error("Error loading data:", error);
@@ -76,22 +95,35 @@ export default function UsersAdmin() {
     if (!selectedUser) return;
 
     try {
-      const updates: any = {};
-      
-      if (editRole === "client") {
-        updates.internal_role = null;
-        updates.organisation_id = editOrgId || null;
-      } else if (editRole === "staff") {
-        updates.internal_role = "staff";
-        updates.organisation_id = null;
-      }
-
-      const { error } = await supabase
+      // 1. Update internal role
+      const { error: profileError } = await supabase
         .from("profiles")
-        .update(updates)
+        .update({ internal_role: editRole === "staff" ? "staff" : null })
         .eq("id", selectedUser.id);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // 2. Update organisation assignment
+      // First, remove existing assignments
+      const { error: deleteError } = await supabase
+        .from("organisation_users")
+        .delete()
+        .eq("user_id", selectedUser.id);
+
+      if (deleteError) throw deleteError;
+
+      // Then add new assignment if it's a client and org is selected
+      if (editRole === "client" && editOrgId) {
+        const { error: insertError } = await supabase
+          .from("organisation_users")
+          .insert({
+            user_id: selectedUser.id,
+            org_id: editOrgId,
+            role: "client"
+          });
+
+        if (insertError) throw insertError;
+      }
 
       toast({
         title: "Success",
