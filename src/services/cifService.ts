@@ -215,6 +215,60 @@ export const cifService = {
   },
 
   /**
+   * Complete BDM section
+   */
+  async completeBDMSection(
+    cifId: string,
+    bdmData: {
+      business_background?: string;
+      project_overview?: string;
+      primary_contact_name?: string;
+      primary_contact_position?: string;
+      primary_contact_email?: string;
+      primary_contact_phone?: string;
+      rd_themes?: string[];
+      expected_feasibility_date?: string;
+      has_claimed_before?: boolean;
+      previous_claim_year_end_date?: string;
+      previous_claim_value?: number;
+      previous_claim_date_submitted?: string;
+    },
+    userId: string
+  ): Promise<CIFRecord | null> {
+    try {
+      const { data, error } = await supabase
+        .from("cif_records")
+        .update({
+          current_stage: "tech_feasibility",
+          business_background: bdmData.business_background,
+          project_overview: bdmData.project_overview,
+          primary_contact_name: bdmData.primary_contact_name,
+          primary_contact_position: bdmData.primary_contact_position,
+          primary_contact_email: bdmData.primary_contact_email,
+          primary_contact_phone: bdmData.primary_contact_phone,
+          rd_themes: bdmData.rd_themes,
+          expected_feasibility_date: bdmData.expected_feasibility_date,
+          has_claimed_before: bdmData.has_claimed_before,
+          previous_claim_year_end_date: bdmData.previous_claim_year_end_date,
+          previous_claim_value: bdmData.previous_claim_value,
+          previous_claim_date_submitted: bdmData.previous_claim_date_submitted,
+          section1_completed_by: userId,
+          section1_completed_at: new Date().toISOString(),
+          bdm_last_updated: new Date().toISOString(),
+        })
+        .eq("id", cifId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("Error completing BDM section:", error);
+      return null;
+    }
+  },
+
+  /**
    * Complete technical feasibility section
    */
   async completeTechnicalSection(

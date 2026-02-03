@@ -37,6 +37,19 @@ export default function CIFDetailPage() {
   const [rejectToStage, setRejectToStage] = useState<"bdm_section" | "tech_feasibility" | "financial_section">("bdm_section");
   const [rejectionReason, setRejectionReason] = useState("");
 
+  // BDM Form State
+  const [bdmBusinessBackground, setBdmBusinessBackground] = useState("");
+  const [bdmProjectOverview, setBdmProjectOverview] = useState("");
+  const [bdmContactName, setBdmContactName] = useState("");
+  const [bdmContactPosition, setBdmContactPosition] = useState("");
+  const [bdmContactEmail, setBdmContactEmail] = useState("");
+  const [bdmContactPhone, setBdmContactPhone] = useState("");
+  const [bdmRdThemes, setBdmRdThemes] = useState<string[]>([]);
+  const [bdmExpFeasibilityDate, setBdmExpFeasibilityDate] = useState("");
+  const [bdmHasClaimedBefore, setBdmHasClaimedBefore] = useState(false);
+  const [bdmPrevClaimYearEnd, setBdmPrevClaimYearEnd] = useState("");
+  const [bdmPrevClaimValue, setBdmPrevClaimValue] = useState("");
+
   // Technical Form State
   const [techUnderstanding, setTechUnderstanding] = useState("");
   const [techChallenges, setTechChallenges] = useState("");
@@ -98,66 +111,21 @@ export default function CIFDetailPage() {
       setCif(data);
       console.log("CIF loaded:", data);
 
-      // Check if we need to run AI research
-      if (!data.company_research && prospect?.company_name && prospect?.company_number) {
-        console.log("Starting AI research for:", prospect.company_name);
-        
-        try {
-          const researchResponse = await fetch("/api/sidekick/research", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              companyName: prospect.company_name,
-              companyNumber: prospect.company_number,
-            }),
-          });
+      // Populate BDM Form
+      setBdmBusinessBackground(data.business_background || "");
+      setBdmProjectOverview(data.project_overview || "");
+      setBdmContactName(data.primary_contact_name || "");
+      setBdmContactPosition(data.primary_contact_position || "");
+      setBdmContactEmail(data.primary_contact_email || "");
+      setBdmContactPhone(data.primary_contact_phone || "");
+      setBdmRdThemes(data.rd_themes || []);
+      setBdmExpFeasibilityDate(data.expected_feasibility_date || "");
+      setBdmHasClaimedBefore(data.has_claimed_before || false);
+      setBdmPrevClaimYearEnd(data.previous_claim_year_end_date || "");
+      setBdmPrevClaimValue(data.previous_claim_value?.toString() || "");
 
-          console.log("Research response status:", researchResponse.status);
-
-          if (researchResponse.ok) {
-            const researchData = await researchResponse.json();
-            console.log("Research data received:", researchData);
-            console.log("Available keys:", Object.keys(researchData));
-            console.log("feasibility_summary:", researchData.feasibility_summary);
-            
-            if (researchData.feasibility_summary) {
-              console.log("✅ Found summary:", researchData.feasibility_summary);
-              console.log("Attempting to save research to database...");
-              
-              // Save the entire research response as JSON
-              const updateResult = await cifService.updateCIF(cifId, {
-                company_research: JSON.stringify(researchData),
-              });
-
-              console.log("Update result:", updateResult);
-
-              if (updateResult) {
-                console.log("Research saved successfully, refreshing CIF...");
-                // Refresh the CIF to show the new research
-                const updatedData = await cifService.getCIFById(cifId);
-                if (updatedData) {
-                  setCif(updatedData);
-                  console.log("CIF refreshed with research:", updatedData);
-                }
-              } else {
-                console.error("Failed to save research - updateResult was null/undefined");
-              }
-            } else {
-              console.warn("No summary in research response:", researchData);
-            }
-          } else {
-            console.error("Research API call failed:", researchResponse.status);
-          }
-        } catch (researchError) {
-          console.error("Error during AI research:", researchError);
-        }
-      } else {
-        if (data.company_research) {
-          console.log("Research already exists in database");
-        } else {
-          console.log("Cannot run research - missing company data");
-        }
-      }
+      // Populate Technical Form
+      setTechUnderstanding(data.technical_understanding || "");
     } catch (error) {
       console.error("Failed to load CIF:", error);
     } finally {
@@ -291,7 +259,17 @@ export default function CIFDetailPage() {
       const result = await cifService.completeBDMSection(
         cif.id,
         {
-          // BDM section fields
+          business_background: bdmBusinessBackground,
+          project_overview: bdmProjectOverview,
+          primary_contact_name: bdmContactName,
+          primary_contact_position: bdmContactPosition,
+          primary_contact_email: bdmContactEmail,
+          primary_contact_phone: bdmContactPhone,
+          rd_themes: bdmRdThemes,
+          expected_feasibility_date: bdmExpFeasibilityDate,
+          has_claimed_before: bdmHasClaimedBefore,
+          previous_claim_year_end_date: bdmPrevClaimYearEnd,
+          previous_claim_value: bdmPrevClaimValue ? parseFloat(bdmPrevClaimValue) : undefined,
         },
         profile.id
       );
@@ -542,6 +520,138 @@ export default function CIFDetailPage() {
             <TabsTrigger value="financial">Financial</TabsTrigger>
             <TabsTrigger value="admin">Admin</TabsTrigger>
           </TabsList>
+
+          {/* BDM Tab */}
+          <TabsContent value="bdm" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Business Development</CardTitle>
+                <CardDescription>
+                  Initial capture of company information and R&D potential
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="primary_contact_name">Primary Contact Name</Label>
+                    <Input
+                      id="primary_contact_name"
+                      value={bdmContactName}
+                      onChange={(e) => setBdmContactName(e.target.value)}
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="primary_contact_position">Position</Label>
+                    <Input
+                      id="primary_contact_position"
+                      value={bdmContactPosition}
+                      onChange={(e) => setBdmContactPosition(e.target.value)}
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="primary_contact_email">Email</Label>
+                    <Input
+                      id="primary_contact_email"
+                      type="email"
+                      value={bdmContactEmail}
+                      onChange={(e) => setBdmContactEmail(e.target.value)}
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="primary_contact_phone">Phone</Label>
+                    <Input
+                      id="primary_contact_phone"
+                      value={bdmContactPhone}
+                      onChange={(e) => setBdmContactPhone(e.target.value)}
+                      disabled={!canEdit}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="business_background">Business Background</Label>
+                  <Textarea
+                    id="business_background"
+                    placeholder="Describe what the business does..."
+                    value={bdmBusinessBackground}
+                    onChange={(e) => setBdmBusinessBackground(e.target.value)}
+                    rows={3}
+                    disabled={!canEdit}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="project_overview">Project Overview</Label>
+                  <Textarea
+                    id="project_overview"
+                    placeholder="Overview of R&D projects..."
+                    value={bdmProjectOverview}
+                    onChange={(e) => setBdmProjectOverview(e.target.value)}
+                    rows={4}
+                    disabled={!canEdit}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="expected_feasibility_date">Expected Feasibility Date</Label>
+                    <Input
+                      id="expected_feasibility_date"
+                      type="date"
+                      value={bdmExpFeasibilityDate}
+                      onChange={(e) => setBdmExpFeasibilityDate(e.target.value)}
+                      disabled={!canEdit}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 py-2">
+                  <Checkbox
+                    id="has_claimed_before"
+                    checked={bdmHasClaimedBefore}
+                    onCheckedChange={(checked) => setBdmHasClaimedBefore(checked as boolean)}
+                    disabled={!canEdit}
+                  />
+                  <Label htmlFor="has_claimed_before">Has claimed R&D tax credits before?</Label>
+                </div>
+
+                {bdmHasClaimedBefore && (
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                    <div className="space-y-2">
+                      <Label htmlFor="prev_claim_year">Previous Claim Year End</Label>
+                      <Input
+                        id="prev_claim_year"
+                        type="date"
+                        value={bdmPrevClaimYearEnd}
+                        onChange={(e) => setBdmPrevClaimYearEnd(e.target.value)}
+                        disabled={!canEdit}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="prev_claim_value">Previous Claim Value (£)</Label>
+                      <Input
+                        id="prev_claim_value"
+                        type="number"
+                        value={bdmPrevClaimValue}
+                        onChange={(e) => setBdmPrevClaimValue(e.target.value)}
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {canEdit && (cif.current_stage === "bdm_section" || isStaff) && (
+                  <Button onClick={handleCompleteBDM} disabled={saving} className="w-full">
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? "Saving..." : "Complete BDM Section"}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Feasibility Tab */}
           <TabsContent value="feasibility" className="space-y-6">
