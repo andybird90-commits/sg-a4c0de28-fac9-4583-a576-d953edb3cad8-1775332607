@@ -118,7 +118,7 @@ export default function CIFDetailPage() {
             const researchData = await researchResponse.json();
             console.log("Research data received:", researchData);
 
-            if (researchData.feasibility_summary || researchData.summary) {
+            if (researchData.feasibility_summary) {
               console.log("Attempting to save research to database...");
               
               // Save the entire research response as JSON
@@ -140,7 +140,7 @@ export default function CIFDetailPage() {
                 console.error("Failed to save research - updateResult was null/undefined");
               }
             } else {
-              console.warn("No summary in research response");
+              console.warn("No feasibility_summary in research response:", researchData);
             }
           } else {
             console.error("Research API call failed:", researchResponse.status);
