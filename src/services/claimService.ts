@@ -101,6 +101,7 @@ export class ClaimService {
           return {
             ...claim,
             projects: projectsResult.data || [],
+            costs: costsResult.data || [],
             total_costs: totalCosts,
             document_count: docsResult.data?.length || 0,
           };
@@ -147,12 +148,13 @@ export class ClaimService {
           .order("created_at", { ascending: false }),
         supabase
           .from("claim_costs")
-          .select("amount")
+          .select("*")
           .eq("claim_id", claimId),
         supabase
           .from("claim_documents")
-          .select("id")
-          .eq("claim_id", claimId),
+          .select("*")
+          .eq("claim_id", claimId)
+          .order("uploaded_at", { ascending: false }),
       ]);
 
       const totalCosts = costsResult.data?.reduce((sum, cost) => sum + Number(cost.amount || 0), 0) || 0;
@@ -160,6 +162,8 @@ export class ClaimService {
       return {
         ...typedClaim,
         projects: projectsResult.data || [],
+        costs: costsResult.data || [],
+        documents: docsResult.data || [],
         total_costs: totalCosts,
         document_count: docsResult.data?.length || 0,
       };
