@@ -1,5 +1,6 @@
 import React, { useContext } from "react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,9 +29,10 @@ import Link from "next/link";
 
 interface StaffLayoutProps {
   children: React.ReactNode;
+  title?: string;
 }
 
-export function StaffLayout({ children }: StaffLayoutProps) {
+export function StaffLayout({ children, title }: StaffLayoutProps) {
   const router = useRouter();
   const { user, profileWithOrg, isStaff, loading } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -61,6 +63,9 @@ export function StaffLayout({ children }: StaffLayoutProps) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Head>
+          <title>{title ? `${title} | RD Sidekick` : "RD Sidekick Staff Portal"}</title>
+        </Head>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff6b35] mx-auto mb-4"></div>
           <p className="text-slate-600">Loading...</p>
@@ -73,6 +78,9 @@ export function StaffLayout({ children }: StaffLayoutProps) {
   if (!isStaff || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Head>
+          <title>Access Denied | RD Sidekick</title>
+        </Head>
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <X className="h-8 w-8 text-red-600" />
@@ -142,6 +150,9 @@ export function StaffLayout({ children }: StaffLayoutProps) {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      <Head>
+        <title>{title ? `${title} | RD Sidekick` : "RD Sidekick Staff Portal"}</title>
+      </Head>
       {/* Top Bar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
         <div className="px-4 sm:px-6 lg:px-8">
