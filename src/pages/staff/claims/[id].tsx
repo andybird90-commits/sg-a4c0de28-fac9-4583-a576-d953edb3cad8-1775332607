@@ -580,6 +580,35 @@ export default function ClaimDetailPage() {
     }
   };
 
+  const handleDownloadDocument = async (doc: ClaimDocument) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("evidence-files")
+        .download(doc.file_path);
+
+      if (error) throw error;
+
+      // Create download link
+      const url = window.URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = doc.file_name || "download";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({ title: "Success", description: "Document downloaded" });
+    } catch (error: any) {
+      console.error("Download error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to download document",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
       intake: { label: "Intake", className: "bg-blue-100 text-blue-800" },
@@ -1210,7 +1239,7 @@ export default function ClaimDetailPage() {
                           <TableCell>{doc.created_at ? format(new Date(doc.created_at), "dd/MM/yyyy") : "N/A"}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" onClick={() => handleDownloadDocument(doc)}>
                                 <Download className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="sm">
