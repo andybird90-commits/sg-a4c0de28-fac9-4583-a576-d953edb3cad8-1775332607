@@ -415,9 +415,12 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
         if (researchResponse.ok) {
           const researchData = await researchResponse.json();
           console.log("Research data received:", researchData);
-          
-          if (researchData.summary) {
-            setCompanyResearch(researchData.summary);
+          console.log("Available keys:", Object.keys(researchData));
+          console.log("feasibility_summary:", researchData.feasibility_summary);
+
+          if (researchData && researchData.feasibility_summary && researchData.feasibility_summary.trim().length > 0) {
+            console.log("✅ Found summary:", researchData.feasibility_summary);
+            setCompanyResearch(researchData.feasibility_summary);
             toast({ 
               title: "Research Complete", 
               description: "AI Sidekick has analyzed the company" 
