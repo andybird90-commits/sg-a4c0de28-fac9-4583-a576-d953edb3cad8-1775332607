@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import { useRouter } from "next/router";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,8 @@ import {
   Archive,
   TrendingUp,
   MessageSquare,
-  Bell
+  Bell,
+  Database
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
