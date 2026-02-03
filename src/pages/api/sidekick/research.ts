@@ -139,6 +139,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       };
     }
 
+    console.log("Returning analysis data:", JSON.stringify(analysisData, null, 2));
     res.status(200).json(analysisData);
   } catch (error) {
     console.error("Research API error:", error);

@@ -121,6 +121,7 @@ export default function CIFDetailPage() {
             console.log("feasibility_summary:", researchData.feasibility_summary);
             
             if (researchData.feasibility_summary) {
+              console.log("✅ Found summary:", researchData.feasibility_summary);
               console.log("Attempting to save research to database...");
               
               // Save the entire research response as JSON
@@ -142,7 +143,7 @@ export default function CIFDetailPage() {
                 console.error("Failed to save research - updateResult was null/undefined");
               }
             } else {
-              console.warn("No feasibility_summary in research response:", researchData);
+              console.warn("No summary in research response:", researchData);
             }
           } else {
             console.error("Research API call failed:", researchResponse.status);
