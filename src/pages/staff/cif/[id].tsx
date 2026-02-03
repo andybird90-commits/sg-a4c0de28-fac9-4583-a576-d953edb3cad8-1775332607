@@ -117,7 +117,9 @@ export default function CIFDetailPage() {
           if (researchResponse.ok) {
             const researchData = await researchResponse.json();
             console.log("Research data received:", researchData);
-
+            console.log("Available keys:", Object.keys(researchData));
+            console.log("feasibility_summary:", researchData.feasibility_summary);
+            
             if (researchData.feasibility_summary) {
               console.log("Attempting to save research to database...");
               
