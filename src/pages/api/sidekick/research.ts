@@ -50,24 +50,58 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // 2. Generate Summary using OpenAI
+    // 2. Generate Comprehensive Feasibility Analysis using OpenAI
     const prompt = `
-      You are an expert R&D tax specialist researcher.
+      You are an expert R&D tax credit feasibility analyst for UK companies.
       
       Company: "${companyName}"
-      ID: ${companyNumber || "N/A"}
+      Company Number: ${companyNumber || "N/A"}
       Industry/SIC: ${industry || "Unknown"}
 
       ${searchContext ? `Here is recent web search information about the company:\n${searchContext}` : "No web search results available."}
       
-      Based on this (and your internal knowledge if the company is well-known), provide a professional summary for a Client Intake Form.
+      Provide a comprehensive feasibility assessment in the following JSON structure:
       
-      Structure the summary to cover:
-      1. **Core Business**: What do they actually do? (Products/Services)
-      2. **Technical Environment**: Likely technologies, manufacturing processes, or scientific fields they operate in.
-      3. **Potential R&D Indicators**: Highlight specific areas where R&D might occur (e.g., developing bespoke software, overcoming engineering challenges, new material formulations).
+      {
+        "feasibility_summary": "Brief 2-3 sentence overview of R&D potential",
+        "estimated_claim_band": "0-25k" | "25k-50k" | "50k-100k" | "100k-250k" | "250k+",
+        "claim_rationale": "Explain why this claim band based on company size, sector, typical R&D intensity",
+        "core_business": "What do they actually do? (Products/Services)",
+        "technical_environment": "Technologies, processes, or scientific fields they operate in",
+        "rd_indicators": [
+          "List 3-5 specific areas where R&D likely occurs",
+          "Focus on: product development, process innovation, technical challenges",
+          "Be specific to their industry and activities"
+        ],
+        "previous_claims_likelihood": "high" | "medium" | "low",
+        "prenotification_required": true | false,
+        "prenotification_reason": "Why prenotification may be needed (or not)",
+        "key_questions": [
+          "2-3 critical questions to ask in the feasibility meeting",
+          "Focus on validating R&D activities and understanding project scope"
+        ],
+        "risk_flags": [
+          "Any red flags or concerns (e.g., low-margin sector, compliance history)"
+        ],
+        "recommended_next_steps": [
+          "Actionable steps for the BD team"
+        ]
+      }
+
+      Base your estimates on:
+      - Company size indicators (if available from search)
+      - Industry typical R&D intensity
+      - Type of technical work implied by business description
+      - UK R&D tax credit norms (min £3.5k claim value for CT600 route)
       
-      Keep it concise (under 200 words), professional, and focused on identifying technical complexity.
+      **CRITICAL FEASIBILITY RULES:**
+      - Minimum viable claim: £3.5k (for CT600 route)
+      - Preferred: Evidence of previous R&D claims
+      - Prenotification: Required if first claim AND accounts filed, OR if large claim increase
+      
+      Be realistic and conservative. Only high estimates (£100k+) if clear evidence of significant technical staff/activities.
+      
+      Return ONLY valid JSON, no markdown formatting.
     `;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -79,17 +113,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "You are a helpful business research assistant for R&D tax credits." },
+          { role: "system", content: "You are a UK R&D tax credit feasibility analyst. Always respond with valid JSON only." },
           { role: "user", content: prompt }
         ],
-        max_tokens: 400,
+        temperature: 0.3,
+        max_tokens: 1200,
       }),
     });
 
     const data = await response.json();
-    const summary = data.choices?.[0]?.message?.content || "No research information available.";
+    const aiResponse = data.choices?.[0]?.message?.content || "{}";
 
-    res.status(200).json({ summary });
+    // Parse JSON response
+    let analysisData;
+    try {
+      // Remove markdown code fences if present
+      const cleanResponse = aiResponse.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      analysisData = JSON.parse(cleanResponse);
+    } catch (parseError) {
+      console.error("Failed to parse AI response as JSON:", parseError);
+      analysisData = {
+        feasibility_summary: aiResponse,
+        estimated_claim_band: "0-25k",
+        claim_rationale: "Unable to estimate - manual review required"
+      };
+    }
+
+    res.status(200).json(analysisData);
   } catch (error) {
     console.error("Research API error:", error);
     res.status(500).json({ message: "Failed to generate research summary" });

@@ -512,56 +512,23 @@ export default function CIFDetailPage() {
                 let research: any = cif.company_research;
                 // Parse if string and looks like JSON
                 if (typeof research === "string") {
-                    try {
-                        if (research.trim().startsWith('{')) {
-                            research = JSON.parse(research);
-                        }
-                    } catch (e) {
-                        // Not JSON, treat as string
+                  try {
+                    if (research.trim().startsWith('{')) {
+                      research = JSON.parse(research);
                     }
+                  } catch (e) {
+                    // Not JSON, treat as string
+                  }
                 }
 
-                // Extract feasibility analysis from different possible locations in the research
-                let feasibilityText = null;
-                
-                if (typeof research === 'object' && research !== null) {
-                    // Check for feasibility_analysis field
-                    if (research.feasibility_analysis) {
-                      feasibilityText = research.feasibility_analysis;
-                    }
-                    // Check for technical_feasibility field
-                    else if (research.technical_feasibility) {
-                      feasibilityText = research.technical_feasibility;
-                    }
-                    // Check for rd_feasibility field
-                    else if (research.rd_feasibility) {
-                      feasibilityText = research.rd_feasibility;
-                    }
-                    // Check in analysis object
-                    else if (research.analysis?.feasibility) {
-                      feasibilityText = research.analysis.feasibility;
-                    }
-                    // Check in assessment object
-                    else if (research.assessment?.feasibility) {
-                      feasibilityText = research.assessment.feasibility;
-                    }
-                }
-                
-                // Fallback: if it's just a string (and not a JSON object we constructed)
-                if (!feasibilityText && typeof cif.company_research === 'string') {
-                    // Try to regex match standard headers if it's a markdown string
-                    const rawText = cif.company_research;
-                    const match = rawText.match(/(?:Feasibility|R&D Potential|Technical Assessment)[:\s]*([^\n]+(?:\n(?!\n)[^\n]+)*)/i);
-                    // If no match but it's not JSON, maybe show the beginning
-                    if (match) {
-                        feasibilityText = match[1];
-                    } else if (!rawText.trim().startsWith('{')) {
-                         // Only show substring if it doesn't look like raw JSON
-                        feasibilityText = rawText.substring(0, 500) + (rawText.length > 500 ? "..." : "");
-                    }
-                }
+                // Check if we have structured analysis data
+                const hasStructuredData = research && typeof research === 'object' && (
+                  research.feasibility_summary || 
+                  research.estimated_claim_band ||
+                  research.rd_indicators
+                );
 
-                if (!feasibilityText) return null;
+                if (!hasStructuredData && !feasibilityExtract) return null;
 
                 return (
                   <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
@@ -572,7 +539,7 @@ export default function CIFDetailPage() {
                           RD Sidekick Feasibility Analysis
                         </CardTitle>
                       </div>
-                      {feasibilityExtract && feasibilityExtract.length > 300 && (
+                      {(feasibilityExtract && feasibilityExtract.length > 300) && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -593,16 +560,116 @@ export default function CIFDetailPage() {
                         </Button>
                       )}
                     </CardHeader>
-                    <CardContent className={isExpanded ? "" : "max-h-48 overflow-hidden relative"}>
-                      <CardDescription className="text-xs text-purple-600 mb-2">
+                    <CardContent className={!isExpanded && feasibilityExtract && feasibilityExtract.length > 300 ? "max-h-48 overflow-hidden relative" : ""}>
+                      <CardDescription className="text-xs text-purple-600 mb-3">
                         AI-generated preliminary assessment
                       </CardDescription>
-                      <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <div className="whitespace-pre-wrap text-purple-900 dark:text-purple-100">
-                          {isExpanded || !feasibilityExtract ? feasibilityExtract : `${feasibilityExtract.slice(0, 300)}...`}
+                      
+                      {hasStructuredData ? (
+                        <div className="space-y-4">
+                          {/* Estimated Claim Band */}
+                          {research.estimated_claim_band && (
+                            <div className="flex items-start gap-3 p-3 bg-white/60 rounded-lg border border-purple-200">
+                              <div className="flex-1">
+                                <p className="text-sm font-semibold text-purple-900 mb-1">Estimated Claim Range</p>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary" className="bg-purple-600 text-white hover:bg-purple-700">
+                                    £{research.estimated_claim_band}
+                                  </Badge>
+                                  {research.claim_rationale && (
+                                    <p className="text-xs text-purple-700">{research.claim_rationale}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Feasibility Summary */}
+                          {research.feasibility_summary && (
+                            <div className="prose prose-sm max-w-none">
+                              <p className="text-purple-900 dark:text-purple-100 whitespace-pre-wrap">
+                                {research.feasibility_summary}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* R&D Indicators */}
+                          {research.rd_indicators && Array.isArray(research.rd_indicators) && research.rd_indicators.length > 0 && (
+                            <div className="space-y-2">
+                              <p className="text-sm font-semibold text-purple-900">R&D Indicators:</p>
+                              <ul className="space-y-1 ml-4">
+                                {research.rd_indicators.map((indicator: string, idx: number) => (
+                                  <li key={idx} className="text-sm text-purple-800 list-disc">{indicator}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Key Questions for Meeting */}
+                          {research.key_questions && Array.isArray(research.key_questions) && research.key_questions.length > 0 && (
+                            <div className="space-y-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                              <p className="text-sm font-semibold text-blue-900">Key Questions for Feasibility Meeting:</p>
+                              <ul className="space-y-1 ml-4">
+                                {research.key_questions.map((question: string, idx: number) => (
+                                  <li key={idx} className="text-sm text-blue-800 list-disc">{question}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Risk Flags */}
+                          {research.risk_flags && Array.isArray(research.risk_flags) && research.risk_flags.length > 0 && (
+                            <div className="space-y-2 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                              <div className="flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4 text-orange-600" />
+                                <p className="text-sm font-semibold text-orange-900">Risk Flags:</p>
+                              </div>
+                              <ul className="space-y-1 ml-4">
+                                {research.risk_flags.map((flag: string, idx: number) => (
+                                  <li key={idx} className="text-sm text-orange-800 list-disc">{flag}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Prenotification Notice */}
+                          {research.prenotification_required && (
+                            <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                              <p className="text-sm font-semibold text-yellow-900 mb-1">⚠️ Prenotification Likely Required</p>
+                              {research.prenotification_reason && (
+                                <p className="text-xs text-yellow-800">{research.prenotification_reason}</p>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Core Business & Technical Environment */}
+                          {(research.core_business || research.technical_environment) && (
+                            <div className="space-y-2 text-sm">
+                              {research.core_business && (
+                                <div>
+                                  <span className="font-semibold text-purple-900">Core Business: </span>
+                                  <span className="text-purple-800">{research.core_business}</span>
+                                </div>
+                              )}
+                              {research.technical_environment && (
+                                <div>
+                                  <span className="font-semibold text-purple-900">Technical Environment: </span>
+                                  <span className="text-purple-800">{research.technical_environment}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      {!isExpanded && feasibilityExtract && feasibilityExtract.length > 300 && (
+                      ) : (
+                        // Fallback to plain text display if structured data not available
+                        <div className="prose prose-sm max-w-none dark:prose-invert">
+                          <div className="whitespace-pre-wrap text-purple-900 dark:text-purple-100">
+                            {isExpanded || !feasibilityExtract ? feasibilityExtract : `${feasibilityExtract.slice(0, 300)}...`}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {!isExpanded && feasibilityExtract && feasibilityExtract.length > 300 && !hasStructuredData && (
                         <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent dark:from-slate-950/50" />
                       )}
                     </CardContent>
@@ -848,7 +915,7 @@ export default function CIFDetailPage() {
                         placeholder="Accountant name"
                         value={accountantName}
                         onChange={(e) => setAccountantName(e.target.value)}
-                        disabled={!canEdit || cif.current_stage !== "financial_section"}
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
                       />
                     </div>
 
@@ -859,7 +926,7 @@ export default function CIFDetailPage() {
                         placeholder="Accounting firm"
                         value={accountantFirm}
                         onChange={(e) => setAccountantFirm(e.target.value)}
-                        disabled={!canEdit || cif.current_stage !== "financial_section"}
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
                       />
                     </div>
 
@@ -871,7 +938,7 @@ export default function CIFDetailPage() {
                         placeholder="accountant@firm.com"
                         value={accountantEmail}
                         onChange={(e) => setAccountantEmail(e.target.value)}
-                        disabled={!canEdit || cif.current_stage !== "financial_section"}
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
                       />
                     </div>
 
@@ -882,7 +949,7 @@ export default function CIFDetailPage() {
                         placeholder="+44 20 1234 5678"
                         value={accountantPhone}
                         onChange={(e) => setAccountantPhone(e.target.value)}
-                        disabled={!canEdit || cif.current_stage !== "financial_section"}
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
                       />
                     </div>
                   </div>
