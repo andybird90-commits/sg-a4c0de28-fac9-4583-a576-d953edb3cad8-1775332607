@@ -82,12 +82,12 @@ export default function CIFDetailPage() {
     }
   }, [id, isStaff]);
 
-  const fetchCIF = async () => {
-    if (!id) return;
+  const fetchCIF = async (cifId: string) => {
+    if (!cifId) return;
 
     setLoading(true);
     try {
-      const data = await cifService.getCIFById(id as string);
+      const data = await cifService.getCIFById(cifId);
       console.log("CIF data loaded:", data);
       setCif(data);
 
@@ -118,7 +118,7 @@ export default function CIFDetailPage() {
               ? researchData 
               : JSON.stringify(researchData);
 
-            await cifService.updateCIF(id as string, {
+            await cifService.updateCIF(cifId, {
               company_research: researchString,
             });
 
