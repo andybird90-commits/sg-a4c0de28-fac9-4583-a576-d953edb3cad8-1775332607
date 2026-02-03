@@ -544,7 +544,7 @@ export default function CIFDetailPage() {
               </p>
             </div>
           </div>
-          {profile?.role === "admin" && (
+          {profile?.internal_role === "admin" && (
             <Button
               variant="destructive"
               size="sm"
