@@ -341,60 +341,6 @@ export default function HomePage() {
                   </Button>
                 </CardContent>
               </Card>
-
-              {isAdmin && (
-                <Card className="border-0 shadow-professional-md bg-gradient-to-br from-primary/5 to-primary/10">
-                  <CardHeader className="pb-3 sm:pb-4">
-                    <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                      <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                      <span className="truncate">Admin Tools</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2 sm:space-y-3">
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-2 sm:gap-3 h-auto py-2.5 sm:py-3 lg:py-4 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all group text-xs sm:text-sm lg:text-base"
-                      onClick={() => router.push("/admin/organisations")}
-                    >
-                      <div className="p-1 sm:p-1.5 lg:p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors flex-shrink-0">
-                        <Building2 className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-purple-600" />
-                      </div>
-                      <div className="text-left min-w-0 flex-1">
-                        <p className="font-semibold text-slate-900 truncate text-xs sm:text-sm">Organisations</p>
-                        <p className="text-2xs sm:text-xs text-slate-500 truncate">Manage client orgs</p>
-                      </div>
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-2 sm:gap-3 h-auto py-2.5 sm:py-3 lg:py-4 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all group text-xs sm:text-sm lg:text-base"
-                      onClick={() => router.push("/admin/users")}
-                    >
-                      <div className="p-1 sm:p-1.5 lg:p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors flex-shrink-0">
-                        <Users className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-purple-600" />
-                      </div>
-                      <div className="text-left min-w-0 flex-1">
-                        <p className="font-semibold text-slate-900 truncate text-xs sm:text-sm">User Management</p>
-                        <p className="text-2xs sm:text-xs text-slate-500 truncate">View all users</p>
-                      </div>
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-2 sm:gap-3 h-auto py-2.5 sm:py-3 lg:py-4 border-purple-200 hover:border-purple-300 hover:bg-purple-50 transition-all group text-xs sm:text-sm lg:text-base"
-                      onClick={() => router.push("/admin/analytics")}
-                    >
-                      <div className="p-1 sm:p-1.5 lg:p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors flex-shrink-0">
-                        <BarChart3 className="h-4 w-4 sm:h-4 sm:w-4 lg:h-5 lg:w-5 text-purple-600" />
-                      </div>
-                      <div className="text-left min-w-0 flex-1">
-                        <p className="font-semibold text-slate-900 truncate text-xs sm:text-sm">Analytics</p>
-                        <p className="text-2xs sm:text-xs text-slate-500 truncate">System insights</p>
-                      </div>
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
             </div>
 
             <div className="lg:col-span-2">

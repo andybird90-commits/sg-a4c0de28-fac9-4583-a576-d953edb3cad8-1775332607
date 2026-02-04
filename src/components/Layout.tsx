@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Home, Camera, Lightbulb, FolderOpen, Layers, Menu, Settings, LogOut, Building2, BarChart3, Users, Shield, FileText, MessageSquare, Bell } from "lucide-react";
+import { Home, Camera, Lightbulb, FolderOpen, Layers, Menu, Settings, LogOut, Building2, MessageSquare, Bell } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { authService } from "@/services/authService";
 import { NotificationToast } from "./NotificationToast";
@@ -22,9 +22,6 @@ export function Layout({ children, showNav = true }: LayoutProps) {
   const { isOnline, syncingCount } = useOfflineQueue();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-
-  // Check if user is admin
-  const isAdmin = user?.email === "andy.bird@rdmande.uk";
 
   // Fetch unread message count
   useEffect(() => {
@@ -60,13 +57,6 @@ export function Layout({ children, showNav = true }: LayoutProps) {
     { href: "/projects", icon: FolderOpen, label: "Projects" },
     { href: "/feasibility", icon: Lightbulb, label: "Feasibility" },
     { href: "/settings", icon: Settings, label: "Settings" }
-  ];
-
-  const adminNavItems = [
-    { href: "/admin/organisations", label: "Organisations", icon: Building2 },
-    { href: "/admin/users", label: "Users", icon: Users },
-    { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-    { href: "/admin/sidekick-access", label: "Sidekick Access", icon: Shield },
   ];
 
   // Public routes that don't require authentication
@@ -131,32 +121,6 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                           </Link>
                         );
                       })}
-
-                      {/* Admin Navigation */}
-                      {isAdmin && (
-                        <>
-                          <div className="pt-4 pb-2">
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 px-3">
-                              Admin
-                            </p>
-                          </div>
-                          {adminNavItems.map((item) => {
-                            const Icon = item.icon;
-                            const isActive = router.pathname === item.href || router.pathname.startsWith(item.href + "/");
-                            return (
-                              <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}>
-                                <Button
-                                  variant={isActive ? "default" : "ghost"}
-                                  className="w-full justify-start gap-3"
-                                >
-                                  <Icon className="h-4 w-4" />
-                                  {item.label}
-                                </Button>
-                              </Link>
-                            );
-                          })}
-                        </>
-                      )}
 
                       {/* Organisation Info */}
                       {currentOrg && (
