@@ -195,12 +195,54 @@ export default function CIFDetailPage() {
       setBdmPrevClaimValue(data.previous_claim_value?.toString() || "");
 
       // Extract AI research data from ai_research_data JSONB field
-      if (data.ai_research_data) {
-        console.log("✅ Found ai_research_data:", data.ai_research_data);
-        setAiResearchData(data.ai_research_data);
-      } else {
-        console.log("⚠️ No ai_research_data found");
+      let mergedResearch = data.ai_research_data || {};
+      
+      // Merge with company_research if available (fallback/legacy data)
+      if (data.company_research) {
+        try {
+          const research = typeof data.company_research === 'string' 
+            ? JSON.parse(data.company_research)
+            : data.company_research;
+            
+          console.log("🔄 Merging company_research into aiResearchData", research);
+          
+          // Smart merge: Only overwrite if new data exists and is not empty
+          // Helper to check if a value is "meaningful" (not null, undefined, or empty array/string)
+          const hasData = (val: any) => {
+            if (val === null || val === undefined) return false;
+            if (Array.isArray(val) && val.length === 0) return false;
+            if (typeof val === 'object' && Object.keys(val).length === 0) return false;
+            if (typeof val === 'string' && val.trim() === '') return false;
+            return true;
+          };
+
+          // Base object from legacy research
+          const base: any = { ...research };
+          const mergedAny = mergedResearch as any;
+
+          // Overlay new data only where it has content
+          Object.keys(mergedAny).forEach(key => {
+            if (hasData(mergedAny[key])) {
+              // Special handling for nested objects
+              if (key === 'feasibility' && base.feasibility) {
+                 base.feasibility = { ...base.feasibility, ...mergedAny.feasibility };
+              } else if (key === 'trading_history' && base.trading_history) {
+                 base.trading_history = { ...base.trading_history, ...mergedAny.trading_history };
+              } else {
+                 base[key] = mergedAny[key];
+              }
+            }
+          });
+          
+          mergedResearch = base;
+
+        } catch (e) {
+          console.error("Error parsing company_research for merge:", e);
+        }
       }
+      
+      console.log("✅ Final Merged AI Data:", mergedResearch);
+      setAiResearchData(mergedResearch);
 
       // Fallback to company_research plain text
       if (data.company_research) {
