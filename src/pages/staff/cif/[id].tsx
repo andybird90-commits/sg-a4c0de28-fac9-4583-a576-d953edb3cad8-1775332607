@@ -675,117 +675,66 @@ export default function CIFDetailPage() {
             
             {/* AI Business Intelligence Card */}
             {aiResearchData && (
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+              <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
-                    <Zap className="h-5 w-5" />
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
                     RD Sidekick Business Intelligence
                   </CardTitle>
-                  <CardDescription>
-                    AI-powered company analysis and R&D potential assessment
-                  </CardDescription>
+                  <CardDescription>AI-powered company analysis and R&D potential assessment</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Company Overview */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {aiResearchData.company_age && (
-                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                        <p className="text-xs text-blue-600 mb-1">Company Age</p>
-                        <p className="text-sm font-semibold text-blue-900">{aiResearchData.company_age}</p>
-                      </div>
-                    )}
-                    {aiResearchData.company_type && (
-                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                        <p className="text-xs text-blue-600 mb-1">Company Type</p>
-                        <p className="text-sm font-semibold text-blue-900">{aiResearchData.company_type}</p>
-                      </div>
-                    )}
-                    {aiResearchData.employee_count && (
-                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                        <p className="text-xs text-blue-600 mb-1">Employees</p>
-                        <p className="text-sm font-semibold text-blue-900">{aiResearchData.employee_count}</p>
-                      </div>
-                    )}
-                    {aiResearchData.company_status && (
-                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                        <p className="text-xs text-blue-600 mb-1">Status</p>
-                        <Badge variant={aiResearchData.company_status === "active" ? "default" : "secondary"}>
-                          {aiResearchData.company_status}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Directors */}
-                  {aiResearchData.directors && Array.isArray(aiResearchData.directors) && aiResearchData.directors.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-semibold text-blue-900">Directors ({aiResearchData.directors.length})</p>
-                      <div className="space-y-2">
-                        {aiResearchData.directors.map((director: any, idx: number) => (
-                          <div key={idx} className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                            <p className="text-sm font-semibold text-blue-900">{director.name}</p>
-                            <div className="flex gap-4 mt-1 text-xs text-blue-700">
-                              {director.role && <span>Role: {director.role}</span>}
-                              {director.appointed_on && <span>Appointed: {new Date(director.appointed_on).toLocaleDateString()}</span>}
-                            </div>
-                            {director.nationality && (
-                              <p className="text-xs text-blue-600 mt-1">Nationality: {director.nationality}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Trading History */}
-                  {aiResearchData.trading_history && (
-                    <div className="p-3 bg-white/60 rounded-lg border border-blue-200 space-y-2">
-                      <p className="text-sm font-semibold text-blue-900">Trading History</p>
-                      {aiResearchData.trading_history.recent_filings && (
-                        <p className="text-xs text-blue-700">
-                          Recent Filings: {aiResearchData.trading_history.recent_filings}
-                        </p>
-                      )}
-                      {aiResearchData.trading_history.filing_pattern && (
-                        <p className="text-xs text-blue-700">
-                          Filing Pattern: {aiResearchData.trading_history.filing_pattern}
-                        </p>
-                      )}
-                      {aiResearchData.trading_history.average_filing_lag && (
-                        <p className="text-xs text-blue-700">
-                          Avg Filing Lag: {aiResearchData.trading_history.average_filing_lag}
-                        </p>
-                      )}
-                      {aiResearchData.trading_history.confidence_score && (
-                        <div className="flex items-center gap-2 mt-2">
-                          <p className="text-xs text-blue-600">Confidence Score:</p>
-                          <Badge variant="secondary" className="bg-blue-600 text-white">
-                            {aiResearchData.trading_history.confidence_score}
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
                   {/* Core Business */}
                   {aiResearchData.core_business && (
-                    <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                      <p className="text-xs text-blue-600 mb-1">Core Business</p>
-                      <p className="text-sm text-blue-900">{aiResearchData.core_business}</p>
+                    <div>
+                      <h4 className="font-semibold text-sm mb-2">Core Business</h4>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{aiResearchData.core_business}</p>
                     </div>
                   )}
 
-                  {/* SIC Codes */}
-                  {aiResearchData.sic_codes && Array.isArray(aiResearchData.sic_codes) && aiResearchData.sic_codes.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-semibold text-blue-900">Business Activities (SIC Codes)</p>
-                      <div className="flex flex-wrap gap-2">
-                        {aiResearchData.sic_codes.map((sic: string, idx: number) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
-                            {sic}
-                          </Badge>
+                  {/* Technical Environment */}
+                  {aiResearchData.technical_environment && (
+                    <div className="pt-2 border-t border-blue-200/50 dark:border-blue-800/50">
+                      <h4 className="font-semibold text-sm mb-2">Technical Environment</h4>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{aiResearchData.technical_environment}</p>
+                    </div>
+                  )}
+
+                  {/* R&D Indicators */}
+                  {aiResearchData.rd_indicators && Array.isArray(aiResearchData.rd_indicators) && aiResearchData.rd_indicators.length > 0 && (
+                    <div className="pt-2 border-t border-blue-200/50 dark:border-blue-800/50">
+                      <h4 className="font-semibold text-sm mb-2">R&D Indicators</h4>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                        {aiResearchData.rd_indicators.map((indicator: string, idx: number) => (
+                          <li key={idx}>{indicator}</li>
                         ))}
-                      </div>
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Key Questions */}
+                  {aiResearchData.key_questions && Array.isArray(aiResearchData.key_questions) && aiResearchData.key_questions.length > 0 && (
+                    <div className="pt-2 border-t border-blue-200/50 dark:border-blue-800/50">
+                      <h4 className="font-semibold text-sm mb-2">Key Questions for Feasibility Meeting</h4>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                        {aiResearchData.key_questions.map((question: string, idx: number) => (
+                          <li key={idx}>{question}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Risk Flags */}
+                  {aiResearchData.risk_flags && Array.isArray(aiResearchData.risk_flags) && aiResearchData.risk_flags.length > 0 && (
+                    <div className="pt-2 border-t border-blue-200/50 dark:border-blue-800/50">
+                      <h4 className="font-semibold text-sm mb-2 text-orange-700 dark:text-orange-300">Risk Flags</h4>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-orange-700 dark:text-orange-300">
+                        {aiResearchData.risk_flags.map((flag: string, idx: number) => (
+                          <li key={idx}>{flag}</li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                 </CardContent>

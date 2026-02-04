@@ -69,8 +69,14 @@ export type Database = {
           admin_last_updated: string | null
           ai_research_data: Json | null
           apportionment_assumptions: string | null
+          bdm_claimed_before: boolean | null
+          bdm_contract_period_understood: boolean | null
+          bdm_fee_terms_explained: boolean | null
           bdm_last_updated: string | null
+          bdm_other_notes: string | null
+          bdm_projects_discussed: string | null
           bdm_section_created_by: string | null
+          bdm_understands_scheme: boolean | null
           business_background: string | null
           cif_status: string
           company_research: string | null
@@ -127,8 +133,14 @@ export type Database = {
           admin_last_updated?: string | null
           ai_research_data?: Json | null
           apportionment_assumptions?: string | null
+          bdm_claimed_before?: boolean | null
+          bdm_contract_period_understood?: boolean | null
+          bdm_fee_terms_explained?: boolean | null
           bdm_last_updated?: string | null
+          bdm_other_notes?: string | null
+          bdm_projects_discussed?: string | null
           bdm_section_created_by?: string | null
+          bdm_understands_scheme?: boolean | null
           business_background?: string | null
           cif_status?: string
           company_research?: string | null
@@ -185,8 +197,14 @@ export type Database = {
           admin_last_updated?: string | null
           ai_research_data?: Json | null
           apportionment_assumptions?: string | null
+          bdm_claimed_before?: boolean | null
+          bdm_contract_period_understood?: boolean | null
+          bdm_fee_terms_explained?: boolean | null
           bdm_last_updated?: string | null
+          bdm_other_notes?: string | null
+          bdm_projects_discussed?: string | null
           bdm_section_created_by?: string | null
+          bdm_understands_scheme?: boolean | null
           business_background?: string | null
           cif_status?: string
           company_research?: string | null
