@@ -32,7 +32,7 @@ import { useNotifications } from "@/contexts/NotificationContext";
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, currentOrg } = useApp();
+  const { user, currentOrg, loading: authLoading } = useApp();
   const { notify } = useNotifications();
   const [projects, setProjects] = useState<Project[]>([]);
   const [stats, setStats] = useState({
@@ -42,17 +42,33 @@ export default function HomePage() {
     recentActivity: 0
   });
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(false);
 
   useEffect(() => {
+    // If auth is still loading, wait
+    if (authLoading) {
+      return;
+    }
+
+    // If no user after auth loads, redirect to login
+    if (!user) {
+      router.push("/auth/login");
+      return;
+    }
+
+    // User is authenticated, load data
     if (currentOrg) {
       loadDashboardData();
+    } else {
+      setLoading(false);
     }
-  }, [currentOrg]);
+  }, [user, currentOrg, authLoading]);
 
   const loadDashboardData = async () => {
     if (!currentOrg) return;
 
     setLoading(true);
+    setAuthError(false);
     try {
       const [oldEvidenceData, projectsData] = await Promise.all([
         evidenceService.getEvidence(currentOrg.id),
@@ -87,17 +103,69 @@ export default function HomePage() {
       });
     } catch (error: any) {
       console.error("Error loading dashboard data:", error);
-      notify({
-        type: "error",
-        title: "Load failed",
-        message: error.message || "Failed to load dashboard data"
-      });
+      
+      // Check if it's an auth error
+      if (error?.message?.includes("session") || error?.message?.includes("JWT") || error?.status === 403) {
+        setAuthError(true);
+        notify({
+          type: "error",
+          title: "Authentication Error",
+          message: "Your session has expired. Please log in again."
+        });
+        setTimeout(() => router.push("/auth/login"), 2000);
+      } else {
+        notify({
+          type: "error",
+          title: "Load failed",
+          message: error.message || "Failed to load dashboard data"
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const isAdmin = user?.email === "andy.bird@rdmande.uk";
+
+  // Show loading state while auth is loading
+  if (authLoading) {
+    return (
+      <Layout>
+        <SEO title="Dashboard - RD Sidekick" />
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4 sm:p-6">
+          <Card className="max-w-md shadow-professional-lg border-0 w-full">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">Loading...</h2>
+                <p className="text-sm sm:text-base text-muted-foreground">Please wait while we load your dashboard</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show auth error state
+  if (authError) {
+    return (
+      <Layout>
+        <SEO title="Dashboard - RD Sidekick" />
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4 sm:p-6">
+          <Card className="max-w-md shadow-professional-lg border-0 w-full">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <AlertCircle className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-destructive mb-4" />
+                <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">Session Expired</h2>
+                <p className="text-sm sm:text-base text-muted-foreground mb-6">Your session has expired. Redirecting to login...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!currentOrg) {
     return (

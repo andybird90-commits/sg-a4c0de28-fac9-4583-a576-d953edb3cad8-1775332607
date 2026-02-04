@@ -80,6 +80,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Setup global error handler for 403 errors
     authService.setupGlobalErrorHandler();
 
+    let retryCount = 0;
+    const maxRetries = 2;
+
     const checkUser = async () => {
       try {
         const session = await authService.validateSession();
@@ -96,6 +99,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         
         if (userError) {
           console.error("Error fetching user:", userError);
+          
+          // Retry on network errors
+          if (userError.message?.includes("Failed to fetch") && retryCount < maxRetries) {
+            retryCount++;
+            console.log(`Retrying user fetch (${retryCount}/${maxRetries})...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+            return checkUser();
+          }
+          
           // Handle 403 or session errors
           if (userError.status === 403 || userError.message?.includes("session") || userError.message?.includes("JWT")) {
             await authService.clearInvalidSession();
@@ -123,6 +135,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
           return;
         }
+
+        // Reset retry count on success
+        retryCount = 0;
 
         // Fetch profile with organisation info for staff detection
         const profile = await profileService.getCurrentUserProfileWithOrg();
@@ -169,6 +184,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error: any) {
         console.error("Error in checkUser:", error);
+        
+        // Retry on network errors
+        if (error?.message?.includes("Failed to fetch") && retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Retrying checkUser (${retryCount}/${maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          return checkUser();
+        }
+        
         // Handle any unexpected errors
         if (error?.status === 403 || error?.message?.includes("session")) {
           await authService.clearInvalidSession();
