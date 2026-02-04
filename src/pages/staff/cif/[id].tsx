@@ -442,16 +442,13 @@ export default function CIFDetailPage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("cif_records")
-        .delete()
-        .eq("id", cif.id);
-
-      if (error) {
-        console.error("Delete error:", error);
-        toast({ title: "Error", description: "Failed to delete CIF", variant: "destructive" });
-        return;
-      }
+      const result = await cifService.rejectCIF(
+        cif.id,
+        "delete",
+        undefined,
+        "Admin deletion",
+        profile.id
+      );
 
       toast({ 
         title: "Success", 
