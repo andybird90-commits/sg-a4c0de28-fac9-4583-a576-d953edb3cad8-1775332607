@@ -109,11 +109,11 @@ export default function CIFDetailPage() {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("cif_records")
-        .select("*")
-        .eq("id", cifId)
-        .single();
+      const { data, error } = await supabase.
+      from("cif_records").
+      select("*").
+      eq("id", cifId).
+      single();
 
       console.log("🔍 CIF Data fetched:", data);
       console.log("🔍 section2_feasibility_id:", data?.section2_feasibility_id);
@@ -127,11 +127,11 @@ export default function CIFDetailPage() {
       if (data.section2_feasibility_id) {
         console.log("🔍 Fetching feasibility analysis:", data.section2_feasibility_id);
         try {
-          const { data: feasData, error: feasError } = await supabase
-            .from("feasibility_analyses")
-            .select("*")
-            .eq("id", data.section2_feasibility_id)
-            .single();
+          const { data: feasData, error: feasError } = await supabase.
+          from("feasibility_analyses").
+          select("*").
+          eq("id", data.section2_feasibility_id).
+          single();
 
           console.log("📊 Feasibility Analysis Data:", feasData);
 
@@ -144,34 +144,34 @@ export default function CIFDetailPage() {
             // Access properties directly from feasData with type assertion
             const feasDataAny = feasData as any;
             setTechUnderstanding(feasDataAny.technical_understanding || "");
-            setTechChallenges(Array.isArray(feasDataAny.challenges_uncertainties) 
-              ? feasDataAny.challenges_uncertainties.join("\n") 
-              : (feasDataAny.challenges_uncertainties || ""));
-            
+            setTechChallenges(Array.isArray(feasDataAny.challenges_uncertainties) ?
+            feasDataAny.challenges_uncertainties.join("\n") :
+            feasDataAny.challenges_uncertainties || "");
+
             const activities = feasDataAny.qualifying_activities;
             setTechActivities(Array.isArray(activities) ? activities.join("\n") : "");
-            
+
             const projects = feasDataAny.rd_projects_list;
             setTechProjects(Array.isArray(projects) ? projects.join("\n") : "");
-            
+
             // Use type assertion for enum-like values
             const status = feasDataAny.feasibility_status || "needs_more_info";
             if (status === "qualified" || status === "not_qualified" || status === "needs_more_info") {
               setTechStatus(status);
             }
-            
+
             const claimBand = feasDataAny.estimated_claim_band || "0-25k";
             if (claimBand === "0-25k" || claimBand === "25k-50k" || claimBand === "50k-100k" || claimBand === "100k-250k" || claimBand === "250k+") {
               setTechClaimBand(claimBand);
             }
-            
+
             const riskRating = feasDataAny.risk_rating || "low";
             if (riskRating === "low" || riskRating === "medium" || riskRating === "high") {
               setTechRiskRating(riskRating);
             }
-            
+
             setTechNotesForFinance(feasDataAny.notes_for_finance || "");
-            
+
             const missingInfo = feasDataAny.missing_information_flags;
             setTechMissingInfo(Array.isArray(missingInfo) ? missingInfo.join("\n") : "");
           }
@@ -196,16 +196,16 @@ export default function CIFDetailPage() {
 
       // Extract AI research data from ai_research_data JSONB field
       let mergedResearch = data.ai_research_data || {};
-      
+
       // Merge with company_research if available (fallback/legacy data)
       if (data.company_research) {
         try {
-          const research = typeof data.company_research === 'string' 
-            ? JSON.parse(data.company_research)
-            : data.company_research;
-            
+          const research = typeof data.company_research === 'string' ?
+          JSON.parse(data.company_research) :
+          data.company_research;
+
           console.log("🔄 Merging company_research into aiResearchData", research);
-          
+
           // Smart merge: Only overwrite if new data exists and is not empty
           // Helper to check if a value is "meaningful" (not null, undefined, or empty array/string)
           const hasData = (val: any) => {
@@ -221,26 +221,26 @@ export default function CIFDetailPage() {
           const mergedAny = mergedResearch as any;
 
           // Overlay new data only where it has content
-          Object.keys(mergedAny).forEach(key => {
+          Object.keys(mergedAny).forEach((key) => {
             if (hasData(mergedAny[key])) {
               // Special handling for nested objects
               if (key === 'feasibility' && base.feasibility) {
-                 base.feasibility = { ...base.feasibility, ...mergedAny.feasibility };
+                base.feasibility = { ...base.feasibility, ...mergedAny.feasibility };
               } else if (key === 'trading_history' && base.trading_history) {
-                 base.trading_history = { ...base.trading_history, ...mergedAny.trading_history };
+                base.trading_history = { ...base.trading_history, ...mergedAny.trading_history };
               } else {
-                 base[key] = mergedAny[key];
+                base[key] = mergedAny[key];
               }
             }
           });
-          
+
           mergedResearch = base;
 
         } catch (e) {
           console.error("Error parsing company_research for merge:", e);
         }
       }
-      
+
       console.log("✅ Final Merged AI Data:", mergedResearch);
       setAiResearchData(mergedResearch);
 
@@ -253,11 +253,11 @@ export default function CIFDetailPage() {
       if (data.section2_feasibility_id) {
         console.log("🔍 Fetching feasibility analysis:", data.section2_feasibility_id);
         try {
-          const { data: feasData, error: feasError } = await supabase
-            .from("feasibility_analyses")
-            .select("*")
-            .eq("id", data.section2_feasibility_id)
-            .single();
+          const { data: feasData, error: feasError } = await supabase.
+          from("feasibility_analyses").
+          select("*").
+          eq("id", data.section2_feasibility_id).
+          single();
 
           console.log("📊 Feasibility Analysis Data:", feasData);
 
@@ -270,34 +270,34 @@ export default function CIFDetailPage() {
             // Access properties directly from feasData with type assertion
             const feasDataAny = feasData as any;
             setTechUnderstanding(feasDataAny.technical_understanding || "");
-            setTechChallenges(Array.isArray(feasDataAny.challenges_uncertainties) 
-              ? feasDataAny.challenges_uncertainties.join("\n") 
-              : (feasDataAny.challenges_uncertainties || ""));
-            
+            setTechChallenges(Array.isArray(feasDataAny.challenges_uncertainties) ?
+            feasDataAny.challenges_uncertainties.join("\n") :
+            feasDataAny.challenges_uncertainties || "");
+
             const activities = feasDataAny.qualifying_activities;
             setTechActivities(Array.isArray(activities) ? activities.join("\n") : "");
-            
+
             const projects = feasDataAny.rd_projects_list;
             setTechProjects(Array.isArray(projects) ? projects.join("\n") : "");
-            
+
             // Use type assertion for enum-like values
             const status = feasDataAny.feasibility_status || "needs_more_info";
             if (status === "qualified" || status === "not_qualified" || status === "needs_more_info") {
               setTechStatus(status);
             }
-            
+
             const claimBand = feasDataAny.estimated_claim_band || "0-25k";
             if (claimBand === "0-25k" || claimBand === "25k-50k" || claimBand === "50k-100k" || claimBand === "100k-250k" || claimBand === "250k+") {
               setTechClaimBand(claimBand);
             }
-            
+
             const riskRating = feasDataAny.risk_rating || "low";
             if (riskRating === "low" || riskRating === "medium" || riskRating === "high") {
               setTechRiskRating(riskRating);
             }
-            
+
             setTechNotesForFinance(feasDataAny.notes_for_finance || "");
-            
+
             const missingInfo = feasDataAny.missing_information_flags;
             setTechMissingInfo(Array.isArray(missingInfo) ? missingInfo.join("\n") : "");
           }
@@ -324,10 +324,10 @@ export default function CIFDetailPage() {
       // Populate extracted feasibility analysis
       try {
         if (data.company_research) {
-          const research = typeof data.company_research === 'string' 
-            ? JSON.parse(data.company_research)
-            : data.company_research;
-          
+          const research = typeof data.company_research === 'string' ?
+          JSON.parse(data.company_research) :
+          data.company_research;
+
           const summary = research.feasibility_summary || research.summary || "";
           setFeasibilityExtract(summary);
         }
@@ -344,11 +344,11 @@ export default function CIFDetailPage() {
 
   const fetchDocuments = async (cifId: string) => {
     try {
-      const { data: docs, error } = await supabase
-        .from("cif_documents")
-        .select("*, uploaded_by_profile:profiles!cif_documents_uploaded_by_fkey(full_name)")
-        .eq("cif_id", cifId)
-        .order("uploaded_at", { ascending: false });
+      const { data: docs, error } = await supabase.
+      from("cif_documents").
+      select("*, uploaded_by_profile:profiles!cif_documents_uploaded_by_fkey(full_name)").
+      eq("cif_id", cifId).
+      order("uploaded_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching documents:", error);
@@ -370,9 +370,9 @@ export default function CIFDetailPage() {
     try {
       const fileExt = file.name.split(".").pop();
       const fileName = `${cif.id}/${docType}_${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from("cif-documents")
-        .upload(fileName, file);
+      const { error: uploadError } = await supabase.storage.
+      from("cif-documents").
+      upload(fileName, file);
 
       if (uploadError) {
         toast({ title: "Error", description: "Failed to upload file", variant: "destructive" });
@@ -385,7 +385,7 @@ export default function CIFDetailPage() {
         doc_type: docType,
         file_path: fileName,
         uploaded_by: profile.id,
-        notes: file.name,
+        notes: file.name
       });
 
       if (dbError) {
@@ -409,18 +409,18 @@ export default function CIFDetailPage() {
     if (!cif) return;
 
     try {
-      const { error: storageError } = await supabase.storage
-        .from("cif-documents")
-        .remove([filePath]);
+      const { error: storageError } = await supabase.storage.
+      from("cif-documents").
+      remove([filePath]);
 
       if (storageError) {
         console.error("Storage delete error:", storageError);
       }
 
-      const { error: dbError } = await supabase
-        .from("cif_documents")
-        .delete()
-        .eq("id", docId);
+      const { error: dbError } = await supabase.
+      from("cif_documents").
+      delete().
+      eq("id", docId);
 
       if (dbError) {
         toast({ title: "Error", description: "Failed to delete document", variant: "destructive" });
@@ -437,9 +437,9 @@ export default function CIFDetailPage() {
 
   const handleDownloadDocument = async (filePath: string, fileName: string) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("cif-documents")
-        .download(filePath);
+      const { data, error } = await supabase.storage.
+      from("cif-documents").
+      download(filePath);
 
       if (error || !data) {
         toast({ title: "Error", description: "Failed to download document", variant: "destructive" });
@@ -478,15 +478,15 @@ export default function CIFDetailPage() {
           expected_feasibility_date: bdmExpFeasibilityDate || undefined,
           has_claimed_before: bdmHasClaimedBefore,
           previous_claim_year_end_date: bdmPrevClaimYearEnd || undefined,
-          previous_claim_value: bdmPrevClaimValue ? parseFloat(bdmPrevClaimValue) : undefined,
+          previous_claim_value: bdmPrevClaimValue ? parseFloat(bdmPrevClaimValue) : undefined
         },
         profile.id
       );
 
       if (result) {
-        toast({ 
-          title: "Success", 
-          description: "BDM section completed successfully. Moving to Feasibility Assessment." 
+        toast({
+          title: "Success",
+          description: "BDM section completed successfully. Moving to Feasibility Assessment."
         });
         await fetchCIF(cif.id);
         setActiveTab("feasibility");
@@ -515,13 +515,13 @@ export default function CIFDetailPage() {
         {
           technical_understanding: techUnderstanding,
           challenges_uncertainties: techChallenges,
-          qualifying_activities: techActivities.split("\n").filter(a => a.trim()),
-          rd_projects_list: techProjects.split("\n").filter(p => p.trim()),
+          qualifying_activities: techActivities.split("\n").filter((a) => a.trim()),
+          rd_projects_list: techProjects.split("\n").filter((p) => p.trim()),
           feasibility_status: techStatus,
           estimated_claim_band: techClaimBand || undefined,
           risk_rating: techRiskRating || undefined,
           notes_for_finance: techNotesForFinance,
-          missing_information_flags: techMissingInfo.split("\n").filter(f => f.trim()),
+          missing_information_flags: techMissingInfo.split("\n").filter((f) => f.trim())
         },
         profile.id
       );
@@ -562,7 +562,7 @@ export default function CIFDetailPage() {
           accountant_firm: accountantFirm,
           accountant_email: accountantEmail,
           accountant_phone: accountantPhone,
-          ready_to_submit: readyToSubmit,
+          ready_to_submit: readyToSubmit
         },
         profile.id
       );
@@ -588,8 +588,8 @@ export default function CIFDetailPage() {
       const result = await cifService.approveCIF(cif.id, profile.id);
 
       if (result) {
-        toast({ 
-          title: "Success", 
+        toast({
+          title: "Success",
           description: `CIF approved and claim created for FY ${result.claim?.claim_year || 'Unknown'}`
         });
         router.push("/staff/cif");
@@ -619,7 +619,7 @@ export default function CIFDetailPage() {
     setSaving(true);
     try {
       const result = await cifService.rejectCIF(
-        cif.id, 
+        cif.id,
         rejectionType,
         rejectionType === "send_back" ? rejectToStage : undefined,
         rejectionReason,
@@ -627,13 +627,13 @@ export default function CIFDetailPage() {
       );
 
       if (rejectionType === "delete" || result) {
-        toast({ 
-          title: "Success", 
-          description: rejectionType === "delete" 
-            ? "CIF deleted successfully" 
-            : rejectionType === "archive"
-            ? "CIF archived successfully"
-            : `CIF sent back to ${rejectToStage.replace(/_/g, " ")}`
+        toast({
+          title: "Success",
+          description: rejectionType === "delete" ?
+          "CIF deleted successfully" :
+          rejectionType === "archive" ?
+          "CIF archived successfully" :
+          `CIF sent back to ${rejectToStage.replace(/_/g, " ")}`
         });
         setShowRejectModal(false);
         router.push("/staff/cif");
@@ -660,8 +660,8 @@ export default function CIFDetailPage() {
         profile.id
       );
 
-      toast({ 
-        title: "Success", 
+      toast({
+        title: "Success",
         description: "CIF deleted successfully"
       });
       setShowDeleteModal(false);
@@ -678,16 +678,16 @@ export default function CIFDetailPage() {
     return (
       <StaffLayout>
         <div className="text-center py-12">Loading CIF...</div>
-      </StaffLayout>
-    );
+      </StaffLayout>);
+
   }
 
   if (!cif) {
     return (
       <StaffLayout>
         <div className="text-center py-12">CIF not found</div>
-      </StaffLayout>
-    );
+      </StaffLayout>);
+
   }
 
   const prospect = cif.prospects;
@@ -709,32 +709,32 @@ export default function CIFDetailPage() {
                 <MessageWidget
                   entityType="cif"
                   entityId={cif.id}
-                  entityName={companyName}
-                />
+                  entityName={companyName} />
+
               </div>
               <p className="text-muted-foreground">
                 {cif?.primary_contact_name} • {cif?.primary_contact_email}
               </p>
             </div>
           </div>
-          {profile?.internal_role === "admin" && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log("🔴 DELETE BUTTON CLICKED - Event fired!");
-                console.log("Profile role:", profile?.internal_role);
-                console.log("Setting showDeleteModal to true");
-                setShowDeleteModal(true);
-              }}
-              className="z-50"
-            >
+          {profile?.internal_role === "admin" &&
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("🔴 DELETE BUTTON CLICKED - Event fired!");
+              console.log("Profile role:", profile?.internal_role);
+              console.log("Setting showDeleteModal to true");
+              setShowDeleteModal(true);
+            }}
+            className="z-50">
+
               <XCircle className="h-4 w-4 mr-2" />
               Delete CIF
             </Button>
-          )}
+          }
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -751,7 +751,7 @@ export default function CIFDetailPage() {
             {(() => {
               try {
                 if (!cif?.company_research) return null;
-                
+
                 let research: any = cif.company_research;
                 if (typeof research === "string") {
                   try {
@@ -765,11 +765,11 @@ export default function CIFDetailPage() {
 
                 // Check if we have business intelligence data
                 const hasBusinessData = research && typeof research === 'object' && (
-                  research.company_age ||
-                  research.directors ||
-                  research.trading_history ||
-                  research.company_type
-                );
+                research.company_age ||
+                research.directors ||
+                research.trading_history ||
+                research.company_type);
+
 
                 if (!hasBusinessData) return null;
 
@@ -787,109 +787,109 @@ export default function CIFDetailPage() {
                     <CardContent className="space-y-4">
                       {/* Company Overview */}
                       <div className="grid grid-cols-2 gap-4">
-                        {research.company_age && (
-                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                        {research.company_age &&
+                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                             <p className="text-xs text-blue-600 mb-1">Company Age</p>
                             <p className="text-sm font-semibold text-blue-900">{research.company_age}</p>
                           </div>
-                        )}
-                        {research.company_type && (
-                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                        }
+                        {research.company_type &&
+                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                             <p className="text-xs text-blue-600 mb-1">Company Type</p>
                             <p className="text-sm font-semibold text-blue-900">{research.company_type}</p>
                           </div>
-                        )}
-                        {research.employee_count && (
-                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                        }
+                        {research.employee_count &&
+                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                             <p className="text-xs text-blue-600 mb-1">Employees</p>
                             <p className="text-sm font-semibold text-blue-900">{research.employee_count}</p>
                           </div>
-                        )}
-                        {research.company_status && (
-                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                        }
+                        {research.company_status &&
+                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                             <p className="text-xs text-blue-600 mb-1">Status</p>
                             <Badge variant={research.company_status === "active" ? "default" : "secondary"}>
                               {research.company_status}
                             </Badge>
                           </div>
-                        )}
+                        }
                       </div>
 
                       {/* Directors */}
-                      {research.directors && Array.isArray(research.directors) && research.directors.length > 0 && (
-                        <div className="space-y-2">
+                      {research.directors && Array.isArray(research.directors) && research.directors.length > 0 &&
+                      <div className="space-y-2">
                           <p className="text-sm font-semibold text-blue-900">Directors ({research.directors.length})</p>
                           <div className="space-y-2">
-                            {research.directors.map((director: any, idx: number) => (
-                              <div key={idx} className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                            {research.directors.map((director: any, idx: number) =>
+                          <div key={idx} className="p-3 bg-white/60 rounded-lg border border-blue-200">
                                 <p className="text-sm font-semibold text-blue-900">{director.name}</p>
                                 <div className="flex gap-4 mt-1 text-xs text-blue-700">
                                   {director.role && <span>Role: {director.role}</span>}
                                   {director.appointed_on && <span>Appointed: {new Date(director.appointed_on).toLocaleDateString()}</span>}
                                 </div>
-                                {director.nationality && (
-                                  <p className="text-xs text-blue-600 mt-1">Nationality: {director.nationality}</p>
-                                )}
+                                {director.nationality &&
+                            <p className="text-xs text-blue-600 mt-1">Nationality: {director.nationality}</p>
+                            }
                               </div>
-                            ))}
+                          )}
                           </div>
                         </div>
-                      )}
+                      }
 
                       {/* Trading History */}
-                      {research.trading_history && (
-                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200 space-y-2">
+                      {research.trading_history &&
+                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200 space-y-2">
                           <p className="text-sm font-semibold text-blue-900">Trading History</p>
-                          {research.trading_history.recent_filings && (
-                            <p className="text-xs text-blue-700">
+                          {research.trading_history.recent_filings &&
+                        <p className="text-xs text-blue-700">
                               Recent Filings: {research.trading_history.recent_filings}
                             </p>
-                          )}
-                          {research.trading_history.filing_pattern && (
-                            <p className="text-xs text-blue-700">
+                        }
+                          {research.trading_history.filing_pattern &&
+                        <p className="text-xs text-blue-700">
                               Filing Pattern: {research.trading_history.filing_pattern}
                             </p>
-                          )}
-                          {research.trading_history.average_filing_lag && (
-                            <p className="text-xs text-blue-700">
+                        }
+                          {research.trading_history.average_filing_lag &&
+                        <p className="text-xs text-blue-700">
                               Avg Filing Lag: {research.trading_history.average_filing_lag}
                             </p>
-                          )}
-                          {research.trading_history.confidence_score && (
-                            <div className="flex items-center gap-2 mt-2">
+                        }
+                          {research.trading_history.confidence_score &&
+                        <div className="flex items-center gap-2 mt-2">
                               <p className="text-xs text-blue-600">Confidence Score:</p>
                               <Badge variant="secondary" className="bg-blue-600 text-white">
                                 {research.trading_history.confidence_score}
                               </Badge>
                             </div>
-                          )}
+                        }
                         </div>
-                      )}
+                      }
 
                       {/* Core Business */}
-                      {research.core_business && (
-                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                      {research.core_business &&
+                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                           <p className="text-xs text-blue-600 mb-1">Core Business</p>
                           <p className="text-sm text-blue-900">{research.core_business}</p>
                         </div>
-                      )}
+                      }
 
                       {/* SIC Codes */}
-                      {research.sic_codes && Array.isArray(research.sic_codes) && research.sic_codes.length > 0 && (
-                        <div className="space-y-2">
+                      {research.sic_codes && Array.isArray(research.sic_codes) && research.sic_codes.length > 0 &&
+                      <div className="space-y-2">
                           <p className="text-sm font-semibold text-blue-900">Business Activities (SIC Codes)</p>
                           <div className="flex flex-wrap gap-2">
-                            {research.sic_codes.map((sic: string, idx: number) => (
-                              <Badge key={idx} variant="outline" className="text-xs">
+                            {research.sic_codes.map((sic: string, idx: number) =>
+                          <Badge key={idx} variant="outline" className="text-xs">
                                 {sic}
                               </Badge>
-                            ))}
+                          )}
                           </div>
                         </div>
-                      )}
+                      }
                     </CardContent>
-                  </Card>
-                );
+                  </Card>);
+
               } catch (error) {
                 console.error("Error parsing company research:", error);
                 return null;
@@ -897,8 +897,8 @@ export default function CIFDetailPage() {
             })()}
 
             {/* AI Business Intelligence Card */}
-            {aiResearchData && (
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+            {aiResearchData &&
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
                     <Zap className="h-5 w-5" />
@@ -911,109 +911,109 @@ export default function CIFDetailPage() {
                 <CardContent className="space-y-4">
                   {/* Company Overview */}
                   <div className="grid grid-cols-2 gap-4">
-                    {aiResearchData.company_age && (
-                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                    {aiResearchData.company_age &&
+                  <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                         <p className="text-xs text-blue-600 mb-1">Company Age</p>
                         <p className="text-sm font-semibold text-blue-900">{aiResearchData.company_age}</p>
                       </div>
-                    )}
-                    {aiResearchData.company_type && (
-                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                  }
+                    {aiResearchData.company_type &&
+                  <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                         <p className="text-xs text-blue-600 mb-1">Company Type</p>
                         <p className="text-sm font-semibold text-blue-900">{aiResearchData.company_type}</p>
                       </div>
-                    )}
-                    {aiResearchData.employee_count && (
-                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                  }
+                    {aiResearchData.employee_count &&
+                  <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                         <p className="text-xs text-blue-600 mb-1">Employees</p>
                         <p className="text-sm font-semibold text-blue-900">{aiResearchData.employee_count}</p>
                       </div>
-                    )}
-                    {aiResearchData.company_status && (
-                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                  }
+                    {aiResearchData.company_status &&
+                  <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                         <p className="text-xs text-blue-600 mb-1">Status</p>
                         <Badge variant={aiResearchData.company_status === "active" ? "default" : "secondary"}>
                           {aiResearchData.company_status}
                         </Badge>
                       </div>
-                    )}
+                  }
                   </div>
 
                   {/* Directors */}
-                  {aiResearchData.directors && Array.isArray(aiResearchData.directors) && aiResearchData.directors.length > 0 && (
-                    <div className="space-y-2">
+                  {aiResearchData.directors && Array.isArray(aiResearchData.directors) && aiResearchData.directors.length > 0 &&
+                <div className="space-y-2">
                       <p className="text-sm font-semibold text-blue-900">Directors ({aiResearchData.directors.length})</p>
                       <div className="space-y-2">
-                        {aiResearchData.directors.map((director: any, idx: number) => (
-                          <div key={idx} className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                        {aiResearchData.directors.map((director: any, idx: number) =>
+                    <div key={idx} className="p-3 bg-white/60 rounded-lg border border-blue-200">
                             <p className="text-sm font-semibold text-blue-900">{director.name}</p>
                             <div className="flex gap-4 mt-1 text-xs text-blue-700">
                               {director.role && <span>Role: {director.role}</span>}
                               {director.appointed_on && <span>Appointed: {new Date(director.appointed_on).toLocaleDateString()}</span>}
                             </div>
-                            {director.nationality && (
-                              <p className="text-xs text-blue-600 mt-1">Nationality: {director.nationality}</p>
-                            )}
+                            {director.nationality &&
+                      <p className="text-xs text-blue-600 mt-1">Nationality: {director.nationality}</p>
+                      }
                           </div>
-                        ))}
+                    )}
                       </div>
                     </div>
-                  )}
+                }
 
                   {/* Trading History */}
-                  {aiResearchData.trading_history && (
-                    <div className="p-3 bg-white/60 rounded-lg border border-blue-200 space-y-2">
+                  {aiResearchData.trading_history &&
+                <div className="p-3 bg-white/60 rounded-lg border border-blue-200 space-y-2">
                       <p className="text-sm font-semibold text-blue-900">Trading History</p>
-                      {aiResearchData.trading_history.recent_filings && (
-                        <p className="text-xs text-blue-700">
+                      {aiResearchData.trading_history.recent_filings &&
+                  <p className="text-xs text-blue-700">
                           Recent Filings: {aiResearchData.trading_history.recent_filings}
                         </p>
-                      )}
-                      {aiResearchData.trading_history.filing_pattern && (
-                        <p className="text-xs text-blue-700">
+                  }
+                      {aiResearchData.trading_history.filing_pattern &&
+                  <p className="text-xs text-blue-700">
                           Filing Pattern: {aiResearchData.trading_history.filing_pattern}
                         </p>
-                      )}
-                      {aiResearchData.trading_history.average_filing_lag && (
-                        <p className="text-xs text-blue-700">
+                  }
+                      {aiResearchData.trading_history.average_filing_lag &&
+                  <p className="text-xs text-blue-700">
                           Avg Filing Lag: {aiResearchData.trading_history.average_filing_lag}
                         </p>
-                      )}
-                      {aiResearchData.trading_history.confidence_score && (
-                        <div className="flex items-center gap-2 mt-2">
+                  }
+                      {aiResearchData.trading_history.confidence_score &&
+                  <div className="flex items-center gap-2 mt-2">
                           <p className="text-xs text-blue-600">Confidence Score:</p>
                           <Badge variant="secondary" className="bg-blue-600 text-white">
                             {aiResearchData.trading_history.confidence_score}
                           </Badge>
                         </div>
-                      )}
+                  }
                     </div>
-                  )}
+                }
 
                   {/* Core Business */}
-                  {aiResearchData.core_business && (
-                    <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                  {aiResearchData.core_business &&
+                <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                       <p className="text-xs text-blue-600 mb-1">Core Business</p>
                       <p className="text-sm text-blue-900">{aiResearchData.core_business}</p>
                     </div>
-                  )}
+                }
 
                   {/* SIC Codes */}
-                  {aiResearchData.sic_codes && Array.isArray(aiResearchData.sic_codes) && aiResearchData.sic_codes.length > 0 && (
-                    <div className="space-y-2">
+                  {aiResearchData.sic_codes && Array.isArray(aiResearchData.sic_codes) && aiResearchData.sic_codes.length > 0 &&
+                <div className="space-y-2">
                       <p className="text-sm font-semibold text-blue-900">Business Activities (SIC Codes)</p>
                       <div className="flex flex-wrap gap-2">
-                        {aiResearchData.sic_codes.map((sic: string, idx: number) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
+                        {aiResearchData.sic_codes.map((sic: string, idx: number) =>
+                    <Badge key={idx} variant="outline" className="text-xs">
                             {sic}
                           </Badge>
-                        ))}
+                    )}
                       </div>
                     </div>
-                  )}
+                }
                 </CardContent>
               </Card>
-            )}
+            }
 
             <Card>
               <CardHeader>
@@ -1030,8 +1030,8 @@ export default function CIFDetailPage() {
                       id="primary_contact_name"
                       value={bdmContactName}
                       onChange={(e) => setBdmContactName(e.target.value)}
-                      disabled={!canEdit}
-                    />
+                      disabled={!canEdit} />
+
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="primary_contact_position">Position</Label>
@@ -1039,8 +1039,8 @@ export default function CIFDetailPage() {
                       id="primary_contact_position"
                       value={bdmContactPosition}
                       onChange={(e) => setBdmContactPosition(e.target.value)}
-                      disabled={!canEdit}
-                    />
+                      disabled={!canEdit} />
+
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="primary_contact_email">Email</Label>
@@ -1049,8 +1049,8 @@ export default function CIFDetailPage() {
                       type="email"
                       value={bdmContactEmail}
                       onChange={(e) => setBdmContactEmail(e.target.value)}
-                      disabled={!canEdit}
-                    />
+                      disabled={!canEdit} />
+
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="primary_contact_phone">Phone</Label>
@@ -1058,8 +1058,8 @@ export default function CIFDetailPage() {
                       id="primary_contact_phone"
                       value={bdmContactPhone}
                       onChange={(e) => setBdmContactPhone(e.target.value)}
-                      disabled={!canEdit}
-                    />
+                      disabled={!canEdit} />
+
                   </div>
                 </div>
 
@@ -1071,8 +1071,8 @@ export default function CIFDetailPage() {
                     value={bdmBusinessBackground}
                     onChange={(e) => setBdmBusinessBackground(e.target.value)}
                     rows={3}
-                    disabled={!canEdit}
-                  />
+                    disabled={!canEdit} />
+
                 </div>
 
                 <div className="space-y-2">
@@ -1083,8 +1083,8 @@ export default function CIFDetailPage() {
                     value={bdmProjectOverview}
                     onChange={(e) => setBdmProjectOverview(e.target.value)}
                     rows={4}
-                    disabled={!canEdit}
-                  />
+                    disabled={!canEdit} />
+
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1095,8 +1095,8 @@ export default function CIFDetailPage() {
                       type="date"
                       value={bdmExpFeasibilityDate}
                       onChange={(e) => setBdmExpFeasibilityDate(e.target.value)}
-                      disabled={!canEdit}
-                    />
+                      disabled={!canEdit} />
+
                   </div>
                 </div>
 
@@ -1105,42 +1105,42 @@ export default function CIFDetailPage() {
                     id="has_claimed_before"
                     checked={bdmHasClaimedBefore}
                     onCheckedChange={(checked) => setBdmHasClaimedBefore(checked as boolean)}
-                    disabled={!canEdit}
-                  />
+                    disabled={!canEdit} />
+
                   <Label htmlFor="has_claimed_before">Has claimed R&D tax credits before?</Label>
                 </div>
 
-                {bdmHasClaimedBefore && (
-                  <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                {bdmHasClaimedBefore &&
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                     <div className="space-y-2">
                       <Label htmlFor="prev_claim_year">Previous Claim Year End</Label>
                       <Input
-                        id="prev_claim_year"
-                        type="date"
-                        value={bdmPrevClaimYearEnd}
-                        onChange={(e) => setBdmPrevClaimYearEnd(e.target.value)}
-                        disabled={!canEdit}
-                      />
+                      id="prev_claim_year"
+                      type="date"
+                      value={bdmPrevClaimYearEnd}
+                      onChange={(e) => setBdmPrevClaimYearEnd(e.target.value)}
+                      disabled={!canEdit} />
+
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="prev_claim_value">Previous Claim Value (£)</Label>
                       <Input
-                        id="prev_claim_value"
-                        type="number"
-                        value={bdmPrevClaimValue}
-                        onChange={(e) => setBdmPrevClaimValue(e.target.value)}
-                        disabled={!canEdit}
-                      />
+                      id="prev_claim_value"
+                      type="number"
+                      value={bdmPrevClaimValue}
+                      onChange={(e) => setBdmPrevClaimValue(e.target.value)}
+                      disabled={!canEdit} />
+
                     </div>
                   </div>
-                )}
+                }
 
-                {canEdit && (cif.current_stage === "bdm_section" || isStaff) && (
-                  <Button onClick={handleCompleteBDM} disabled={saving} className="w-full">
+                {canEdit && (cif.current_stage === "bdm_section" || isStaff) &&
+                <Button onClick={handleCompleteBDM} disabled={saving} className="w-full">
                     <Save className="h-4 w-4 mr-2" />
                     {saving ? "Saving..." : "Complete BDM Section"}
                   </Button>
-                )}
+                }
               </CardContent>
             </Card>
           </TabsContent>
@@ -1165,22 +1165,22 @@ export default function CIFDetailPage() {
             })()}
 
             {/* Last Accounts Filed Date */}
-            {prospect?.last_accounts_date && (
-              <div className="bg-muted/50 border rounded-lg p-4">
+            {prospect?.last_accounts_date &&
+            <div className="bg-muted/50 border rounded-lg p-4">
                 <p className="text-sm">
                   <span className="font-semibold">Last Accounts Filed:</span>{" "}
                   {new Date(prospect.last_accounts_date).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric"
-                  })}
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric"
+                })}
                 </p>
               </div>
-            )}
+            }
 
             {/* AI Feasibility Analysis */}
-            {aiResearchData?.feasibility && (
-              <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
+            {aiResearchData?.feasibility &&
+            <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
                     <Zap className="h-5 w-5" />
@@ -1192,47 +1192,47 @@ export default function CIFDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Summary */}
-                  {aiResearchData.feasibility.summary && (
-                    <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                  {aiResearchData.feasibility.summary &&
+                <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
                       <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                         {aiResearchData.feasibility.summary}
                       </p>
                     </div>
-                  )}
+                }
 
                   {/* Technical Reasoning */}
-                  {aiResearchData.feasibility.technical_reasoning && (
-                    <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                  {aiResearchData.feasibility.technical_reasoning &&
+                <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
                       <h4 className="font-semibold text-sm mb-2">Technical Assessment</h4>
                       <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                         {aiResearchData.feasibility.technical_reasoning}
                       </p>
                     </div>
-                  )}
+                }
 
                   {/* Estimated Claim Band */}
-                  {aiResearchData.feasibility.estimated_claim_band && (
-                    <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                  {aiResearchData.feasibility.estimated_claim_band &&
+                <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
                       <h4 className="font-semibold text-sm mb-2">Estimated Claim Band</h4>
                       <Badge variant="secondary">{aiResearchData.feasibility.estimated_claim_band}</Badge>
                     </div>
-                  )}
+                }
 
                   {/* Risk Rating */}
-                  {aiResearchData.feasibility.risk_rating && (
-                    <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                  {aiResearchData.feasibility.risk_rating &&
+                <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
                       <h4 className="font-semibold text-sm mb-2">Risk Rating</h4>
                       <Badge variant={
-                        aiResearchData.feasibility.risk_rating === 'low' ? 'default' :
-                        aiResearchData.feasibility.risk_rating === 'medium' ? 'secondary' : 'destructive'
-                      }>
+                  aiResearchData.feasibility.risk_rating === 'low' ? 'default' :
+                  aiResearchData.feasibility.risk_rating === 'medium' ? 'secondary' : 'destructive'
+                  }>
                         {aiResearchData.feasibility.risk_rating}
                       </Badge>
                     </div>
-                  )}
+                }
                 </CardContent>
               </Card>
-            )}
+            }
 
             {/* Manual Feasibility Assessment Form */}
             <Card>
@@ -1253,8 +1253,8 @@ export default function CIFDetailPage() {
                     value={techUnderstanding}
                     onChange={(e) => setTechUnderstanding(e.target.value)}
                     disabled={!canEdit}
-                    rows={4}
-                  />
+                    rows={4} />
+
                 </div>
 
                 <div className="space-y-2">
@@ -1265,8 +1265,8 @@ export default function CIFDetailPage() {
                     value={techChallenges}
                     onChange={(e) => setTechChallenges(e.target.value)}
                     rows={3}
-                    disabled={!canEdit}
-                  />
+                    disabled={!canEdit} />
+
                 </div>
 
                 <div className="space-y-2">
@@ -1277,8 +1277,8 @@ export default function CIFDetailPage() {
                     value={techActivities}
                     onChange={(e) => setTechActivities(e.target.value)}
                     rows={3}
-                    disabled={!canEdit}
-                  />
+                    disabled={!canEdit} />
+
                 </div>
 
                 <div className="space-y-2">
@@ -1289,8 +1289,8 @@ export default function CIFDetailPage() {
                     value={techProjects}
                     onChange={(e) => setTechProjects(e.target.value)}
                     rows={3}
-                    disabled={!canEdit}
-                  />
+                    disabled={!canEdit} />
+
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
@@ -1347,8 +1347,8 @@ export default function CIFDetailPage() {
                     value={techNotesForFinance}
                     onChange={(e) => setTechNotesForFinance(e.target.value)}
                     rows={2}
-                    disabled={!canEdit}
-                  />
+                    disabled={!canEdit} />
+
                 </div>
 
                 <div className="space-y-2">
@@ -1359,16 +1359,16 @@ export default function CIFDetailPage() {
                     value={techMissingInfo}
                     onChange={(e) => setTechMissingInfo(e.target.value)}
                     rows={2}
-                    disabled={!canEdit}
-                  />
+                    disabled={!canEdit} />
+
                 </div>
 
-                {canEdit && (cif.current_stage === "bdm_section" || cif.current_stage === "tech_feasibility") && (
-                  <Button onClick={handleCompleteTechnical} disabled={saving} className="w-full">
+                {canEdit && (cif.current_stage === "bdm_section" || cif.current_stage === "tech_feasibility") &&
+                <Button onClick={handleCompleteTechnical} disabled={saving} className="w-full">
                     <Save className="h-4 w-4 mr-2" />
                     {saving ? "Saving..." : "Complete Technical Section"}
                   </Button>
-                )}
+                }
               </CardContent>
             </Card>
           </TabsContent>
@@ -1389,8 +1389,8 @@ export default function CIFDetailPage() {
                     placeholder="e.g. YE 31-03-2024 or 2023/24"
                     value={financialYear}
                     onChange={(e) => setFinancialYear(e.target.value)}
-                    disabled={!canEdit || cif.current_stage !== "financial_section"}
-                  />
+                    disabled={!canEdit || cif.current_stage !== "financial_section"} />
+
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1402,8 +1402,8 @@ export default function CIFDetailPage() {
                       placeholder="0.00"
                       value={staffCost}
                       onChange={(e) => setStaffCost(e.target.value)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section"}
-                    />
+                      disabled={!canEdit || cif.current_stage !== "financial_section"} />
+
                   </div>
 
                   <div className="space-y-2">
@@ -1414,8 +1414,8 @@ export default function CIFDetailPage() {
                       placeholder="0.00"
                       value={subcontractorCost}
                       onChange={(e) => setSubcontractorCost(e.target.value)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section"}
-                    />
+                      disabled={!canEdit || cif.current_stage !== "financial_section"} />
+
                   </div>
 
                   <div className="space-y-2">
@@ -1426,8 +1426,8 @@ export default function CIFDetailPage() {
                       placeholder="0.00"
                       value={consumablesCost}
                       onChange={(e) => setConsumablesCost(e.target.value)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section"}
-                    />
+                      disabled={!canEdit || cif.current_stage !== "financial_section"} />
+
                   </div>
 
                   <div className="space-y-2">
@@ -1438,8 +1438,8 @@ export default function CIFDetailPage() {
                       placeholder="0.00"
                       value={softwareCost}
                       onChange={(e) => setSoftwareCost(e.target.value)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section"}
-                    />
+                      disabled={!canEdit || cif.current_stage !== "financial_section"} />
+
                   </div>
                 </div>
 
@@ -1451,8 +1451,8 @@ export default function CIFDetailPage() {
                     value={apportionment}
                     onChange={(e) => setApportionment(e.target.value)}
                     rows={3}
-                    disabled={!canEdit || cif.current_stage !== "financial_section"}
-                  />
+                    disabled={!canEdit || cif.current_stage !== "financial_section"} />
+
                 </div>
 
                 <Separator />
@@ -1468,8 +1468,8 @@ export default function CIFDetailPage() {
                         placeholder="Accountant name"
                         value={accountantName}
                         onChange={(e) => setAccountantName(e.target.value)}
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
-                      />
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA} />
+
                     </div>
 
                     <div className="space-y-2">
@@ -1479,8 +1479,8 @@ export default function CIFDetailPage() {
                         placeholder="Accounting firm"
                         value={accountantFirm}
                         onChange={(e) => setAccountantFirm(e.target.value)}
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
-                      />
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS} />
+
                     </div>
 
                     <div className="space-y-2">
@@ -1491,8 +1491,8 @@ export default function CIFDetailPage() {
                         placeholder="accountant@firm.com"
                         value={accountantEmail}
                         onChange={(e) => setAccountantEmail(e.target.value)}
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
-                      />
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA} />
+
                     </div>
 
                     <div className="space-y-2">
@@ -1502,8 +1502,8 @@ export default function CIFDetailPage() {
                         placeholder="+44 20 1234 5678"
                         value={accountantPhone}
                         onChange={(e) => setAccountantPhone(e.target.value)}
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
-                      />
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS} />
+
                     </div>
                   </div>
                 </div>
@@ -1525,14 +1525,14 @@ export default function CIFDetailPage() {
                           if (file) handleFileUpload(file, "loa");
                         }}
                         className="hidden"
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
-                      />
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA} />
+
                       <Button
                         variant="outline"
                         className="w-full"
                         onClick={() => document.getElementById("loa-upload")?.click()}
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
-                      >
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}>
+
                         <Upload className="h-4 w-4 mr-2" />
                         {uploadingLOA ? "Uploading..." : "Upload Letter of Authority"}
                       </Button>
@@ -1549,25 +1549,25 @@ export default function CIFDetailPage() {
                           if (file) handleFileUpload(file, "anti_slavery");
                         }}
                         className="hidden"
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
-                      />
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS} />
+
                       <Button
                         variant="outline"
                         className="w-full"
                         onClick={() => document.getElementById("ass-upload")?.click()}
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
-                      >
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}>
+
                         <Upload className="h-4 w-4 mr-2" />
                         {uploadingASS ? "Uploading..." : "Upload Anti-Slavery Statement"}
                       </Button>
                     </div>
                   </div>
 
-                  {documents.length > 0 && (
-                    <div className="mt-4 space-y-2">
+                  {documents.length > 0 &&
+                  <div className="mt-4 space-y-2">
                       <h4 className="text-sm font-semibold">Uploaded Documents</h4>
-                      {documents.map((doc) => (
-                        <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      {documents.map((doc) =>
+                    <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div className="flex items-center gap-3">
                             <FileText className="h-5 w-5 text-muted-foreground" />
                             <div>
@@ -1581,26 +1581,26 @@ export default function CIFDetailPage() {
                           </div>
                           <div className="flex gap-2">
                             <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDownloadDocument(doc.file_path, doc.notes)}
-                            >
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDownloadDocument(doc.file_path, doc.notes)}>
+
                               Download
                             </Button>
-                            {canEdit && cif.current_stage === "financial_section" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
-                              >
+                            {canEdit && cif.current_stage === "financial_section" &&
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteDocument(doc.id, doc.file_path)}>
+
                                 <XCircle className="h-4 w-4" />
                               </Button>
-                            )}
+                        }
                           </div>
                         </div>
-                      ))}
+                    )}
                     </div>
-                  )}
+                  }
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -1608,19 +1608,19 @@ export default function CIFDetailPage() {
                     id="ready-submit"
                     checked={readyToSubmit}
                     onCheckedChange={(checked) => setReadyToSubmit(checked as boolean)}
-                    disabled={!canEdit || cif.current_stage !== "financial_section"}
-                  />
+                    disabled={!canEdit || cif.current_stage !== "financial_section"} />
+
                   <Label htmlFor="ready-submit" className="cursor-pointer">
                     Ready to submit to admin for approval
                   </Label>
                 </div>
 
-                {canEdit && cif.current_stage === "financial_section" && (
-                  <Button onClick={handleCompleteFinancial} disabled={saving} className="w-full">
+                {canEdit && cif.current_stage === "financial_section" &&
+                <Button onClick={handleCompleteFinancial} disabled={saving} className="w-full">
                     <Save className="h-4 w-4 mr-2" />
                     {saving ? "Saving..." : "Complete Financial Section"}
                   </Button>
-                )}
+                }
               </CardContent>
             </Card>
           </TabsContent>
@@ -1633,8 +1633,8 @@ export default function CIFDetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 
-                {cif.rejection_reason && !cif.rejection_reason.includes("[ARCHIVED]") && cif.current_stage !== "approved" && (
-                  <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg mb-4">
+                {cif.rejection_reason && !cif.rejection_reason.includes("[ARCHIVED]") && cif.current_stage !== "approved" &&
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg mb-4">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="h-5 w-5 text-orange-600 mt-0.5" />
                       <div>
@@ -1642,25 +1642,25 @@ export default function CIFDetailPage() {
                         <p className="text-sm text-orange-700 mt-1">
                           {cif.rejection_reason.replace("[SENT_BACK]", "").trim()}
                         </p>
-                        {cif.rejected_at && (
-                          <p className="text-xs text-orange-600 mt-1">
+                        {cif.rejected_at &&
+                      <p className="text-xs text-orange-600 mt-1">
                             Rejected on {new Date(cif.rejected_at).toLocaleDateString()}
                           </p>
-                        )}
+                      }
                       </div>
                     </div>
                   </div>
-                )}
+                }
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <p className="font-semibold">BDM Section</p>
                     <p className="text-sm text-muted-foreground">Business development completed</p>
-                    {cif.created_by_profile && (
-                      <p className="text-xs text-muted-foreground mt-1">
+                    {cif.created_by_profile &&
+                    <p className="text-xs text-muted-foreground mt-1">
                         By: {cif.created_by_profile.full_name || cif.created_by_profile.email}
                       </p>
-                    )}
+                    }
                   </div>
                   <CheckCircle className="h-6 w-6 text-green-500" />
                 </div>
@@ -1672,11 +1672,11 @@ export default function CIFDetailPage() {
                       Status: {cif.feasibility_status || "Pending"}
                     </p>
                   </div>
-                  {cif.feasibility_status === "qualified" ? (
-                    <CheckCircle className="h-6 w-6 text-green-500" />
-                  ) : (
-                    <XCircle className="h-6 w-6 text-red-500" />
-                  )}
+                  {cif.feasibility_status === "qualified" ?
+                  <CheckCircle className="h-6 w-6 text-green-500" /> :
+
+                  <XCircle className="h-6 w-6 text-red-500" />
+                  }
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -1686,11 +1686,11 @@ export default function CIFDetailPage() {
                       Ready: {cif.ready_to_submit ? "Yes" : "No"}
                     </p>
                   </div>
-                  {cif.ready_to_submit ? (
-                    <CheckCircle className="h-6 w-6 text-green-500" />
-                  ) : (
-                    <XCircle className="h-6 w-6 text-orange-500" />
-                  )}
+                  {cif.ready_to_submit ?
+                  <CheckCircle className="h-6 w-6 text-green-500" /> :
+
+                  <XCircle className="h-6 w-6 text-orange-500" />
+                  }
                 </div>
 
                 <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -1700,49 +1700,49 @@ export default function CIFDetailPage() {
                       {documents.length} document{documents.length !== 1 ? "s" : ""} uploaded
                     </p>
                   </div>
-                  {documents.length >= 2 ? (
-                    <CheckCircle className="h-6 w-6 text-green-500" />
-                  ) : (
-                    <XCircle className="h-6 w-6 text-orange-500" />
-                  )}
+                  {documents.length >= 2 ?
+                  <CheckCircle className="h-6 w-6 text-green-500" /> :
+
+                  <XCircle className="h-6 w-6 text-orange-500" />
+                  }
                 </div>
 
                 <Separator />
 
-                {cif.current_stage === "admin_approval" && (
-                  <div className="flex gap-3">
+                {cif.current_stage === "admin_approval" &&
+                <div className="flex gap-3">
                     <Button onClick={handleApproveCIF} disabled={saving} className="flex-1">
                       <CheckCircle className="h-4 w-4 mr-2" />
                       {saving ? "Approving..." : "Approve & Create Claim"}
                     </Button>
-                    <Button 
-                      onClick={() => setShowRejectModal(true)} 
-                      disabled={saving} 
-                      variant="destructive"
-                    >
+                    <Button
+                    onClick={() => setShowRejectModal(true)}
+                    disabled={saving}
+                    variant="destructive">
+
                       <XCircle className="h-4 w-4 mr-2" />
                       Reject
                     </Button>
                   </div>
-                )}
+                }
 
-                {cif.current_stage === "approved" && cif.linked_claim_id && (
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                {cif.current_stage === "approved" && cif.linked_claim_id &&
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <p className="font-semibold text-green-900">CIF Approved</p>
                     <p className="text-sm text-green-700">
                       Claim has been created and linked to this CIF
                     </p>
                   </div>
-                )}
+                }
 
-                {cif.current_stage === "rejected" && (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                {cif.current_stage === "rejected" &&
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                     <p className="font-semibold text-red-900">CIF Rejected</p>
                     <p className="text-sm text-red-700">
                       This CIF did not meet approval criteria
                     </p>
                   </div>
-                )}
+                }
 
                 <AlertDialog open={showRejectModal} onOpenChange={setShowRejectModal}>
                   <AlertDialogContent className="max-w-2xl">
@@ -1756,10 +1756,10 @@ export default function CIFDetailPage() {
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
                         <Label>Rejection Type</Label>
-                        <Select 
-                          value={rejectionType} 
-                          onValueChange={(v: "send_back" | "archive" | "delete") => setRejectionType(v)}
-                        >
+                        <Select
+                          value={rejectionType}
+                          onValueChange={(v: "send_back" | "archive" | "delete") => setRejectionType(v)}>
+
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -1771,13 +1771,13 @@ export default function CIFDetailPage() {
                         </Select>
                       </div>
 
-                      {rejectionType === "send_back" && (
-                        <div className="space-y-2">
+                      {rejectionType === "send_back" &&
+                      <div className="space-y-2">
                           <Label>Send Back To</Label>
-                          <Select 
-                            value={rejectToStage} 
-                            onValueChange={(v: "bdm_section" | "tech_feasibility" | "financial_section") => setRejectToStage(v)}
-                          >
+                          <Select
+                          value={rejectToStage}
+                          onValueChange={(v: "bdm_section" | "tech_feasibility" | "financial_section") => setRejectToStage(v)}>
+
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
@@ -1791,23 +1791,23 @@ export default function CIFDetailPage() {
                             The responsible staff member will be notified to revise this section.
                           </p>
                         </div>
-                      )}
+                      }
 
-                      {rejectionType === "archive" && (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      {rejectionType === "archive" &&
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="text-sm text-blue-900">
                             <strong>Archive:</strong> The CIF will be moved to the archive. You can reactivate it later if the prospect returns.
                           </p>
                         </div>
-                      )}
+                      }
 
-                      {rejectionType === "delete" && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      {rejectionType === "delete" &&
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                           <p className="text-sm text-red-900">
                             <strong>Warning:</strong> This action cannot be undone. The CIF and all associated data will be permanently deleted.
                           </p>
                         </div>
-                      )}
+                      }
 
                       <div className="space-y-2">
                         <Label>Reason for Rejection *</Label>
@@ -1815,8 +1815,8 @@ export default function CIFDetailPage() {
                           placeholder="Provide detailed feedback..."
                           value={rejectionReason}
                           onChange={(e) => setRejectionReason(e.target.value)}
-                          rows={4}
-                        />
+                          rows={4} />
+
                       </div>
                     </div>
 
@@ -1831,13 +1831,13 @@ export default function CIFDetailPage() {
                       <AlertDialogAction
                         onClick={handleRejectCIF}
                         disabled={saving || !rejectionReason.trim()}
-                        className={rejectionType === "delete" ? "bg-red-600 hover:bg-red-700" : ""}
-                      >
-                        {saving ? "Processing..." : 
-                          rejectionType === "delete" ? "Delete Permanently" :
-                          rejectionType === "archive"
-                          ? "Archive CIF"
-                          : "Send Back"}
+                        className={rejectionType === "delete" ? "bg-red-600 hover:bg-red-700" : ""}>
+
+                        {saving ? "Processing..." :
+                        rejectionType === "delete" ? "Delete Permanently" :
+                        rejectionType === "archive" ?
+                        "Archive CIF" :
+                        "Send Back"}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -1871,14 +1871,14 @@ export default function CIFDetailPage() {
                   handleDeleteCIF();
                 }}
                 disabled={saving}
-                className="bg-red-600 hover:bg-red-700"
-              >
+                className="bg-red-600 hover:bg-red-700">
+
                 {saving ? "Deleting..." : "Delete Permanently"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </StaffLayout>
-  );
+    </StaffLayout>);
+
 }
