@@ -900,43 +900,116 @@ export default function CIFDetailPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Summary */}
-                  {aiResearchData.feasibility.summary && (
+                  {/* Feasibility Summary */}
+                  {aiResearchData.feasibility_summary && (
                     <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                      <h4 className="font-semibold text-sm mb-2">Feasibility Summary</h4>
                       <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                        {aiResearchData.feasibility.summary}
+                        {aiResearchData.feasibility_summary}
                       </p>
                     </div>
                   )}
 
-                  {/* Technical Reasoning */}
-                  {aiResearchData.feasibility.technical_reasoning && (
+                  {/* Claim Band & Rationale */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {aiResearchData.estimated_claim_band && (
+                      <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                        <h4 className="font-semibold text-sm mb-2">Estimated Claim Band</h4>
+                        <Badge variant="secondary" className="text-base">{aiResearchData.estimated_claim_band}</Badge>
+                      </div>
+                    )}
+                    {aiResearchData.previous_claims_likelihood && (
+                      <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                        <h4 className="font-semibold text-sm mb-2">Previous Claims Likelihood</h4>
+                        <Badge variant={
+                          aiResearchData.previous_claims_likelihood === 'high' ? 'default' :
+                          aiResearchData.previous_claims_likelihood === 'medium' ? 'secondary' : 'outline'
+                        }>
+                          {aiResearchData.previous_claims_likelihood}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+
+                  {aiResearchData.claim_rationale && (
                     <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
-                      <h4 className="font-semibold text-sm mb-2">Technical Assessment</h4>
+                      <h4 className="font-semibold text-sm mb-2">Claim Rationale</h4>
                       <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                        {aiResearchData.feasibility.technical_reasoning}
+                        {aiResearchData.claim_rationale}
                       </p>
                     </div>
                   )}
 
-                  {/* Estimated Claim Band */}
-                  {aiResearchData.feasibility.estimated_claim_band && (
+                  {/* Technical Environment */}
+                  {aiResearchData.technical_environment && (
                     <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
-                      <h4 className="font-semibold text-sm mb-2">Estimated Claim Band</h4>
-                      <Badge variant="secondary">{aiResearchData.feasibility.estimated_claim_band}</Badge>
+                      <h4 className="font-semibold text-sm mb-2">Technical Environment</h4>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {aiResearchData.technical_environment}
+                      </p>
                     </div>
                   )}
 
-                  {/* Risk Rating */}
-                  {aiResearchData.feasibility.risk_rating && (
+                  {/* R&D Indicators */}
+                  {aiResearchData.rd_indicators && Array.isArray(aiResearchData.rd_indicators) && aiResearchData.rd_indicators.length > 0 && (
                     <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
-                      <h4 className="font-semibold text-sm mb-2">Risk Rating</h4>
-                      <Badge variant={
-                        aiResearchData.feasibility.risk_rating === 'low' ? 'default' :
-                        aiResearchData.feasibility.risk_rating === 'medium' ? 'secondary' : 'destructive'
-                      }>
-                        {aiResearchData.feasibility.risk_rating}
+                      <h4 className="font-semibold text-sm mb-2">R&D Indicators</h4>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                        {aiResearchData.rd_indicators.map((indicator: string, idx: number) => (
+                          <li key={idx}>{indicator}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Key Questions */}
+                  {aiResearchData.key_questions && Array.isArray(aiResearchData.key_questions) && aiResearchData.key_questions.length > 0 && (
+                    <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                      <h4 className="font-semibold text-sm mb-2">Key Questions for Feasibility Meeting</h4>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                        {aiResearchData.key_questions.map((question: string, idx: number) => (
+                          <li key={idx}>{question}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Prenotification */}
+                  {aiResearchData.prenotification_required !== undefined && (
+                    <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                      <h4 className="font-semibold text-sm mb-2">Prenotification Required</h4>
+                      <Badge variant={aiResearchData.prenotification_required ? "destructive" : "default"}>
+                        {aiResearchData.prenotification_required ? "Yes" : "No"}
                       </Badge>
+                      {aiResearchData.prenotification_reason && (
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
+                          {aiResearchData.prenotification_reason}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Risk Flags */}
+                  {aiResearchData.risk_flags && Array.isArray(aiResearchData.risk_flags) && aiResearchData.risk_flags.length > 0 && (
+                    <div className="p-4 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <h4 className="font-semibold text-sm mb-2 text-orange-700 dark:text-orange-300">Risk Flags</h4>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-orange-700 dark:text-orange-300">
+                        {aiResearchData.risk_flags.map((flag: string, idx: number) => (
+                          <li key={idx}>{flag}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Recommended Next Steps */}
+                  {aiResearchData.recommended_next_steps && Array.isArray(aiResearchData.recommended_next_steps) && aiResearchData.recommended_next_steps.length > 0 && (
+                    <div className="p-4 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                      <h4 className="font-semibold text-sm mb-2 text-green-700 dark:text-green-300">Recommended Next Steps</h4>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-green-700 dark:text-green-300">
+                        {aiResearchData.recommended_next_steps.map((step: string, idx: number) => (
+                          <li key={idx}>{step}</li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                 </CardContent>
