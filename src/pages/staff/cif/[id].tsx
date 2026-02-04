@@ -269,9 +269,9 @@ export default function CIFDetailPage() {
           primary_contact_email: bdmContactEmail,
           primary_contact_phone: bdmContactPhone,
           rd_themes: bdmRdThemes,
-          expected_feasibility_date: bdmExpFeasibilityDate,
+          expected_feasibility_date: bdmExpFeasibilityDate || undefined,
           has_claimed_before: bdmHasClaimedBefore,
-          previous_claim_year_end_date: bdmPrevClaimYearEnd,
+          previous_claim_year_end_date: bdmPrevClaimYearEnd || undefined,
           previous_claim_value: bdmPrevClaimValue ? parseFloat(bdmPrevClaimValue) : undefined,
         },
         profile.id
