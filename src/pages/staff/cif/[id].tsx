@@ -765,11 +765,11 @@ export default function CIFDetailPage() {
 
                 // Check if we have business intelligence data
                 const hasBusinessData = research && typeof research === 'object' && (
-                research.company_age ||
-                research.directors ||
-                research.trading_history ||
-                research.company_type);
-
+                  research.company_age ||
+                  research.directors ||
+                  research.trading_history ||
+                  research.company_type
+                );
 
                 if (!hasBusinessData) return null;
 
@@ -787,109 +787,109 @@ export default function CIFDetailPage() {
                     <CardContent className="space-y-4">
                       {/* Company Overview */}
                       <div className="grid grid-cols-2 gap-4">
-                        {research.company_age &&
-                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                        {research.company_age && (
+                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                             <p className="text-xs text-blue-600 mb-1">Company Age</p>
                             <p className="text-sm font-semibold text-blue-900">{research.company_age}</p>
                           </div>
-                        }
-                        {research.company_type &&
-                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                        )}
+                        {research.company_type && (
+                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                             <p className="text-xs text-blue-600 mb-1">Company Type</p>
                             <p className="text-sm font-semibold text-blue-900">{research.company_type}</p>
                           </div>
-                        }
-                        {research.employee_count &&
-                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                        )}
+                        {research.employee_count && (
+                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                             <p className="text-xs text-blue-600 mb-1">Employees</p>
                             <p className="text-sm font-semibold text-blue-900">{research.employee_count}</p>
                           </div>
-                        }
-                        {research.company_status &&
-                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                        )}
+                        {research.company_status && (
+                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                             <p className="text-xs text-blue-600 mb-1">Status</p>
                             <Badge variant={research.company_status === "active" ? "default" : "secondary"}>
                               {research.company_status}
                             </Badge>
                           </div>
-                        }
+                        )}
                       </div>
 
                       {/* Directors */}
-                      {research.directors && Array.isArray(research.directors) && research.directors.length > 0 &&
-                      <div className="space-y-2">
+                      {research.directors && Array.isArray(research.directors) && research.directors.length > 0 && (
+                        <div className="space-y-2">
                           <p className="text-sm font-semibold text-blue-900">Directors ({research.directors.length})</p>
                           <div className="space-y-2">
-                            {research.directors.map((director: any, idx: number) =>
-                          <div key={idx} className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                            {research.directors.map((director: any, idx: number) => (
+                              <div key={idx} className="p-3 bg-white/60 rounded-lg border border-blue-200">
                                 <p className="text-sm font-semibold text-blue-900">{director.name}</p>
                                 <div className="flex gap-4 mt-1 text-xs text-blue-700">
                                   {director.role && <span>Role: {director.role}</span>}
                                   {director.appointed_on && <span>Appointed: {new Date(director.appointed_on).toLocaleDateString()}</span>}
                                 </div>
-                                {director.nationality &&
-                            <p className="text-xs text-blue-600 mt-1">Nationality: {director.nationality}</p>
-                            }
+                                {director.nationality && (
+                                  <p className="text-xs text-blue-600 mt-1">Nationality: {director.nationality}</p>
+                                )}
                               </div>
-                          )}
+                            ))}
                           </div>
                         </div>
-                      }
+                      )}
 
                       {/* Trading History */}
-                      {research.trading_history &&
-                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200 space-y-2">
+                      {research.trading_history && (
+                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200 space-y-2">
                           <p className="text-sm font-semibold text-blue-900">Trading History</p>
-                          {research.trading_history.recent_filings &&
-                        <p className="text-xs text-blue-700">
+                          {research.trading_history.recent_filings && (
+                            <p className="text-xs text-blue-700">
                               Recent Filings: {research.trading_history.recent_filings}
                             </p>
-                        }
-                          {research.trading_history.filing_pattern &&
-                        <p className="text-xs text-blue-700">
+                          )}
+                          {research.trading_history.filing_pattern && (
+                            <p className="text-xs text-blue-700">
                               Filing Pattern: {research.trading_history.filing_pattern}
                             </p>
-                        }
-                          {research.trading_history.average_filing_lag &&
-                        <p className="text-xs text-blue-700">
+                          )}
+                          {research.trading_history.average_filing_lag && (
+                            <p className="text-xs text-blue-700">
                               Avg Filing Lag: {research.trading_history.average_filing_lag}
                             </p>
-                        }
-                          {research.trading_history.confidence_score &&
-                        <div className="flex items-center gap-2 mt-2">
+                          )}
+                          {research.trading_history.confidence_score && (
+                            <div className="flex items-center gap-2 mt-2">
                               <p className="text-xs text-blue-600">Confidence Score:</p>
                               <Badge variant="secondary" className="bg-blue-600 text-white">
                                 {research.trading_history.confidence_score}
                               </Badge>
                             </div>
-                        }
+                          )}
                         </div>
-                      }
+                      )}
 
                       {/* Core Business */}
-                      {research.core_business &&
-                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                      {research.core_business && (
+                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                           <p className="text-xs text-blue-600 mb-1">Core Business</p>
                           <p className="text-sm text-blue-900">{research.core_business}</p>
                         </div>
-                      }
+                      )}
 
                       {/* SIC Codes */}
-                      {research.sic_codes && Array.isArray(research.sic_codes) && research.sic_codes.length > 0 &&
-                      <div className="space-y-2">
+                      {research.sic_codes && Array.isArray(research.sic_codes) && research.sic_codes.length > 0 && (
+                        <div className="space-y-2">
                           <p className="text-sm font-semibold text-blue-900">Business Activities (SIC Codes)</p>
                           <div className="flex flex-wrap gap-2">
-                            {research.sic_codes.map((sic: string, idx: number) =>
-                          <Badge key={idx} variant="outline" className="text-xs">
+                            {research.sic_codes.map((sic: string, idx: number) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
                                 {sic}
                               </Badge>
-                          )}
+                            ))}
                           </div>
                         </div>
-                      }
+                      )}
                     </CardContent>
-                  </Card>);
-
+                  </Card>
+                );
               } catch (error) {
                 console.error("Error parsing company research:", error);
                 return null;
@@ -957,8 +957,7 @@ export default function CIFDetailPage() {
                           </div>
                     )}
                       </div>
-                    </div>
-                }
+                    )}
 
                   {/* Trading History */}
                   {aiResearchData.trading_history &&
@@ -988,7 +987,7 @@ export default function CIFDetailPage() {
                         </div>
                   }
                     </div>
-                }
+                )}
 
                   {/* Core Business */}
                   {aiResearchData.core_business &&
@@ -1179,8 +1178,8 @@ export default function CIFDetailPage() {
             }
 
             {/* AI Feasibility Analysis */}
-            {aiResearchData?.feasibility &&
-            <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
+            {aiResearchData?.feasibility && (
+              <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
                     <Zap className="h-5 w-5" />
@@ -1192,185 +1191,47 @@ export default function CIFDetailPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Summary */}
-                  {aiResearchData.feasibility.summary &&
-                <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                  {aiResearchData.feasibility.summary && (
+                    <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
                       <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                         {aiResearchData.feasibility.summary}
                       </p>
                     </div>
-                }
+                  )}
 
                   {/* Technical Reasoning */}
-                  {aiResearchData.feasibility.technical_reasoning &&
-                <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                  {aiResearchData.feasibility.technical_reasoning && (
+                    <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
                       <h4 className="font-semibold text-sm mb-2">Technical Assessment</h4>
                       <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                         {aiResearchData.feasibility.technical_reasoning}
                       </p>
                     </div>
-                }
+                  )}
 
                   {/* Estimated Claim Band */}
-                  {aiResearchData.feasibility.estimated_claim_band &&
-                <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                  {aiResearchData.feasibility.estimated_claim_band && (
+                    <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
                       <h4 className="font-semibold text-sm mb-2">Estimated Claim Band</h4>
                       <Badge variant="secondary">{aiResearchData.feasibility.estimated_claim_band}</Badge>
                     </div>
-                }
+                  )}
 
                   {/* Risk Rating */}
-                  {aiResearchData.feasibility.risk_rating &&
-                <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
+                  {aiResearchData.feasibility.risk_rating && (
+                    <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
                       <h4 className="font-semibold text-sm mb-2">Risk Rating</h4>
                       <Badge variant={
-                  aiResearchData.feasibility.risk_rating === 'low' ? 'default' :
-                  aiResearchData.feasibility.risk_rating === 'medium' ? 'secondary' : 'destructive'
-                  }>
+                        aiResearchData.feasibility.risk_rating === 'low' ? 'default' :
+                        aiResearchData.feasibility.risk_rating === 'medium' ? 'secondary' : 'destructive'
+                      }>
                         {aiResearchData.feasibility.risk_rating}
                       </Badge>
                     </div>
-                }
+                  )}
                 </CardContent>
               </Card>
-            }
-
-            {/* Manual Feasibility Assessment Form */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Feasibility Assessment</CardTitle>
-                <CardDescription>
-                  Evaluate the technical and commercial feasibility of the R&D claim
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="technical_understanding">
-                    Technical Understanding *
-                  </Label>
-                  <Textarea
-                    id="technical_understanding"
-                    placeholder="Describe your understanding of the technical aspects..."
-                    value={techUnderstanding}
-                    onChange={(e) => setTechUnderstanding(e.target.value)}
-                    disabled={!canEdit}
-                    rows={4} />
-
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="challenges_uncertainties">Challenges & Uncertainties</Label>
-                  <Textarea
-                    id="challenges_uncertainties"
-                    placeholder="Technical challenges and scientific uncertainties..."
-                    value={techChallenges}
-                    onChange={(e) => setTechChallenges(e.target.value)}
-                    rows={3}
-                    disabled={!canEdit} />
-
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="qualifying_activities">Qualifying Activities (one per line)</Label>
-                  <Textarea
-                    id="qualifying_activities"
-                    placeholder="List qualifying R&D activities..."
-                    value={techActivities}
-                    onChange={(e) => setTechActivities(e.target.value)}
-                    rows={3}
-                    disabled={!canEdit} />
-
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="rd_projects_list">R&D Projects List (one per line)</Label>
-                  <Textarea
-                    id="rd_projects_list"
-                    placeholder="List R&D projects..."
-                    value={techProjects}
-                    onChange={(e) => setTechProjects(e.target.value)}
-                    rows={3}
-                    disabled={!canEdit} />
-
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="feasibility_status">Feasibility Status *</Label>
-                    <Select value={techStatus} onValueChange={(v: any) => setTechStatus(v)} disabled={!canEdit}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="qualified">Qualified</SelectItem>
-                        <SelectItem value="not_qualified">Not Qualified</SelectItem>
-                        <SelectItem value="needs_more_info">Needs More Info</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="estimated_claim_band">Estimated Claim Band</Label>
-                    <Select value={techClaimBand} onValueChange={(v: any) => setTechClaimBand(v)} disabled={!canEdit}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select band" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0-25k">£0-25k</SelectItem>
-                        <SelectItem value="25k-50k">£25k-50k</SelectItem>
-                        <SelectItem value="50k-100k">£50k-100k</SelectItem>
-                        <SelectItem value="100k-250k">£100k-250k</SelectItem>
-                        <SelectItem value="250k+">£250k+</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="risk_rating">Risk Rating</Label>
-                    <Select value={techRiskRating} onValueChange={(v: any) => setTechRiskRating(v)} disabled={!canEdit}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select risk" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="notes_for_finance">Notes for Finance Team</Label>
-                  <Textarea
-                    id="notes_for_finance"
-                    placeholder="Additional notes or context for finance team..."
-                    value={techNotesForFinance}
-                    onChange={(e) => setTechNotesForFinance(e.target.value)}
-                    rows={2}
-                    disabled={!canEdit} />
-
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="missing_information_flags">Missing Information Flags (one per line)</Label>
-                  <Textarea
-                    id="missing_information_flags"
-                    placeholder="List any missing information..."
-                    value={techMissingInfo}
-                    onChange={(e) => setTechMissingInfo(e.target.value)}
-                    rows={2}
-                    disabled={!canEdit} />
-
-                </div>
-
-                {canEdit && (cif.current_stage === "bdm_section" || cif.current_stage === "tech_feasibility") &&
-                <Button onClick={handleCompleteTechnical} disabled={saving} className="w-full">
-                    <Save className="h-4 w-4 mr-2" />
-                    {saving ? "Saving..." : "Complete Technical Section"}
-                  </Button>
-                }
-              </CardContent>
-            </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="financial" className="mt-6">
@@ -1402,7 +1263,7 @@ export default function CIFDetailPage() {
                       placeholder="0.00"
                       value={staffCost}
                       onChange={(e) => setStaffCost(e.target.value)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section"} />
+                      disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA} />
 
                   </div>
 
@@ -1414,7 +1275,7 @@ export default function CIFDetailPage() {
                       placeholder="0.00"
                       value={subcontractorCost}
                       onChange={(e) => setSubcontractorCost(e.target.value)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section"} />
+                      disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS} />
 
                   </div>
 
@@ -1426,7 +1287,7 @@ export default function CIFDetailPage() {
                       placeholder="0.00"
                       value={consumablesCost}
                       onChange={(e) => setConsumablesCost(e.target.value)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section"} />
+                      disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA} />
 
                   </div>
 
@@ -1438,7 +1299,7 @@ export default function CIFDetailPage() {
                       placeholder="0.00"
                       value={softwareCost}
                       onChange={(e) => setSoftwareCost(e.target.value)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section"} />
+                      disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS} />
 
                   </div>
                 </div>
@@ -1451,7 +1312,7 @@ export default function CIFDetailPage() {
                     value={apportionment}
                     onChange={(e) => setApportionment(e.target.value)}
                     rows={3}
-                    disabled={!canEdit || cif.current_stage !== "financial_section"} />
+                    disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA} />
 
                 </div>
 
