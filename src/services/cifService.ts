@@ -594,82 +594,59 @@ export const cifService = {
   async rejectCIF(
     cifId: string,
     rejectionType: "send_back" | "archive" | "delete",
-    rejectToStage?: "bdm_section" | "tech_feasibility" | "financial_section",
+    sendBackToStage?: "bdm_section" | "tech_feasibility" | "financial_section",
     reason?: string,
-    rejectedBy?: string
-  ): Promise<CIFRecord | null> {
+    userId?: string
+  ): Promise<boolean> {
     try {
-      // Handle deletion
       if (rejectionType === "delete") {
+        console.log("🗑️ Starting CIF deletion process for:", cifId);
+        
+        // Delete the CIF record (CASCADE will handle related records)
         const { error: deleteError } = await supabase
           .from("cif_records")
           .delete()
           .eq("id", cifId);
 
-        if (deleteError) throw deleteError;
-        return null;
-      }
-
-      const updateData: CIFUpdate = {
-        admin_last_updated: new Date().toISOString(),
-        rejection_reason: reason,
-        rejected_by: rejectedBy,
-        rejected_at: new Date().toISOString(),
-        director_decision: "rejected", // Always use 'rejected' for director_decision
-      };
-      
-      if (rejectionType === "archive") {
-        // Archive the CIF - use 'rejected' status and set current_stage to 'rejected'
-        // Add "[ARCHIVED]" prefix to rejection_reason to distinguish archived items
-        updateData.cif_status = "rejected";
-        updateData.current_stage = "rejected";
-        updateData.rejection_reason = `[ARCHIVED] ${reason || ""}`;
-        updateData.director_comment = reason;
-      } else if (rejectionType === "send_back" && rejectToStage) {
-        // Send back to specific stage
-        // Add "[SENT_BACK]" prefix to rejection_reason to distinguish sent back items
-        updateData.current_stage = rejectToStage;
-        updateData.cif_status = "in_progress";
-        updateData.rejected_to_stage = rejectToStage;
-        updateData.rejection_reason = `[SENT_BACK] ${reason || ""}`;
-        updateData.director_comment = reason;
-        
-        // Reset completion flags for the rejected stage
-        if (rejectToStage === "bdm_section") {
-          updateData.section1_completed_at = null;
-        } else if (rejectToStage === "tech_feasibility") {
-          updateData.section2_feasibility_id = null;
-        } else if (rejectToStage === "financial_section") {
-          updateData.section3_completed_at = null;
-          updateData.ready_to_submit = false;
+        if (deleteError) {
+          console.error("❌ CIF deletion failed:", deleteError);
+          console.error("Error details:", {
+            message: deleteError.message,
+            code: deleteError.code,
+            details: deleteError.details,
+            hint: deleteError.hint
+          });
+          return false;
         }
+
+        console.log("✅ CIF deleted successfully");
+        return true;
       }
 
-      const { data, error } = await supabase
+      // Handle send_back and archive cases...
+      const updates: any = {
+        current_stage: rejectionType === "archive" ? "rejected" : sendBackToStage,
+        rejection_reason: rejectionType === "archive" 
+          ? `[ARCHIVED] ${reason || "Archived by admin"}`
+          : `[SENT_BACK] ${reason || "Sent back for revision"}`,
+        rejected_at: new Date().toISOString(),
+        rejected_by: userId,
+      };
+
+      const { error } = await supabase
         .from("cif_records")
-        .update(updateData)
-        .eq("id", cifId)
-        .select()
-        .single();
+        .update(updates)
+        .eq("id", cifId);
 
-      if (error) throw error;
-
-      // Log state change
-      if (data && rejectedBy) {
-        await supabase.from("cif_state_changes").insert({
-          cif_id: cifId,
-          from_stage: data.current_stage,
-          to_stage: rejectToStage || "rejected",
-          changed_by: rejectedBy,
-          change_type: rejectionType === "archive" ? "approval" : "rejection",
-          comments: reason,
-        });
+      if (error) {
+        console.error("Failed to reject CIF:", error);
+        return false;
       }
 
-      return data;
+      return true;
     } catch (error) {
-      console.error("Error rejecting CIF:", error);
-      return null;
+      console.error("Error in rejectCIF:", error);
+      return false;
     }
   },
 
