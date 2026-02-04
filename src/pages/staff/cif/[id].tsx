@@ -30,6 +30,7 @@ export default function CIFDetailPage() {
   const [cif, setCif] = useState<CIFWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("bdm");
 
   // Rejection modal state
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -87,6 +88,9 @@ export default function CIFDetailPage() {
   const [lastAccountsDate, setLastAccountsDate] = useState<string>("");
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Add state for full feasibility analysis data
+  const [feasibilityAnalysis, setFeasibilityAnalysis] = useState<any>(null);
+
   useEffect(() => {
     if (!isStaff) {
       router.push("/home");
@@ -103,34 +107,92 @@ export default function CIFDetailPage() {
 
     setLoading(true);
     try {
-      console.log("Fetching CIF:", cifId);
-      const data = await cifService.getCIFById(cifId);
-      
-      if (!data) {
-        router.push("/staff/cif");
-        return;
-      }
+      const { data, error } = await supabase
+        .from("cif_records")
+        .select("*")
+        .eq("id", cifId)
+        .single();
+
+      console.log("🔍 CIF Data fetched:", data);
+      console.log("🔍 section2_feasibility_id:", data?.section2_feasibility_id);
+
+      if (error) throw error;
+      if (!data) throw new Error("CIF not found");
 
       setCif(data);
-      console.log("CIF loaded:", data);
+
+      // Fetch linked feasibility analysis if it exists
+      if (data.section2_feasibility_id) {
+        console.log("🔍 Fetching feasibility analysis for ID:", data.section2_feasibility_id);
+        const { data: feasData, error: feasError } = await supabase
+          .from("feasibility_analyses")
+          .select("*")
+          .eq("id", data.section2_feasibility_id)
+          .single();
+
+        console.log("🔍 Feasibility data fetched:", feasData);
+        console.log("🔍 Feasibility error:", feasError);
+
+        if (!feasError && feasData) {
+          console.log("✅ Setting feasibility analysis:", feasData);
+          setFeasibilityAnalysis(feasData);
+        }
+      } else {
+        console.log("⚠️ No section2_feasibility_id found in CIF record");
+      }
 
       // Populate BDM Form
-      setBdmBusinessBackground(data.business_background || "");
-      setBdmProjectOverview(data.project_overview || "");
-      setBdmContactName(data.primary_contact_name || "");
-      setBdmContactPosition(data.primary_contact_position || "");
-      setBdmContactEmail(data.primary_contact_email || "");
-      setBdmContactPhone(data.primary_contact_phone || "");
-      setBdmRdThemes(data.rd_themes || []);
+      setBdmPrimaryContact(data.bdm_primary_contact_name || "");
+      setBdmPosition(data.bdm_position || "");
+      setBdmEmail(data.bdm_email || "");
+      setBdmPhone(data.bdm_phone || "");
+      setBdmBusinessBackground(data.bdm_business_background || "");
       setBdmExpFeasibilityDate(data.expected_feasibility_date || "");
-      setBdmHasClaimedBefore(data.has_claimed_before || false);
       setBdmPrevClaimYearEnd(data.previous_claim_year_end_date || "");
-      setBdmPrevClaimValue(data.previous_claim_value?.toString() || "");
+      setBdmPrevClaimValue(data.previous_claim_value || "");
 
-      // Populate Technical Form
-      setTechUnderstanding(data.technical_understanding || "");
+      // Populate Technical Form - Use safe access
+      // These fields might not be in the generated type yet if schema changed recently
+      const cifData = data as any;
+      setTechUnderstanding(cifData.technical_understanding || "");
+      setChallenges(cifData.challenges_uncertainties || "");
+      setQualifyingActivities(cifData.qualifying_activities || "");
+      setRdProjects(cifData.rd_projects_list || "");
+      setFeasibilityStatus(cifData.feasibility_status || "pending");
+      setEstimatedClaimBand(cifData.estimated_claim_band || "");
+      setRiskRating(cifData.risk_rating || "low");
+      setNotesForFinance(cifData.notes_for_finance || "");
+      setMissingInfo(cifData.missing_information_flags || "");
+
+      // Populate Financial Form
+      setFinancialYear(data.financial_year || "");
+      setStaffCost(data.staff_cost_estimate?.toString() || "");
+      setSubcontractorCost(data.subcontractor_estimate?.toString() || "");
+      setConsumablesCost(data.consumables_estimate?.toString() || "");
+      setSoftwareCost(data.software_estimate?.toString() || "");
+      setApportionment(data.apportionment_assumptions || "");
+      setAccountantName(data.accountant_name || "");
+      setAccountantFirm(data.accountant_firm || "");
+      setAccountantEmail(data.accountant_email || "");
+      setAccountantPhone(data.accountant_phone || "");
+      setReadyToSubmit(data.ready_to_submit || false);
+
+      // Populate extracted feasibility analysis
+      try {
+        if (data.company_research) {
+          const research = typeof data.company_research === 'string' 
+            ? JSON.parse(data.company_research)
+            : data.company_research;
+          
+          const summary = research.feasibility_summary || research.summary || "";
+          setFeasibilityExtract(summary);
+        }
+      } catch (error) {
+        console.error("Error parsing company_research:", error);
+        setFeasibilityExtract("");
+      }
     } catch (error) {
-      console.error("Failed to load CIF:", error);
+      console.error("Error loading CIF:", error);
     } finally {
       setLoading(false);
     }
@@ -278,8 +340,12 @@ export default function CIFDetailPage() {
       );
 
       if (result) {
-        toast({ title: "Success", description: "BDM section completed" });
-        fetchCIF(cif.id);
+        toast({ 
+          title: "Success", 
+          description: "BDM section completed successfully. Moving to Feasibility Assessment." 
+        });
+        await fetchCIF(cif.id);
+        setActiveTab("feasibility");
       } else {
         toast({ title: "Error", description: "Failed to complete BDM section", variant: "destructive" });
       }
@@ -464,40 +530,6 @@ export default function CIFDetailPage() {
     }
   };
 
-  useEffect(() => {
-    if (cif?.company_research) {
-      try {
-        console.log("Raw company_research:", cif.company_research);
-        
-        // Parse the JSON string
-        const parsed = typeof cif.company_research === 'string' 
-          ? JSON.parse(cif.company_research)
-          : cif.company_research;
-        
-        console.log("Parsed research:", parsed);
-        console.log("Available keys:", Object.keys(parsed));
-        console.log("feasibility_summary:", parsed.feasibility_summary);
-        
-        // Extract the feasibility summary - handle both direct object and nested structure
-        const summary = parsed.feasibility_summary || parsed.summary || "";
-        
-        if (summary) {
-          console.log("✅ Found summary:", summary);
-          setFeasibilityExtract(summary);
-        } else {
-          console.log("❌ No summary found in:", parsed);
-          setFeasibilityExtract("");
-        }
-      } catch (error) {
-        console.error("Error parsing company_research:", error);
-        setFeasibilityExtract("");
-      }
-    } else {
-      console.log("No company_research data available");
-      setFeasibilityExtract("");
-    }
-  }, [cif?.company_research]);
-
   if (!isStaff || loading) {
     return (
       <StaffLayout>
@@ -561,7 +593,7 @@ export default function CIFDetailPage() {
           )}
         </div>
 
-        <Tabs defaultValue="bdm" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="bdm">BDM</TabsTrigger>
             <TabsTrigger value="feasibility">Feasibility</TabsTrigger>
@@ -571,6 +603,155 @@ export default function CIFDetailPage() {
 
           {/* BDM Tab */}
           <TabsContent value="bdm" className="space-y-6">
+            {/* AI Business Intelligence - Show company research data */}
+            {(() => {
+              try {
+                if (!cif?.company_research) return null;
+                
+                let research: any = cif.company_research;
+                if (typeof research === "string") {
+                  try {
+                    if (research.trim().startsWith('{')) {
+                      research = JSON.parse(research);
+                    }
+                  } catch (e) {
+                    return null;
+                  }
+                }
+
+                // Check if we have business intelligence data
+                const hasBusinessData = research && typeof research === 'object' && (
+                  research.company_age ||
+                  research.directors ||
+                  research.trading_history ||
+                  research.company_type
+                );
+
+                if (!hasBusinessData) return null;
+
+                return (
+                  <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-blue-600" />
+                        <CardTitle className="text-blue-900">Business Intelligence</CardTitle>
+                      </div>
+                      <CardDescription className="text-xs text-blue-600">
+                        AI-generated company research from Companies House
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Company Overview */}
+                      <div className="grid grid-cols-2 gap-4">
+                        {research.company_age && (
+                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                            <p className="text-xs text-blue-600 mb-1">Company Age</p>
+                            <p className="text-sm font-semibold text-blue-900">{research.company_age}</p>
+                          </div>
+                        )}
+                        {research.company_type && (
+                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                            <p className="text-xs text-blue-600 mb-1">Company Type</p>
+                            <p className="text-sm font-semibold text-blue-900">{research.company_type}</p>
+                          </div>
+                        )}
+                        {research.employee_count && (
+                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                            <p className="text-xs text-blue-600 mb-1">Employees</p>
+                            <p className="text-sm font-semibold text-blue-900">{research.employee_count}</p>
+                          </div>
+                        )}
+                        {research.company_status && (
+                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                            <p className="text-xs text-blue-600 mb-1">Status</p>
+                            <Badge variant={research.company_status === "active" ? "default" : "secondary"}>
+                              {research.company_status}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Directors */}
+                      {research.directors && Array.isArray(research.directors) && research.directors.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-semibold text-blue-900">Directors ({research.directors.length})</p>
+                          <div className="space-y-2">
+                            {research.directors.map((director: any, idx: number) => (
+                              <div key={idx} className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                                <p className="text-sm font-semibold text-blue-900">{director.name}</p>
+                                <div className="flex gap-4 mt-1 text-xs text-blue-700">
+                                  {director.role && <span>Role: {director.role}</span>}
+                                  {director.appointed_on && <span>Appointed: {new Date(director.appointed_on).toLocaleDateString()}</span>}
+                                </div>
+                                {director.nationality && (
+                                  <p className="text-xs text-blue-600 mt-1">Nationality: {director.nationality}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Trading History */}
+                      {research.trading_history && (
+                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200 space-y-2">
+                          <p className="text-sm font-semibold text-blue-900">Trading History</p>
+                          {research.trading_history.recent_filings && (
+                            <p className="text-xs text-blue-700">
+                              Recent Filings: {research.trading_history.recent_filings}
+                            </p>
+                          )}
+                          {research.trading_history.filing_pattern && (
+                            <p className="text-xs text-blue-700">
+                              Filing Pattern: {research.trading_history.filing_pattern}
+                            </p>
+                          )}
+                          {research.trading_history.average_filing_lag && (
+                            <p className="text-xs text-blue-700">
+                              Avg Filing Lag: {research.trading_history.average_filing_lag}
+                            </p>
+                          )}
+                          {research.trading_history.confidence_score && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <p className="text-xs text-blue-600">Confidence Score:</p>
+                              <Badge variant="secondary" className="bg-blue-600 text-white">
+                                {research.trading_history.confidence_score}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Core Business */}
+                      {research.core_business && (
+                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                          <p className="text-xs text-blue-600 mb-1">Core Business</p>
+                          <p className="text-sm text-blue-900">{research.core_business}</p>
+                        </div>
+                      )}
+
+                      {/* SIC Codes */}
+                      {research.sic_codes && Array.isArray(research.sic_codes) && research.sic_codes.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-semibold text-blue-900">Business Activities (SIC Codes)</p>
+                          <div className="flex flex-wrap gap-2">
+                            {research.sic_codes.map((sic: string, idx: number) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {sic}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              } catch (error) {
+                console.error("Error parsing company research:", error);
+                return null;
+              }
+            })()}
+
             <Card>
               <CardHeader>
                 <CardTitle>Business Development</CardTitle>
@@ -703,6 +884,23 @@ export default function CIFDetailPage() {
 
           {/* Feasibility Tab */}
           <TabsContent value="feasibility" className="space-y-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold">Feasibility Assessment</h2>
+                <p className="text-muted-foreground">
+                  Evaluate the technical and commercial feasibility of the R&D claim
+                </p>
+              </div>
+            </div>
+
+            {(() => {
+              console.log("🎯 Rendering Feasibility Tab - feasibilityAnalysis:", feasibilityAnalysis);
+              if (!feasibilityAnalysis) {
+                console.log("⚠️ No feasibility analysis data available");
+                return null;
+              }
+            })()}
+
             {/* Last Accounts Filed Date */}
             {prospect?.last_accounts_date && (
               <div className="bg-muted/50 border rounded-lg p-4">
@@ -717,182 +915,127 @@ export default function CIFDetailPage() {
               </div>
             )}
 
-            {/* AI Feasibility Analysis */}
-            {(() => {
-              try {
-                if (!cif?.company_research) return null;
-                
-                let research: any = cif.company_research;
-                // Parse if string and looks like JSON
-                if (typeof research === "string") {
-                  try {
-                    if (research.trim().startsWith('{')) {
-                      research = JSON.parse(research);
-                    }
-                  } catch (e) {
-                    // Not JSON, treat as string
-                  }
-                }
+            {/* AI Feasibility Analysis - from feasibility_analyses table */}
+            {feasibilityAnalysis && (
+              <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-purple-600" />
+                    <CardTitle className="text-purple-900">RD Sidekick Feasibility Analysis</CardTitle>
+                  </div>
+                  <CardDescription className="text-xs text-purple-600">
+                    AI-generated comprehensive R&D assessment
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Summary */}
+                  {feasibilityAnalysis.summary && (
+                    <div className="p-3 bg-white/60 rounded-lg border border-purple-200">
+                      <p className="text-sm font-semibold text-purple-900 mb-2">Summary</p>
+                      <p className="text-sm text-purple-800 whitespace-pre-wrap">
+                        {feasibilityAnalysis.summary}
+                      </p>
+                    </div>
+                  )}
 
-                // Check if we have structured analysis data
-                const hasStructuredData = research && typeof research === 'object' && (
-                  research.feasibility_summary || 
-                  research.estimated_claim_band ||
-                  research.rd_indicators
-                );
+                  {/* Eligibility Rating */}
+                  {feasibilityAnalysis.eligibility_rating && (
+                    <div className="p-3 bg-white/60 rounded-lg border border-purple-200">
+                      <p className="text-sm font-semibold text-purple-900 mb-2">Eligibility Rating</p>
+                      <Badge variant="secondary" className="bg-purple-600 text-white">
+                        {feasibilityAnalysis.eligibility_rating}/10
+                      </Badge>
+                      {feasibilityAnalysis.eligibility_reasoning && (
+                        <p className="text-xs text-purple-700 mt-2">
+                          {feasibilityAnalysis.eligibility_reasoning}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
-                if (!hasStructuredData && !feasibilityExtract) return null;
+                  {/* Technical Understanding */}
+                  {feasibilityAnalysis.technical_understanding && (
+                    <div className="p-3 bg-white/60 rounded-lg border border-purple-200">
+                      <p className="text-sm font-semibold text-purple-900 mb-2">Technical Understanding</p>
+                      <p className="text-sm text-purple-800 whitespace-pre-wrap">
+                        {feasibilityAnalysis.technical_understanding}
+                      </p>
+                    </div>
+                  )}
 
-                return (
-                  <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
-                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-purple-600" />
-                        <CardTitle className="text-purple-900 dark:text-purple-100">
-                          RD Sidekick Feasibility Analysis
-                        </CardTitle>
+                  {/* Challenges & Uncertainties */}
+                  {feasibilityAnalysis.challenges_uncertainties && Array.isArray(feasibilityAnalysis.challenges_uncertainties) && feasibilityAnalysis.challenges_uncertainties.length > 0 && (
+                    <div className="p-3 bg-white/60 rounded-lg border border-purple-200 space-y-2">
+                      <p className="text-sm font-semibold text-purple-900">Technical Challenges & Uncertainties:</p>
+                      <ul className="space-y-1 ml-4">
+                        {feasibilityAnalysis.challenges_uncertainties.map((challenge: string, idx: number) => (
+                          <li key={idx} className="text-sm text-purple-800 list-disc">{challenge}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Qualifying Activities */}
+                  {feasibilityAnalysis.qualifying_activities && Array.isArray(feasibilityAnalysis.qualifying_activities) && feasibilityAnalysis.qualifying_activities.length > 0 && (
+                    <div className="p-3 bg-green-50 rounded-lg border border-green-200 space-y-2">
+                      <p className="text-sm font-semibold text-green-900">Qualifying R&D Activities:</p>
+                      <ul className="space-y-1 ml-4">
+                        {feasibilityAnalysis.qualifying_activities.map((activity: string, idx: number) => (
+                          <li key={idx} className="text-sm text-green-800 list-disc">{activity}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* R&D Projects */}
+                  {feasibilityAnalysis.rd_projects && Array.isArray(feasibilityAnalysis.rd_projects) && feasibilityAnalysis.rd_projects.length > 0 && (
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200 space-y-2">
+                      <p className="text-sm font-semibold text-blue-900">Identified R&D Projects:</p>
+                      <ul className="space-y-1 ml-4">
+                        {feasibilityAnalysis.rd_projects.map((project: string, idx: number) => (
+                          <li key={idx} className="text-sm text-blue-800 list-disc">{project}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Risk Assessment */}
+                  {feasibilityAnalysis.risk_assessment && (
+                    <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="h-4 w-4 text-orange-600" />
+                        <p className="text-sm font-semibold text-orange-900">Risk Assessment</p>
                       </div>
-                      {(feasibilityExtract && feasibilityExtract.length > 300) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setIsExpanded(!isExpanded)}
-                          className="text-purple-700 hover:text-purple-900 hover:bg-purple-100 dark:text-purple-400 dark:hover:text-purple-300"
-                        >
-                          {isExpanded ? (
-                            <>
-                              <ChevronUp className="h-4 w-4 mr-1" />
-                              Show Less
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown className="h-4 w-4 mr-1" />
-                              Show More
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </CardHeader>
-                    <CardContent className={!isExpanded && feasibilityExtract && feasibilityExtract.length > 300 ? "max-h-48 overflow-hidden relative" : ""}>
-                      <CardDescription className="text-xs text-purple-600 mb-3">
-                        AI-generated preliminary assessment
-                      </CardDescription>
-                      
-                      {hasStructuredData ? (
-                        <div className="space-y-4">
-                          {/* Estimated Claim Band */}
-                          {research.estimated_claim_band && (
-                            <div className="flex items-start gap-3 p-3 bg-white/60 rounded-lg border border-purple-200">
-                              <div className="flex-1">
-                                <p className="text-sm font-semibold text-purple-900 mb-1">Estimated Claim Range</p>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="secondary" className="bg-purple-600 text-white hover:bg-purple-700">
-                                    £{research.estimated_claim_band}
-                                  </Badge>
-                                  {research.claim_rationale && (
-                                    <p className="text-xs text-purple-700">{research.claim_rationale}</p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                      <p className="text-sm text-orange-800 whitespace-pre-wrap">
+                        {feasibilityAnalysis.risk_assessment}
+                      </p>
+                    </div>
+                  )}
 
-                          {/* Feasibility Summary */}
-                          {research.feasibility_summary && (
-                            <div className="prose prose-sm max-w-none">
-                              <p className="text-purple-900 dark:text-purple-100 whitespace-pre-wrap">
-                                {research.feasibility_summary}
-                              </p>
-                            </div>
-                          )}
+                  {/* Recommended Next Steps */}
+                  {feasibilityAnalysis.recommended_next_steps && Array.isArray(feasibilityAnalysis.recommended_next_steps) && feasibilityAnalysis.recommended_next_steps.length > 0 && (
+                    <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200 space-y-2">
+                      <p className="text-sm font-semibold text-indigo-900">Recommended Next Steps:</p>
+                      <ul className="space-y-1 ml-4">
+                        {feasibilityAnalysis.recommended_next_steps.map((step: string, idx: number) => (
+                          <li key={idx} className="text-sm text-indigo-800 list-disc">{step}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
-                          {/* R&D Indicators */}
-                          {research.rd_indicators && Array.isArray(research.rd_indicators) && research.rd_indicators.length > 0 && (
-                            <div className="space-y-2">
-                              <p className="text-sm font-semibold text-purple-900">R&D Indicators:</p>
-                              <ul className="space-y-1 ml-4">
-                                {research.rd_indicators.map((indicator: string, idx: number) => (
-                                  <li key={idx} className="text-sm text-purple-800 list-disc">{indicator}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {/* Key Questions for Meeting */}
-                          {research.key_questions && Array.isArray(research.key_questions) && research.key_questions.length > 0 && (
-                            <div className="space-y-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                              <p className="text-sm font-semibold text-blue-900">Key Questions for Feasibility Meeting:</p>
-                              <ul className="space-y-1 ml-4">
-                                {research.key_questions.map((question: string, idx: number) => (
-                                  <li key={idx} className="text-sm text-blue-800 list-disc">{question}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {/* Risk Flags */}
-                          {research.risk_flags && Array.isArray(research.risk_flags) && research.risk_flags.length > 0 && (
-                            <div className="space-y-2 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                              <div className="flex items-center gap-2">
-                                <AlertTriangle className="h-4 w-4 text-orange-600" />
-                                <p className="text-sm font-semibold text-orange-900">Risk Flags:</p>
-                              </div>
-                              <ul className="space-y-1 ml-4">
-                                {research.risk_flags.map((flag: string, idx: number) => (
-                                  <li key={idx} className="text-sm text-orange-800 list-disc">{flag}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {/* Prenotification Notice */}
-                          {research.prenotification_required && (
-                            <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                              <p className="text-sm font-semibold text-yellow-900 mb-1">⚠️ Prenotification Likely Required</p>
-                              {research.prenotification_reason && (
-                                <p className="text-xs text-yellow-800">{research.prenotification_reason}</p>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Core Business & Technical Environment */}
-                          {(research.core_business || research.technical_environment) && (
-                            <div className="space-y-2 text-sm">
-                              {research.core_business && (
-                                <div>
-                                  <span className="font-semibold text-purple-900">Core Business: </span>
-                                  <span className="text-purple-800">{research.core_business}</span>
-                                </div>
-                              )}
-                              {research.technical_environment && (
-                                <div>
-                                  <span className="font-semibold text-purple-900">Technical Environment: </span>
-                                  <span className="text-purple-800">{research.technical_environment}</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        // Fallback to plain text display if structured data not available
-                        <div className="prose prose-sm max-w-none dark:prose-invert">
-                          <div className="whitespace-pre-wrap text-purple-900 dark:text-purple-100">
-                            {isExpanded || !feasibilityExtract ? feasibilityExtract : `${feasibilityExtract.slice(0, 300)}...`}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {!isExpanded && feasibilityExtract && feasibilityExtract.length > 300 && !hasStructuredData && (
-                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent dark:from-slate-950/50" />
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              } catch (error) {
-                console.error("Error parsing company research:", error);
-                return null;
-              }
-            })()}
+                  {/* Estimated Claim Band */}
+                  {feasibilityAnalysis.estimated_claim_band && (
+                    <div className="p-3 bg-white/60 rounded-lg border border-purple-200">
+                      <p className="text-sm font-semibold text-purple-900 mb-2">Estimated Claim Range</p>
+                      <Badge variant="secondary" className="bg-purple-600 text-white">
+                        £{feasibilityAnalysis.estimated_claim_band}
+                      </Badge>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Manual Feasibility Assessment Form */}
             <Card>
