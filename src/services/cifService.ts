@@ -144,6 +144,7 @@ export const cifService = {
       previous_claim_value?: number;
       previous_claim_date_submitted?: string;
       company_research?: string;
+      ai_research_data?: any;
     };
     createdBy: string;
   }): Promise<{ cif: CIFRecord; prospect: Prospect } | null> {

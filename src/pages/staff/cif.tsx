@@ -348,6 +348,7 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
   const [saving, setSaving] = useState(false);
   const [researchLoading, setResearchLoading] = useState(false);
   const [companyResearch, setCompanyResearch] = useState("");
+  const [analysisData, setAnalysisData] = useState<any>(null); // Store full analysis data
   const [formData, setFormData] = useState({
     businessBackground: "",
     projectOverview: "",
@@ -415,6 +416,8 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
         if (researchResponse.ok) {
           const researchData = await researchResponse.json();
           console.log("Research data received:", researchData);
+          setAnalysisData(researchData); // Save to state for createCIF
+
           console.log("Available keys:", Object.keys(researchData));
           console.log("feasibility_summary:", researchData.feasibility_summary);
 
@@ -503,6 +506,7 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
           previous_claim_value: formData.previousClaimValue ? parseFloat(formData.previousClaimValue) : undefined,
           previous_claim_date_submitted: formData.previousClaimDateSubmitted || undefined,
           company_research: companyResearch,
+          ai_research_data: analysisData || undefined, // Pass the full structured analysis data
         },
         createdBy: profile.id,
       });
