@@ -1502,35 +1502,42 @@ export default function CIFDetailPage() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-
-                {/* Delete Confirmation Dialog */}
-                <AlertDialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete CIF Permanently?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the CIF record
-                        for <strong>{companyName}</strong> and remove all associated data from the database.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel onClick={() => setShowDeleteModal(false)}>
-                        Cancel
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={handleDeleteCIF}
-                        disabled={saving}
-                        className="bg-red-600 hover:bg-red-700"
-                      >
-                        {saving ? "Deleting..." : "Delete Permanently"}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Delete Confirmation Dialog - Moved outside Tabs to ensure it renders */}
+        <AlertDialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete CIF Permanently?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the CIF record
+                for <strong>{companyName}</strong> and remove all associated data from the database.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                console.log("Delete cancelled");
+                setShowDeleteModal(false);
+              }}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log("Delete confirmed, calling handleDeleteCIF");
+                  handleDeleteCIF();
+                }}
+                disabled={saving}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {saving ? "Deleting..." : "Delete Permanently"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </StaffLayout>
   );
