@@ -116,7 +116,6 @@ export default function CIFDetailPage() {
       single();
 
       console.log("🔍 CIF Data fetched:", data);
-      console.log("🔍 section2_feasibility_id:", data?.section2_feasibility_id);
 
       if (error) throw error;
       if (!data) throw new Error("CIF not found");
@@ -125,7 +124,6 @@ export default function CIFDetailPage() {
 
       // Fetch linked feasibility analysis if it exists
       if (data.section2_feasibility_id) {
-        console.log("🔍 Fetching feasibility analysis:", data.section2_feasibility_id);
         try {
           const { data: feasData, error: feasError } = await supabase.
           from("feasibility_analyses").
@@ -133,15 +131,12 @@ export default function CIFDetailPage() {
           eq("id", data.section2_feasibility_id).
           single();
 
-          console.log("📊 Feasibility Analysis Data:", feasData);
-
           if (feasError) {
             console.error("Error loading feasibility analysis:", feasError);
           } else if (feasData) {
             setFeasibilityAnalysis(feasData);
 
             // Populate Technical Form from feasibility analysis
-            // Access properties directly from feasData with type assertion
             const feasDataAny = feasData as any;
             setTechUnderstanding(feasDataAny.technical_understanding || "");
             setTechChallenges(Array.isArray(feasDataAny.challenges_uncertainties) ?
@@ -154,7 +149,6 @@ export default function CIFDetailPage() {
             const projects = feasDataAny.rd_projects_list;
             setTechProjects(Array.isArray(projects) ? projects.join("\n") : "");
 
-            // Use type assertion for enum-like values
             const status = feasDataAny.feasibility_status || "needs_more_info";
             if (status === "qualified" || status === "not_qualified" || status === "needs_more_info") {
               setTechStatus(status);
@@ -178,8 +172,6 @@ export default function CIFDetailPage() {
         } catch (error) {
           console.error("Error loading feasibility analysis:", error);
         }
-      } else {
-        console.log("⚠️ No section2_feasibility_id found in CIF record");
       }
 
       // Populate BDM Form
@@ -207,7 +199,6 @@ export default function CIFDetailPage() {
           console.log("🔄 Merging company_research into aiResearchData", research);
 
           // Smart merge: Only overwrite if new data exists and is not empty
-          // Helper to check if a value is "meaningful" (not null, undefined, or empty array/string)
           const hasData = (val: any) => {
             if (val === null || val === undefined) return false;
             if (Array.isArray(val) && val.length === 0) return false;
@@ -247,65 +238,6 @@ export default function CIFDetailPage() {
       // Fallback to company_research plain text
       if (data.company_research) {
         setCompanyResearch(data.company_research);
-      }
-
-      // Also check for linked feasibility analysis (alternative source)
-      if (data.section2_feasibility_id) {
-        console.log("🔍 Fetching feasibility analysis:", data.section2_feasibility_id);
-        try {
-          const { data: feasData, error: feasError } = await supabase.
-          from("feasibility_analyses").
-          select("*").
-          eq("id", data.section2_feasibility_id).
-          single();
-
-          console.log("📊 Feasibility Analysis Data:", feasData);
-
-          if (feasError) {
-            console.error("Error loading feasibility analysis:", feasError);
-          } else if (feasData) {
-            setFeasibilityAnalysis(feasData);
-
-            // Populate Technical Form from feasibility analysis
-            // Access properties directly from feasData with type assertion
-            const feasDataAny = feasData as any;
-            setTechUnderstanding(feasDataAny.technical_understanding || "");
-            setTechChallenges(Array.isArray(feasDataAny.challenges_uncertainties) ?
-            feasDataAny.challenges_uncertainties.join("\n") :
-            feasDataAny.challenges_uncertainties || "");
-
-            const activities = feasDataAny.qualifying_activities;
-            setTechActivities(Array.isArray(activities) ? activities.join("\n") : "");
-
-            const projects = feasDataAny.rd_projects_list;
-            setTechProjects(Array.isArray(projects) ? projects.join("\n") : "");
-
-            // Use type assertion for enum-like values
-            const status = feasDataAny.feasibility_status || "needs_more_info";
-            if (status === "qualified" || status === "not_qualified" || status === "needs_more_info") {
-              setTechStatus(status);
-            }
-
-            const claimBand = feasDataAny.estimated_claim_band || "0-25k";
-            if (claimBand === "0-25k" || claimBand === "25k-50k" || claimBand === "50k-100k" || claimBand === "100k-250k" || claimBand === "250k+") {
-              setTechClaimBand(claimBand);
-            }
-
-            const riskRating = feasDataAny.risk_rating || "low";
-            if (riskRating === "low" || riskRating === "medium" || riskRating === "high") {
-              setTechRiskRating(riskRating);
-            }
-
-            setTechNotesForFinance(feasDataAny.notes_for_finance || "");
-
-            const missingInfo = feasDataAny.missing_information_flags;
-            setTechMissingInfo(Array.isArray(missingInfo) ? missingInfo.join("\n") : "");
-          }
-        } catch (error) {
-          console.error("Error loading feasibility analysis:", error);
-        }
-      } else {
-        console.log("⚠️ No section2_feasibility_id found in CIF record");
       }
 
       // Populate Financial Form
@@ -679,7 +611,6 @@ export default function CIFDetailPage() {
       <StaffLayout>
         <div className="text-center py-12">Loading CIF...</div>
       </StaffLayout>);
-
   }
 
   if (!cif) {
@@ -687,7 +618,6 @@ export default function CIFDetailPage() {
       <StaffLayout>
         <div className="text-center py-12">CIF not found</div>
       </StaffLayout>);
-
   }
 
   const prospect = cif.prospects;
@@ -710,7 +640,6 @@ export default function CIFDetailPage() {
                   entityType="cif"
                   entityId={cif.id}
                   entityName={companyName} />
-
               </div>
               <p className="text-muted-foreground">
                 {cif?.primary_contact_name} • {cif?.primary_contact_email}
@@ -724,13 +653,9 @@ export default function CIFDetailPage() {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log("🔴 DELETE BUTTON CLICKED - Event fired!");
-              console.log("Profile role:", profile?.internal_role);
-              console.log("Setting showDeleteModal to true");
               setShowDeleteModal(true);
             }}
             className="z-50">
-
               <XCircle className="h-4 w-4 mr-2" />
               Delete CIF
             </Button>
@@ -747,158 +672,10 @@ export default function CIFDetailPage() {
 
           {/* BDM Tab */}
           <TabsContent value="bdm" className="space-y-6">
-            {/* AI Business Intelligence - Show company research data */}
-            {(() => {
-              try {
-                if (!cif?.company_research) return null;
-
-                let research: any = cif.company_research;
-                if (typeof research === "string") {
-                  try {
-                    if (research.trim().startsWith('{')) {
-                      research = JSON.parse(research);
-                    }
-                  } catch (e) {
-                    return null;
-                  }
-                }
-
-                // Check if we have business intelligence data
-                const hasBusinessData = research && typeof research === 'object' && (
-                  research.company_age ||
-                  research.directors ||
-                  research.trading_history ||
-                  research.company_type
-                );
-
-                if (!hasBusinessData) return null;
-
-                return (
-                  <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
-                    <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-blue-600" />
-                        <CardTitle className="text-blue-900">Business Intelligence</CardTitle>
-                      </div>
-                      <CardDescription className="text-xs text-blue-600">
-                        AI-generated company research from Companies House
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Company Overview */}
-                      <div className="grid grid-cols-2 gap-4">
-                        {research.company_age && (
-                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                            <p className="text-xs text-blue-600 mb-1">Company Age</p>
-                            <p className="text-sm font-semibold text-blue-900">{research.company_age}</p>
-                          </div>
-                        )}
-                        {research.company_type && (
-                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                            <p className="text-xs text-blue-600 mb-1">Company Type</p>
-                            <p className="text-sm font-semibold text-blue-900">{research.company_type}</p>
-                          </div>
-                        )}
-                        {research.employee_count && (
-                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                            <p className="text-xs text-blue-600 mb-1">Employees</p>
-                            <p className="text-sm font-semibold text-blue-900">{research.employee_count}</p>
-                          </div>
-                        )}
-                        {research.company_status && (
-                          <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                            <p className="text-xs text-blue-600 mb-1">Status</p>
-                            <Badge variant={research.company_status === "active" ? "default" : "secondary"}>
-                              {research.company_status}
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Directors */}
-                      {research.directors && Array.isArray(research.directors) && research.directors.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-sm font-semibold text-blue-900">Directors ({research.directors.length})</p>
-                          <div className="space-y-2">
-                            {research.directors.map((director: any, idx: number) => (
-                              <div key={idx} className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                                <p className="text-sm font-semibold text-blue-900">{director.name}</p>
-                                <div className="flex gap-4 mt-1 text-xs text-blue-700">
-                                  {director.role && <span>Role: {director.role}</span>}
-                                  {director.appointed_on && <span>Appointed: {new Date(director.appointed_on).toLocaleDateString()}</span>}
-                                </div>
-                                {director.nationality && (
-                                  <p className="text-xs text-blue-600 mt-1">Nationality: {director.nationality}</p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Trading History */}
-                      {research.trading_history && (
-                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200 space-y-2">
-                          <p className="text-sm font-semibold text-blue-900">Trading History</p>
-                          {research.trading_history.recent_filings && (
-                            <p className="text-xs text-blue-700">
-                              Recent Filings: {research.trading_history.recent_filings}
-                            </p>
-                          )}
-                          {research.trading_history.filing_pattern && (
-                            <p className="text-xs text-blue-700">
-                              Filing Pattern: {research.trading_history.filing_pattern}
-                            </p>
-                          )}
-                          {research.trading_history.average_filing_lag && (
-                            <p className="text-xs text-blue-700">
-                              Avg Filing Lag: {research.trading_history.average_filing_lag}
-                            </p>
-                          )}
-                          {research.trading_history.confidence_score && (
-                            <div className="flex items-center gap-2 mt-2">
-                              <p className="text-xs text-blue-600">Confidence Score:</p>
-                              <Badge variant="secondary" className="bg-blue-600 text-white">
-                                {research.trading_history.confidence_score}
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Core Business */}
-                      {research.core_business && (
-                        <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
-                          <p className="text-xs text-blue-600 mb-1">Core Business</p>
-                          <p className="text-sm text-blue-900">{research.core_business}</p>
-                        </div>
-                      )}
-
-                      {/* SIC Codes */}
-                      {research.sic_codes && Array.isArray(research.sic_codes) && research.sic_codes.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-sm font-semibold text-blue-900">Business Activities (SIC Codes)</p>
-                          <div className="flex flex-wrap gap-2">
-                            {research.sic_codes.map((sic: string, idx: number) => (
-                              <Badge key={idx} variant="outline" className="text-xs">
-                                {sic}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              } catch (error) {
-                console.error("Error parsing company research:", error);
-                return null;
-              }
-            })()}
-
+            
             {/* AI Business Intelligence Card */}
-            {aiResearchData &&
-            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+            {aiResearchData && (
+              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
                     <Zap className="h-5 w-5" />
@@ -911,108 +688,109 @@ export default function CIFDetailPage() {
                 <CardContent className="space-y-4">
                   {/* Company Overview */}
                   <div className="grid grid-cols-2 gap-4">
-                    {aiResearchData.company_age &&
-                  <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                    {aiResearchData.company_age && (
+                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                         <p className="text-xs text-blue-600 mb-1">Company Age</p>
                         <p className="text-sm font-semibold text-blue-900">{aiResearchData.company_age}</p>
                       </div>
-                  }
-                    {aiResearchData.company_type &&
-                  <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                    )}
+                    {aiResearchData.company_type && (
+                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                         <p className="text-xs text-blue-600 mb-1">Company Type</p>
                         <p className="text-sm font-semibold text-blue-900">{aiResearchData.company_type}</p>
                       </div>
-                  }
-                    {aiResearchData.employee_count &&
-                  <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                    )}
+                    {aiResearchData.employee_count && (
+                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                         <p className="text-xs text-blue-600 mb-1">Employees</p>
                         <p className="text-sm font-semibold text-blue-900">{aiResearchData.employee_count}</p>
                       </div>
-                  }
-                    {aiResearchData.company_status &&
-                  <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                    )}
+                    {aiResearchData.company_status && (
+                      <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                         <p className="text-xs text-blue-600 mb-1">Status</p>
                         <Badge variant={aiResearchData.company_status === "active" ? "default" : "secondary"}>
                           {aiResearchData.company_status}
                         </Badge>
                       </div>
-                  }
+                    )}
                   </div>
 
                   {/* Directors */}
-                  {aiResearchData.directors && Array.isArray(aiResearchData.directors) && aiResearchData.directors.length > 0 &&
-                <div className="space-y-2">
+                  {aiResearchData.directors && Array.isArray(aiResearchData.directors) && aiResearchData.directors.length > 0 && (
+                    <div className="space-y-2">
                       <p className="text-sm font-semibold text-blue-900">Directors ({aiResearchData.directors.length})</p>
                       <div className="space-y-2">
-                        {aiResearchData.directors.map((director: any, idx: number) =>
-                    <div key={idx} className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                        {aiResearchData.directors.map((director: any, idx: number) => (
+                          <div key={idx} className="p-3 bg-white/60 rounded-lg border border-blue-200">
                             <p className="text-sm font-semibold text-blue-900">{director.name}</p>
                             <div className="flex gap-4 mt-1 text-xs text-blue-700">
                               {director.role && <span>Role: {director.role}</span>}
                               {director.appointed_on && <span>Appointed: {new Date(director.appointed_on).toLocaleDateString()}</span>}
                             </div>
-                            {director.nationality &&
-                      <p className="text-xs text-blue-600 mt-1">Nationality: {director.nationality}</p>
-                      }
+                            {director.nationality && (
+                              <p className="text-xs text-blue-600 mt-1">Nationality: {director.nationality}</p>
+                            )}
                           </div>
-                    )}
+                        ))}
                       </div>
-                    )}
+                    </div>
+                  )}
 
                   {/* Trading History */}
-                  {aiResearchData.trading_history &&
-                <div className="p-3 bg-white/60 rounded-lg border border-blue-200 space-y-2">
+                  {aiResearchData.trading_history && (
+                    <div className="p-3 bg-white/60 rounded-lg border border-blue-200 space-y-2">
                       <p className="text-sm font-semibold text-blue-900">Trading History</p>
-                      {aiResearchData.trading_history.recent_filings &&
-                  <p className="text-xs text-blue-700">
+                      {aiResearchData.trading_history.recent_filings && (
+                        <p className="text-xs text-blue-700">
                           Recent Filings: {aiResearchData.trading_history.recent_filings}
                         </p>
-                  }
-                      {aiResearchData.trading_history.filing_pattern &&
-                  <p className="text-xs text-blue-700">
+                      )}
+                      {aiResearchData.trading_history.filing_pattern && (
+                        <p className="text-xs text-blue-700">
                           Filing Pattern: {aiResearchData.trading_history.filing_pattern}
                         </p>
-                  }
-                      {aiResearchData.trading_history.average_filing_lag &&
-                  <p className="text-xs text-blue-700">
+                      )}
+                      {aiResearchData.trading_history.average_filing_lag && (
+                        <p className="text-xs text-blue-700">
                           Avg Filing Lag: {aiResearchData.trading_history.average_filing_lag}
                         </p>
-                  }
-                      {aiResearchData.trading_history.confidence_score &&
-                  <div className="flex items-center gap-2 mt-2">
+                      )}
+                      {aiResearchData.trading_history.confidence_score && (
+                        <div className="flex items-center gap-2 mt-2">
                           <p className="text-xs text-blue-600">Confidence Score:</p>
                           <Badge variant="secondary" className="bg-blue-600 text-white">
                             {aiResearchData.trading_history.confidence_score}
                           </Badge>
                         </div>
-                  }
+                      )}
                     </div>
-                )}
+                  )}
 
                   {/* Core Business */}
-                  {aiResearchData.core_business &&
-                <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
+                  {aiResearchData.core_business && (
+                    <div className="p-3 bg-white/60 rounded-lg border border-blue-200">
                       <p className="text-xs text-blue-600 mb-1">Core Business</p>
                       <p className="text-sm text-blue-900">{aiResearchData.core_business}</p>
                     </div>
-                }
+                  )}
 
                   {/* SIC Codes */}
-                  {aiResearchData.sic_codes && Array.isArray(aiResearchData.sic_codes) && aiResearchData.sic_codes.length > 0 &&
-                <div className="space-y-2">
+                  {aiResearchData.sic_codes && Array.isArray(aiResearchData.sic_codes) && aiResearchData.sic_codes.length > 0 && (
+                    <div className="space-y-2">
                       <p className="text-sm font-semibold text-blue-900">Business Activities (SIC Codes)</p>
                       <div className="flex flex-wrap gap-2">
-                        {aiResearchData.sic_codes.map((sic: string, idx: number) =>
-                    <Badge key={idx} variant="outline" className="text-xs">
+                        {aiResearchData.sic_codes.map((sic: string, idx: number) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
                             {sic}
                           </Badge>
-                    )}
+                        ))}
                       </div>
                     </div>
-                }
+                  )}
                 </CardContent>
               </Card>
-            }
+            )}
 
             <Card>
               <CardHeader>
@@ -1030,7 +808,6 @@ export default function CIFDetailPage() {
                       value={bdmContactName}
                       onChange={(e) => setBdmContactName(e.target.value)}
                       disabled={!canEdit} />
-
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="primary_contact_position">Position</Label>
@@ -1039,7 +816,6 @@ export default function CIFDetailPage() {
                       value={bdmContactPosition}
                       onChange={(e) => setBdmContactPosition(e.target.value)}
                       disabled={!canEdit} />
-
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="primary_contact_email">Email</Label>
@@ -1049,7 +825,6 @@ export default function CIFDetailPage() {
                       value={bdmContactEmail}
                       onChange={(e) => setBdmContactEmail(e.target.value)}
                       disabled={!canEdit} />
-
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="primary_contact_phone">Phone</Label>
@@ -1058,7 +833,6 @@ export default function CIFDetailPage() {
                       value={bdmContactPhone}
                       onChange={(e) => setBdmContactPhone(e.target.value)}
                       disabled={!canEdit} />
-
                   </div>
                 </div>
 
@@ -1071,7 +845,6 @@ export default function CIFDetailPage() {
                     onChange={(e) => setBdmBusinessBackground(e.target.value)}
                     rows={3}
                     disabled={!canEdit} />
-
                 </div>
 
                 <div className="space-y-2">
@@ -1083,7 +856,6 @@ export default function CIFDetailPage() {
                     onChange={(e) => setBdmProjectOverview(e.target.value)}
                     rows={4}
                     disabled={!canEdit} />
-
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1095,7 +867,6 @@ export default function CIFDetailPage() {
                       value={bdmExpFeasibilityDate}
                       onChange={(e) => setBdmExpFeasibilityDate(e.target.value)}
                       disabled={!canEdit} />
-
                   </div>
                 </div>
 
@@ -1119,7 +890,6 @@ export default function CIFDetailPage() {
                       value={bdmPrevClaimYearEnd}
                       onChange={(e) => setBdmPrevClaimYearEnd(e.target.value)}
                       disabled={!canEdit} />
-
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="prev_claim_value">Previous Claim Value (£)</Label>
@@ -1129,7 +899,6 @@ export default function CIFDetailPage() {
                       value={bdmPrevClaimValue}
                       onChange={(e) => setBdmPrevClaimValue(e.target.value)}
                       disabled={!canEdit} />
-
                     </div>
                   </div>
                 }
@@ -1155,17 +924,9 @@ export default function CIFDetailPage() {
               </div>
             </div>
 
-            {(() => {
-              console.log("🎯 Rendering Feasibility Tab - feasibilityAnalysis:", feasibilityAnalysis);
-              if (!feasibilityAnalysis) {
-                console.log("⚠️ No feasibility analysis data available");
-                return null;
-              }
-            })()}
-
             {/* Last Accounts Filed Date */}
-            {prospect?.last_accounts_date &&
-            <div className="bg-muted/50 border rounded-lg p-4">
+            {prospect?.last_accounts_date && (
+              <div className="bg-muted/50 border rounded-lg p-4">
                 <p className="text-sm">
                   <span className="font-semibold">Last Accounts Filed:</span>{" "}
                   {new Date(prospect.last_accounts_date).toLocaleDateString("en-GB", {
@@ -1175,7 +936,7 @@ export default function CIFDetailPage() {
                 })}
                 </p>
               </div>
-            }
+            )}
 
             {/* AI Feasibility Analysis */}
             {aiResearchData?.feasibility && (
@@ -1232,6 +993,144 @@ export default function CIFDetailPage() {
                 </CardContent>
               </Card>
             )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Technical Feasibility Form</CardTitle>
+                <CardDescription>
+                  Detailed assessment of technical eligibility and project qualification
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="technical_understanding">Technical Understanding</Label>
+                  <Textarea
+                    id="technical_understanding"
+                    placeholder="Describe the technical baseline and advancements..."
+                    value={techUnderstanding}
+                    onChange={(e) => setTechUnderstanding(e.target.value)}
+                    rows={4}
+                    disabled={!canEdit} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="challenges_uncertainties">Technological Uncertainties</Label>
+                  <Textarea
+                    id="challenges_uncertainties"
+                    placeholder="List key technical challenges..."
+                    value={techChallenges}
+                    onChange={(e) => setTechChallenges(e.target.value)}
+                    rows={4}
+                    disabled={!canEdit} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="qualifying_activities">Qualifying Activities</Label>
+                  <Textarea
+                    id="qualifying_activities"
+                    placeholder="List specific R&D activities..."
+                    value={techActivities}
+                    onChange={(e) => setTechActivities(e.target.value)}
+                    rows={4}
+                    disabled={!canEdit} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="rd_projects">R&D Projects List</Label>
+                  <Textarea
+                    id="rd_projects"
+                    placeholder="List identifiable projects..."
+                    value={techProjects}
+                    onChange={(e) => setTechProjects(e.target.value)}
+                    rows={4}
+                    disabled={!canEdit} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="feasibility_status">Status</Label>
+                    <Select
+                      value={techStatus}
+                      onValueChange={(v: any) => setTechStatus(v)}
+                      disabled={!canEdit}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="qualified">Qualified</SelectItem>
+                        <SelectItem value="not_qualified">Not Qualified</SelectItem>
+                        <SelectItem value="needs_more_info">Needs More Info</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="risk_rating">Risk Rating</Label>
+                    <Select
+                      value={techRiskRating}
+                      onValueChange={(v: any) => setTechRiskRating(v)}
+                      disabled={!canEdit}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Risk" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low Risk</SelectItem>
+                        <SelectItem value="medium">Medium Risk</SelectItem>
+                        <SelectItem value="high">High Risk</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="claim_band">Estimated Claim Value Band</Label>
+                  <Select
+                    value={techClaimBand}
+                    onValueChange={(v: any) => setTechClaimBand(v)}
+                    disabled={!canEdit}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Band" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0-25k">£0 - £25k</SelectItem>
+                      <SelectItem value="25k-50k">£25k - £50k</SelectItem>
+                      <SelectItem value="50k-100k">£50k - £100k</SelectItem>
+                      <SelectItem value="100k-250k">£100k - £250k</SelectItem>
+                      <SelectItem value="250k+">£250k+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes_finance">Notes for Finance Team</Label>
+                  <Textarea
+                    id="notes_finance"
+                    placeholder="Any specific notes regarding costs or apportionment..."
+                    value={techNotesForFinance}
+                    onChange={(e) => setTechNotesForFinance(e.target.value)}
+                    rows={3}
+                    disabled={!canEdit} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="missing_info">Missing Information Flags</Label>
+                  <Textarea
+                    id="missing_info"
+                    placeholder="List any missing technical details..."
+                    value={techMissingInfo}
+                    onChange={(e) => setTechMissingInfo(e.target.value)}
+                    rows={2}
+                    disabled={!canEdit} />
+                </div>
+
+                {canEdit && (cif.current_stage === "tech_feasibility" || isStaff) &&
+                  <Button onClick={handleCompleteTechnical} disabled={saving} className="w-full">
+                    <Save className="h-4 w-4 mr-2" />
+                    {saving ? "Saving..." : "Complete Technical Feasibility"}
+                  </Button>
+                }
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="financial" className="mt-6">
@@ -1251,7 +1150,6 @@ export default function CIFDetailPage() {
                     value={financialYear}
                     onChange={(e) => setFinancialYear(e.target.value)}
                     disabled={!canEdit || cif.current_stage !== "financial_section"} />
-
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1264,7 +1162,6 @@ export default function CIFDetailPage() {
                       value={staffCost}
                       onChange={(e) => setStaffCost(e.target.value)}
                       disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA} />
-
                   </div>
 
                   <div className="space-y-2">
@@ -1276,7 +1173,6 @@ export default function CIFDetailPage() {
                       value={subcontractorCost}
                       onChange={(e) => setSubcontractorCost(e.target.value)}
                       disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS} />
-
                   </div>
 
                   <div className="space-y-2">
@@ -1288,7 +1184,6 @@ export default function CIFDetailPage() {
                       value={consumablesCost}
                       onChange={(e) => setConsumablesCost(e.target.value)}
                       disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA} />
-
                   </div>
 
                   <div className="space-y-2">
@@ -1300,7 +1195,6 @@ export default function CIFDetailPage() {
                       value={softwareCost}
                       onChange={(e) => setSoftwareCost(e.target.value)}
                       disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS} />
-
                   </div>
                 </div>
 
@@ -1313,7 +1207,6 @@ export default function CIFDetailPage() {
                     onChange={(e) => setApportionment(e.target.value)}
                     rows={3}
                     disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA} />
-
                 </div>
 
                 <Separator />
@@ -1330,7 +1223,6 @@ export default function CIFDetailPage() {
                         value={accountantName}
                         onChange={(e) => setAccountantName(e.target.value)}
                         disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA} />
-
                     </div>
 
                     <div className="space-y-2">
@@ -1341,7 +1233,6 @@ export default function CIFDetailPage() {
                         value={accountantFirm}
                         onChange={(e) => setAccountantFirm(e.target.value)}
                         disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS} />
-
                     </div>
 
                     <div className="space-y-2">
@@ -1353,7 +1244,6 @@ export default function CIFDetailPage() {
                         value={accountantEmail}
                         onChange={(e) => setAccountantEmail(e.target.value)}
                         disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA} />
-
                     </div>
 
                     <div className="space-y-2">
@@ -1364,7 +1254,6 @@ export default function CIFDetailPage() {
                         value={accountantPhone}
                         onChange={(e) => setAccountantPhone(e.target.value)}
                         disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS} />
-
                     </div>
                   </div>
                 </div>
@@ -1393,7 +1282,6 @@ export default function CIFDetailPage() {
                         className="w-full"
                         onClick={() => document.getElementById("loa-upload")?.click()}
                         disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}>
-
                         <Upload className="h-4 w-4 mr-2" />
                         {uploadingLOA ? "Uploading..." : "Upload Letter of Authority"}
                       </Button>
@@ -1417,7 +1305,6 @@ export default function CIFDetailPage() {
                         className="w-full"
                         onClick={() => document.getElementById("ass-upload")?.click()}
                         disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}>
-
                         <Upload className="h-4 w-4 mr-2" />
                         {uploadingASS ? "Uploading..." : "Upload Anti-Slavery Statement"}
                       </Button>
@@ -1445,7 +1332,6 @@ export default function CIFDetailPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDownloadDocument(doc.file_path, doc.notes)}>
-
                               Download
                             </Button>
                             {canEdit && cif.current_stage === "financial_section" &&
@@ -1453,7 +1339,6 @@ export default function CIFDetailPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteDocument(doc.id, doc.file_path)}>
-
                                 <XCircle className="h-4 w-4" />
                               </Button>
                         }
@@ -1470,7 +1355,6 @@ export default function CIFDetailPage() {
                     checked={readyToSubmit}
                     onCheckedChange={(checked) => setReadyToSubmit(checked as boolean)}
                     disabled={!canEdit || cif.current_stage !== "financial_section"} />
-
                   <Label htmlFor="ready-submit" className="cursor-pointer">
                     Ready to submit to admin for approval
                   </Label>
@@ -1535,7 +1419,6 @@ export default function CIFDetailPage() {
                   </div>
                   {cif.feasibility_status === "qualified" ?
                   <CheckCircle className="h-6 w-6 text-green-500" /> :
-
                   <XCircle className="h-6 w-6 text-red-500" />
                   }
                 </div>
@@ -1549,7 +1432,6 @@ export default function CIFDetailPage() {
                   </div>
                   {cif.ready_to_submit ?
                   <CheckCircle className="h-6 w-6 text-green-500" /> :
-
                   <XCircle className="h-6 w-6 text-orange-500" />
                   }
                 </div>
@@ -1563,7 +1445,6 @@ export default function CIFDetailPage() {
                   </div>
                   {documents.length >= 2 ?
                   <CheckCircle className="h-6 w-6 text-green-500" /> :
-
                   <XCircle className="h-6 w-6 text-orange-500" />
                   }
                 </div>
@@ -1580,7 +1461,6 @@ export default function CIFDetailPage() {
                     onClick={() => setShowRejectModal(true)}
                     disabled={saving}
                     variant="destructive">
-
                       <XCircle className="h-4 w-4 mr-2" />
                       Reject
                     </Button>
@@ -1620,7 +1500,6 @@ export default function CIFDetailPage() {
                         <Select
                           value={rejectionType}
                           onValueChange={(v: "send_back" | "archive" | "delete") => setRejectionType(v)}>
-
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -1638,7 +1517,6 @@ export default function CIFDetailPage() {
                           <Select
                           value={rejectToStage}
                           onValueChange={(v: "bdm_section" | "tech_feasibility" | "financial_section") => setRejectToStage(v)}>
-
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
@@ -1677,7 +1555,6 @@ export default function CIFDetailPage() {
                           value={rejectionReason}
                           onChange={(e) => setRejectionReason(e.target.value)}
                           rows={4} />
-
                       </div>
                     </div>
 
@@ -1693,7 +1570,6 @@ export default function CIFDetailPage() {
                         onClick={handleRejectCIF}
                         disabled={saving || !rejectionReason.trim()}
                         className={rejectionType === "delete" ? "bg-red-600 hover:bg-red-700" : ""}>
-
                         {saving ? "Processing..." :
                         rejectionType === "delete" ? "Delete Permanently" :
                         rejectionType === "archive" ?
@@ -1733,13 +1609,12 @@ export default function CIFDetailPage() {
                 }}
                 disabled={saving}
                 className="bg-red-600 hover:bg-red-700">
-
                 {saving ? "Deleting..." : "Delete Permanently"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </StaffLayout>);
-
+    </StaffLayout>
+  );
 }
