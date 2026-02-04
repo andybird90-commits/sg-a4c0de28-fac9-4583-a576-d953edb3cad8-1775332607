@@ -23,10 +23,36 @@ export interface CompaniesHouseData {
   };
   sic_codes?: string[];
   date_of_creation?: string;
+  company_age_years?: number;
   type?: string;
   last_accounts_date?: string | null;
   number_of_directors?: number;
   number_of_employees?: number;
+  officers?: {
+    active_count: number;
+    active_officers: Array<{
+      name: string;
+      role: string;
+      appointed_on?: string;
+      nationality?: string;
+      occupation?: string;
+      country_of_residence?: string;
+    }>;
+    total_count: number;
+  } | null;
+  filing_history?: {
+    filings: Array<{
+      period_end_date?: string;
+      filing_date?: string;
+      filing_lag_days?: number | null;
+      description?: string;
+      type?: string;
+    }>;
+    average_filing_lag_days?: number;
+    filings_count?: number;
+    filing_pattern?: string;
+    confidence_score?: number;
+  } | null;
 }
 
 export interface CIFWithDetails extends CIFRecord {
@@ -52,10 +78,10 @@ export const cifService = {
   /**
    * Lookup company data from Companies House API
    */
-  async lookupCompaniesHouse(companyNumber: string): Promise<CompaniesHouseData | null> {
+  async lookupCompaniesHouse(companyNumber: string, includeHistory: boolean = false): Promise<CompaniesHouseData | null> {
     try {
       const cleanNumber = companyNumber.replace(/\s/g, "").toUpperCase();
-      const response = await fetch(`/api/companies-house/lookup?number=${cleanNumber}`);
+      const response = await fetch(`/api/companies-house/lookup?number=${cleanNumber}&includeHistory=${includeHistory}`);
       
       if (!response.ok) {
         const error = await response.json();
