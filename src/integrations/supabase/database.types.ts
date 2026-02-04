@@ -67,6 +67,7 @@ export type Database = {
           accountant_name: string | null
           accountant_phone: string | null
           admin_last_updated: string | null
+          ai_research_data: Json | null
           apportionment_assumptions: string | null
           bdm_last_updated: string | null
           bdm_section_created_by: string | null
@@ -124,6 +125,7 @@ export type Database = {
           accountant_name?: string | null
           accountant_phone?: string | null
           admin_last_updated?: string | null
+          ai_research_data?: Json | null
           apportionment_assumptions?: string | null
           bdm_last_updated?: string | null
           bdm_section_created_by?: string | null
@@ -181,6 +183,7 @@ export type Database = {
           accountant_name?: string | null
           accountant_phone?: string | null
           admin_last_updated?: string | null
+          ai_research_data?: Json | null
           apportionment_assumptions?: string | null
           bdm_last_updated?: string | null
           bdm_section_created_by?: string | null

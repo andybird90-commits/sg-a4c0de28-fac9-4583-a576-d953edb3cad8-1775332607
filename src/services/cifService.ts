@@ -213,6 +213,7 @@ export const cifService = {
         previous_claim_date_submitted: data.bdmSectionData.previous_claim_date_submitted,
         bdm_last_updated: new Date().toISOString(),
         company_research: data.bdmSectionData.company_research,
+        ai_research_data: data.bdmSectionData.ai_research_data,
       };
       console.log("[cifService.createCIF] CIF insert data:", cifData);
 
