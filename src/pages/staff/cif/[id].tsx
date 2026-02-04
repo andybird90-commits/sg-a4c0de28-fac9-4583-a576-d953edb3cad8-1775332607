@@ -545,7 +545,15 @@ export default function CIFDetailPage() {
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => setShowDeleteModal(true)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log("🔴 DELETE BUTTON CLICKED - Event fired!");
+                console.log("Profile role:", profile?.internal_role);
+                console.log("Setting showDeleteModal to true");
+                setShowDeleteModal(true);
+              }}
+              className="z-50"
             >
               <XCircle className="h-4 w-4 mr-2" />
               Delete CIF
