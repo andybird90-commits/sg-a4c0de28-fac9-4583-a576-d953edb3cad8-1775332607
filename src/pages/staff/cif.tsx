@@ -375,7 +375,7 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
     
     try {
       // Step 1: Lookup company in Companies House
-      const data = await cifService.lookupCompaniesHouse(companyNumber.trim());
+      const data = await cifService.lookupCompaniesHouse(companyNumber.trim(), true); // Request filing history
 
       if (!data) {
         toast({ title: "Error", description: "Company not found", variant: "destructive" });
@@ -597,10 +597,116 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
                   RD Sidekick Research
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                  {companyResearch}
-                </p>
+              <CardContent className="space-y-4">
+                {/* Company Overview Grid */}
+                {companyData && (
+                  <div className="grid grid-cols-2 gap-3 p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg mb-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Company Age</p>
+                      <p className="font-semibold">{companyData.company_age_years} years</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Status</p>
+                      <p className="font-semibold capitalize">{companyData.company_status?.replace(/-/g, ' ')}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Incorporation Date</p>
+                      <p className="font-semibold">{new Date(companyData.date_of_creation).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Last Accounts</p>
+                      <p className="font-semibold">
+                        {companyData.last_accounts_date 
+                          ? new Date(companyData.last_accounts_date).toLocaleDateString()
+                          : 'Not available'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Directors Information */}
+                {companyData?.officers && companyData.officers.active_count > 0 && (
+                  <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg mb-4">
+                    <h4 className="font-semibold text-sm mb-2">
+                      Directors ({companyData.officers.active_count})
+                    </h4>
+                    <div className="space-y-2">
+                      {companyData.officers.active_officers.slice(0, 5).map((officer: any, idx: number) => (
+                        <div key={idx} className="text-sm flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{officer.name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {officer.role?.replace(/-/g, ' ')}
+                            </p>
+                          </div>
+                          {officer.appointed_on && (
+                            <span className="text-xs text-muted-foreground">
+                              Since {new Date(officer.appointed_on).getFullYear()}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                      {companyData.officers.active_count > 5 && (
+                        <p className="text-xs text-muted-foreground italic">
+                          + {companyData.officers.active_count - 5} more directors
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Filing History */}
+                {companyData?.filing_history && (
+                  <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg mb-4">
+                    <h4 className="font-semibold text-sm mb-2">Filing History</h4>
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Average Filing Lag</p>
+                          <p className="font-semibold">{companyData.filing_history.average_filing_lag_days} days</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Filing Pattern</p>
+                          <p className="font-semibold capitalize">{companyData.filing_history.filing_pattern.replace(/_/g, ' ')}</p>
+                        </div>
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        {companyData.filing_history.filings.slice(0, 3).map((filing: any, idx: number) => (
+                          <div key={idx} className="text-xs text-muted-foreground">
+                            {filing.period_end_date && (
+                              <span>Period End: {new Date(filing.period_end_date).toLocaleDateString()}</span>
+                            )}
+                            {filing.filing_lag_days !== null && (
+                              <span className="ml-2">• Lag: {filing.filing_lag_days} days</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* SIC Codes */}
+                {companyData?.sic_codes && companyData.sic_codes.length > 0 && (
+                  <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg mb-4">
+                    <h4 className="font-semibold text-sm mb-2">Industry Classification</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {companyData.sic_codes.map((code: string, idx: number) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          SIC {code}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Analysis */}
+                <div className="pt-2 border-t border-blue-200/50 dark:border-blue-800/50">
+                  <h4 className="font-semibold text-sm mb-2">R&D Feasibility Analysis</h4>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {companyResearch}
+                  </p>
+                </div>
               </CardContent>
             </Card>
           )}

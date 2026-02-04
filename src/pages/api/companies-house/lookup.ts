@@ -5,9 +5,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 /**
- * Companies House API Lookup with Filing History
- * Proxy endpoint to hide API key from client
- * Enhanced to fetch filing history and calculate patterns
+ * Companies House API Lookup with Enhanced Business Intelligence
+ * Fetches company data, officers, filing history, and calculates business metrics
  */
 export default async function handler(
   req: NextApiRequest,
@@ -70,7 +69,13 @@ export default async function handler(
 
     const companyData = await companyResponse.json();
 
-    // Base response
+    // Calculate company age
+    const dateOfCreation = new Date(companyData.date_of_creation);
+    const companyAgeYears = Math.floor(
+      (Date.now() - dateOfCreation.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+    );
+
+    // Base response with enhanced data
     const response: any = {
       company_number: companyData.company_number,
       company_name: companyData.company_name,
@@ -84,9 +89,50 @@ export default async function handler(
       },
       sic_codes: companyData.sic_codes,
       date_of_creation: companyData.date_of_creation,
+      company_age_years: companyAgeYears,
       type: companyData.type,
       last_accounts_date: companyData.accounts?.last_accounts?.made_up_to || null,
+      has_been_liquidated: companyData.has_been_liquidated || false,
+      has_insolvency_history: companyData.has_insolvency_history || false,
+      jurisdiction: companyData.jurisdiction,
     };
+
+    // Fetch officers (directors)
+    try {
+      const officersResponse = await fetch(
+        `https://api.company-information.service.gov.uk/company/${number}/officers`,
+        {
+          headers: {
+            Authorization: `Basic ${auth}`,
+          },
+        }
+      );
+
+      if (officersResponse.ok) {
+        const officersData = await officersResponse.json();
+        
+        // Extract active officers
+        const activeOfficers = (officersData.items || [])
+          .filter((officer: any) => !officer.resigned_on)
+          .map((officer: any) => ({
+            name: officer.name,
+            role: officer.officer_role,
+            appointed_on: officer.appointed_on,
+            nationality: officer.nationality,
+            occupation: officer.occupation,
+            country_of_residence: officer.country_of_residence,
+          }));
+
+        response.officers = {
+          active_count: activeOfficers.length,
+          active_officers: activeOfficers.slice(0, 10), // Limit to 10 for display
+          total_count: officersData.total_results || 0,
+        };
+      }
+    } catch (officersError) {
+      console.error("Error fetching officers:", officersError);
+      response.officers = null;
+    }
 
     // Fetch filing history if requested
     if (includeHistory === "true") {
@@ -143,6 +189,13 @@ export default async function handler(
             ? Math.round(validLags.reduce((a: number, b: number) => a + b, 0) / validLags.length)
             : 60; // Default 60 days
 
+          // Detect filing pattern (consistent vs erratic)
+          const filingPattern = validLags.length >= 3
+            ? Math.max(...validLags) - Math.min(...validLags) < 60
+              ? "consistent"
+              : "variable"
+            : "limited_history";
+
           // Store filing history in database
           if (supabaseServiceKey && filingHistory.length > 0) {
             const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -169,12 +222,12 @@ export default async function handler(
             filings: filingHistory,
             average_filing_lag_days: averageLag,
             filings_count: filingHistory.length,
+            filing_pattern: filingPattern,
             confidence_score: Math.min(filingHistory.length * 15, 60), // More filings = higher confidence
           };
         }
       } catch (filingError) {
         console.error("Error fetching filing history:", filingError);
-        // Don't fail the whole request if filing history fails
         response.filing_history = null;
       }
     }
