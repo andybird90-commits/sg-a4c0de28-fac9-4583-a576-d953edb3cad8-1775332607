@@ -131,7 +131,7 @@ export default function HomePage() {
   if (authLoading) {
     return (
       <Layout>
-        <SEO title="Dashboard - RD Sidekick" />
+        <SEO title="Dashboard - RD Companion" />
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4 sm:p-6">
           <Card className="max-w-md shadow-professional-lg border-0 w-full">
             <CardContent className="pt-6">
@@ -151,7 +151,7 @@ export default function HomePage() {
   if (authError) {
     return (
       <Layout>
-        <SEO title="Dashboard - RD Sidekick" />
+        <SEO title="Dashboard - RD Companion" />
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4 sm:p-6">
           <Card className="max-w-md shadow-professional-lg border-0 w-full">
             <CardContent className="pt-6">
@@ -170,7 +170,7 @@ export default function HomePage() {
   if (!currentOrg) {
     return (
       <Layout>
-        <SEO title="Dashboard - RD Sidekick" />
+        <SEO title="Dashboard - RD Companion" />
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4 sm:p-6">
           <Card className="max-w-md shadow-professional-lg border-0 w-full">
             <CardContent className="pt-6">
@@ -191,7 +191,7 @@ export default function HomePage() {
 
   return (
     <Layout>
-      <SEO title="Dashboard - RD Sidekick" />
+      <SEO title="Dashboard - RD Companion" />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           
@@ -206,7 +206,7 @@ export default function HomePage() {
                   <span className="font-medium truncate">{currentOrg.name}</span>
                   {currentOrg.sidekick_enabled && (
                     <Badge variant="secondary" className="ml-2 bg-success/10 text-success border-success/20 text-xs">
-                      Sidekick Enabled
+                      Companion Enabled
                     </Badge>
                   )}
                 </div>

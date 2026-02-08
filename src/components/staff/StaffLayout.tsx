@@ -64,7 +64,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Head>
-          <title>{title ? `${title} | RD Sidekick` : "RD Sidekick Staff Portal"}</title>
+          <title>{title ? `${title} | RD Companion` : "RD Companion Staff Portal"}</title>
         </Head>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff6b35] mx-auto mb-4"></div>
@@ -79,7 +79,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <Head>
-          <title>Access Denied | RD Sidekick</title>
+          <title>Access Denied | RD Companion</title>
         </Head>
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -151,7 +151,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-50">
       <Head>
-        <title>{title ? `${title} | RD Sidekick` : "RD Sidekick Staff Portal"}</title>
+        <title>{title ? `${title} | RD Companion` : "RD Companion Staff Portal"}</title>
       </Head>
       {/* Top Bar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
@@ -167,7 +167,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
               </button>
               <img src="/rdtax-logo.png" alt="RD TAX" className="h-8 w-auto" />
               <div>
-                <div className="text-lg font-bold text-slate-900">RD Sidekick</div>
+                <div className="text-lg font-bold text-slate-900">RD Companion</div>
                 <div className="text-xs text-slate-500">Staff Portal</div>
               </div>
             </div>

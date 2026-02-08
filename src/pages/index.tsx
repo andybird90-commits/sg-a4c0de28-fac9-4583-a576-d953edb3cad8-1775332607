@@ -95,7 +95,7 @@ export default function LandingPage() {
   return (
     <>
       <SEO
-        title="RD Sidekick - Capture R&D Evidence Effortlessly"
+        title="RD Companion - Capture R&D Evidence Effortlessly"
         description="The modern way to capture, organize, and submit R&D tax evidence. Never miss a claimable moment again."
       />
       
@@ -106,7 +106,7 @@ export default function LandingPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
                 <img src="/rdtax-logo.png" alt="RD TAX" className="h-8 sm:h-10 w-auto flex-shrink-0" />
-                <span className="text-base sm:text-lg lg:text-xl font-bold text-slate-900 truncate">RD Sidekick</span>
+                <span className="text-base sm:text-lg lg:text-xl font-bold text-slate-900 truncate">RD Companion</span>
               </div>
               <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                 <Button
@@ -157,7 +157,7 @@ export default function LandingPage() {
                   </h1>
                   
                   <p className="text-sm sm:text-base md:text-lg lg:text-xl text-slate-600 mb-6 sm:mb-8 lg:mb-10 leading-relaxed">
-                    RD Sidekick helps you capture, organize, and submit R&D tax evidence on the go. 
+                    RD Companion helps you capture, organize, and submit R&D tax evidence on the go. 
                     <strong className="text-slate-900"> Never miss a claimable moment again.</strong>
                   </p>
 
@@ -209,7 +209,7 @@ export default function LandingPage() {
                 Everything You Need
               </h2>
               <p className="text-sm sm:text-base lg:text-xl text-slate-600 max-w-2xl mx-auto px-4">
-                Built specifically for R&D tax claims, RD Sidekick makes evidence collection simple, secure, and seamless.
+                Built specifically for R&D tax claims, RD Companion makes evidence collection simple, secure, and seamless.
               </p>
             </div>
 
@@ -288,7 +288,7 @@ export default function LandingPage() {
               R&D Evidence Collection?
             </h2>
             <p className="text-sm sm:text-base lg:text-xl text-slate-300 mb-6 sm:mb-8 lg:mb-10 max-w-2xl mx-auto px-4">
-              Join innovative teams who trust RD Sidekick to capture and organize their R&D tax evidence.
+              Join innovative teams who trust RD Companion to capture and organize their R&D tax evidence.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4 max-w-2xl mx-auto">
@@ -318,7 +318,7 @@ export default function LandingPage() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-0">
               <div className="flex items-center gap-3 mb-4 md:mb-0">
                 <div className="text-center md:text-left">
-                  <div className="text-lg sm:text-xl font-bold">RD Sidekick</div>
+                  <div className="text-lg sm:text-xl font-bold">RD Companion</div>
                   <div className="text-sm text-slate-400">by RD TAX</div>
                 </div>
               </div>

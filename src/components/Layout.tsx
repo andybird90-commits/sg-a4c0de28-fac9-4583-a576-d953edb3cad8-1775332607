@@ -98,7 +98,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                             RD
                           </div>
                           <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                            RD Sidekick
+                            RD Companion
                           </span>
                         </div>
                       </SheetTitle>
@@ -161,7 +161,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                   RD
                 </div>
                 <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hidden sm:block">
-                  RD Sidekick
+                  RD Companion
                 </span>
               </div>
             </div>
