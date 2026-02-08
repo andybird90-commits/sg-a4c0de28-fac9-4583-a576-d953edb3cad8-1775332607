@@ -113,7 +113,7 @@ export default function ProjectsPage() {
   return (
     <>
       <SEO
-        title="Projects - RD Sidekick"
+        title="Projects - RD Companion"
         description="Manage your R&D projects and feasibility analyses"
       />
       <Layout>
@@ -191,7 +191,7 @@ export default function ProjectsPage() {
                   <CardContent className="relative z-10 pointer-events-none">
                     <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                       <Badge variant="outline" className="bg-blue-50">
-                        {project.type === "sidekick" ? "Sidekick" : "Project"}
+                        {project.type === "sidekick" ? "Companion" : "Project"}
                       </Badge>
                       {project.sector && (
                         <span className="inline-flex items-center">

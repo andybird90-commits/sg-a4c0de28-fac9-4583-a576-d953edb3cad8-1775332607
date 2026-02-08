@@ -79,7 +79,7 @@ export default function SignupPage() {
       }
 
       if (!org.sidekick_enabled) {
-        throw new Error("RD Sidekick is not enabled for this organisation");
+        throw new Error("RD Companion is not enabled for this organisation");
       }
 
       await authService.signUp(
@@ -93,7 +93,7 @@ export default function SignupPage() {
       notify({
         type: "success",
         title: "Account created!",
-        message: "Welcome to RD Sidekick"
+        message: "Welcome to RD Companion"
       });
 
       router.push("/home");
@@ -111,7 +111,7 @@ export default function SignupPage() {
 
   return (
     <Layout showNav={false}>
-      <SEO title="Sign Up - RD Sidekick" />
+      <SEO title="Sign Up - RD Companion" />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           {/* Logo/Brand Section */}
@@ -122,7 +122,7 @@ export default function SignupPage() {
               </svg>
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Create Account</h1>
-            <p className="text-muted-foreground">Join your organisation on RD Sidekick</p>
+            <p className="text-muted-foreground">Join your organisation on RD Companion</p>
           </div>
 
           {/* Signup Card */}
@@ -270,7 +270,7 @@ export default function SignupPage() {
 
           {/* Footer */}
           <p className="text-center text-xs text-muted-foreground mt-6">
-            © {new Date().getFullYear()} RD Sidekick. All rights reserved.
+            © {new Date().getFullYear()} RD Companion. All rights reserved.
           </p>
         </div>
       </div>

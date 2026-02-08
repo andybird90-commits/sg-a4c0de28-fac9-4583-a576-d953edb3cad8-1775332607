@@ -186,7 +186,7 @@ export default function CaptureEvidencePage() {
               </div>
               <h2 className="text-2xl font-bold text-foreground mb-2">Evidence Captured!</h2>
               <p className="text-muted-foreground mb-8">
-                Your evidence has been securely saved to the Sidekick vault.
+                Your evidence has been securely saved to the Companion vault.
               </p>
               <div className="flex flex-col gap-3">
                 <Button onClick={() => setSuccess(false)} className="gradient-primary">
@@ -205,7 +205,7 @@ export default function CaptureEvidencePage() {
 
   return (
     <Layout>
-      <SEO title="Capture Evidence - RD Sidekick" />
+      <SEO title="Capture Evidence - RD Companion" />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50 py-8 px-4 sm:px-6">
         <div className="max-w-2xl mx-auto">
           <Button 

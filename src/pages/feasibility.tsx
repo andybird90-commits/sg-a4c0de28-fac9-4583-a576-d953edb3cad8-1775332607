@@ -55,7 +55,7 @@ export default function FeasibilityPage() {
   return (
     <>
       <SEO
-        title="Feasibility Analysis - RD Sidekick"
+        title="Feasibility Analysis - RD Companion"
         description="Submit your idea for AI-powered feasibility assessment"
       />
       <Layout>
@@ -63,7 +63,7 @@ export default function FeasibilityPage() {
           <div className="mb-8 text-center">
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#FF6B35] to-[#FF8C61] text-white px-4 py-2 rounded-full text-sm font-semibold mb-4">
               <Sparkles size={16} />
-              Sidekick Enabled
+              Companion Enabled
             </div>
             <h1 className="text-4xl font-bold text-[#001F3F] mb-2">
               Feasibility Analysis

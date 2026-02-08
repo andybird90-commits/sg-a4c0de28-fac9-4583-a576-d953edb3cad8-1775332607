@@ -71,7 +71,7 @@ export default function NewProjectPage() {
   return (
     <>
       <SEO
-        title="New Project - RD Sidekick"
+        title="New Project - RD Companion"
         description="Create a new R&D project"
       />
       <Layout>

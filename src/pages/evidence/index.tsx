@@ -63,7 +63,7 @@ export default function EvidencePage() {
 
   return (
     <Layout>
-      <SEO title="Evidence - RD Sidekick" />
+      <SEO title="Evidence - RD Companion" />
       <div className="min-h-screen bg-slate-50 pb-20">
         <div className="bg-[#001F3F] text-white pt-8 pb-12 px-4">
           <div className="max-w-4xl mx-auto">

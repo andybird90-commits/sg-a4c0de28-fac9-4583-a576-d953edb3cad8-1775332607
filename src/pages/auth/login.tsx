@@ -68,7 +68,7 @@ export default function LoginPage() {
 
   return (
     <Layout showNav={false}>
-      <SEO title="Login - RD Sidekick" />
+      <SEO title="Login - RD Companion" />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           {/* Logo/Brand Section */}
@@ -79,7 +79,7 @@ export default function LoginPage() {
               </svg>
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">Sign in to your RD Sidekick account</p>
+            <p className="text-muted-foreground">Sign in to your RD Companion account</p>
           </div>
 
           {/* Login Card */}
@@ -164,7 +164,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-center text-xs text-muted-foreground mt-6">
-            © {new Date().getFullYear()} RD Sidekick. All rights reserved.
+            © {new Date().getFullYear()} RD Companion. All rights reserved.
           </p>
         </div>
       </div>

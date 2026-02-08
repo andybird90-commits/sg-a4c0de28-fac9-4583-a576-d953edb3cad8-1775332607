@@ -175,7 +175,7 @@ export default function SettingsPage() {
         </Card>
 
         <div className="text-center text-xs text-slate-400 py-3 sm:py-4">
-          RD Sidekick v1.0.0
+          RD Companion v1.0.0
         </div>
       </div>
     </div>
