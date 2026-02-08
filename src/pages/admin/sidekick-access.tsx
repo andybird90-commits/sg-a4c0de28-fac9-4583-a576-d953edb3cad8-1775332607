@@ -151,7 +151,7 @@ export default function AdminSidekickAccess() {
       notify({
         type: "success",
         title: "Access updated",
-        message: `Sidekick ${!currentStatus ? "enabled" : "disabled"}`
+        message: `Companion ${!currentStatus ? "enabled" : "disabled"}`
       });
 
       loadOrganisations();
@@ -230,7 +230,7 @@ export default function AdminSidekickAccess() {
 
   return (
     <Layout>
-      <SEO title="RD Sidekick Access - Admin" />
+      <SEO title="RD Companion Access - Admin" />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <AdminNav />
@@ -241,7 +241,7 @@ export default function AdminSidekickAccess() {
                 <Shield className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-slate-900">RD Sidekick Access</h1>
+                <h1 className="text-3xl font-bold text-slate-900">RD Companion Access</h1>
                 <p className="text-slate-600 mt-1">Control organisation access and manage codes</p>
               </div>
             </div>
@@ -306,7 +306,7 @@ export default function AdminSidekickAccess() {
           <Card className="border-0 shadow-lg bg-white/90 backdrop-blur">
             <CardHeader className="border-b bg-slate-50/50">
               <CardTitle>Access Control</CardTitle>
-              <CardDescription>Manage Sidekick access for each organisation</CardDescription>
+              <CardDescription>Manage Companion access for each organisation</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-slate-100">
@@ -323,7 +323,7 @@ export default function AdminSidekickAccess() {
                         <div className="flex items-center gap-6 text-sm text-slate-600">
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4" />
-                            <span>{org.user_count} Sidekick users</span>
+                            <span>{org.user_count} Companion users</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Activity className="h-4 w-4" />
@@ -413,18 +413,18 @@ export default function AdminSidekickAccess() {
                     <Alert className="bg-blue-50 border-blue-200">
                       <Sparkles className="h-4 w-4 text-blue-600" />
                       <AlertDescription className="text-sm text-blue-800">
-                        Share this code with clients to let them sign up to RD Sidekick
+                        Share this code with clients to let them sign up to RD Companion
                       </AlertDescription>
                     </Alert>
                   </CardContent>
                 </Card>
 
-                {/* Sidekick Users Section */}
+                {/* Companion Users Section */}
                 <Card className="border-slate-200">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Users className="h-4 w-4" />
-                      Sidekick Users ({orgUsers.length})
+                      Companion Users ({orgUsers.length})
                     </CardTitle>
                   </CardHeader>
                   <CardContent>

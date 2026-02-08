@@ -99,7 +99,7 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
       notify({
         type: "error",
         title: "Load failed",
-        message: error.message || "Could not load evidence from RD Sidekick"
+        message: error.message || "Could not load evidence from RD Companion"
       });
     } finally {
       setLoading(false);
@@ -161,7 +161,7 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
       notify({
         type: "success",
         title: "Evidence attached",
-        message: `Attached ${result.attached_count} item${result.attached_count !== 1 ? "s" : ""} from RD Sidekick`
+        message: `Attached ${result.attached_count} item${result.attached_count !== 1 ? "s" : ""} from RD Companion`
       });
 
       onClose();
@@ -185,7 +185,7 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-[#001F3F] to-[#003366]">
           <div>
-            <h2 className="text-2xl font-bold text-white">Attach from RD Sidekick</h2>
+            <h2 className="text-2xl font-bold text-white">Attach from RD Companion</h2>
             <p className="text-sm text-gray-300 mt-1">Browse and select evidence to attach to your R&D claim</p>
           </div>
           <button 
@@ -278,7 +278,7 @@ export function AttachSidekickModal({ isOpen, onClose, orgId, claimId }: AttachS
               <div className="text-center py-12">
                 <StickyNote className="mx-auto h-16 w-16 text-gray-300 mb-4" />
                 <p className="text-gray-500 text-lg font-medium">No evidence found</p>
-                <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or add evidence in RD Sidekick</p>
+                <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or add evidence in RD Companion</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-3">
@@ -539,7 +539,7 @@ export default function AttachSidekickPage() {
   if (loading) {
     return (
       <Layout showNav={false}>
-        <SEO title="Attach Evidence - RD Sidekick" />
+        <SEO title="Attach Evidence - RD Companion" />
         <div className="min-h-screen flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-[#FF6B35]" />
         </div>
@@ -550,7 +550,7 @@ export default function AttachSidekickPage() {
   if (!currentOrg) {
     return (
       <Layout showNav={false}>
-        <SEO title="Attach Evidence - RD Sidekick" />
+        <SEO title="Attach Evidence - RD Companion" />
         <div className="min-h-screen flex items-center justify-center p-4">
           <Card className="max-w-md p-6 text-center">
             <h2 className="text-xl font-bold text-[#001F3F] mb-4">No Organisation Selected</h2>
@@ -566,7 +566,7 @@ export default function AttachSidekickPage() {
 
   return (
     <Layout showNav={false}>
-      <SEO title="Attach Evidence - RD Sidekick" />
+      <SEO title="Attach Evidence - RD Companion" />
       <AttachSidekickModal
         isOpen={isModalOpen}
         onClose={handleClose}

@@ -45,7 +45,7 @@ export function AdminNav() {
       color: "text-blue-600 bg-blue-50 hover:bg-blue-100"
     },
     { 
-      label: "Sidekick Access", 
+      label: "Companion Access", 
       icon: Shield, 
       path: "/admin/sidekick-access",
       color: "text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
