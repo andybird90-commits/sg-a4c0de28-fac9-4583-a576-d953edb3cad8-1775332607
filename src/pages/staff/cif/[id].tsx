@@ -200,46 +200,42 @@ export default function CIFDetailPage() {
       setBdmPrevClaimValue(data.previous_claim_value?.toString() || "");
 
       // Extract AI research data from ai_research_data JSONB field
-      let mergedResearch = data.ai_research_data || {};
+      const mergedResearch = data.ai_research_data || {};
 
       // Merge with company_research if available (fallback/legacy data)
       if (data.company_research) {
         try {
-          const research = typeof data.company_research === 'string' ?
-          JSON.parse(data.company_research) :
-          data.company_research;
+          let research;
+          
+          // Check if it's actually JSON by trying to parse it
+          if (typeof data.company_research === 'string') {
+            // Try to detect if it's JSON (starts with { or [)
+            const trimmed = data.company_research.trim();
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+              try {
+                research = JSON.parse(data.company_research);
+                console.log("🔄 Parsed company_research as JSON", research);
+              } catch (parseError) {
+                console.log("⚠️ company_research looks like JSON but failed to parse, treating as plain text");
+                research = { description: data.company_research };
+              }
+            } else {
+              // It's plain text, wrap it
+              console.log("📝 company_research is plain text, wrapping it");
+              research = { description: data.company_research };
+            }
+          } else {
+            // Already an object
+            research = data.company_research;
+          }
 
           console.log("🔄 Merging company_research into aiResearchData", research);
 
-          // Smart merge: Only overwrite if new data exists and is not empty
-          const hasData = (val: any) => {
-            if (val === null || val === undefined) return false;
-            if (Array.isArray(val) && val.length === 0) return false;
-            if (typeof val === 'object' && Object.keys(val).length === 0) return false;
-            if (typeof val === 'string' && val.trim() === '') return false;
-            return true;
-          };
-
-          // Base object from legacy research
-          const base: any = { ...research };
-          const mergedAny = mergedResearch as any;
-
-          // Overlay new data only where it has content
-          Object.keys(mergedAny).forEach((key) => {
-            if (hasData(mergedAny[key])) {
-              // Special handling for nested objects
-              if (key === 'feasibility' && base.feasibility) {
-                base.feasibility = { ...base.feasibility, ...mergedAny.feasibility };
-              } else if (key === 'trading_history' && base.trading_history) {
-                base.trading_history = { ...base.trading_history, ...mergedAny.trading_history };
-              } else {
-                base[key] = mergedAny[key];
-              }
-            }
-          });
-
-          mergedResearch = base;
-
+          setAiResearchData(prev => ({
+            ...prev,
+            ...(research || {}),
+            section1_completed_by: data.section1_completed_by || prev?.section1_completed_by
+          }));
         } catch (e) {
           console.error("Error parsing company_research for merge:", e);
         }
@@ -269,27 +265,44 @@ export default function CIFDetailPage() {
       // Populate extracted feasibility analysis
       try {
         if (data.company_research) {
-          try {
-            const research = typeof data.company_research === 'string' ?
-            JSON.parse(data.company_research) :
-            data.company_research;
-
-            console.log("🔄 Merging company_research into aiResearchData", research);
-            
-            setAiResearchData(prev => ({
-              ...prev,
-              companyData: research
-            }));
-          } catch (parseError) {
-            console.warn("⚠️ company_research is not valid JSON, treating as plain text:", data.company_research);
-            // If it's not JSON, treat it as a simple company name or description
-            setAiResearchData(prev => ({
-              ...prev,
-              companyData: {
-                companyName: data.company_research,
-                description: data.company_research
+          // Merge company_research into aiResearchData if it exists
+          if (data.company_research) {
+            try {
+              let research;
+              
+              // Check if it's actually JSON by trying to parse it
+              if (typeof data.company_research === 'string') {
+                // Try to detect if it's JSON (starts with { or [)
+                const trimmed = data.company_research.trim();
+                if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                  try {
+                    research = JSON.parse(data.company_research);
+                    console.log("🔄 Parsed company_research as JSON", research);
+                  } catch (parseError) {
+                    console.log("⚠️ company_research looks like JSON but failed to parse, treating as plain text");
+                    research = { description: data.company_research };
+                  }
+                } else {
+                  // It's plain text, wrap it
+                  console.log("📝 company_research is plain text, wrapping it");
+                  research = { description: data.company_research };
+                }
+              } else {
+                // Already an object
+                research = data.company_research;
               }
-            }));
+
+              console.log("🔄 Merging company_research into aiResearchData", research);
+
+              setAiResearchData(prev => ({
+                ...prev,
+                ...(research || {}),
+                section1_completed_by: data.section1_completed_by || prev?.section1_completed_by
+              }));
+            } catch (err) {
+              console.error("❌ Error processing company_research:", err);
+              // Don't block the page load, just log the error
+            }
           }
         }
       } catch (error) {
@@ -884,9 +897,15 @@ export default function CIFDetailPage() {
                 {/* Complete BDM / Request Feasibility Button */}
                 <Button
                   onClick={() => {
+                    console.log("🔘 Button clicked, current_stage:", cif.current_stage);
+                    console.log("🔘 isBDMComplete:", isBDMComplete());
+                    console.log("🔘 bdmContactEmail:", bdmContactEmail);
+                    
                     if (cif.current_stage === 'bdm_in_progress') {
+                      console.log("🔘 Calling handleCompleteBDM");
                       handleCompleteBDM();
                     } else {
+                      console.log("🔘 Opening booking modal");
                       setShowBookingModal(true);
                     }
                   }}

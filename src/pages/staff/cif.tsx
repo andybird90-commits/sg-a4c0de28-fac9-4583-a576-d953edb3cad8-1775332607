@@ -479,6 +479,13 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
 
     setSaving(true);
     try {
+      console.log("🚀 Starting CIF creation...");
+      console.log("Company data:", companyData);
+      console.log("Form data:", formData);
+      console.log("Profile ID:", profile.id);
+      console.log("Company research:", companyResearch);
+      console.log("Analysis data:", analysisData);
+
       const result = await cifService.createCIF({
         prospectData: {
           company_name: companyData.company_name,
@@ -506,10 +513,12 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
           previous_claim_value: formData.previousClaimValue ? parseFloat(formData.previousClaimValue) : undefined,
           previous_claim_date_submitted: formData.previousClaimDateSubmitted || undefined,
           company_research: companyResearch,
-          ai_research_data: analysisData || undefined, // Pass the full structured analysis data
+          ai_research_data: analysisData || undefined,
         },
         createdBy: profile.id,
       });
+
+      console.log("✅ CIF creation result:", result);
 
       if (result) {
         toast({ title: "CIF created successfully!", description: "Redirecting to CIF details..." });
@@ -517,11 +526,22 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
           router.push(`/staff/cif/${result.cif.id}`);
         }, 1500);
       } else {
-        throw new Error("Failed to create CIF");
+        throw new Error("Failed to create CIF - no result returned");
       }
     } catch (error: any) {
-      console.error("CIF creation error:", error);
-      toast({ title: "Failed to create CIF", description: error.message || "Unknown error", variant: "destructive" });
+      console.error("❌ CIF creation error:", error);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        stack: error.stack
+      });
+      toast({ 
+        title: "Failed to create CIF", 
+        description: error.message || "Unknown error occurred. Check console for details.", 
+        variant: "destructive" 
+      });
     } finally {
       setSaving(false);
     }
