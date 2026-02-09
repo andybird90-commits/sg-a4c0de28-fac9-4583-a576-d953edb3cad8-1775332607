@@ -69,6 +69,10 @@ export type Database = {
           admin_last_updated: string | null
           ai_research_data: Json | null
           apportionment_assumptions: string | null
+          archived: boolean | null
+          archived_at: string | null
+          archived_by_user_id: string | null
+          archived_reason: string | null
           bdm_claimed_before: boolean | null
           bdm_contract_period_understood: boolean | null
           bdm_fee_terms_explained: boolean | null
@@ -133,6 +137,10 @@ export type Database = {
           admin_last_updated?: string | null
           ai_research_data?: Json | null
           apportionment_assumptions?: string | null
+          archived?: boolean | null
+          archived_at?: string | null
+          archived_by_user_id?: string | null
+          archived_reason?: string | null
           bdm_claimed_before?: boolean | null
           bdm_contract_period_understood?: boolean | null
           bdm_fee_terms_explained?: boolean | null
@@ -197,6 +205,10 @@ export type Database = {
           admin_last_updated?: string | null
           ai_research_data?: Json | null
           apportionment_assumptions?: string | null
+          archived?: boolean | null
+          archived_at?: string | null
+          archived_by_user_id?: string | null
+          archived_reason?: string | null
           bdm_claimed_before?: boolean | null
           bdm_contract_period_understood?: boolean | null
           bdm_fee_terms_explained?: boolean | null
@@ -254,6 +266,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cif_records_archived_by_user_id_fkey"
+            columns: ["archived_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cif_records_bdm_section_created_by_fkey"
             columns: ["bdm_section_created_by"]
@@ -1257,6 +1276,153 @@ export type Database = {
           },
         ]
       }
+      feasibility_availability: {
+        Row: {
+          cif_case_id: string | null
+          created_at: string
+          end_time: string
+          id: string
+          is_booked: boolean | null
+          slot_length_minutes: number | null
+          slot_type: string | null
+          start_time: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cif_case_id?: string | null
+          created_at?: string
+          end_time: string
+          id?: string
+          is_booked?: boolean | null
+          slot_length_minutes?: number | null
+          slot_type?: string | null
+          start_time: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cif_case_id?: string | null
+          created_at?: string
+          end_time?: string
+          id?: string
+          is_booked?: boolean | null
+          slot_length_minutes?: number | null
+          slot_type?: string | null
+          start_time?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feasibility_availability_cif_case_id_fkey"
+            columns: ["cif_case_id"]
+            isOneToOne: false
+            referencedRelation: "cif_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feasibility_availability_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feasibility_meetings: {
+        Row: {
+          bdm_user_id: string
+          cif_case_id: string
+          client_id: string | null
+          client_teams_email: string | null
+          created_at: string
+          feasibility_user_id: string
+          id: string
+          meeting_date: string
+          meeting_end_time: string
+          meeting_start_time: string
+          meeting_status: string
+          outcome: string | null
+          outcome_notes: string | null
+          slot_id: string | null
+          teams_meeting_link: string | null
+          updated_at: string
+        }
+        Insert: {
+          bdm_user_id: string
+          cif_case_id: string
+          client_id?: string | null
+          client_teams_email?: string | null
+          created_at?: string
+          feasibility_user_id: string
+          id?: string
+          meeting_date: string
+          meeting_end_time: string
+          meeting_start_time: string
+          meeting_status?: string
+          outcome?: string | null
+          outcome_notes?: string | null
+          slot_id?: string | null
+          teams_meeting_link?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bdm_user_id?: string
+          cif_case_id?: string
+          client_id?: string | null
+          client_teams_email?: string | null
+          created_at?: string
+          feasibility_user_id?: string
+          id?: string
+          meeting_date?: string
+          meeting_end_time?: string
+          meeting_start_time?: string
+          meeting_status?: string
+          outcome?: string | null
+          outcome_notes?: string | null
+          slot_id?: string | null
+          teams_meeting_link?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feasibility_meetings_bdm_user_id_fkey"
+            columns: ["bdm_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feasibility_meetings_cif_case_id_fkey"
+            columns: ["cif_case_id"]
+            isOneToOne: false
+            referencedRelation: "cif_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feasibility_meetings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feasibility_meetings_feasibility_user_id_fkey"
+            columns: ["feasibility_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feasibility_meetings_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "feasibility_availability"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       internal_comments: {
         Row: {
           author_id: string
@@ -1728,6 +1894,8 @@ export type Database = {
           full_name: string | null
           id: string
           internal_role: string | null
+          is_feasibility_available: boolean | null
+          role: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1737,6 +1905,8 @@ export type Database = {
           full_name?: string | null
           id: string
           internal_role?: string | null
+          is_feasibility_available?: boolean | null
+          role?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1746,6 +1916,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           internal_role?: string | null
+          is_feasibility_available?: boolean | null
+          role?: string | null
           updated_at?: string | null
         }
         Relationships: []
