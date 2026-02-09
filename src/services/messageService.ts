@@ -57,6 +57,10 @@ export async function getInboxMessages(): Promise<MessageWithDetails[]> {
         body,
         created_at,
         updated_at,
+        org_id,
+        is_staff_sender,
+        entity_type,
+        entity_id,
         sender:profiles!messages_sender_id_fkey(id, full_name, avatar_url),
         recipients:message_recipients(
           recipient_id,
@@ -76,7 +80,8 @@ export async function getInboxMessages(): Promise<MessageWithDetails[]> {
     throw error;
   }
 
-  return (data?.map(r => r.messages) || []) as MessageWithDetails[];
+  // Explicitly cast to avoid deep type instantiation issues
+  return (data?.map(r => r.messages) || []) as unknown as MessageWithDetails[];
 }
 
 /**
