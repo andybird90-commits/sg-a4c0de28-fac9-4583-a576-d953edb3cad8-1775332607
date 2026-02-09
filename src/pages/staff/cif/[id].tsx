@@ -897,19 +897,32 @@ export default function CIFDetailPage() {
                 {/* Complete BDM / Request Feasibility Button */}
                 <Button
                   onClick={() => {
-                    console.log("🔘 Button clicked, current_stage:", cif.current_stage);
-                    console.log("🔘 isBDMComplete:", isBDMComplete());
-                    console.log("🔘 bdmContactEmail:", bdmContactEmail);
+                    console.log("🎯 Request Feasibility button clicked");
+                    console.log("📊 Current CIF data:", {
+                      current_stage: cif?.current_stage,
+                      bdmContactEmail,
+                      primary_contact_email: cif?.primary_contact_email
+                    });
+
+                    // Check if we have an email from any source
+                    const email = bdmContactEmail || cif?.primary_contact_email;
                     
-                    if (cif.current_stage === 'bdm_in_progress') {
-                      console.log("🔘 Calling handleCompleteBDM");
-                      handleCompleteBDM();
-                    } else {
-                      console.log("🔘 Opening booking modal");
-                      setShowBookingModal(true);
+                    console.log("📧 Resolved email:", email);
+
+                    if (!email || email.trim() === '') {
+                      console.log("❌ No email found, showing error toast");
+                      toast({
+                        title: "Email Required",
+                        description: "Please complete the BDM Contact Email field before requesting a feasibility call.",
+                        variant: "destructive"
+                      });
+                      return;
                     }
+
+                    console.log("✅ Email found, opening modal");
+                    setShowBookingModal(true);
                   }}
-                  disabled={saving || (cif.current_stage === 'bdm_in_progress' && !isBDMComplete())}
+                  disabled={saving}
                   className="w-full"
                   size="lg"
                 >
@@ -1710,13 +1723,13 @@ export default function CIFDetailPage() {
         </AlertDialog>
 
         {/* Feasibility Booking Modal */}
-        {cif && bdmContactEmail && (
+        {cif && (
           <BookFeasibilityModal
             isOpen={showBookingModal}
             onClose={() => setShowBookingModal(false)}
             cifId={cif.id}
             clientId={cif.prospect_id || null}
-            clientEmail={bdmContactEmail}
+            clientEmail={bdmContactEmail || cif.primary_contact_email || ""}
             bdmUserId={profile?.id || ""}
             onSuccess={() => {
               setShowBookingModal(false);
