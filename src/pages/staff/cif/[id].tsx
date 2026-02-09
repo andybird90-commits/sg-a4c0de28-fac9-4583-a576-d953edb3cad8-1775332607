@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cifService, type CIFWithDetails } from "@/services/cifService";
 import { MessageWidget } from "@/components/MessageWidget";
+import { BookFeasibilityModal } from "@/components/staff/cif/BookFeasibilityModal";
 import { ArrowLeft, Save, Upload, FileText, XCircle, AlertTriangle, CheckCircle, Sparkles, ChevronDown, ChevronUp, Zap } from "lucide-react";
 
 export default function CIFDetailPage() {
@@ -40,6 +41,9 @@ export default function CIFDetailPage() {
 
   // Delete modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Booking modal state
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   // BDM Form State
   const [bdmBusinessBackground, setBdmBusinessBackground] = useState("");
@@ -418,10 +422,10 @@ export default function CIFDetailPage() {
       if (result) {
         toast({
           title: "Success",
-          description: "BDM section completed successfully. Moving to Feasibility Assessment."
+          description: "BDM section completed successfully."
         });
         await fetchCIF(cif.id);
-        setActiveTab("feasibility");
+        setShowBookingModal(true);
       } else {
         toast({ title: "Error", description: "Failed to complete BDM section", variant: "destructive" });
       }
@@ -1636,6 +1640,26 @@ export default function CIFDetailPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Feasibility Booking Modal */}
+        {cif && bdmContactEmail && (
+          <BookFeasibilityModal
+            isOpen={showBookingModal}
+            onClose={() => setShowBookingModal(false)}
+            cifId={cif.id}
+            clientId={cif.prospect_id || null}
+            clientEmail={bdmContactEmail}
+            bdmUserId={profile?.id || ""}
+            onSuccess={() => {
+              setShowBookingModal(false);
+              fetchCIF(cif.id);
+              toast({
+                title: "Success",
+                description: "Feasibility call booked successfully"
+              });
+            }}
+          />
+        )}
       </div>
     </StaffLayout>
   );

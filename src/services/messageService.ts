@@ -346,56 +346,12 @@ export async function searchUsersForMention(query: string, orgId?: string): Prom
 
   const isStaff = !!profile?.internal_role;
   
-  // Base query for profiles
-  let usersQuery = supabase
-    .from("profiles")
-    .select(`
-      id, 
-      full_name, 
-      internal_role,
-      organisation_users!inner(org_id)
-    `)
-    .ilike("full_name", `%${query}%`)
-    .limit(10);
-
-  if (isStaff) {
-    // Staff can see everyone. 
-    // If orgId provided, prioritize/filter by that org, but generally staff can mention any staff or client.
-    // For simplicity, if orgId is provided, we filter by that org OR staff members.
-    // This is complex with Supabase simplified query builder. 
-    // Instead, let's just fetch matching profiles and filter in memory for complex logic, 
-    // or just return all matching names.
-    // Let's return all matching profiles for staff.
-  } else {
-    // Clients: Must restrict to THEIR organization members OR staff.
-    // We need the client's org ID.
-    if (!orgId) {
-        // Fetch user's org
-        const { data: orgUser } = await supabase
-            .from("organisation_users")
-            .select("org_id")
-            .eq("user_id", user.id)
-            .single();
-        orgId = orgUser?.org_id;
-    }
-    
-    if (orgId) {
-        usersQuery = usersQuery.eq("organisation_users.org_id", orgId);
-    }
-  }
-
   // Simplification: Just search profiles by name. RLS on profiles is "public" so we can see names.
   // We want to filter meaningful people.
-  // 1. All Staff
-  // 2. All members of the relevant Org (if context known)
   
   const { data, error } = await supabase
     .from("profiles")
-    .select(`
-        id, 
-        full_name, 
-        internal_role
-    `)
+    .select("id, full_name, internal_role")
     .ilike("full_name", `%${query}%`)
     .limit(20);
 
@@ -403,10 +359,6 @@ export async function searchUsersForMention(query: string, orgId?: string): Prom
     console.error("[messageService.searchUsersForMention] Error:", error);
     return [];
   }
-
-  // Filter results in memory if needed, or just return them. 
-  // Since profiles are public, showing names is safe.
-  // We explicitly label them.
 
   return (data || []).map(u => ({
     id: u.id,

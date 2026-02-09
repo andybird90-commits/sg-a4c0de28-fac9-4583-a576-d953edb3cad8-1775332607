@@ -8,7 +8,7 @@
  * - Client users (internal_role = NULL) use the normal client dashboard
  */
 
-export type InternalRole = "bd" | "technical" | "commercial" | "ops" | "director" | "admin";
+export type InternalRole = "bd" | "technical" | "commercial" | "ops" | "director" | "admin" | "feasibility" | "finance" | "hybrid";
 
 export interface ProfileWithOrg {
   id: string;
@@ -43,7 +43,10 @@ export function getInternalRoleDisplayName(role: InternalRole | null): string {
     commercial: "Commercial",
     ops: "Operations",
     director: "Director",
-    admin: "Admin"
+    admin: "Admin",
+    feasibility: "Feasibility",
+    finance: "Finance",
+    hybrid: "Hybrid"
   };
   
   return roleMap[role] || role;
