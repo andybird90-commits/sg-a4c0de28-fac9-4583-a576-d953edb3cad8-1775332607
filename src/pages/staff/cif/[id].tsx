@@ -20,7 +20,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { cifService, type CIFWithDetails } from "@/services/cifService";
 import { MessageWidget } from "@/components/MessageWidget";
 import { BookFeasibilityModal } from "@/components/staff/cif/BookFeasibilityModal";
-import { ArrowLeft, Save, Upload, FileText, XCircle, AlertTriangle, CheckCircle, Sparkles, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { ArrowLeft, Save, Upload, FileText, XCircle, AlertTriangle, CheckCircle, Sparkles, ChevronDown, ChevronUp, Zap, Loader2, Calendar } from "lucide-react";
 
 export default function CIFDetailPage() {
   const router = useRouter();
@@ -96,6 +96,15 @@ export default function CIFDetailPage() {
   const [companyResearch, setCompanyResearch] = useState<string>("");
   const [aiResearchData, setAiResearchData] = useState<any>(null);
   const [feasibilityAnalysis, setFeasibilityAnalysis] = useState<any>(null);
+
+  const isBDMComplete = () => {
+    return (
+      !!bdmContactName &&
+      !!bdmContactEmail &&
+      !!bdmBusinessBackground &&
+      !!bdmProjectOverview
+    );
+  };
 
   useEffect(() => {
     if (!isStaff) {
@@ -260,12 +269,28 @@ export default function CIFDetailPage() {
       // Populate extracted feasibility analysis
       try {
         if (data.company_research) {
-          const research = typeof data.company_research === 'string' ?
-          JSON.parse(data.company_research) :
-          data.company_research;
+          try {
+            const research = typeof data.company_research === 'string' ?
+            JSON.parse(data.company_research) :
+            data.company_research;
 
-          const summary = research.feasibility_summary || research.summary || "";
-          setFeasibilityExtract(summary);
+            console.log("🔄 Merging company_research into aiResearchData", research);
+            
+            setAiResearchData(prev => ({
+              ...prev,
+              companyData: research
+            }));
+          } catch (parseError) {
+            console.warn("⚠️ company_research is not valid JSON, treating as plain text:", data.company_research);
+            // If it's not JSON, treat it as a simple company name or description
+            setAiResearchData(prev => ({
+              ...prev,
+              companyData: {
+                companyName: data.company_research,
+                description: data.company_research
+              }
+            }));
+          }
         }
       } catch (error) {
         console.error("Error parsing company_research:", error);
@@ -856,12 +881,36 @@ export default function CIFDetailPage() {
                   </div>
                 }
 
-                {canEdit && (cif.current_stage === "bdm_section" || isStaff) &&
-                <Button onClick={handleCompleteBDM} disabled={saving} className="w-full">
-                    <Save className="h-4 w-4 mr-2" />
-                    {saving ? "Saving..." : "Complete BDM Section"}
-                  </Button>
-                }
+                {/* Complete BDM / Request Feasibility Button */}
+                <Button
+                  onClick={() => {
+                    if (cif.current_stage === 'bdm_in_progress') {
+                      handleCompleteBDM();
+                    } else {
+                      setShowBookingModal(true);
+                    }
+                  }}
+                  disabled={saving || (cif.current_stage === 'bdm_in_progress' && !isBDMComplete())}
+                  className="w-full"
+                  size="lg"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : cif.current_stage === 'bdm_in_progress' ? (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Complete BDM Section
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Request Feasibility Call
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
