@@ -105,8 +105,8 @@ This call is to assess the company's R&D activities and determine eligibility fo
 
   const handleOpenOutcomeModal = (meeting: MeetingWithDetails) => {
     setSelectedMeeting(meeting);
-    setOutcomeStatus(meeting.meeting_status || "completed");
-    setOutcome(meeting.outcome || "undecided");
+    setOutcomeStatus((meeting.meeting_status as "booked" | "completed" | "no_show" | "cancelled") || "completed");
+    setOutcome((meeting.outcome as "go" | "no_rd" | "undecided") || "undecided");
     setOutcomeNotes(meeting.outcome_notes || "");
     setShowOutcomeModal(true);
   };
