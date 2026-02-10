@@ -271,17 +271,27 @@ export default function AdminUsers() {
             <div className="space-y-4 py-4">
               <div>
                 <Label htmlFor="internal-role">Internal Role</Label>
-                <Select value={selectedInternalRole} onValueChange={setSelectedInternalRole}>
-                  <SelectTrigger id="internal-role">
+                <Select
+                  value={editingUser?.internal_role || "none"}
+                  onValueChange={(value) =>
+                    setEditingUser({
+                      ...editingUser!,
+                      internal_role: value === "none" ? null : value,
+                    })
+                  }
+                >
+                  <SelectTrigger>
                     <SelectValue placeholder="Select internal role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="director">Director</SelectItem>
-                    <SelectItem value="technical">Technical</SelectItem>
-                    <SelectItem value="bdm">BDM</SelectItem>
-                    <SelectItem value="finance">Finance</SelectItem>
+                    <SelectItem value="none">No Internal Role</SelectItem>
+                    {["admin", "director", "technical", "bdm", "finance"]
+                      .filter(Boolean)
+                      .map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {role.charAt(0).toUpperCase() + role.slice(1)}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -291,15 +301,27 @@ export default function AdminUsers() {
 
               <div>
                 <Label htmlFor="role">Client Role</Label>
-                <Select value={selectedRole} onValueChange={setSelectedRole}>
-                  <SelectTrigger id="role">
+                <Select
+                  value={editingUser?.role || "none"}
+                  onValueChange={(value) =>
+                    setEditingUser({
+                      ...editingUser!,
+                      role: value === "none" ? null : value,
+                    })
+                  }
+                >
+                  <SelectTrigger>
                     <SelectValue placeholder="Select client role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="viewer">Viewer</SelectItem>
+                    <SelectItem value="none">No Client Role</SelectItem>
+                    {["admin", "member", "viewer"]
+                      .filter(Boolean)
+                      .map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {role.charAt(0).toUpperCase() + role.slice(1)}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground mt-1">
