@@ -1,321 +1,325 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import Head from "next/head";
 import { StaffLayout } from "@/components/staff/StaffLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Edit, UserCog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Users, Mail, Building2, Shield, Edit } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Profile {
   id: string;
   email: string;
   full_name: string | null;
+  role: string | null;
   internal_role: string | null;
-  created_at: string;
-  organisation_id?: string | null; // Added for UI helper
+  organisation_users: {
+    organisations: {
+      name: string;
+      organisation_code: string;
+    } | null;
+  }[];
 }
 
-interface Organisation {
-  id: string;
-  name: string;
-  organisation_code: string;
-}
-
-interface OrganisationUser {
-  user_id: string;
-  org_id: string;
-  role: string;
-}
-
-export default function UsersAdmin() {
+export default function AdminUsers() {
+  const router = useRouter();
   const { toast } = useToast();
-  const [users, setUsers] = useState<Profile[]>([]);
-  const [organisations, setOrganisations] = useState<Organisation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<Profile | null>(null);
-  const [editRole, setEditRole] = useState<string>("");
-  const [editOrgId, setEditOrgId] = useState<string>("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [editingUser, setEditingUser] = useState<Profile | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<string>("");
+  const [selectedInternalRole, setSelectedInternalRole] = useState<string>("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadData();
+    checkAuth();
   }, []);
 
-  const loadData = async () => {
-    try {
-      const [usersRes, orgsRes, orgUsersRes] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("*")
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("organisations")
-          .select("*")
-          .order("name"),
-        supabase
-          .from("organisation_users")
-          .select("*")
-      ]);
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      router.push("/auth/login");
+      return;
+    }
 
-      if (usersRes.error) throw usersRes.error;
-      if (orgsRes.error) throw orgsRes.error;
-      if (orgUsersRes.error) throw orgUsersRes.error;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", session.user.id)
+      .single();
 
-      // Map users with their organisation
-      const mappedUsers = (usersRes.data || []).map(user => {
-        const orgUser = (orgUsersRes.data || []).find(ou => ou.user_id === user.id);
-        return {
-          ...user,
-          organisation_id: orgUser ? orgUser.org_id : null
-        };
+    if (!profile?.internal_role || (profile.internal_role !== "admin" && profile.internal_role !== "director")) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to manage users.",
+        variant: "destructive",
       });
+      router.push("/staff");
+      return;
+    }
 
-      setUsers(mappedUsers);
-      setOrganisations(orgsRes.data || []);
-    } catch (error) {
-      console.error("Error loading data:", error);
+    setCurrentUser(profile);
+    loadUsers();
+  };
+
+  const loadUsers = async () => {
+    try {
+      // Cast to any to avoid "Type instantiation is excessively deep" error with complex joins
+      const { data, error } = await (supabase as any)
+        .from("profiles")
+        .select(`
+          id,
+          email,
+          full_name,
+          role,
+          internal_role,
+          organisation_users!organisation_users_user_id_fkey (
+            organisations (
+              name,
+              organisation_code
+            )
+          )
+        `)
+        .order("email");
+
+      if (error) throw error;
+
+      // Transform data to match interface if needed, but the structure matches nicely now
+      setUsers(data as any || []);
+    } catch (error: any) {
+      console.error("Error loading users:", error);
       toast({
         title: "Error",
-        description: "Failed to load users",
-        variant: "destructive"
+        description: "Failed to load users.",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdateUser = async () => {
-    if (!selectedUser) return;
+  const handleEditUser = (user: Profile) => {
+    setEditingUser(user);
+    setSelectedRole(user.role || "");
+    setSelectedInternalRole(user.internal_role || "");
+    setShowEditModal(true);
+  };
 
+  const handleSaveUser = async () => {
+    if (!editingUser) return;
+
+    setSaving(true);
     try {
-      // 1. Update internal role
-      const { error: profileError } = await supabase
+      const { error } = await supabase
         .from("profiles")
-        .update({ internal_role: editRole === "staff" ? "staff" : null })
-        .eq("id", selectedUser.id);
+        .update({
+          role: selectedRole || null,
+          internal_role: selectedInternalRole || null,
+        })
+        .eq("id", editingUser.id);
 
-      if (profileError) throw profileError;
-
-      // 2. Update organisation assignment
-      // First, remove existing assignments
-      const { error: deleteError } = await supabase
-        .from("organisation_users")
-        .delete()
-        .eq("user_id", selectedUser.id);
-
-      if (deleteError) throw deleteError;
-
-      // Then add new assignment if it's a client and org is selected
-      if (editRole === "client" && editOrgId) {
-        const { error: insertError } = await supabase
-          .from("organisation_users")
-          .insert({
-            user_id: selectedUser.id,
-            org_id: editOrgId,
-            role: "client"
-          });
-
-        if (insertError) throw insertError;
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
-        description: "User updated successfully"
+        description: "User roles updated successfully.",
       });
 
-      setShowEditDialog(false);
-      setSelectedUser(null);
-      loadData();
-    } catch (error) {
+      setShowEditModal(false);
+      loadUsers();
+    } catch (error: any) {
       console.error("Error updating user:", error);
       toast({
         title: "Error",
-        description: "Failed to update user",
-        variant: "destructive"
+        description: error.message || "Failed to update user.",
+        variant: "destructive",
       });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const openEditDialog = (user: Profile) => {
-    setSelectedUser(user);
-    setEditRole(user.internal_role ? "staff" : "client");
-    setEditOrgId(user.organisation_id || "");
-    setShowEditDialog(true);
+  const getRoleBadgeVariant = (role: string | null) => {
+    if (!role) return "outline";
+    if (role === "admin" || role === "director") return "default";
+    if (role === "technical" || role === "bdm") return "secondary";
+    return "outline";
   };
 
-  const getOrgName = (orgId: string | null) => {
-    if (!orgId) return "-";
-    const org = organisations.find(o => o.id === orgId);
-    return org ? org.name : "Unknown";
-  };
-
-  const getRoleBadge = (user: Profile) => {
-    if (user.internal_role) {
-      return <Badge variant="default">Staff</Badge>;
-    }
-    return <Badge variant="secondary">Client</Badge>;
-  };
-
-  const filteredUsers = users.filter(user => {
-    const query = searchQuery.toLowerCase();
+  if (loading) {
     return (
-      user.email?.toLowerCase().includes(query) ||
-      user.full_name?.toLowerCase().includes(query)
+      <StaffLayout>
+        <div className="flex items-center justify-center h-96">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </StaffLayout>
     );
-  });
+  }
 
   return (
-    <StaffLayout title="User Management">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-muted-foreground mt-2">
-            View and manage user accounts, roles, and organisation assignments
-          </p>
+    <>
+      <Head>
+        <title>User Management - RD Sidekick</title>
+      </Head>
+      <StaffLayout>
+        <div className="container mx-auto py-8 px-4 max-w-7xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">User Management</h1>
+            <p className="text-muted-foreground">
+              Manage user roles and permissions
+            </p>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                All Users ({users.length})
+              </CardTitle>
+              <CardDescription>
+                Click on a user to edit their roles
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {users.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                    onClick={() => handleEditUser(user)}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <div className="font-medium">{user.full_name || "No name"}</div>
+                          <div className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Mail className="h-3 w-3" />
+                            {user.email}
+                          </div>
+                          {user.organisation_users?.[0]?.organisations && (
+                            <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                              <Building2 className="h-3 w-3" />
+                              {user.organisation_users[0].organisations.name} ({user.organisation_users[0].organisations.organisation_code})
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          {user.internal_role && (
+                            <Badge variant={getRoleBadgeVariant(user.internal_role)}>
+                              {user.internal_role}
+                            </Badge>
+                          )}
+                          {user.role && user.role !== user.internal_role && (
+                            <Badge variant="outline">{user.role}</Badge>
+                          )}
+                          {!user.internal_role && !user.role && (
+                            <Badge variant="outline">No role</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
+        {/* Edit User Modal */}
+        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit User Roles</DialogTitle>
+              <DialogDescription>
+                Assign roles to {editingUser?.full_name || editingUser?.email}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
               <div>
-                <CardTitle>All Users</CardTitle>
-                <CardDescription>
-                  {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""} found
-                </CardDescription>
-              </div>
-              <div className="w-72">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by email or name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8">Loading...</div>
-            ) : filteredUsers.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No users found
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Organisation</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.email}</TableCell>
-                      <TableCell>{user.full_name || "-"}</TableCell>
-                      <TableCell>{getRoleBadge(user)}</TableCell>
-                      <TableCell>{getOrgName(user.organisation_id)}</TableCell>
-                      <TableCell>
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(user)}
-                        >
-                          <UserCog className="h-4 w-4 mr-2" />
-                          Edit
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Edit User Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>
-              Update user role and organisation assignment
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Email (Read-only)</Label>
-              <Input value={selectedUser?.email || ""} disabled />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={editRole} onValueChange={setEditRole}>
-                <SelectTrigger id="role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="client">Client</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {editRole === "client" && (
-              <div className="space-y-2">
-                <Label htmlFor="organisation">Organisation</Label>
-                <Select value={editOrgId} onValueChange={setEditOrgId}>
-                  <SelectTrigger id="organisation">
-                    <SelectValue placeholder="Select organisation" />
+                <Label htmlFor="internal-role">Internal Role</Label>
+                <Select value={selectedInternalRole} onValueChange={setSelectedInternalRole}>
+                  <SelectTrigger id="internal-role">
+                    <SelectValue placeholder="Select internal role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">None</SelectItem>
-                    {organisations.map((org) => (
-                      <SelectItem key={org.id} value={org.id}>
-                        {org.name} ({org.organisation_code})
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="director">Director</SelectItem>
+                    <SelectItem value="technical">Technical</SelectItem>
+                    <SelectItem value="bdm">BDM</SelectItem>
+                    <SelectItem value="finance">Finance</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            )}
-
-            {editRole === "staff" && (
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  Staff users have access to the staff portal and are not assigned to any organisation.
+                <p className="text-sm text-muted-foreground mt-1">
+                  Primary role for staff members
                 </p>
               </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdateUser}>
-              Update User
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </StaffLayout>
+
+              <div>
+                <Label htmlFor="role">Client Role</Label>
+                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select client role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="viewer">Viewer</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Role for client organization access
+                </p>
+              </div>
+
+              <div className="bg-muted p-3 rounded-md text-sm">
+                <strong>Role Permissions:</strong>
+                <ul className="mt-2 space-y-1 text-muted-foreground">
+                  <li><strong>Admin/Director:</strong> Full system access</li>
+                  <li><strong>Technical:</strong> Feasibility calls, technical review</li>
+                  <li><strong>BDM:</strong> Client onboarding, CIF management</li>
+                  <li><strong>Finance:</strong> Claims processing, financial review</li>
+                </ul>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowEditModal(false)}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleSaveUser} disabled={saving}>
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </StaffLayout>
+    </>
   );
 }
