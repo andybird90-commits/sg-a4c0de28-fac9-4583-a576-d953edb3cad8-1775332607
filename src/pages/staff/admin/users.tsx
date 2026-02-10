@@ -30,12 +30,10 @@ interface Profile {
   full_name: string | null;
   role: string | null;
   internal_role: string | null;
-  organisation_users: {
-    organisations: {
-      name: string;
-      organisation_code: string;
-    } | null;
-  }[];
+  organisation: {
+    name: string;
+    organisation_code: string;
+  } | null;
 }
 
 export default function AdminUsers() {
@@ -83,33 +81,47 @@ export default function AdminUsers() {
 
   const loadUsers = async () => {
     try {
-      // Cast to any to avoid "Type instantiation is excessively deep" error with complex joins
-      const { data, error } = await (supabase as any)
+      setLoading(true);
+
+      // First, fetch all profiles
+      const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
-        .select(`
-          id,
-          email,
-          full_name,
-          role,
-          internal_role,
-          organisation_users!organisation_users_user_id_fkey (
-            organisations (
-              name,
-              organisation_code
-            )
-          )
-        `)
+        .select("id, email, full_name, role, internal_role")
         .order("email");
 
-      if (error) throw error;
+      if (profilesError) throw profilesError;
 
-      // Transform data to match interface if needed, but the structure matches nicely now
-      setUsers(data as any || []);
+      // Then fetch organization memberships for these users
+      const userIds = profilesData?.map(p => p.id) || [];
+      
+      const { data: orgUsersData, error: orgUsersError } = await supabase
+        .from("organisation_users")
+        .select(`
+          user_id,
+          organisations (
+            name,
+            organisation_code
+          )
+        `)
+        .in("user_id", userIds);
+
+      if (orgUsersError) throw orgUsersError;
+
+      // Merge the data
+      const usersWithOrgs = profilesData?.map(profile => {
+        const orgMembership = orgUsersData?.find(ou => ou.user_id === profile.id);
+        return {
+          ...profile,
+          organisation: orgMembership?.organisations || null
+        };
+      }) || [];
+
+      setUsers(usersWithOrgs);
     } catch (error: any) {
       console.error("Error loading users:", error);
       toast({
         title: "Error",
-        description: "Failed to load users.",
+        description: error.message || "Failed to load users",
         variant: "destructive",
       });
     } finally {
@@ -215,10 +227,10 @@ export default function AdminUsers() {
                             <Mail className="h-3 w-3" />
                             {user.email}
                           </div>
-                          {user.organisation_users?.[0]?.organisations && (
+                          {user.organisation && (
                             <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                               <Building2 className="h-3 w-3" />
-                              {user.organisation_users[0].organisations.name} ({user.organisation_users[0].organisations.organisation_code})
+                              {user.organisation.name} ({user.organisation.organisation_code})
                             </div>
                           )}
                         </div>
