@@ -149,6 +149,16 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
       label: "Admin", 
       icon: Shield 
     },
+    { 
+      path: "/staff/availability", 
+      label: "My Availability", 
+      icon: Calendar 
+    },
+    { 
+      path: "/staff/admin/users", 
+      label: "Admin Users", 
+      icon: Users 
+    },
   ];
 
   return (
