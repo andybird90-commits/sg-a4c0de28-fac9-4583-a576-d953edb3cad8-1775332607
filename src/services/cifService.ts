@@ -235,6 +235,133 @@ export const cifService = {
   },
 
   /**
+   * Complete Feasibility Section (Merged Technical + Financial)
+   */
+  async completeFeasibilitySection(
+    cifId: string,
+    feasibilityData: {
+      completed_by_name: string;
+      feasibility_call_date: string;
+      any_issues_gathering_info: "yes" | "no";
+      issues_gathering_info_details?: string;
+      utr?: string;
+      turnover?: number;
+      payroll?: number;
+      vat_number?: string;
+      paye_reference?: string;
+      competent_professional_1_name?: string;
+      competent_professional_1_position?: string;
+      competent_professional_1_mobile?: string;
+      competent_professional_1_email?: string;
+      competent_professional_2_name?: string;
+      competent_professional_2_position?: string;
+      competent_professional_2_mobile?: string;
+      competent_professional_2_email?: string;
+      competent_professional_3_name?: string;
+      competent_professional_3_position?: string;
+      competent_professional_3_mobile?: string;
+      competent_professional_3_email?: string;
+      has_claimed_before?: boolean;
+      first_claim_year_for_new_claim?: string;
+      accounts_filed?: "yes" | "no";
+      ct600_filed_seen?: "yes" | "no";
+      pre_notification_required?: "yes" | "no";
+      costs_details?: string;
+      projects_details_feas?: string;
+      subcontractors_involved?: "yes" | "no";
+      time_sensitive?: "yes" | "no";
+      accountant_firm?: string;
+      accountant_name?: string;
+      accountant_email?: string;
+      accountant_phone?: string;
+      financial_year?: string;
+      year_end_month?: string;
+      apes?: string;
+      fee_percentage?: number;
+      minimum_fee?: number;
+      introducer?: "yes" | "no";
+      introducer_details?: string;
+      feasibility_status?: string;
+      technical_understanding?: string;
+    },
+    userId: string
+  ): Promise<CIFRecord | null> {
+    try {
+      const { data, error } = await supabase
+        .from("cif_records")
+        .update({
+          current_stage: "admin_approval", // Skip old financial section, go straight to admin
+          
+          // Map all fields to database columns
+          completed_by_name: feasibilityData.completed_by_name,
+          feasibility_call_date: feasibilityData.feasibility_call_date,
+          any_issues_gathering_info: feasibilityData.any_issues_gathering_info,
+          issues_gathering_info_details: feasibilityData.issues_gathering_info_details,
+          utr: feasibilityData.utr,
+          turnover: feasibilityData.turnover,
+          payroll: feasibilityData.payroll,
+          vat_number: feasibilityData.vat_number,
+          paye_reference: feasibilityData.paye_reference,
+          
+          competent_professional_1_name: feasibilityData.competent_professional_1_name,
+          competent_professional_1_position: feasibilityData.competent_professional_1_position,
+          competent_professional_1_mobile: feasibilityData.competent_professional_1_mobile,
+          competent_professional_1_email: feasibilityData.competent_professional_1_email,
+          
+          competent_professional_2_name: feasibilityData.competent_professional_2_name,
+          competent_professional_2_position: feasibilityData.competent_professional_2_position,
+          competent_professional_2_mobile: feasibilityData.competent_professional_2_mobile,
+          competent_professional_2_email: feasibilityData.competent_professional_2_email,
+          
+          competent_professional_3_name: feasibilityData.competent_professional_3_name,
+          competent_professional_3_position: feasibilityData.competent_professional_3_position,
+          competent_professional_3_mobile: feasibilityData.competent_professional_3_mobile,
+          competent_professional_3_email: feasibilityData.competent_professional_3_email,
+          
+          has_claimed_before: feasibilityData.has_claimed_before,
+          first_claim_year_for_new_claim: feasibilityData.first_claim_year_for_new_claim,
+          accounts_filed: feasibilityData.accounts_filed,
+          ct600_filed_seen: feasibilityData.ct600_filed_seen,
+          pre_notification_required: feasibilityData.pre_notification_required,
+          
+          costs_details: feasibilityData.costs_details,
+          projects_details_feas: feasibilityData.projects_details_feas,
+          subcontractors_involved: feasibilityData.subcontractors_involved,
+          time_sensitive: feasibilityData.time_sensitive,
+          
+          accountant_firm: feasibilityData.accountant_firm,
+          accountant_name: feasibilityData.accountant_name,
+          accountant_email: feasibilityData.accountant_email,
+          accountant_phone: feasibilityData.accountant_phone,
+          
+          financial_year: feasibilityData.financial_year,
+          year_end_month: feasibilityData.year_end_month,
+          apes: feasibilityData.apes,
+          fee_percentage: feasibilityData.fee_percentage,
+          minimum_fee: feasibilityData.minimum_fee,
+          introducer: feasibilityData.introducer,
+          introducer_details: feasibilityData.introducer_details,
+          
+          // Update legacy/status fields
+          tech_last_updated: new Date().toISOString(),
+          finance_last_updated: new Date().toISOString(),
+          section3_completed_by: userId,
+          section3_completed_at: new Date().toISOString(),
+          ready_to_submit: true
+        })
+        .eq("id", cifId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("Error completing feasibility section:", error);
+      return null;
+    }
+  },
+
+  /**
    * Complete BDM section
    */
   async completeBDMSection(

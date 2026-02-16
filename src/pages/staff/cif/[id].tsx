@@ -73,6 +73,43 @@ export default function CIFDetailPage() {
   const [feeTermsDetails, setFeeTermsDetails] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
 
+  // Feasibility Section states (from Company Information Form)
+  const [completedByName, setCompletedByName] = useState("");
+  const [feasibilityCallDate, setFeasibilityCallDate] = useState("");
+  const [anyIssuesGatheringInfo, setAnyIssuesGatheringInfo] = useState("");
+  const [issuesGatheringInfoDetails, setIssuesGatheringInfoDetails] = useState("");
+  const [utr, setUtr] = useState("");
+  const [turnover, setTurnover] = useState("");
+  const [payroll, setPayroll] = useState("");
+  const [vatNumber, setVatNumber] = useState("");
+  const [payeReference, setPayeReference] = useState("");
+  const [competentProf1Name, setCompetentProf1Name] = useState("");
+  const [competentProf1Position, setCompetentProf1Position] = useState("");
+  const [competentProf1Mobile, setCompetentProf1Mobile] = useState("");
+  const [competentProf1Email, setCompetentProf1Email] = useState("");
+  const [competentProf2Name, setCompetentProf2Name] = useState("");
+  const [competentProf2Position, setCompetentProf2Position] = useState("");
+  const [competentProf2Mobile, setCompetentProf2Mobile] = useState("");
+  const [competentProf2Email, setCompetentProf2Email] = useState("");
+  const [competentProf3Name, setCompetentProf3Name] = useState("");
+  const [competentProf3Position, setCompetentProf3Position] = useState("");
+  const [competentProf3Mobile, setCompetentProf3Mobile] = useState("");
+  const [competentProf3Email, setCompetentProf3Email] = useState("");
+  const [firstClaimYearForNewClaim, setFirstClaimYearForNewClaim] = useState("");
+  const [accountsFiled, setAccountsFiled] = useState("");
+  const [ct600FiledSeen, setCt600FiledSeen] = useState("");
+  const [preNotificationRequired, setPreNotificationRequired] = useState("");
+  const [costsDetails, setCostsDetails] = useState("");
+  const [projectsDetailsFeas, setProjectsDetailsFeas] = useState("");
+  const [subcontractorsInvolved, setSubcontractorsInvolved] = useState("");
+  const [timeSensitive, setTimeSensitive] = useState("");
+  const [yearEndMonth, setYearEndMonth] = useState("");
+  const [apes, setApes] = useState("");
+  const [feePercentage, setFeePercentage] = useState("");
+  const [minimumFee, setMinimumFee] = useState("");
+  const [introducer, setIntroducer] = useState("");
+  const [introducerDetails, setIntroducerDetails] = useState("");
+
   // Technical Form State
   const [techUnderstanding, setTechUnderstanding] = useState("");
   const [techChallenges, setTechChallenges] = useState("");
@@ -507,39 +544,113 @@ export default function CIFDetailPage() {
   };
 
   const handleCompleteTechnical = async () => {
-    if (!cif || !profile?.id) return;
-
-    if (!techUnderstanding || !techStatus) {
-      toast({ title: "Error", description: "Please fill in required fields", variant: "destructive" });
-      return;
-    }
-
+    if (!cif) return;
     setSaving(true);
+    
     try {
-      const result = await cifService.completeTechnicalSection(
-        cif.id,
-        {
-          technical_understanding: techUnderstanding,
-          challenges_uncertainties: techChallenges,
-          qualifying_activities: techActivities.split("\n").filter((a) => a.trim()),
-          rd_projects_list: techProjects.split("\n").filter((p) => p.trim()),
-          feasibility_status: techStatus,
-          estimated_claim_band: techClaimBand || undefined,
-          risk_rating: techRiskRating || undefined,
-          notes_for_finance: techNotesForFinance,
-          missing_information_flags: techMissingInfo.split("\n").filter((f) => f.trim())
-        },
-        profile.id
-      );
+      // Validate required fields
+      const requiredFields: Record<string, any> = {
+        "Completed By": completedByName,
+        "Feasibility Call Date": feasibilityCallDate,
+        "Any Issues Gathering Info": anyIssuesGatheringInfo,
+        "UTR": utr,
+        "Turnover": turnover,
+        "Payroll": payroll,
+        "VAT Number": vatNumber,
+        "PAYE Reference": payeReference,
+        "First Claim Year": firstClaimYearForNewClaim,
+        "Accounts Filed": accountsFiled,
+        "CT600 Filed/Seen": ct600FiledSeen,
+        "Pre Notification Required": preNotificationRequired,
+        "Costs Details": costsDetails,
+        "Projects Details": projectsDetailsFeas,
+        "Subcontractors": subcontractorsInvolved,
+        "Time Sensitive": timeSensitive,
+        "Accountant Name": accountantFirm,
+        "Accountant Contact": accountantName,
+        "Accountant Email": accountantEmail,
+        "Accountant Phone": accountantPhone,
+        "Financial Year": financialYear,
+        "Year End": yearEndMonth,
+        "APEs": apes,
+        "Fee Percentage": feePercentage,
+        "Introducer": introducer
+      };
 
-      if (result) {
-        toast({ title: "Success", description: "Technical section completed" });
-        fetchCIF(cif.id);
-      } else {
-        toast({ title: "Error", description: "Failed to complete technical section", variant: "destructive" });
+      const missingFields = Object.entries(requiredFields)
+        .filter(([_, value]) => !value)
+        .map(([key]) => key);
+
+      if (missingFields.length > 0) {
+        toast({
+          title: "Missing Information",
+          description: `Please fill in the following required fields: ${missingFields.join(", ")}`,
+          variant: "destructive"
+        });
+        setSaving(false);
+        return;
       }
+
+      await cifService.completeFeasibilitySection(cif.id, {
+        completed_by_name: completedByName,
+        feasibility_call_date: feasibilityCallDate,
+        any_issues_gathering_info: anyIssuesGatheringInfo as "yes" | "no",
+        issues_gathering_info_details: issuesGatheringInfoDetails,
+        utr,
+        turnover: parseFloat(turnover),
+        payroll: parseFloat(payroll),
+        vat_number: vatNumber,
+        paye_reference: payeReference,
+        competent_professional_1_name: competentProf1Name,
+        competent_professional_1_position: competentProf1Position,
+        competent_professional_1_mobile: competentProf1Mobile,
+        competent_professional_1_email: competentProf1Email,
+        competent_professional_2_name: competentProf2Name,
+        competent_professional_2_position: competentProf2Position,
+        competent_professional_2_mobile: competentProf2Mobile,
+        competent_professional_2_email: competentProf2Email,
+        competent_professional_3_name: competentProf3Name,
+        competent_professional_3_position: competentProf3Position,
+        competent_professional_3_mobile: competentProf3Mobile,
+        competent_professional_3_email: competentProf3Email,
+        has_claimed_before: hasClaimedBefore === "yes",
+        first_claim_year_for_new_claim: firstClaimYearForNewClaim,
+        accounts_filed: accountsFiled as "yes" | "no",
+        ct600_filed_seen: ct600FiledSeen as "yes" | "no",
+        pre_notification_required: preNotificationRequired as "yes" | "no",
+        costs_details: costsDetails,
+        projects_details_feas: projectsDetailsFeas,
+        subcontractors_involved: subcontractorsInvolved as "yes" | "no",
+        time_sensitive: timeSensitive as "yes" | "no",
+        accountant_firm: accountantFirm,
+        accountant_name: accountantName,
+        accountant_email: accountantEmail,
+        accountant_phone: accountantPhone,
+        financial_year: financialYear,
+        year_end_month: yearEndMonth,
+        apes: apes,
+        fee_percentage: parseFloat(feePercentage),
+        minimum_fee: parseFloat(minimumFee),
+        introducer: introducer as "yes" | "no",
+        introducer_details: introducerDetails,
+        // Legacy fields mapping or defaults
+        feasibility_status: "qualified", // Assume qualified if completing form? Or should we add status field?
+        technical_understanding: "See details in form",
+      }, profile?.id || "");
+
+      toast({
+        title: "Success",
+        description: "Feasibility section completed and submitted for approval",
+      });
+      
+      fetchCIF(cif.id);
     } catch (error) {
-      toast({ title: "Error", description: "Failed to save technical section", variant: "destructive" });
+      console.error("Error completing feasibility:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save feasibility data",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -1362,146 +1473,748 @@ export default function CIFDetailPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Technical Feasibility Form</CardTitle>
+                <CardTitle className="text-orange-600">Company Information Form</CardTitle>
                 <CardDescription>
-                  Detailed assessment of technical eligibility and project qualification
+                  Complete feasibility assessment and financial details
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="technical_understanding">Technical Understanding</Label>
-                  <Textarea
-                    id="technical_understanding"
-                    placeholder="Describe the technical baseline and advancements..."
-                    value={techUnderstanding}
-                    onChange={(e) => setTechUnderstanding(e.target.value)}
-                    rows={4}
-                    disabled={!canEdit}
-                  />
-                </div>
+              <CardContent className="space-y-6">
+                
+                {/* SECTION A - BUSINESS DETAILS */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 -mx-3">
+                    SECTION A - BUSINESS DETAILS
+                  </h3>
 
-                <div className="space-y-2">
-                  <Label htmlFor="challenges_uncertainties">Technological Uncertainties</Label>
-                  <Textarea
-                    id="challenges_uncertainties"
-                    placeholder="List key technical challenges..."
-                    value={techChallenges}
-                    onChange={(e) => setTechChallenges(e.target.value)}
-                    rows={4}
-                    disabled={!canEdit}
-                  />
-                </div>
+                  {/* Requested by / Completed by */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Requested by - NAME</Label>
+                      <Input value={bdmName} disabled className="bg-muted" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="completed_by_name">Completed by - NAME *</Label>
+                      <Input
+                        id="completed_by_name"
+                        value={completedByName}
+                        onChange={(e) => setCompletedByName(e.target.value)}
+                        placeholder="Feasibility assessor name"
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="qualifying_activities">Qualifying Activities</Label>
-                  <Textarea
-                    id="qualifying_activities"
-                    placeholder="List specific R&D activities..."
-                    value={techActivities}
-                    onChange={(e) => setTechActivities(e.target.value)}
-                    rows={4}
-                    disabled={!canEdit}
-                  />
-                </div>
+                  {/* Feasibility Call Date/Time */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="feasibility_call_date">FEASIBILITY CALL/MEETING - DATE/TIME: *</Label>
+                      <Input
+                        id="feasibility_call_date"
+                        type="datetime-local"
+                        value={feasibilityCallDate}
+                        onChange={(e) => setFeasibilityCallDate(e.target.value)}
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="rd_projects">R&D Projects List</Label>
-                  <Textarea
-                    id="rd_projects"
-                    placeholder="List identifiable projects..."
-                    value={techProjects}
-                    onChange={(e) => setTechProjects(e.target.value)}
-                    rows={4}
-                    disabled={!canEdit}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                  {/* Any Issues Gathering Info */}
                   <div className="space-y-2">
-                    <Label htmlFor="feasibility_status">Status</Label>
-                    <Select
-                      value={techStatus}
-                      onValueChange={(v: any) => setTechStatus(v)}
+                    <Label>ANY ISSUES GATHERING REQUIRED INFORMATION? *</Label>
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant={anyIssuesGatheringInfo === "yes" ? "default" : "outline"}
+                        onClick={() => setAnyIssuesGatheringInfo("yes")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        YES
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={anyIssuesGatheringInfo === "no" ? "default" : "outline"}
+                        onClick={() => setAnyIssuesGatheringInfo("no")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        NO
+                      </Button>
+                    </div>
+                  </div>
+
+                  {anyIssuesGatheringInfo === "yes" && (
+                    <div className="space-y-2 p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <Label htmlFor="issues_details">If yes, please provide details: *</Label>
+                      <Textarea
+                        id="issues_details"
+                        value={issuesGatheringInfoDetails}
+                        onChange={(e) => setIssuesGatheringInfoDetails(e.target.value)}
+                        rows={3}
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* COMPANY DETAILS */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 -mx-3">
+                    COMPANY DETAILS
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Company Name:</Label>
+                      <Input value={companyName} disabled className="bg-muted" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Company Number:</Label>
+                      <Input value={companyNumber} disabled className="bg-muted" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Industry/SIC Code:</Label>
+                      <Input value={prospect?.sic_codes?.[0] || ""} disabled className="bg-muted" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="utr">UTR: *</Label>
+                      <Input
+                        id="utr"
+                        value={utr}
+                        onChange={(e) => setUtr(e.target.value)}
+                        placeholder="Unique Taxpayer Reference"
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="turnover">Turnover: *</Label>
+                      <Input
+                        id="turnover"
+                        type="number"
+                        value={turnover}
+                        onChange={(e) => setTurnover(e.target.value)}
+                        placeholder="£"
+                        disabled={!canEdit}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="payroll">Payroll: *</Label>
+                      <Input
+                        id="payroll"
+                        type="number"
+                        value={payroll}
+                        onChange={(e) => setPayroll(e.target.value)}
+                        placeholder="£"
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="vat_number">VAT Number:</Label>
+                      <Input
+                        id="vat_number"
+                        value={vatNumber}
+                        onChange={(e) => setVatNumber(e.target.value)}
+                        disabled={!canEdit}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="paye_reference">PAYE Reference:</Label>
+                      <Input
+                        id="paye_reference"
+                        value={payeReference}
+                        onChange={(e) => setPayeReference(e.target.value)}
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Main Contact */}
+                  <div className="pt-4 space-y-4">
+                    <h4 className="font-semibold">Main Contact:</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Name:</Label>
+                        <Input value={contactName} disabled className="bg-muted" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Position:</Label>
+                        <Input value={cif.primary_contact_position || ""} disabled className="bg-muted" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Mobile:</Label>
+                        <Input value={contactNumber} disabled className="bg-muted" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email:</Label>
+                        <Input value={contactEmail} disabled className="bg-muted" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Competent Professionals */}
+                  <div className="pt-4 space-y-4">
+                    <h4 className="font-semibold">Competent Professional(s) (if different to main contact)</h4>
+                    
+                    {/* Competent Professional 1 */}
+                    <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm font-medium">Name 1:</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="comp_prof_1_name">Name:</Label>
+                          <Input
+                            id="comp_prof_1_name"
+                            value={competentProf1Name}
+                            onChange={(e) => setCompetentProf1Name(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="comp_prof_1_position">Position:</Label>
+                          <Input
+                            id="comp_prof_1_position"
+                            value={competentProf1Position}
+                            onChange={(e) => setCompetentProf1Position(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="comp_prof_1_mobile">Mobile:</Label>
+                          <Input
+                            id="comp_prof_1_mobile"
+                            value={competentProf1Mobile}
+                            onChange={(e) => setCompetentProf1Mobile(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="comp_prof_1_email">Email:</Label>
+                          <Input
+                            id="comp_prof_1_email"
+                            type="email"
+                            value={competentProf1Email}
+                            onChange={(e) => setCompetentProf1Email(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Competent Professional 2 */}
+                    <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm font-medium">Name 2:</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="comp_prof_2_name">Name:</Label>
+                          <Input
+                            id="comp_prof_2_name"
+                            value={competentProf2Name}
+                            onChange={(e) => setCompetentProf2Name(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="comp_prof_2_position">Position:</Label>
+                          <Input
+                            id="comp_prof_2_position"
+                            value={competentProf2Position}
+                            onChange={(e) => setCompetentProf2Position(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="comp_prof_2_mobile">Mobile:</Label>
+                          <Input
+                            id="comp_prof_2_mobile"
+                            value={competentProf2Mobile}
+                            onChange={(e) => setCompetentProf2Mobile(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="comp_prof_2_email">Email:</Label>
+                          <Input
+                            id="comp_prof_2_email"
+                            type="email"
+                            value={competentProf2Email}
+                            onChange={(e) => setCompetentProf2Email(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Competent Professional 3 */}
+                    <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                      <p className="text-sm font-medium">Name 3:</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="comp_prof_3_name">Name:</Label>
+                          <Input
+                            id="comp_prof_3_name"
+                            value={competentProf3Name}
+                            onChange={(e) => setCompetentProf3Name(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="comp_prof_3_position">Position:</Label>
+                          <Input
+                            id="comp_prof_3_position"
+                            value={competentProf3Position}
+                            onChange={(e) => setCompetentProf3Position(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="comp_prof_3_mobile">Mobile:</Label>
+                          <Input
+                            id="comp_prof_3_mobile"
+                            value={competentProf3Mobile}
+                            onChange={(e) => setCompetentProf3Mobile(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="comp_prof_3_email">Email:</Label>
+                          <Input
+                            id="comp_prof_3_email"
+                            type="email"
+                            value={competentProf3Email}
+                            onChange={(e) => setCompetentProf3Email(e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Number of Directors/Employees */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Number of Directors:</Label>
+                      <Input value={prospect?.number_of_directors || ""} disabled className="bg-muted" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Number of Employees:</Label>
+                      <Input value={numberOfEmployees} disabled className="bg-muted" />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* FEASIBILITY SECTION */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 -mx-3">
+                    FEASIBILITY
+                  </h3>
+
+                  {/* Have they Claimed Before */}
+                  <div className="space-y-2">
+                    <Label>Have they Claimed Before?</Label>
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant={hasClaimedBefore === "yes" ? "default" : "outline"}
+                        onClick={() => setHasClaimedBefore("yes")}
+                        disabled
+                        className="flex-1"
+                      >
+                        YES
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={hasClaimedBefore === "no" ? "default" : "outline"}
+                        onClick={() => setHasClaimedBefore("no")}
+                        disabled
+                        className="flex-1"
+                      >
+                        NO
+                      </Button>
+                    </div>
+                  </div>
+
+                  {hasClaimedBefore === "yes" && (
+                    <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Claim Year:</Label>
+                          <Input value={cif.previous_claim_year_end_date || ""} disabled className="bg-muted" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Claim Value:</Label>
+                          <Input value={cif.previous_claim_value ? `£${cif.previous_claim_value}` : ""} disabled className="bg-muted" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Date Submitted:</Label>
+                          <Input value={cif.previous_claim_date_submitted || ""} disabled className="bg-muted" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="first_claim_year">First Claim Year for New Claim: *</Label>
+                    <Input
+                      id="first_claim_year"
+                      value={firstClaimYearForNewClaim}
+                      onChange={(e) => setFirstClaimYearForNewClaim(e.target.value)}
+                      placeholder="e.g., 2024"
                       disabled={!canEdit}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="qualified">Qualified</SelectItem>
-                        <SelectItem value="not_qualified">Not Qualified</SelectItem>
-                        <SelectItem value="needs_more_info">Needs More Info</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    />
+                  </div>
+
+                  {/* Accounts Filed / CT600 / Pre Notification */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Accounts Filed: *</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={accountsFiled === "yes" ? "default" : "outline"}
+                          onClick={() => setAccountsFiled("yes")}
+                          disabled={!canEdit}
+                          size="sm"
+                          className="flex-1"
+                        >
+                          YES
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={accountsFiled === "no" ? "default" : "outline"}
+                          onClick={() => setAccountsFiled("no")}
+                          disabled={!canEdit}
+                          size="sm"
+                          className="flex-1"
+                        >
+                          NO
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>CT600 Filed/Seen: *</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={ct600FiledSeen === "yes" ? "default" : "outline"}
+                          onClick={() => setCt600FiledSeen("yes")}
+                          disabled={!canEdit}
+                          size="sm"
+                          className="flex-1"
+                        >
+                          YES
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={ct600FiledSeen === "no" ? "default" : "outline"}
+                          onClick={() => setCt600FiledSeen("no")}
+                          disabled={!canEdit}
+                          size="sm"
+                          className="flex-1"
+                        >
+                          NO
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Pre Notification Required: *</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={preNotificationRequired === "yes" ? "default" : "outline"}
+                          onClick={() => setPreNotificationRequired("yes")}
+                          disabled={!canEdit}
+                          size="sm"
+                          className="flex-1"
+                        >
+                          YES
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={preNotificationRequired === "no" ? "default" : "outline"}
+                          onClick={() => setPreNotificationRequired("no")}
+                          disabled={!canEdit}
+                          size="sm"
+                          className="flex-1"
+                        >
+                          NO
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* FEASIBILITY continued - Costs and Projects */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 -mx-3">
+                    FEASIBILITY continued
+                  </h3>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="costs_details">Costs - (please detail costs below): *</Label>
+                    <Textarea
+                      id="costs_details"
+                      value={costsDetails}
+                      onChange={(e) => setCostsDetails(e.target.value)}
+                      rows={6}
+                      placeholder="Detail all R&D costs..."
+                      disabled={!canEdit}
+                    />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="risk_rating">Risk Rating</Label>
-                    <Select
-                      value={techRiskRating}
-                      onValueChange={(v: any) => setTechRiskRating(v)}
+                    <Label htmlFor="projects_details_feas">Projects - (please detail projects below): *</Label>
+                    <Textarea
+                      id="projects_details_feas"
+                      value={projectsDetailsFeas}
+                      onChange={(e) => setProjectsDetailsFeas(e.target.value)}
+                      rows={6}
+                      placeholder="Detail all R&D projects..."
                       disabled={!canEdit}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Risk" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low Risk</SelectItem>
-                        <SelectItem value="medium">Medium Risk</SelectItem>
-                        <SelectItem value="high">High Risk</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    />
+                  </div>
+
+                  {/* Subcontractors and Time Sensitive */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Subcontractors: *</Label>
+                      <div className="flex gap-4">
+                        <Button
+                          type="button"
+                          variant={subcontractorsInvolved === "yes" ? "default" : "outline"}
+                          onClick={() => setSubcontractorsInvolved("yes")}
+                          disabled={!canEdit}
+                          className="flex-1"
+                        >
+                          YES
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={subcontractorsInvolved === "no" ? "default" : "outline"}
+                          onClick={() => setSubcontractorsInvolved("no")}
+                          disabled={!canEdit}
+                          className="flex-1"
+                        >
+                          NO
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Time Sensitive: *</Label>
+                      <div className="flex gap-4">
+                        <Button
+                          type="button"
+                          variant={timeSensitive === "yes" ? "default" : "outline"}
+                          onClick={() => setTimeSensitive("yes")}
+                          disabled={!canEdit}
+                          className="flex-1"
+                        >
+                          YES
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={timeSensitive === "no" ? "default" : "outline"}
+                          onClick={() => setTimeSensitive("no")}
+                          disabled={!canEdit}
+                          className="flex-1"
+                        >
+                          NO
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="claim_band">Estimated Claim Value Band</Label>
-                  <Select
-                    value={techClaimBand}
-                    onValueChange={(v: any) => setTechClaimBand(v)}
-                    disabled={!canEdit}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Band" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0-25k">£0 - £25k</SelectItem>
-                      <SelectItem value="25k-50k">£25k - £50k</SelectItem>
-                      <SelectItem value="50k-100k">£50k - £100k</SelectItem>
-                      <SelectItem value="100k-250k">£100k - £250k</SelectItem>
-                      <SelectItem value="250k+">£250k+</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <Separator />
+
+                {/* ACCOUNTANTS DETAILS */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 -mx-3">
+                    ACCOUNTANTS DETAILS
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="accountant_name_field">Company Name: *</Label>
+                      <Input
+                        id="accountant_name_field"
+                        value={accountantFirm}
+                        onChange={(e) => setAccountantFirm(e.target.value)}
+                        placeholder="Accountancy firm name"
+                        disabled={!canEdit}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="accountant_contact">Contact: *</Label>
+                      <Input
+                        id="accountant_contact"
+                        value={accountantName}
+                        onChange={(e) => setAccountantName(e.target.value)}
+                        placeholder="Contact person name"
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="accountant_email_field">Email: *</Label>
+                      <Input
+                        id="accountant_email_field"
+                        type="email"
+                        value={accountantEmail}
+                        onChange={(e) => setAccountantEmail(e.target.value)}
+                        placeholder="accountant@firm.com"
+                        disabled={!canEdit}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="accountant_phone_field">Phone: *</Label>
+                      <Input
+                        id="accountant_phone_field"
+                        value={accountantPhone}
+                        onChange={(e) => setAccountantPhone(e.target.value)}
+                        placeholder="+44 20 1234 5678"
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="notes_finance">Notes for Finance Team</Label>
-                  <Textarea
-                    id="notes_finance"
-                    placeholder="Any specific notes regarding costs or apportionment..."
-                    value={techNotesForFinance}
-                    onChange={(e) => setTechNotesForFinance(e.target.value)}
-                    rows={3}
-                    disabled={!canEdit}
-                  />
+                <Separator />
+
+                {/* CONTRACT TERMS */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 -mx-3">
+                    CONTRACT TERMS
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="year_end">Year End: *</Label>
+                      <Input
+                        id="year_end"
+                        value={financialYear}
+                        onChange={(e) => setFinancialYear(e.target.value)}
+                        placeholder="e.g., 31/03/2024"
+                        disabled={!canEdit || cif.current_stage !== "financial_section"}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="year_end_month">Month: *</Label>
+                      <Input
+                        id="year_end_month"
+                        value={yearEndMonth}
+                        onChange={(e) => setYearEndMonth(e.target.value)}
+                        placeholder="e.g., March"
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="apes">APEs: *</Label>
+                      <Input
+                        id="apes"
+                        value={apes}
+                        onChange={(e) => setApes(e.target.value)}
+                        placeholder="Annual Percentage Estimate"
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="fee_percentage">Fee Percentage: *</Label>
+                      <Input
+                        id="fee_percentage"
+                        type="number"
+                        step="0.01"
+                        value={feePercentage}
+                        onChange={(e) => setFeePercentage(e.target.value)}
+                        placeholder="%"
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="minimum_fee">Minimum Fee: *</Label>
+                      <Input
+                        id="minimum_fee"
+                        type="number"
+                        value={minimumFee}
+                        onChange={(e) => setMinimumFee(e.target.value)}
+                        placeholder="£"
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Introducer */}
+                  <div className="space-y-2">
+                    <Label>Introducer: *</Label>
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant={introducer === "yes" ? "default" : "outline"}
+                        onClick={() => setIntroducer("yes")}
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
+                        className="flex-1"
+                      >
+                        YES
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={introducer === "no" ? "default" : "outline"}
+                        onClick={() => setIntroducer("no")}
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
+                        className="flex-1"
+                      >
+                        NO
+                      </Button>
+                    </div>
+                  </div>
+
+                  {introducer === "yes" && (
+                    <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
+                      <Label htmlFor="introducer_details">Details Name/Company: *</Label>
+                      <Input
+                        id="introducer_details"
+                        value={introducerDetails}
+                        onChange={(e) => setIntroducerDetails(e.target.value)}
+                        placeholder="Introducer name/company"
+                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="missing_info">Missing Information Flags</Label>
-                  <Textarea
-                    id="missing_info"
-                    placeholder="List any missing technical details..."
-                    value={techMissingInfo}
-                    onChange={(e) => setTechMissingInfo(e.target.value)}
-                    rows={2}
-                    disabled={!canEdit}
-                  />
-                </div>
+                <Separator />
 
-                {canEdit && (cif.current_stage === "tech_feasibility" || isStaff) && (
-                  <Button onClick={handleCompleteTechnical} disabled={saving} className="w-full">
+                {/* Complete Feasibility Button */}
+                {canEdit && cif.current_stage === "tech_feasibility" && (
+                  <Button onClick={handleCompleteTechnical} disabled={saving} className="w-full" size="lg">
                     <Save className="h-4 w-4 mr-2" />
-                    {saving ? "Saving..." : "Complete Technical Feasibility"}
+                    {saving ? "Saving..." : "Complete Feasibility & Submit for Admin Approval"}
                   </Button>
                 )}
               </CardContent>

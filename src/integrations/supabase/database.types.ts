@@ -66,10 +66,13 @@ export type Database = {
           accountant_firm: string | null
           accountant_name: string | null
           accountant_phone: string | null
+          accounts_filed: string | null
           additional_info: string | null
           admin_last_updated: string | null
           ai_research_data: Json | null
           alternate_contact_informed: string | null
+          any_issues_gathering_info: string | null
+          apes: string | null
           apportionment_assumptions: string | null
           archived: boolean | null
           archived_at: string | null
@@ -87,23 +90,47 @@ export type Database = {
           can_answer_feasibility: string | null
           cif_status: string
           company_research: string | null
+          competent_professional_1_email: string | null
+          competent_professional_1_mobile: string | null
+          competent_professional_1_name: string | null
+          competent_professional_1_position: string | null
+          competent_professional_2_email: string | null
+          competent_professional_2_mobile: string | null
+          competent_professional_2_name: string | null
+          competent_professional_2_position: string | null
+          competent_professional_3_email: string | null
+          competent_professional_3_mobile: string | null
+          competent_professional_3_name: string | null
+          competent_professional_3_position: string | null
           consumables_estimate: number | null
+          costs_details: string | null
           created_at: string
+          ct600_filed_seen: string | null
           current_stage: string | null
           director_comment: string | null
           director_decided_at: string | null
           director_decision: string | null
           director_id: string | null
           expected_feasibility_date: string | null
+          feasibility_call_date: string | null
+          fee_percentage: number | null
           fee_terms_details: string | null
           fee_terms_discussed: string | null
           finance_last_updated: string | null
           financial_section_created_by: string | null
           financial_year: string | null
+          first_claim_year_for_new_claim: number | null
           has_claimed_before: boolean | null
           id: string
+          introducer: string | null
+          introducer_details: string | null
+          issues_gathering_info_details: string | null
           linked_claim_id: string | null
+          minimum_fee: number | null
           org_id: string | null
+          paye_reference: string | null
+          payroll: number | null
+          pre_notification_required: string | null
           previous_claim_date_submitted: string | null
           previous_claim_details: string | null
           previous_claim_value: number | null
@@ -134,20 +161,29 @@ export type Database = {
           software_estimate: number | null
           staff_cost_estimate: number | null
           subcontractor_estimate: number | null
+          subcontractors_involved: string | null
           tech_last_updated: string | null
           tech_section_created_by: string | null
+          time_sensitive: string | null
+          turnover: number | null
           understands_scheme: string | null
           updated_at: string
+          utr: string | null
+          vat_number: string | null
+          year_end_month: string | null
         }
         Insert: {
           accountant_email?: string | null
           accountant_firm?: string | null
           accountant_name?: string | null
           accountant_phone?: string | null
+          accounts_filed?: string | null
           additional_info?: string | null
           admin_last_updated?: string | null
           ai_research_data?: Json | null
           alternate_contact_informed?: string | null
+          any_issues_gathering_info?: string | null
+          apes?: string | null
           apportionment_assumptions?: string | null
           archived?: boolean | null
           archived_at?: string | null
@@ -165,23 +201,47 @@ export type Database = {
           can_answer_feasibility?: string | null
           cif_status?: string
           company_research?: string | null
+          competent_professional_1_email?: string | null
+          competent_professional_1_mobile?: string | null
+          competent_professional_1_name?: string | null
+          competent_professional_1_position?: string | null
+          competent_professional_2_email?: string | null
+          competent_professional_2_mobile?: string | null
+          competent_professional_2_name?: string | null
+          competent_professional_2_position?: string | null
+          competent_professional_3_email?: string | null
+          competent_professional_3_mobile?: string | null
+          competent_professional_3_name?: string | null
+          competent_professional_3_position?: string | null
           consumables_estimate?: number | null
+          costs_details?: string | null
           created_at?: string
+          ct600_filed_seen?: string | null
           current_stage?: string | null
           director_comment?: string | null
           director_decided_at?: string | null
           director_decision?: string | null
           director_id?: string | null
           expected_feasibility_date?: string | null
+          feasibility_call_date?: string | null
+          fee_percentage?: number | null
           fee_terms_details?: string | null
           fee_terms_discussed?: string | null
           finance_last_updated?: string | null
           financial_section_created_by?: string | null
           financial_year?: string | null
+          first_claim_year_for_new_claim?: number | null
           has_claimed_before?: boolean | null
           id?: string
+          introducer?: string | null
+          introducer_details?: string | null
+          issues_gathering_info_details?: string | null
           linked_claim_id?: string | null
+          minimum_fee?: number | null
           org_id?: string | null
+          paye_reference?: string | null
+          payroll?: number | null
+          pre_notification_required?: string | null
           previous_claim_date_submitted?: string | null
           previous_claim_details?: string | null
           previous_claim_value?: number | null
@@ -212,20 +272,29 @@ export type Database = {
           software_estimate?: number | null
           staff_cost_estimate?: number | null
           subcontractor_estimate?: number | null
+          subcontractors_involved?: string | null
           tech_last_updated?: string | null
           tech_section_created_by?: string | null
+          time_sensitive?: string | null
+          turnover?: number | null
           understands_scheme?: string | null
           updated_at?: string
+          utr?: string | null
+          vat_number?: string | null
+          year_end_month?: string | null
         }
         Update: {
           accountant_email?: string | null
           accountant_firm?: string | null
           accountant_name?: string | null
           accountant_phone?: string | null
+          accounts_filed?: string | null
           additional_info?: string | null
           admin_last_updated?: string | null
           ai_research_data?: Json | null
           alternate_contact_informed?: string | null
+          any_issues_gathering_info?: string | null
+          apes?: string | null
           apportionment_assumptions?: string | null
           archived?: boolean | null
           archived_at?: string | null
@@ -243,23 +312,47 @@ export type Database = {
           can_answer_feasibility?: string | null
           cif_status?: string
           company_research?: string | null
+          competent_professional_1_email?: string | null
+          competent_professional_1_mobile?: string | null
+          competent_professional_1_name?: string | null
+          competent_professional_1_position?: string | null
+          competent_professional_2_email?: string | null
+          competent_professional_2_mobile?: string | null
+          competent_professional_2_name?: string | null
+          competent_professional_2_position?: string | null
+          competent_professional_3_email?: string | null
+          competent_professional_3_mobile?: string | null
+          competent_professional_3_name?: string | null
+          competent_professional_3_position?: string | null
           consumables_estimate?: number | null
+          costs_details?: string | null
           created_at?: string
+          ct600_filed_seen?: string | null
           current_stage?: string | null
           director_comment?: string | null
           director_decided_at?: string | null
           director_decision?: string | null
           director_id?: string | null
           expected_feasibility_date?: string | null
+          feasibility_call_date?: string | null
+          fee_percentage?: number | null
           fee_terms_details?: string | null
           fee_terms_discussed?: string | null
           finance_last_updated?: string | null
           financial_section_created_by?: string | null
           financial_year?: string | null
+          first_claim_year_for_new_claim?: number | null
           has_claimed_before?: boolean | null
           id?: string
+          introducer?: string | null
+          introducer_details?: string | null
+          issues_gathering_info_details?: string | null
           linked_claim_id?: string | null
+          minimum_fee?: number | null
           org_id?: string | null
+          paye_reference?: string | null
+          payroll?: number | null
+          pre_notification_required?: string | null
           previous_claim_date_submitted?: string | null
           previous_claim_details?: string | null
           previous_claim_value?: number | null
@@ -290,10 +383,16 @@ export type Database = {
           software_estimate?: number | null
           staff_cost_estimate?: number | null
           subcontractor_estimate?: number | null
+          subcontractors_involved?: string | null
           tech_last_updated?: string | null
           tech_section_created_by?: string | null
+          time_sensitive?: string | null
+          turnover?: number | null
           understands_scheme?: string | null
           updated_at?: string
+          utr?: string | null
+          vat_number?: string | null
+          year_end_month?: string | null
         }
         Relationships: [
           {
