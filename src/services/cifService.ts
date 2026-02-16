@@ -72,17 +72,6 @@ export interface CIFWithDetails extends CIFRecord {
   risk_rating?: "low" | "medium" | "high" | null;
   notes_for_finance?: string | null;
   missing_information_flags?: string[] | null;
-  // New Feasibility Request Form fields
-  can_answer_feasibility?: "yes" | "no" | null;
-  alternate_contact_informed?: "yes" | "no" | null;
-  understands_scheme?: "yes" | "no" | "dont_know" | null;
-  scheme_understanding_details?: string | null;
-  previous_claim_details?: string | null;
-  projects_discussed?: "yes" | "no" | null;
-  projects_details?: string | null;
-  fee_terms_discussed?: "yes" | "no" | null;
-  fee_terms_details?: string | null;
-  additional_info?: string | null;
 }
 
 export const cifService = {

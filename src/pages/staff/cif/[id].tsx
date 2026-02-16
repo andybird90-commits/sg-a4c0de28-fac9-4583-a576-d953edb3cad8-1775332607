@@ -563,7 +563,7 @@ export default function CIFDetailPage() {
           subcontractor_estimate: subcontractorCost ? parseFloat(subcontractorCost) : undefined,
           consumables_estimate: consumablesCost ? parseFloat(consumablesCost) : undefined,
           software_estimate: softwareCost ? parseFloat(softwareCost) : undefined,
-          apportionment: apportionment,
+          apportionment_assumptions: apportionment,
           accountant_name: accountantName,
           accountant_firm: accountantFirm,
           accountant_email: accountantEmail,
