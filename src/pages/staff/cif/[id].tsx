@@ -150,7 +150,10 @@ export default function CIFDetailPage() {
     try {
       const { data, error } = await supabase
         .from("cif_records")
-        .select("*")
+        .select(`
+          *,
+          prospects(*)
+        `)
         .eq("id", cifId)
         .single();
 
@@ -159,15 +162,19 @@ export default function CIFDetailPage() {
       if (error) throw error;
       if (!data) throw new Error("CIF not found");
 
-      setCif(data);
+      // Cast data to any first to handle the type mismatch until cifService is fully updated/reloaded
+      const cifData = data as any;
+      
+      // Update the CIF state with correct typing
+      setCif(cifData as CIFWithDetails);
 
       // Fetch linked feasibility analysis if it exists
-      if (data.section2_feasibility_id) {
+      if (cifData.section2_feasibility_id) {
         try {
           const { data: feasData, error: feasError } = await supabase
             .from("feasibility_analyses")
             .select("*")
-            .eq("id", data.section2_feasibility_id)
+            .eq("id", cifData.section2_feasibility_id)
             .single();
 
           if (feasError) {
@@ -217,66 +224,71 @@ export default function CIFDetailPage() {
       setBdmName(profile?.full_name || "");
       
       // Business Details
-      setCompanyName(data.prospects?.company_name || "");
-      setCompanyNumber(data.prospects?.company_number || "");
-      setNumberOfEmployees(data.number_of_employees?.toString() || "");
+      const prospect = Array.isArray(cifData.prospects) ? cifData.prospects[0] : cifData.prospects;
+      setCompanyName(prospect?.company_name || "");
+      setCompanyNumber(prospect?.company_number || "");
+      setNumberOfEmployees(cifData.number_of_employees?.toString() || "");
       
       // Contact Details
-      setContactName(data.primary_contact_name || "");
-      setContactNumber(data.primary_contact_phone || "");
-      setContactEmail(data.primary_contact_email || "");
+      setContactName(cifData.primary_contact_name || "");
+      setContactNumber(cifData.primary_contact_phone || "");
+      setContactEmail(cifData.primary_contact_email || "");
       
       // Start Point Information
-      setCanAnswerFeasibility(data.can_answer_feasibility || "yes");
-      setAlternateContactInformed(data.alternate_contact_informed || "no");
-      setUnderstandsScheme(data.understands_scheme || "dont_know");
-      setSchemeUnderstandingDetails(data.scheme_understanding_details || "");
-      setHasClaimedBefore(data.has_claimed_before ? "yes" : data.has_claimed_before === false ? "no" : "dont_know");
-      setPreviousClaimDetails(data.previous_claim_details || "");
+      setCanAnswerFeasibility(cifData.can_answer_feasibility || "yes");
+      setAlternateContactInformed(cifData.alternate_contact_informed || "no");
+      setUnderstandsScheme(cifData.understands_scheme || "dont_know");
+      setSchemeUnderstandingDetails(cifData.scheme_understanding_details || "");
+      // Map legacy boolean has_claimed_before to new state
+      if (cifData.has_claimed_before === true) setHasClaimedBefore("yes");
+      else if (cifData.has_claimed_before === false) setHasClaimedBefore("no");
+      else setHasClaimedBefore("dont_know");
+      
+      setPreviousClaimDetails(cifData.previous_claim_details || "");
       
       // Projects & Fee Terms
-      setProjectsDiscussed(data.projects_discussed || "no");
-      setProjectsDetails(data.projects_details || "");
-      setFeeTermsDiscussed(data.fee_terms_discussed || "no");
-      setFeeTermsDetails(data.fee_terms_details || "");
-      setAdditionalInfo(data.additional_info || "");
+      setProjectsDiscussed(cifData.projects_discussed || "no");
+      setProjectsDetails(cifData.projects_details || "");
+      setFeeTermsDiscussed(cifData.fee_terms_discussed || "no");
+      setFeeTermsDetails(cifData.fee_terms_details || "");
+      setAdditionalInfo(cifData.additional_info || "");
 
       // Extract AI research data from ai_research_data JSONB field
-      const mergedResearch = data.ai_research_data || {};
+      const mergedResearch = cifData.ai_research_data || {};
 
       // Merge with company_research if available (fallback/legacy data)
-      if (data.company_research) {
+      if (cifData.company_research) {
         try {
           let research;
           
           // Check if it's actually JSON by trying to parse it
-          if (typeof data.company_research === 'string') {
+          if (typeof cifData.company_research === 'string') {
             // Try to detect if it's JSON (starts with { or [)
-            const trimmed = data.company_research.trim();
+            const trimmed = cifData.company_research.trim();
             if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
               try {
-                research = JSON.parse(data.company_research);
+                research = JSON.parse(cifData.company_research);
                 console.log("🔄 Parsed company_research as JSON", research);
               } catch (parseError) {
                 console.log("⚠️ company_research looks like JSON but failed to parse, treating as plain text");
-                research = { description: data.company_research };
+                research = { description: cifData.company_research };
               }
             } else {
               // It's plain text, wrap it
               console.log("📝 company_research is plain text, wrapping it");
-              research = { description: data.company_research };
+              research = { description: cifData.company_research };
             }
           } else {
             // Already an object
-            research = data.company_research;
+            research = cifData.company_research;
           }
 
           console.log("🔄 Merging company_research into aiResearchData", research);
 
-          setAiResearchData(prev => ({
+          setAiResearchData((prev: any) => ({
             ...prev,
             ...(research || {}),
-            section1_completed_by: data.section1_completed_by || prev?.section1_completed_by
+            section1_completed_by: cifData.section1_completed_by || prev?.section1_completed_by
           }));
         } catch (e) {
           console.error("Error parsing company_research for merge:", e);
@@ -287,70 +299,23 @@ export default function CIFDetailPage() {
       setAiResearchData(mergedResearch);
 
       // Fallback to company_research plain text
-      if (data.company_research) {
-        setCompanyResearch(data.company_research);
+      if (cifData.company_research) {
+        setCompanyResearch(cifData.company_research);
       }
 
       // Populate Financial Form
-      setFinancialYear(data.financial_year || "");
-      setStaffCost(data.staff_cost_estimate?.toString() || "");
-      setSubcontractorCost(data.subcontractor_estimate?.toString() || "");
-      setConsumablesCost(data.consumables_estimate?.toString() || "");
-      setSoftwareCost(data.software_estimate?.toString() || "");
-      setApportionment(data.apportionment_assumptions || "");
-      setAccountantName(data.accountant_name || "");
-      setAccountantFirm(data.accountant_firm || "");
-      setAccountantEmail(data.accountant_email || "");
-      setAccountantPhone(data.accountant_phone || "");
-      setReadyToSubmit(data.ready_to_submit || false);
+      setFinancialYear(cifData.financial_year || "");
+      setStaffCost(cifData.staff_cost_estimate?.toString() || "");
+      setSubcontractorCost(cifData.subcontractor_estimate?.toString() || "");
+      setConsumablesCost(cifData.consumables_estimate?.toString() || "");
+      setSoftwareCost(cifData.software_estimate?.toString() || "");
+      setApportionment(cifData.apportionment_assumptions || "");
+      setAccountantName(cifData.accountant_name || "");
+      setAccountantFirm(cifData.accountant_firm || "");
+      setAccountantEmail(cifData.accountant_email || "");
+      setAccountantPhone(cifData.accountant_phone || "");
+      setReadyToSubmit(cifData.ready_to_submit || false);
 
-      // Populate extracted feasibility analysis
-      try {
-        if (data.company_research) {
-          // Merge company_research into aiResearchData if it exists
-          if (data.company_research) {
-            try {
-              let research;
-              
-              // Check if it's actually JSON by trying to parse it
-              if (typeof data.company_research === 'string') {
-                // Try to detect if it's JSON (starts with { or [)
-                const trimmed = data.company_research.trim();
-                if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-                  try {
-                    research = JSON.parse(data.company_research);
-                    console.log("🔄 Parsed company_research as JSON", research);
-                  } catch (parseError) {
-                    console.log("⚠️ company_research looks like JSON but failed to parse, treating as plain text");
-                    research = { description: data.company_research };
-                  }
-                } else {
-                  // It's plain text, wrap it
-                  console.log("📝 company_research is plain text, wrapping it");
-                  research = { description: data.company_research };
-                }
-              } else {
-                // Already an object
-                research = data.company_research;
-              }
-
-              console.log("🔄 Merging company_research into aiResearchData", research);
-
-              setAiResearchData(prev => ({
-                ...prev,
-                ...(research || {}),
-                section1_completed_by: data.section1_completed_by || prev?.section1_completed_by
-              }));
-            } catch (err) {
-              console.error("❌ Error processing company_research:", err);
-              // Don't block the page load, just log the error
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error parsing company_research:", error);
-        setFeasibilityExtract("");
-      }
     } catch (error) {
       console.error("Error loading CIF:", error);
     } finally {
@@ -501,16 +466,16 @@ export default function CIFDetailPage() {
         number_of_employees: numberOfEmployees ? parseInt(numberOfEmployees) : undefined,
         
         // Start Point Information
-        can_answer_feasibility: canAnswerFeasibility,
-        alternate_contact_informed: alternateContactInformed,
-        understands_scheme: understandsScheme,
+        can_answer_feasibility: canAnswerFeasibility as "yes" | "no",
+        alternate_contact_informed: alternateContactInformed as "yes" | "no",
+        understands_scheme: understandsScheme as "yes" | "no" | "dont_know",
         scheme_understanding_details: schemeUnderstandingDetails,
         previous_claim_details: previousClaimDetails,
         
         // Projects & Fee Terms
-        projects_discussed: projectsDiscussed,
+        projects_discussed: projectsDiscussed as "yes" | "no",
         projects_details: projectsDetails,
-        fee_terms_discussed: feeTermsDiscussed,
+        fee_terms_discussed: feeTermsDiscussed as "yes" | "no",
         fee_terms_details: feeTermsDetails,
         additional_info: additionalInfo,
         
@@ -598,7 +563,7 @@ export default function CIFDetailPage() {
           subcontractor_estimate: subcontractorCost ? parseFloat(subcontractorCost) : undefined,
           consumables_estimate: consumablesCost ? parseFloat(consumablesCost) : undefined,
           software_estimate: softwareCost ? parseFloat(softwareCost) : undefined,
-          apportionment_assumptions: apportionment,
+          apportionment: apportionment,
           accountant_name: accountantName,
           accountant_firm: accountantFirm,
           accountant_email: accountantEmail,
@@ -731,7 +696,7 @@ export default function CIFDetailPage() {
     );
   }
 
-  const prospect = cif.prospects;
+  const prospect = Array.isArray(cif.prospects) ? cif.prospects[0] : cif.prospects;
   const canEdit = cif.current_stage !== "approved" && cif.current_stage !== "rejected";
 
   return (
