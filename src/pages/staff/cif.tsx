@@ -65,13 +65,13 @@ export default function StaffCIFPage() {
 
   const getStageColor = (stage: string) => {
     switch (stage) {
-      case "bdm_section":return "bg-blue-500";
-      case "tech_feasibility":return "bg-purple-500";
-      case "financial_section":return "bg-orange-500";
-      case "admin_approval":return "bg-green-500";
-      case "approved":return "bg-emerald-500";
-      case "rejected":return "bg-red-500";
-      default:return "bg-gray-500";
+      case "bdm_section": return "bg-blue-500";
+      case "tech_feasibility": return "bg-purple-500";
+      case "financial_section": return "bg-orange-500";
+      case "admin_approval": return "bg-green-500";
+      case "approved": return "bg-emerald-500";
+      case "rejected": return "bg-red-500";
+      default: return "bg-gray-500";
     }
   };
 
@@ -105,27 +105,27 @@ export default function StaffCIFPage() {
               <Clock className="h-4 w-4" />
               <span>Updated: {formatDate(cif.updated_at)}</span>
             </div>
-            {cif.created_by_profile &&
-            <div className="text-muted-foreground">
+            {cif.created_by_profile && (
+              <div className="text-muted-foreground">
                 Created by: {cif.created_by_profile.full_name || cif.created_by_profile.email}
               </div>
-            }
-            {cif.estimated_claim_band &&
-            <div className="text-muted-foreground">
+            )}
+            {cif.estimated_claim_band && (
+              <div className="text-muted-foreground">
                 Est. Claim: {cif.estimated_claim_band}
               </div>
-            }
+            )}
           </div>
           <Button
             className="w-full mt-4"
-            onClick={() => router.push(`/staff/cif/${cif.id}`)}>
-
+            onClick={() => router.push(`/staff/cif/${cif.id}`)}
+          >
             <ExternalLink className="h-4 w-4 mr-2" />
             Open CIF
           </Button>
         </CardContent>
-      </Card>);
-
+      </Card>
+    );
   };
 
   if (!isStaff) {
@@ -155,8 +155,8 @@ export default function StaffCIFPage() {
                   setCreateDialogOpen(false);
                   fetchAllBoards();
                 }}
-                onCancel={() => setCreateDialogOpen(false)} />
-
+                onCancel={() => setCreateDialogOpen(false)}
+              />
             </DialogContent>
           </Dialog>
         </div>
@@ -214,18 +214,18 @@ export default function StaffCIFPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ?
-                <div className="text-center py-8 text-muted-foreground">Loading...</div> :
-                jobBoardA.length === 0 ?
-                <div className="text-center py-8 text-muted-foreground">
+                {loading ? (
+                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                ) : jobBoardA.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
                     <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     No CIFs awaiting technical review
-                  </div> :
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {jobBoardA.map(renderCIFCard)}
                   </div>
-                }
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -239,18 +239,18 @@ export default function StaffCIFPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ?
-                <div className="text-center py-8 text-muted-foreground">Loading...</div> :
-                jobBoardB.length === 0 ?
-                <div className="text-center py-8 text-muted-foreground">
+                {loading ? (
+                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                ) : jobBoardB.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
                     <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     No CIFs awaiting financial section
-                  </div> :
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {jobBoardB.map(renderCIFCard)}
                   </div>
-                }
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -264,18 +264,18 @@ export default function StaffCIFPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ?
-                <div className="text-center py-8 text-muted-foreground">Loading...</div> :
-                jobBoardC.length === 0 ?
-                <div className="text-center py-8 text-muted-foreground">
+                {loading ? (
+                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                ) : jobBoardC.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
                     <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     No CIFs awaiting admin approval
-                  </div> :
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {jobBoardC.map(renderCIFCard)}
                   </div>
-                }
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -331,12 +331,12 @@ export default function StaffCIFPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </StaffLayout>);
-
+    </StaffLayout>
+  );
 }
 
 // CIF Creation Form Component
-function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCancel: () => void;}) {
+function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
   const { profileWithOrg: profile } = useApp();
   const { toast } = useToast();
   const router = useRouter();
@@ -348,7 +348,7 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
   const [saving, setSaving] = useState(false);
   const [researchLoading, setResearchLoading] = useState(false);
   const [companyResearch, setCompanyResearch] = useState("");
-  const [analysisData, setAnalysisData] = useState<any>(null); // Store full analysis data
+  const [analysisData, setAnalysisData] = useState<any>(null);
   const [formData, setFormData] = useState({
     businessBackground: "",
     projectOverview: "",
@@ -372,11 +372,10 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
     }
 
     setLookupLoading(true);
-    setCompanyResearch(""); // Clear previous research
+    setCompanyResearch("");
     
     try {
-      // Step 1: Lookup company in Companies House
-      const data = await cifService.lookupCompaniesHouse(companyNumber.trim(), true); // Request filing history
+      const data = await cifService.lookupCompaniesHouse(companyNumber.trim(), true);
 
       if (!data) {
         toast({ title: "Error", description: "Company not found", variant: "destructive" });
@@ -396,11 +395,8 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
       setStep("bdm");
       toast({ title: "Success", description: "Company found and active" });
 
-      // Step 2: Trigger AI research
       setResearchLoading(true);
       try {
-        console.log("Starting AI research for:", data.company_name);
-        
         const researchResponse = await fetch("/api/sidekick/research", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -411,42 +407,20 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
           })
         });
 
-        console.log("Research response status:", researchResponse.status);
-        
         if (researchResponse.ok) {
           const researchData = await researchResponse.json();
-          console.log("Research data received:", researchData);
-          setAnalysisData(researchData); // Save to state for createCIF
+          setAnalysisData(researchData);
 
-          console.log("Available keys:", Object.keys(researchData));
-          console.log("feasibility_summary:", researchData.feasibility_summary);
-
-          if (researchData && researchData.feasibility_summary && researchData.feasibility_summary.trim().length > 0) {
-            console.log("✅ Found summary:", researchData.feasibility_summary);
+          if (researchData?.feasibility_summary?.trim()) {
             setCompanyResearch(researchData.feasibility_summary);
             toast({ 
               title: "Research Complete", 
               description: "AI Sidekick has analyzed the company" 
             });
-          } else {
-            console.warn("No summary in research response");
           }
-        } else {
-          const errorText = await researchResponse.text();
-          console.error("Research API error:", researchResponse.status, errorText);
-          toast({
-            title: "Research Failed",
-            description: "Could not generate AI research. You can still complete the form manually.",
-            variant: "destructive"
-          });
         }
       } catch (researchError) {
-        console.error("Research fetch error:", researchError);
-        toast({
-          title: "Research Error",
-          description: "AI research failed. Please complete the form manually.",
-          variant: "destructive"
-        });
+        console.error("Research error:", researchError);
       } finally {
         setResearchLoading(false);
       }
@@ -479,13 +453,6 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
 
     setSaving(true);
     try {
-      console.log("🚀 Starting CIF creation...");
-      console.log("Company data:", companyData);
-      console.log("Form data:", formData);
-      console.log("Profile ID:", profile.id);
-      console.log("Company research:", companyResearch);
-      console.log("Analysis data:", analysisData);
-
       const result = await cifService.createCIF({
         prospectData: {
           company_name: companyData.company_name,
@@ -518,28 +485,17 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
         createdBy: profile.id,
       });
 
-      console.log("✅ CIF creation result:", result);
-
       if (result) {
         toast({ title: "CIF created successfully!", description: "Redirecting to CIF details..." });
         setTimeout(() => {
           router.push(`/staff/cif/${result.cif.id}`);
         }, 1500);
-      } else {
-        throw new Error("Failed to create CIF - no result returned");
       }
     } catch (error: any) {
-      console.error("❌ CIF creation error:", error);
-      console.error("Error details:", {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        stack: error.stack
-      });
+      console.error("CIF creation error:", error);
       toast({ 
         title: "Failed to create CIF", 
-        description: error.message || "Unknown error occurred. Check console for details.", 
+        description: error.message || "Unknown error occurred",
         variant: "destructive" 
       });
     } finally {
@@ -554,24 +510,24 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
           {step === "lookup" ? "Lookup Company" : "Complete BDM Section"}
         </DialogTitle>
         <DialogDescription>
-          {step === "lookup" ?
-          "Enter the Companies House number to lookup company details" :
-          "Fill in the initial business development information"
+          {step === "lookup"
+            ? "Enter the Companies House number to lookup company details"
+            : "Fill in the Feasibility Request Form - all fields are required"
           }
         </DialogDescription>
       </DialogHeader>
 
-      {step === "lookup" &&
-      <div className="space-y-4 py-4">
+      {step === "lookup" && (
+        <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="company-number">Company Number</Label>
             <Input
-            id="company-number"
-            placeholder="e.g. 12345678"
-            value={companyNumber}
-            onChange={(e) => setCompanyNumber(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleCompanyLookup()} />
-
+              id="company-number"
+              placeholder="e.g. 12345678"
+              value={companyNumber}
+              onChange={(e) => setCompanyNumber(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCompanyLookup()}
+            />
           </div>
           <div className="flex gap-3">
             <Button onClick={handleCompanyLookup} disabled={lookupLoading} className="flex-1">
@@ -580,10 +536,10 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
             <Button onClick={onCancel} variant="outline">Cancel</Button>
           </div>
         </div>
-      }
+      )}
 
-      {step === "bdm" && companyData &&
-      <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+      {step === "bdm" && companyData && (
+        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
           <Card className="bg-muted/50">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">{companyData.company_name}</CardTitle>
@@ -593,7 +549,6 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
             </CardHeader>
           </Card>
 
-          {/* Loading State for Research */}
           {researchLoading && (
             <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
               <CardContent className="py-8">
@@ -610,133 +565,310 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
             </Card>
           )}
 
-          {/* Research Results */}
           {!researchLoading && companyResearch && (
             <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
+                <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300 text-sm">
                   RD Sidekick Research
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Company Overview Grid */}
-                {companyData && (
-                  <div className="grid grid-cols-2 gap-3 p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg mb-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Company Age</p>
-                      <p className="font-semibold">{companyData.company_age_years} years</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Status</p>
-                      <p className="font-semibold capitalize">{companyData.company_status?.replace(/-/g, ' ')}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Incorporation Date</p>
-                      <p className="font-semibold">{new Date(companyData.date_of_creation).toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">Last Accounts</p>
-                      <p className="font-semibold">
-                        {companyData.last_accounts_date 
-                          ? new Date(companyData.last_accounts_date).toLocaleDateString()
-                          : 'Not available'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Directors Information */}
-                {companyData?.officers && companyData.officers.active_count > 0 && (
-                  <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg mb-4">
-                    <h4 className="font-semibold text-sm mb-2">
-                      Directors ({companyData.officers.active_count})
-                    </h4>
-                    <div className="space-y-2">
-                      {companyData.officers.active_officers.slice(0, 5).map((officer: any, idx: number) => (
-                        <div key={idx} className="text-sm flex justify-between items-start">
-                          <div>
-                            <p className="font-medium">{officer.name}</p>
-                            <p className="text-xs text-muted-foreground capitalize">
-                              {officer.role?.replace(/-/g, ' ')}
-                            </p>
-                          </div>
-                          {officer.appointed_on && (
-                            <span className="text-xs text-muted-foreground">
-                              Since {new Date(officer.appointed_on).getFullYear()}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                      {companyData.officers.active_count > 5 && (
-                        <p className="text-xs text-muted-foreground italic">
-                          + {companyData.officers.active_count - 5} more directors
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Filing History */}
-                {companyData?.filing_history && (
-                  <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg mb-4">
-                    <h4 className="font-semibold text-sm mb-2">Filing History</h4>
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Average Filing Lag</p>
-                          <p className="font-semibold">{companyData.filing_history.average_filing_lag_days} days</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Filing Pattern</p>
-                          <p className="font-semibold capitalize">{companyData.filing_history.filing_pattern.replace(/_/g, ' ')}</p>
-                        </div>
-                      </div>
-                      <div className="mt-2 space-y-1">
-                        {companyData.filing_history.filings.slice(0, 3).map((filing: any, idx: number) => (
-                          <div key={idx} className="text-xs text-muted-foreground">
-                            {filing.period_end_date && (
-                              <span>Period End: {new Date(filing.period_end_date).toLocaleDateString()}</span>
-                            )}
-                            {filing.filing_lag_days !== null && (
-                              <span className="ml-2">• Lag: {filing.filing_lag_days} days</span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* SIC Codes */}
-                {companyData?.sic_codes && companyData.sic_codes.length > 0 && (
-                  <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg mb-4">
-                    <h4 className="font-semibold text-sm mb-2">Industry Classification</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {companyData.sic_codes.map((code: string, idx: number) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          SIC {code}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* AI Analysis */}
-                <div className="pt-2 border-t border-blue-200/50 dark:border-blue-800/50">
-                  <h4 className="font-semibold text-sm mb-2">R&D Feasibility Analysis</h4>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                    {companyResearch}
-                  </p>
-                </div>
+              <CardContent>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                  {companyResearch}
+                </p>
               </CardContent>
             </Card>
           )}
 
+          {/* BUSINESS DETAILS */}
+          <div className="bg-orange-500 text-white px-4 py-2 font-semibold rounded">
+            BUSINESS DETAILS
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="business-bg">Business Background *</Label>
+              <Label>Company Name</Label>
+              <Input value={companyData.company_name} disabled />
+            </div>
+            <div className="space-y-2">
+              <Label>Company Number</Label>
+              <Input value={companyData.company_number} disabled />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="num-employees">Number of Employees *</Label>
+            <Input
+              id="num-employees"
+              type="number"
+              placeholder="e.g. 50"
+              value={formData.numberOfEmployees}
+              onChange={(e) => setFormData(prev => ({ ...prev, numberOfEmployees: e.target.value }))}
+            />
+          </div>
+
+          {/* CONTACT DETAILS */}
+          <div className="bg-orange-500 text-white px-4 py-2 font-semibold rounded">
+            CONTACT DETAILS
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="contact-name">Contact Name *</Label>
+            <Input
+              id="contact-name"
+              placeholder="Full name"
+              value={formData.primaryContactName}
+              onChange={(e) => setFormData(prev => ({ ...prev, primaryContactName: e.target.value }))}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="contact-number">Contact Number *</Label>
+            <Input
+              id="contact-number"
+              placeholder="+44 1234 567890"
+              value={formData.primaryContactPhone}
+              onChange={(e) => setFormData(prev => ({ ...prev, primaryContactPhone: e.target.value }))}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="contact-email">Contact Email *</Label>
+            <Input
+              id="contact-email"
+              type="email"
+              placeholder="email@example.com"
+              value={formData.primaryContactEmail}
+              onChange={(e) => setFormData(prev => ({ ...prev, primaryContactEmail: e.target.value }))}
+            />
+          </div>
+
+          {/* START POINT INFORMATION */}
+          <div className="bg-orange-500 text-white px-4 py-2 font-semibold rounded">
+            START POINT INFORMATION
+          </div>
+
+          <div className="space-y-2">
+            <Label className="font-semibold">Is the contact able to answer the feasibility questions? *</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.canAnswerFeasibility === "yes" ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, canAnswerFeasibility: "yes", alternateContactInformed: "" }))}
+              >
+                YES
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.canAnswerFeasibility === "no" ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, canAnswerFeasibility: "no" }))}
+              >
+                NO
+              </Button>
+            </div>
+          </div>
+
+          {formData.canAnswerFeasibility === "no" && (
+            <div className="space-y-2 pl-4 border-l-4 border-orange-500">
+              <Label className="font-semibold">
+                Has the initial contact been informed that we will need the details of someone who can? *
+              </Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={formData.alternateContactInformed === "yes" ? "default" : "outline"}
+                  onClick={() => setFormData(prev => ({ ...prev, alternateContactInformed: "yes" }))}
+                >
+                  YES
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={formData.alternateContactInformed === "no" ? "default" : "outline"}
+                  onClick={() => setFormData(prev => ({ ...prev, alternateContactInformed: "no" }))}
+                >
+                  NO
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label className="font-semibold">
+              Does the person nominated for the feasibility study know about/have any understanding of the scheme? *
+            </Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.understandsScheme === "yes" ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, understandsScheme: "yes" }))}
+              >
+                YES
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.understandsScheme === "no" ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, understandsScheme: "no", schemeUnderstandingDetails: "" }))}
+              >
+                NO
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.understandsScheme === "dont_know" ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, understandsScheme: "dont_know", schemeUnderstandingDetails: "" }))}
+              >
+                DON'T KNOW
+              </Button>
+            </div>
+          </div>
+
+          {formData.understandsScheme === "yes" && (
+            <div className="space-y-2 pl-4 border-l-4 border-orange-500">
+              <Label htmlFor="scheme-details">If yes, please provide details: *</Label>
+              <Textarea
+                id="scheme-details"
+                placeholder="Describe their understanding of the scheme..."
+                className="min-h-[80px]"
+                value={formData.schemeUnderstandingDetails}
+                onChange={(e) => setFormData(prev => ({ ...prev, schemeUnderstandingDetails: e.target.value }))}
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label className="font-semibold">Have they claimed before? *</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.hasClaimedBefore === "yes" ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, hasClaimedBefore: "yes" }))}
+              >
+                YES
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.hasClaimedBefore === "no" ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, hasClaimedBefore: "no", previousClaimDetails: "" }))}
+              >
+                NO
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.hasClaimedBefore === "dont_know" ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, hasClaimedBefore: "dont_know", previousClaimDetails: "" }))}
+              >
+                DON'T KNOW
+              </Button>
+            </div>
+          </div>
+
+          {formData.hasClaimedBefore === "yes" && (
+            <div className="space-y-2 pl-4 border-l-4 border-orange-500">
+              <Label htmlFor="prev-claim-details">If yes, what has been claimed? *</Label>
+              <Textarea
+                id="prev-claim-details"
+                placeholder="Details of previous R&D tax credit claims..."
+                className="min-h-[80px]"
+                value={formData.previousClaimDetails}
+                onChange={(e) => setFormData(prev => ({ ...prev, previousClaimDetails: e.target.value }))}
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label className="font-semibold">Have any projects been discussed? *</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.projectsDiscussed === "yes" ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, projectsDiscussed: "yes" }))}
+              >
+                YES
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.projectsDiscussed === "no" ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, projectsDiscussed: "no", projectsDetails: "" }))}
+              >
+                NO
+              </Button>
+            </div>
+          </div>
+
+          {formData.projectsDiscussed === "yes" && (
+            <div className="space-y-2 pl-4 border-l-4 border-orange-500">
+              <Label htmlFor="projects-details">If yes, what projects have been discussed? *</Label>
+              <Textarea
+                id="projects-details"
+                placeholder="Describe the R&D projects discussed..."
+                className="min-h-[100px]"
+                value={formData.projectsDetails}
+                onChange={(e) => setFormData(prev => ({ ...prev, projectsDetails: e.target.value }))}
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label className="font-semibold">Have the fee terms been discussed? *</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.feeTermsDiscussed === "yes" ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, feeTermsDiscussed: "yes" }))}
+              >
+                YES
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={formData.feeTermsDiscussed === "no" ? "default" : "outline"}
+                onClick={() => setFormData(prev => ({ ...prev, feeTermsDiscussed: "no", feeTermsDetails: "" }))}
+              >
+                NO
+              </Button>
+            </div>
+          </div>
+
+          {formData.feeTermsDiscussed === "yes" && (
+            <div className="space-y-2 pl-4 border-l-4 border-orange-500">
+              <Label htmlFor="fee-terms-details">If yes, what terms have been discussed? *</Label>
+              <Textarea
+                id="fee-terms-details"
+                placeholder="Details of fee structure and terms discussed..."
+                className="min-h-[100px]"
+                value={formData.feeTermsDetails}
+                onChange={(e) => setFormData(prev => ({ ...prev, feeTermsDetails: e.target.value }))}
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="additional-info">Any further information to help with the feasibility study?</Label>
+            <Textarea
+              id="additional-info"
+              placeholder="Any additional notes or information..."
+              className="min-h-[100px]"
+              value={formData.additionalInfo}
+              onChange={(e) => setFormData(prev => ({ ...prev, additionalInfo: e.target.value }))}
+            />
+          </div>
+
+          {/* ADDITIONAL FIELDS (Optional) */}
+          <div className="pt-4 border-t">
+            <div className="space-y-2">
+              <Label htmlFor="business-bg">Business Background</Label>
               <Textarea
                 id="business-bg"
                 placeholder="Brief description of the business and what they do..."
@@ -746,8 +878,8 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="project-overview">Project Overview *</Label>
+            <div className="space-y-2 mt-4">
+              <Label htmlFor="project-overview">Project Overview</Label>
               <Textarea
                 id="project-overview"
                 placeholder="Description of the R&D project or technical challenges..."
@@ -756,126 +888,9 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
                 onChange={(e) => setFormData(prev => ({ ...prev, projectOverview: e.target.value }))}
               />
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="contact-name">Primary Contact Name *</Label>
-                <Input
-                  id="contact-name"
-                  placeholder="Full name"
-                  value={formData.primaryContactName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, primaryContactName: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contact-position">Primary Contact Position</Label>
-                <Input
-                  id="contact-position"
-                  placeholder="Job title"
-                  value={formData.primaryContactPosition}
-                  onChange={(e) => setFormData(prev => ({ ...prev, primaryContactPosition: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="contact-email">Primary Contact Email</Label>
-                <Input
-                  id="contact-email"
-                  type="email"
-                  placeholder="email@example.com"
-                  value={formData.primaryContactEmail}
-                  onChange={(e) => setFormData(prev => ({ ...prev, primaryContactEmail: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contact-phone">Primary Contact Phone</Label>
-                <Input
-                  id="contact-phone"
-                  placeholder="+44 1234 567890"
-                  value={formData.primaryContactPhone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, primaryContactPhone: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="contact-landline">Primary Contact Landline</Label>
-              <Input
-                id="contact-landline"
-                placeholder="+44 20 1234 5678"
-                value={formData.primaryContactLandline}
-                onChange={(e) => setFormData(prev => ({ ...prev, primaryContactLandline: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="rd-themes">R&D Themes (one per line)</Label>
-              <Textarea
-                id="rd-themes"
-                placeholder="e.g. AI/ML&#10;Software Development&#10;Data Analytics"
-                className="min-h-[100px]"
-                value={formData.rdThemes}
-                onChange={(e) => setFormData(prev => ({ ...prev, rdThemes: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="feasibility-date">Expected Feasibility Date</Label>
-              <Input
-                id="feasibility-date"
-                type="date"
-                value={formData.expectedFeasibilityDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, expectedFeasibilityDate: e.target.value }))}
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="claimed-before"
-                className="rounded border-gray-300"
-                checked={formData.hasClaimedBefore}
-                onChange={(e) => setFormData(prev => ({ ...prev, hasClaimedBefore: e.target.checked }))}
-              />
-              <Label htmlFor="claimed-before">Has the company claimed before?</Label>
-            </div>
-
-            {formData.hasClaimedBefore && (
-              <div className="space-y-4 pl-6 border-l-2 border-blue-200">
-                <div className="space-y-2">
-                  <Label htmlFor="prev-year-end">Previous Claim Year End Date</Label>
-                  <Input
-                    id="prev-year-end"
-                    type="date"
-                    value={formData.previousClaimYearEndDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, previousClaimYearEndDate: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prev-value">Previous Claim Value (£)</Label>
-                  <Input
-                    id="prev-value"
-                    type="number"
-                    placeholder="25000"
-                    value={formData.previousClaimValue}
-                    onChange={(e) => setFormData(prev => ({ ...prev, previousClaimValue: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prev-submitted">Previous Claim Date Submitted</Label>
-                  <Input
-                    id="prev-submitted"
-                    type="date"
-                    value={formData.previousClaimDateSubmitted}
-                    onChange={(e) => setFormData(prev => ({ ...prev, previousClaimDateSubmitted: e.target.value }))}
-                  />
-                </div>
-              </div>
-            )}
-
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-4 sticky bottom-0 bg-white dark:bg-gray-950 pb-2">
             <Button onClick={handleCreateCIF} disabled={saving} className="flex-1">
               {saving ? "Creating CIF..." : "Create CIF"}
             </Button>
@@ -883,7 +898,7 @@ function CIFCreationForm({ onSuccess, onCancel }: {onSuccess: () => void;onCance
             <Button onClick={onCancel} variant="outline">Cancel</Button>
           </div>
         </div>
-      }
-    </>);
-
+      )}
+    </>
+  );
 }
