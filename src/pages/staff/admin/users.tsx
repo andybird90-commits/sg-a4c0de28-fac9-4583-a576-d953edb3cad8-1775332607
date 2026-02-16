@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { StaffLayout } from "@/components/staff/StaffLayout";
@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Mail, Building2, Shield, Edit } from "lucide-react";
+import { Users, Mail, Building2, Shield, Edit, ChevronDown, User, Pencil } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Profile {
   id: string;
@@ -47,6 +48,36 @@ export default function AdminUsers() {
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [selectedInternalRole, setSelectedInternalRole] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [expandedOrgs, setExpandedOrgs] = useState<Set<string>>(new Set());
+
+  // Group users by organization
+  const groupedUsers = useMemo(() => {
+    const groups: Record<string, Profile[]> = {
+      'No Organization': []
+    };
+
+    users.forEach(user => {
+      const orgName = user.organisation?.name || 'No Organization';
+      if (!groups[orgName]) {
+        groups[orgName] = [];
+      }
+      groups[orgName].push(user);
+    });
+
+    return groups;
+  }, [users]);
+
+  const toggleOrg = (orgName: string) => {
+    setExpandedOrgs(prev => {
+      const next = new Set(prev);
+      if (next.has(orgName)) {
+        next.delete(orgName);
+      } else {
+        next.add(orgName);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     checkAuth();
@@ -87,13 +118,11 @@ export default function AdminUsers() {
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("id, email, full_name, role, internal_role")
-        .order("email");
+        .order("email", { ascending: true });
 
       if (profilesError) throw profilesError;
 
-      // Then fetch organization memberships for these users
-      const userIds = profilesData?.map(p => p.id) || [];
-      
+      // Then fetch organization memberships
       const { data: orgUsersData, error: orgUsersError } = await supabase
         .from("organisation_users")
         .select(`
@@ -102,8 +131,7 @@ export default function AdminUsers() {
             name,
             organisation_code
           )
-        `)
-        .in("user_id", userIds);
+        `);
 
       if (orgUsersError) throw orgUsersError;
 
@@ -117,11 +145,11 @@ export default function AdminUsers() {
       }) || [];
 
       setUsers(usersWithOrgs);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error loading users:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to load users",
+        description: "Failed to load users",
         variant: "destructive",
       });
     } finally {
@@ -212,49 +240,105 @@ export default function AdminUsers() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {users.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                    onClick={() => handleEditUser(user)}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1">
-                          <div className="font-medium">{user.full_name || "No name"}</div>
-                          <div className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Mail className="h-3 w-3" />
-                            {user.email}
-                          </div>
-                          {user.organisation && (
-                            <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-                              <Building2 className="h-3 w-3" />
-                              {user.organisation.name} ({user.organisation.organisation_code})
+              {loading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
+                      <Skeleton className="h-12 w-12 rounded-full" />
+                      <div className="space-y-2 flex-1">
+                        <Skeleton className="h-4 w-48" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {Object.entries(groupedUsers)
+                    .sort(([a], [b]) => {
+                      // Sort: organizations alphabetically, "No Organization" last
+                      if (a === 'No Organization') return 1;
+                      if (b === 'No Organization') return -1;
+                      return a.localeCompare(b);
+                    })
+                    .map(([orgName, orgUsers]) => {
+                      const isExpanded = expandedOrgs.has(orgName);
+                      const userCount = orgUsers.length;
+
+                      return (
+                        <div key={orgName} className="border rounded-lg overflow-hidden">
+                          {/* Organization Header */}
+                          <button
+                            onClick={() => toggleOrg(orgName)}
+                            className="w-full flex items-center justify-between p-4 bg-muted/50 hover:bg-muted transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Building2 className="h-5 w-5 text-muted-foreground" />
+                              <div className="text-left">
+                                <h3 className="font-semibold">{orgName}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {userCount} {userCount === 1 ? 'user' : 'users'}
+                                </p>
+                              </div>
+                            </div>
+                            <ChevronDown
+                              className={`h-5 w-5 text-muted-foreground transition-transform ${
+                                isExpanded ? 'transform rotate-180' : ''
+                              }`}
+                            />
+                          </button>
+
+                          {/* Users List */}
+                          {isExpanded && (
+                            <div className="divide-y">
+                              {orgUsers.map((user) => (
+                                <div
+                                  key={user.id}
+                                  className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer"
+                                  onClick={() => handleEditUser(user)}
+                                >
+                                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                      <User className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium truncate">
+                                        {user.full_name || 'No name'}
+                                      </div>
+                                      <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                        <Mail className="h-3 w-3" />
+                                        <span className="truncate">{user.email}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2 items-center flex-shrink-0">
+                                    {user.internal_role ? (
+                                      <Badge variant="default">
+                                        {user.internal_role}
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline">No role</Badge>
+                                    )}
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditUser(user);
+                                      }}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>
-                        <div className="flex gap-2">
-                          {user.internal_role && (
-                            <Badge variant={getRoleBadgeVariant(user.internal_role)}>
-                              {user.internal_role}
-                            </Badge>
-                          )}
-                          {user.role && user.role !== user.internal_role && (
-                            <Badge variant="outline">{user.role}</Badge>
-                          )}
-                          {!user.internal_role && !user.role && (
-                            <Badge variant="outline">No role</Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                      );
+                    })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
