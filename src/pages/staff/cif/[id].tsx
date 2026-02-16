@@ -820,7 +820,7 @@ export default function CIFDetailPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Feasibility Request Form</CardTitle>
+                <CardTitle className="text-orange-600">Feasibility Request Form</CardTitle>
                 <CardDescription>
                   Complete all fields from the initial BDM call to request a feasibility meeting
                 </CardDescription>
@@ -828,7 +828,7 @@ export default function CIFDetailPage() {
               <CardContent className="space-y-6">
                 {/* BDM Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="bdm_name">BDM Name</Label>
+                  <Label htmlFor="bdm_name" className="text-base font-semibold">BDM NAME:</Label>
                   <Input
                     id="bdm_name"
                     value={bdmName}
@@ -838,14 +838,14 @@ export default function CIFDetailPage() {
                   />
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 {/* Business Details Section */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-orange-600">BUSINESS DETAILS</h3>
+                  <h3 className="text-lg font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 -mx-3">BUSINESS DETAILS:</h3>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="company_name">Company Name *</Label>
+                    <Label htmlFor="company_name" className="text-base">COMPANY NAME:</Label>
                     <Input
                       id="company_name"
                       value={companyName}
@@ -854,38 +854,37 @@ export default function CIFDetailPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="company_number">Company Number</Label>
-                      <Input
-                        id="company_number"
-                        value={companyNumber}
-                        disabled={true}
-                        className="bg-muted"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="number_of_employees">Number of Employees *</Label>
-                      <Input
-                        id="number_of_employees"
-                        type="number"
-                        placeholder="e.g. 25"
-                        value={numberOfEmployees}
-                        onChange={(e) => setNumberOfEmployees(e.target.value)}
-                        disabled={!canEdit}
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="company_number" className="text-base">COMPANY NUMBER:</Label>
+                    <Input
+                      id="company_number"
+                      value={companyNumber}
+                      disabled={true}
+                      className="bg-muted"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="number_of_employees" className="text-base">NUMBER OF EMPLOYEES *</Label>
+                    <Input
+                      id="number_of_employees"
+                      type="number"
+                      placeholder="e.g. 25"
+                      value={numberOfEmployees}
+                      onChange={(e) => setNumberOfEmployees(e.target.value)}
+                      disabled={!canEdit}
+                    />
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 {/* Contact Details Section */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-orange-600">CONTACT DETAILS</h3>
+                  <h3 className="text-lg font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 -mx-3">CONTACT DETAILS:</h3>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="contact_name">Contact Name *</Label>
+                    <Label htmlFor="contact_name" className="text-base">CONTACT NAME: *</Label>
                     <Input
                       id="contact_name"
                       placeholder="Full name"
@@ -895,95 +894,123 @@ export default function CIFDetailPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="contact_number">Contact Number *</Label>
-                      <Input
-                        id="contact_number"
-                        type="tel"
-                        placeholder="+44 20 1234 5678"
-                        value={contactNumber}
-                        onChange={(e) => setContactNumber(e.target.value)}
-                        disabled={!canEdit}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="contact_email">Contact Email *</Label>
-                      <Input
-                        id="contact_email"
-                        type="email"
-                        placeholder="email@company.com"
-                        value={contactEmail}
-                        onChange={(e) => setContactEmail(e.target.value)}
-                        disabled={!canEdit}
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contact_number" className="text-base">CONTACT NUMBER: *</Label>
+                    <Input
+                      id="contact_number"
+                      type="tel"
+                      placeholder="+44 20 1234 5678"
+                      value={contactNumber}
+                      onChange={(e) => setContactNumber(e.target.value)}
+                      disabled={!canEdit}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contact_email" className="text-base">CONTACT EMAIL: *</Label>
+                    <Input
+                      id="contact_email"
+                      type="email"
+                      placeholder="email@company.com"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      disabled={!canEdit}
+                    />
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 {/* Start Point Information Section */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-orange-600">START POINT INFORMATION</h3>
+                  <h3 className="text-lg font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 -mx-3">START POINT INFORMATION:</h3>
                   
                   <div className="space-y-2">
-                    <Label>Is the contact able to answer the feasibility questions? *</Label>
-                    <Select
-                      value={canAnswerFeasibility}
-                      onValueChange={(v: "yes" | "no") => setCanAnswerFeasibility(v)}
-                      disabled={!canEdit}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select answer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="yes">Yes</SelectItem>
-                        <SelectItem value="no">No</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-base">IS THE CONTACT ABLE TO ANSWER THE FEASIBILITY QUESTIONS? *</Label>
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant={canAnswerFeasibility === "yes" ? "default" : "outline"}
+                        onClick={() => setCanAnswerFeasibility("yes")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        YES
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={canAnswerFeasibility === "no" ? "default" : "outline"}
+                        onClick={() => setCanAnswerFeasibility("no")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        NO
+                      </Button>
+                    </div>
                   </div>
 
                   {canAnswerFeasibility === "no" && (
-                    <div className="space-y-2 p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
-                      <Label>Has the initial contact been informed that we will need the details of someone who can? *</Label>
-                      <Select
-                        value={alternateContactInformed}
-                        onValueChange={(v: "yes" | "no") => setAlternateContactInformed(v)}
-                        disabled={!canEdit}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select answer" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="space-y-2 p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <Label className="text-base">IF NO, HAS THE INITIAL CONTACT BEEN INFORMED THAT WE WILL NEED THE DETAILS OF SOMEONE WHO CAN? *</Label>
+                      <div className="flex gap-4">
+                        <Button
+                          type="button"
+                          variant={alternateContactInformed === "yes" ? "default" : "outline"}
+                          onClick={() => setAlternateContactInformed("yes")}
+                          disabled={!canEdit}
+                          className="flex-1"
+                        >
+                          YES
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={alternateContactInformed === "no" ? "default" : "outline"}
+                          onClick={() => setAlternateContactInformed("no")}
+                          disabled={!canEdit}
+                          className="flex-1"
+                        >
+                          NO
+                        </Button>
+                      </div>
                     </div>
                   )}
 
                   <div className="space-y-2">
-                    <Label>Does the person nominated for the feasibility study know about/have any understanding of the scheme? *</Label>
-                    <Select
-                      value={understandsScheme}
-                      onValueChange={(v: "yes" | "no" | "dont_know") => setUnderstandsScheme(v)}
-                      disabled={!canEdit}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select answer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="yes">Yes</SelectItem>
-                        <SelectItem value="no">No</SelectItem>
-                        <SelectItem value="dont_know">Don't Know</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-base">DOES THE PERSON NOMINATED FOR THE FEASIBILITY STUDY KNOW ABOUT/HAVE ANY UNDERSTANDING OF THE SCHEME? *</Label>
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant={understandsScheme === "yes" ? "default" : "outline"}
+                        onClick={() => setUnderstandsScheme("yes")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        YES
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={understandsScheme === "no" ? "default" : "outline"}
+                        onClick={() => setUnderstandsScheme("no")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        NO
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={understandsScheme === "dont_know" ? "default" : "outline"}
+                        onClick={() => setUnderstandsScheme("dont_know")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        DON'T KNOW
+                      </Button>
+                    </div>
                   </div>
 
                   {understandsScheme === "yes" && (
                     <div className="space-y-2">
-                      <Label htmlFor="scheme_details">If yes, please provide details: *</Label>
+                      <Label htmlFor="scheme_details" className="text-base">IF YES, PLEASE PROVIDE DETAILS: *</Label>
                       <Textarea
                         id="scheme_details"
                         placeholder="What do they know about the R&D tax credit scheme?"
@@ -996,26 +1023,41 @@ export default function CIFDetailPage() {
                   )}
 
                   <div className="space-y-2">
-                    <Label>Have they claimed before? *</Label>
-                    <Select
-                      value={hasClaimedBefore}
-                      onValueChange={(v: "yes" | "no" | "dont_know") => setHasClaimedBefore(v)}
-                      disabled={!canEdit}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select answer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="yes">Yes</SelectItem>
-                        <SelectItem value="no">No</SelectItem>
-                        <SelectItem value="dont_know">Don't Know</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-base">HAVE THEY CLAIMED BEFORE? *</Label>
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant={hasClaimedBefore === "yes" ? "default" : "outline"}
+                        onClick={() => setHasClaimedBefore("yes")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        YES
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={hasClaimedBefore === "no" ? "default" : "outline"}
+                        onClick={() => setHasClaimedBefore("no")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        NO
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={hasClaimedBefore === "dont_know" ? "default" : "outline"}
+                        onClick={() => setHasClaimedBefore("dont_know")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        DON'T KNOW
+                      </Button>
+                    </div>
                   </div>
 
                   {hasClaimedBefore === "yes" && (
                     <div className="space-y-2">
-                      <Label htmlFor="previous_claim">If yes, what has been claimed? *</Label>
+                      <Label htmlFor="previous_claim" className="text-base">IF YES, WHAT HAS BEEN CLAIMED? *</Label>
                       <Textarea
                         id="previous_claim"
                         placeholder="Details of previous claims (year, amount, advisor, etc.)"
@@ -1028,30 +1070,37 @@ export default function CIFDetailPage() {
                   )}
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 {/* Projects Discussion Section */}
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Have any projects been discussed? *</Label>
-                    <Select
-                      value={projectsDiscussed}
-                      onValueChange={(v: "yes" | "no") => setProjectsDiscussed(v)}
-                      disabled={!canEdit}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select answer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="yes">Yes</SelectItem>
-                        <SelectItem value="no">No</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-base">HAVE ANY PROJECTS BEEN DISCUSSED? *</Label>
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant={projectsDiscussed === "yes" ? "default" : "outline"}
+                        onClick={() => setProjectsDiscussed("yes")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        YES
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={projectsDiscussed === "no" ? "default" : "outline"}
+                        onClick={() => setProjectsDiscussed("no")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        NO
+                      </Button>
+                    </div>
                   </div>
 
                   {projectsDiscussed === "yes" && (
                     <div className="space-y-2">
-                      <Label htmlFor="projects_details">If yes, what projects have been discussed? *</Label>
+                      <Label htmlFor="projects_details" className="text-base">IF YES, WHAT PROJECTS HAVE BEEN DISCUSSED? *</Label>
                       <Textarea
                         id="projects_details"
                         placeholder="List and describe projects discussed..."
@@ -1064,30 +1113,37 @@ export default function CIFDetailPage() {
                   )}
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 {/* Fee Terms Section */}
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Have the fee terms been discussed? *</Label>
-                    <Select
-                      value={feeTermsDiscussed}
-                      onValueChange={(v: "yes" | "no") => setFeeTermsDiscussed(v)}
-                      disabled={!canEdit}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select answer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="yes">Yes</SelectItem>
-                        <SelectItem value="no">No</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-base">HAVE THE FEE TERMS BEEN DISCUSSED? *</Label>
+                    <div className="flex gap-4">
+                      <Button
+                        type="button"
+                        variant={feeTermsDiscussed === "yes" ? "default" : "outline"}
+                        onClick={() => setFeeTermsDiscussed("yes")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        YES
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={feeTermsDiscussed === "no" ? "default" : "outline"}
+                        onClick={() => setFeeTermsDiscussed("no")}
+                        disabled={!canEdit}
+                        className="flex-1"
+                      >
+                        NO
+                      </Button>
+                    </div>
                   </div>
 
                   {feeTermsDiscussed === "yes" && (
                     <div className="space-y-2">
-                      <Label htmlFor="fee_terms_details">If yes, what terms have been discussed? *</Label>
+                      <Label htmlFor="fee_terms_details" className="text-base">IF YES, WHAT TERMS HAVE BEEN DISCUSSED? *</Label>
                       <Textarea
                         id="fee_terms_details"
                         placeholder="Fee structure, percentage, payment terms, etc."
@@ -1100,11 +1156,11 @@ export default function CIFDetailPage() {
                   )}
                 </div>
 
-                <Separator />
+                <Separator className="my-6" />
 
                 {/* Additional Information */}
                 <div className="space-y-2">
-                  <Label htmlFor="additional_info">Any further information to help with the feasibility study?</Label>
+                  <Label htmlFor="additional_info" className="text-base">ANY FURTHER INFORMATION TO HELP WITH THE FEASIBILITY STUDY?</Label>
                   <Textarea
                     id="additional_info"
                     placeholder="Any other relevant information..."
@@ -1115,32 +1171,36 @@ export default function CIFDetailPage() {
                   />
                 </div>
 
+                <Separator className="my-6" />
+
                 {/* Request Feasibility Button */}
                 {canEdit && (
-                  <Button
-                    onClick={handleCompleteBDM}
-                    disabled={saving || !isBDMComplete()}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Calendar className="mr-2 h-4 w-4" />
-                        Complete BDM & Request Feasibility Call
-                      </>
-                    )}
-                  </Button>
-                )}
+                  <div className="space-y-3">
+                    <Button
+                      onClick={handleCompleteBDM}
+                      disabled={saving || !isBDMComplete()}
+                      className="w-full"
+                      size="lg"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Calendar className="mr-2 h-4 w-4" />
+                          Complete BDM & Request Feasibility Call
+                        </>
+                      )}
+                    </Button>
 
-                {!isBDMComplete() && canEdit && (
-                  <p className="text-sm text-muted-foreground text-center">
-                    Please complete all required fields (*) to request a feasibility call
-                  </p>
+                    {!isBDMComplete() && (
+                      <p className="text-sm text-muted-foreground text-center">
+                        Please complete all required fields (*) to request a feasibility call
+                      </p>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -1678,24 +1738,30 @@ export default function CIFDetailPage() {
                   )}
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="ready-submit"
-                    checked={readyToSubmit}
-                    onCheckedChange={(checked) => setReadyToSubmit(checked as boolean)}
-                    disabled={!canEdit || cif.current_stage !== "financial_section"}
-                  />
-                  <Label htmlFor="ready-submit" className="cursor-pointer">
-                    Ready to submit to admin for approval
-                  </Label>
-                </div>
+                <Separator />
 
-                {canEdit && cif.current_stage === "financial_section" && (
-                  <Button onClick={handleCompleteFinancial} disabled={saving} className="w-full">
-                    <Save className="h-4 w-4 mr-2" />
-                    {saving ? "Saving..." : "Complete Financial Section"}
-                  </Button>
-                )}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Ready to Submit</h3>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="ready-submit"
+                      checked={readyToSubmit}
+                      onCheckedChange={(checked) => setReadyToSubmit(checked as boolean)}
+                      disabled={!canEdit || cif.current_stage !== "financial_section"}
+                    />
+                    <Label htmlFor="ready-submit" className="cursor-pointer">
+                      Ready to submit to admin for approval
+                    </Label>
+                  </div>
+
+                  {canEdit && cif.current_stage === "financial_section" && (
+                    <Button onClick={handleCompleteFinancial} disabled={saving} className="w-full">
+                      <Save className="h-4 w-4 mr-2" />
+                      {saving ? "Saving..." : "Complete Financial Section"}
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
