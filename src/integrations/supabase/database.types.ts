@@ -1,4 +1,4 @@
- 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export type Json =
   | string
   | number
@@ -66,8 +66,10 @@ export type Database = {
           accountant_firm: string | null
           accountant_name: string | null
           accountant_phone: string | null
+          additional_info: string | null
           admin_last_updated: string | null
           ai_research_data: Json | null
+          alternate_contact_informed: string | null
           apportionment_assumptions: string | null
           archived: boolean | null
           archived_at: string | null
@@ -82,6 +84,7 @@ export type Database = {
           bdm_section_created_by: string | null
           bdm_understands_scheme: boolean | null
           business_background: string | null
+          can_answer_feasibility: string | null
           cif_status: string
           company_research: string | null
           consumables_estimate: number | null
@@ -92,6 +95,8 @@ export type Database = {
           director_decision: string | null
           director_id: string | null
           expected_feasibility_date: string | null
+          fee_terms_details: string | null
+          fee_terms_discussed: string | null
           finance_last_updated: string | null
           financial_section_created_by: string | null
           financial_year: string | null
@@ -100,6 +105,7 @@ export type Database = {
           linked_claim_id: string | null
           org_id: string | null
           previous_claim_date_submitted: string | null
+          previous_claim_details: string | null
           previous_claim_value: number | null
           previous_claim_year_end_date: string | null
           primary_contact_email: string | null
@@ -108,6 +114,8 @@ export type Database = {
           primary_contact_phone: string | null
           primary_contact_position: string | null
           project_overview: string | null
+          projects_details: string | null
+          projects_discussed: string | null
           prospect_id: string
           rd_themes: string[] | null
           ready_to_submit: boolean | null
@@ -115,6 +123,7 @@ export type Database = {
           rejected_by: string | null
           rejected_to_stage: string | null
           rejection_reason: string | null
+          scheme_understanding_details: string | null
           section1_completed_at: string | null
           section1_completed_by: string | null
           section2_feasibility_id: string | null
@@ -127,6 +136,7 @@ export type Database = {
           subcontractor_estimate: number | null
           tech_last_updated: string | null
           tech_section_created_by: string | null
+          understands_scheme: string | null
           updated_at: string
         }
         Insert: {
@@ -134,8 +144,10 @@ export type Database = {
           accountant_firm?: string | null
           accountant_name?: string | null
           accountant_phone?: string | null
+          additional_info?: string | null
           admin_last_updated?: string | null
           ai_research_data?: Json | null
+          alternate_contact_informed?: string | null
           apportionment_assumptions?: string | null
           archived?: boolean | null
           archived_at?: string | null
@@ -150,6 +162,7 @@ export type Database = {
           bdm_section_created_by?: string | null
           bdm_understands_scheme?: boolean | null
           business_background?: string | null
+          can_answer_feasibility?: string | null
           cif_status?: string
           company_research?: string | null
           consumables_estimate?: number | null
@@ -160,6 +173,8 @@ export type Database = {
           director_decision?: string | null
           director_id?: string | null
           expected_feasibility_date?: string | null
+          fee_terms_details?: string | null
+          fee_terms_discussed?: string | null
           finance_last_updated?: string | null
           financial_section_created_by?: string | null
           financial_year?: string | null
@@ -168,6 +183,7 @@ export type Database = {
           linked_claim_id?: string | null
           org_id?: string | null
           previous_claim_date_submitted?: string | null
+          previous_claim_details?: string | null
           previous_claim_value?: number | null
           previous_claim_year_end_date?: string | null
           primary_contact_email?: string | null
@@ -176,6 +192,8 @@ export type Database = {
           primary_contact_phone?: string | null
           primary_contact_position?: string | null
           project_overview?: string | null
+          projects_details?: string | null
+          projects_discussed?: string | null
           prospect_id: string
           rd_themes?: string[] | null
           ready_to_submit?: boolean | null
@@ -183,6 +201,7 @@ export type Database = {
           rejected_by?: string | null
           rejected_to_stage?: string | null
           rejection_reason?: string | null
+          scheme_understanding_details?: string | null
           section1_completed_at?: string | null
           section1_completed_by?: string | null
           section2_feasibility_id?: string | null
@@ -195,6 +214,7 @@ export type Database = {
           subcontractor_estimate?: number | null
           tech_last_updated?: string | null
           tech_section_created_by?: string | null
+          understands_scheme?: string | null
           updated_at?: string
         }
         Update: {
@@ -202,8 +222,10 @@ export type Database = {
           accountant_firm?: string | null
           accountant_name?: string | null
           accountant_phone?: string | null
+          additional_info?: string | null
           admin_last_updated?: string | null
           ai_research_data?: Json | null
+          alternate_contact_informed?: string | null
           apportionment_assumptions?: string | null
           archived?: boolean | null
           archived_at?: string | null
@@ -218,6 +240,7 @@ export type Database = {
           bdm_section_created_by?: string | null
           bdm_understands_scheme?: boolean | null
           business_background?: string | null
+          can_answer_feasibility?: string | null
           cif_status?: string
           company_research?: string | null
           consumables_estimate?: number | null
@@ -228,6 +251,8 @@ export type Database = {
           director_decision?: string | null
           director_id?: string | null
           expected_feasibility_date?: string | null
+          fee_terms_details?: string | null
+          fee_terms_discussed?: string | null
           finance_last_updated?: string | null
           financial_section_created_by?: string | null
           financial_year?: string | null
@@ -236,6 +261,7 @@ export type Database = {
           linked_claim_id?: string | null
           org_id?: string | null
           previous_claim_date_submitted?: string | null
+          previous_claim_details?: string | null
           previous_claim_value?: number | null
           previous_claim_year_end_date?: string | null
           primary_contact_email?: string | null
@@ -244,6 +270,8 @@ export type Database = {
           primary_contact_phone?: string | null
           primary_contact_position?: string | null
           project_overview?: string | null
+          projects_details?: string | null
+          projects_discussed?: string | null
           prospect_id?: string
           rd_themes?: string[] | null
           ready_to_submit?: boolean | null
@@ -251,6 +279,7 @@ export type Database = {
           rejected_by?: string | null
           rejected_to_stage?: string | null
           rejection_reason?: string | null
+          scheme_understanding_details?: string | null
           section1_completed_at?: string | null
           section1_completed_by?: string | null
           section2_feasibility_id?: string | null
@@ -263,6 +292,7 @@ export type Database = {
           subcontractor_estimate?: number | null
           tech_last_updated?: string | null
           tech_section_created_by?: string | null
+          understands_scheme?: string | null
           updated_at?: string
         }
         Relationships: [

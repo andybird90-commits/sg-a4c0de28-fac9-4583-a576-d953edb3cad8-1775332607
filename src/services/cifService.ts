@@ -72,6 +72,17 @@ export interface CIFWithDetails extends CIFRecord {
   risk_rating?: "low" | "medium" | "high" | null;
   notes_for_finance?: string | null;
   missing_information_flags?: string[] | null;
+  // New Feasibility Request Form fields
+  can_answer_feasibility?: "yes" | "no" | null;
+  alternate_contact_informed?: "yes" | "no" | null;
+  understands_scheme?: "yes" | "no" | "dont_know" | null;
+  scheme_understanding_details?: string | null;
+  previous_claim_details?: string | null;
+  projects_discussed?: "yes" | "no" | null;
+  projects_details?: string | null;
+  fee_terms_discussed?: "yes" | "no" | null;
+  fee_terms_details?: string | null;
+  additional_info?: string | null;
 }
 
 export const cifService = {
@@ -260,6 +271,17 @@ export const cifService = {
       previous_claim_year_end_date?: string;
       previous_claim_value?: number;
       previous_claim_date_submitted?: string;
+      // New fields
+      can_answer_feasibility?: "yes" | "no";
+      alternate_contact_informed?: "yes" | "no";
+      understands_scheme?: "yes" | "no" | "dont_know";
+      scheme_understanding_details?: string;
+      previous_claim_details?: string;
+      projects_discussed?: "yes" | "no";
+      projects_details?: string;
+      fee_terms_discussed?: "yes" | "no";
+      fee_terms_details?: string;
+      additional_info?: string;
     },
     userId: string
   ): Promise<CIFRecord | null> {
@@ -280,6 +302,18 @@ export const cifService = {
           previous_claim_year_end_date: bdmData.previous_claim_year_end_date,
           previous_claim_value: bdmData.previous_claim_value,
           previous_claim_date_submitted: bdmData.previous_claim_date_submitted,
+          // New fields mapping
+          can_answer_feasibility: bdmData.can_answer_feasibility,
+          alternate_contact_informed: bdmData.alternate_contact_informed,
+          understands_scheme: bdmData.understands_scheme,
+          scheme_understanding_details: bdmData.scheme_understanding_details,
+          previous_claim_details: bdmData.previous_claim_details,
+          projects_discussed: bdmData.projects_discussed,
+          projects_details: bdmData.projects_details,
+          fee_terms_discussed: bdmData.fee_terms_discussed,
+          fee_terms_details: bdmData.fee_terms_details,
+          additional_info: bdmData.additional_info,
+          
           section1_completed_by: userId,
           section1_completed_at: new Date().toISOString(),
           bdm_last_updated: new Date().toISOString(),
