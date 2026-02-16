@@ -130,18 +130,20 @@ export const cifService = {
       last_accounts_date?: string;
       number_of_directors?: number;
       number_of_employees?: number;
+      contact_name?: string;
+      contact_email?: string;
+      contact_phone?: string;
     };
     bdmSectionData: {
-      business_background?: string;
-      project_overview?: string;
       primary_contact_name?: string;
       primary_contact_position?: string;
       primary_contact_email?: string;
       primary_contact_phone?: string;
       primary_contact_landline?: string;
+      number_of_employees?: number;
       rd_themes?: string[];
       expected_feasibility_date?: string;
-      has_claimed_before?: boolean;
+      has_claimed_before?: boolean | null;
       previous_claim_year_end_date?: string;
       previous_claim_value?: number;
       previous_claim_date_submitted?: string;
@@ -177,9 +179,10 @@ export const cifService = {
         last_accounts_date: prospectData.last_accounts_date,
         number_of_directors: prospectData.number_of_directors,
         number_of_employees: prospectData.number_of_employees,
-        primary_contact_name: bdmSectionData.primary_contact_name,
-        primary_contact_email: bdmSectionData.primary_contact_email,
-        primary_contact_phone: bdmSectionData.primary_contact_phone,
+        contact_name: bdmSectionData.primary_contact_name,
+        contact_email: bdmSectionData.primary_contact_email,
+        contact_phone: bdmSectionData.primary_contact_phone,
+        bd_owner_id: createdBy, // Assign creator as BD owner initially
       })
       .select()
       .single();

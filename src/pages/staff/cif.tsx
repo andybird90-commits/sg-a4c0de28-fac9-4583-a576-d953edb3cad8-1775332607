@@ -351,8 +351,6 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
   // Define formData state with explicit initial values for ALL fields
   const [formData, setFormData] = useState({
     numberOfEmployees: "",
-    businessBackground: "",
-    projectOverview: "",
     primaryContactName: "",
     primaryContactPosition: "",
     primaryContactEmail: "",
@@ -369,11 +367,6 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
     feeTermsDiscussed: "",
     feeTermsDetails: "",
     additionalInfo: "",
-    rdThemes: "",
-    expectedFeasibilityDate: "",
-    previousClaimYearEndDate: "",
-    previousClaimValue: "",
-    previousClaimDateSubmitted: "",
   });
 
   const handleCompanyLookup = async () => {
@@ -447,40 +440,45 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
   const handleCreateCIF = async () => {
     if (!companyData || !profile?.id) return;
 
-    // Validate required fields
-    const missingFields: string[] = [];
-    if (!formData.numberOfEmployees.trim()) missingFields.push("Number of Employees");
-    if (!formData.businessBackground.trim()) missingFields.push("Business Background");
-    if (!formData.projectOverview.trim()) missingFields.push("Project Overview");
-    if (!formData.primaryContactName.trim()) missingFields.push("Primary Contact Name");
-    if (!formData.primaryContactEmail.trim()) missingFields.push("Primary Contact Email");
-    if (!formData.primaryContactPhone.trim()) missingFields.push("Primary Contact Phone");
-    if (!formData.canAnswerFeasibility) missingFields.push("Can Answer Feasibility");
-    if (formData.canAnswerFeasibility === "no" && !formData.alternateContactInformed) {
-      missingFields.push("Alternate Contact Informed");
+    // Validate all required fields
+    const requiredFields = {
+      "Number of Employees": formData.numberOfEmployees,
+      "Primary Contact Name": formData.primaryContactName,
+      "Primary Contact Email": formData.primaryContactEmail,
+      "Primary Contact Phone": formData.primaryContactPhone,
+      "Can Answer Feasibility": formData.canAnswerFeasibility,
+      "Understands Scheme": formData.understandsScheme,
+      "Has Claimed Before": formData.hasClaimedBefore,
+      "Projects Discussed": formData.projectsDiscussed,
+      "Fee Terms Discussed": formData.feeTermsDiscussed,
+    };
+
+    // Add conditional required fields
+    if (formData.canAnswerFeasibility === "no") {
+      requiredFields["Alternate Contact Informed"] = formData.alternateContactInformed;
     }
-    if (!formData.understandsScheme) missingFields.push("Understands Scheme");
-    if (formData.understandsScheme === "yes" && !formData.schemeUnderstandingDetails.trim()) {
-      missingFields.push("Scheme Understanding Details");
+    if (formData.understandsScheme === "yes") {
+      requiredFields["Scheme Understanding Details"] = formData.schemeUnderstandingDetails;
     }
-    if (!formData.hasClaimedBefore) missingFields.push("Has Claimed Before");
-    if (formData.hasClaimedBefore === "yes" && !formData.previousClaimDetails.trim()) {
-      missingFields.push("Previous Claim Details");
+    if (formData.hasClaimedBefore === "yes") {
+      requiredFields["Previous Claim Details"] = formData.previousClaimDetails;
     }
-    if (!formData.projectsDiscussed) missingFields.push("Projects Discussed");
-    if (formData.projectsDiscussed === "yes" && !formData.projectsDetails.trim()) {
-      missingFields.push("Projects Details");
+    if (formData.projectsDiscussed === "yes") {
+      requiredFields["Projects Details"] = formData.projectsDetails;
     }
-    if (!formData.feeTermsDiscussed) missingFields.push("Fee Terms Discussed");
-    if (formData.feeTermsDiscussed === "yes" && !formData.feeTermsDetails.trim()) {
-      missingFields.push("Fee Terms Details");
+    if (formData.feeTermsDiscussed === "yes") {
+      requiredFields["Fee Terms Details"] = formData.feeTermsDetails;
     }
-    
+
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value || value.trim() === "")
+      .map(([key]) => key);
+
     if (missingFields.length > 0) {
-      toast({ 
-        title: "Missing required fields", 
+      toast({
+        title: "Missing Required Fields",
         description: `Please fill in: ${missingFields.join(", ")}`,
-        variant: "destructive" 
+        variant: "destructive",
       });
       return;
     }
@@ -491,37 +489,41 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
         prospectData: {
           company_name: companyData.company_name,
           company_number: companyData.company_number,
-          company_status: companyData.company_status,
-          registered_address: `${companyData.registered_address?.address_line_1 || ""}, ${companyData.registered_address?.locality || ""}, ${companyData.registered_address?.postal_code || ""}`.trim(),
-          sic_codes: companyData.sic_codes,
-          incorporation_date: companyData.date_of_creation,
-          last_accounts_date: companyData.last_accounts_date,
-          number_of_directors: companyData.number_of_directors,
+          contact_name: formData.primaryContactName,
+          contact_email: formData.primaryContactEmail,
+          contact_phone: formData.primaryContactPhone,
+          registered_address: companyData.registered_office_address?.address_line_1 
+            ? [
+                companyData.registered_office_address.address_line_1,
+                companyData.registered_office_address.address_line_2,
+                companyData.registered_office_address.locality,
+                companyData.registered_office_address.postal_code,
+              ]
+                .filter(Boolean)
+                .join(", ")
+            : undefined,
+          sic_codes: companyData.sic_codes || [],
+          incorporation_date: companyData.date_of_creation || undefined,
           number_of_employees: parseInt(formData.numberOfEmployees) || undefined,
         },
         bdmSectionData: {
-          business_background: formData.businessBackground,
-          project_overview: formData.projectOverview,
           primary_contact_name: formData.primaryContactName,
           primary_contact_position: formData.primaryContactPosition || undefined,
           primary_contact_email: formData.primaryContactEmail,
           primary_contact_phone: formData.primaryContactPhone,
           primary_contact_landline: formData.primaryContactLandline || undefined,
+          number_of_employees: parseInt(formData.numberOfEmployees) || undefined,
           can_answer_feasibility: formData.canAnswerFeasibility,
           alternate_contact_informed: formData.alternateContactInformed || undefined,
           understands_scheme: formData.understandsScheme,
           scheme_understanding_details: formData.schemeUnderstandingDetails || undefined,
-          // Convert string state to boolean for DB (yes=true, otherwise false)
-          has_claimed_before: formData.hasClaimedBefore === "yes",
+          has_claimed_before: formData.hasClaimedBefore === "yes" ? true : formData.hasClaimedBefore === "no" ? false : null,
           previous_claim_details: formData.previousClaimDetails || undefined,
           projects_discussed: formData.projectsDiscussed,
           projects_details: formData.projectsDetails || undefined,
           fee_terms_discussed: formData.feeTermsDiscussed,
           fee_terms_details: formData.feeTermsDetails || undefined,
           additional_info: formData.additionalInfo || undefined,
-          rd_themes: formData.rdThemes ? formData.rdThemes.split("\n").filter(t => t.trim()) : undefined,
-          expected_feasibility_date: formData.expectedFeasibilityDate || undefined,
-          company_research: companyResearch,
           ai_research_data: analysisData || undefined,
         },
         createdBy: profile.id,
@@ -607,19 +609,16 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
             </Card>
           )}
 
-          {!researchLoading && companyResearch && (
-            <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300 text-sm">
-                  RD Sidekick Research
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                  {companyResearch}
-                </p>
-              </CardContent>
-            </Card>
+          {/* AI Analysis Result */}
+          {analysisData && (
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                RD Sidekick Research
+              </h3>
+              <div className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap max-h-[400px] overflow-y-auto">
+                {analysisData}
+              </div>
+            </div>
           )}
 
           {/* BUSINESS DETAILS */}
@@ -649,40 +648,85 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
             />
           </div>
 
-          {/* CONTACT DETAILS */}
-          <div className="bg-orange-500 text-white px-4 py-2 font-semibold rounded">
-            CONTACT DETAILS
-          </div>
+          {/* Contact Details Section */}
+          <div className="space-y-4">
+            <div className="bg-orange-500 text-white px-4 py-2 font-semibold">
+              CONTACT DETAILS
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="contact-name">Contact Name *</Label>
-            <Input
-              id="contact-name"
-              placeholder="Full name"
-              value={formData.primaryContactName}
-              onChange={(e) => setFormData(prev => ({ ...prev, primaryContactName: e.target.value }))}
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="primaryContactName">
+                  Contact Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="primaryContactName"
+                  value={formData.primaryContactName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, primaryContactName: e.target.value })
+                  }
+                  placeholder="Full name"
+                  required
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="contact-number">Contact Number *</Label>
-            <Input
-              id="contact-number"
-              placeholder="+44 1234 567890"
-              value={formData.primaryContactPhone}
-              onChange={(e) => setFormData(prev => ({ ...prev, primaryContactPhone: e.target.value }))}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="primaryContactPosition">Contact Position</Label>
+                <Input
+                  id="primaryContactPosition"
+                  value={formData.primaryContactPosition}
+                  onChange={(e) =>
+                    setFormData({ ...formData, primaryContactPosition: e.target.value })
+                  }
+                  placeholder="Job title"
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="contact-email">Contact Email *</Label>
-            <Input
-              id="contact-email"
-              type="email"
-              placeholder="email@example.com"
-              value={formData.primaryContactEmail}
-              onChange={(e) => setFormData(prev => ({ ...prev, primaryContactEmail: e.target.value }))}
-            />
+              <div className="space-y-2">
+                <Label htmlFor="primaryContactEmail">
+                  Contact Email <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="primaryContactEmail"
+                  type="email"
+                  value={formData.primaryContactEmail}
+                  onChange={(e) =>
+                    setFormData({ ...formData, primaryContactEmail: e.target.value })
+                  }
+                  placeholder="email@example.com"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="primaryContactPhone">
+                  Contact Phone <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="primaryContactPhone"
+                  type="tel"
+                  value={formData.primaryContactPhone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, primaryContactPhone: e.target.value })
+                  }
+                  placeholder="+44 1234 567890"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="primaryContactLandline">Contact Landline</Label>
+                <Input
+                  id="primaryContactLandline"
+                  type="tel"
+                  value={formData.primaryContactLandline}
+                  onChange={(e) =>
+                    setFormData({ ...formData, primaryContactLandline: e.target.value })
+                  }
+                  placeholder="+44 20 1234 5678"
+                />
+              </div>
+            </div>
           </div>
 
           {/* START POINT INFORMATION */}
@@ -909,27 +953,7 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
 
           {/* ADDITIONAL FIELDS (Optional) */}
           <div className="pt-4 border-t">
-            <div className="space-y-2">
-              <Label htmlFor="business-bg">Business Background</Label>
-              <Textarea
-                id="business-bg"
-                placeholder="Brief description of the business and what they do..."
-                className="min-h-[100px]"
-                value={formData.businessBackground}
-                onChange={(e) => setFormData(prev => ({ ...prev, businessBackground: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-2 mt-4">
-              <Label htmlFor="project-overview">Project Overview</Label>
-              <Textarea
-                id="project-overview"
-                placeholder="Description of the R&D project or technical challenges..."
-                className="min-h-[100px]"
-                value={formData.projectOverview}
-                onChange={(e) => setFormData(prev => ({ ...prev, projectOverview: e.target.value }))}
-              />
-            </div>
+            {/* Business Background and Project Overview removed */}
           </div>
 
           <div className="flex gap-3 pt-4 sticky bottom-0 bg-white dark:bg-gray-950 pb-2">
