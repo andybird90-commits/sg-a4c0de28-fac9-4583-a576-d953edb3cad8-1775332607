@@ -198,8 +198,6 @@ export const cifService = {
         current_stage: "bdm_section",
         
         // BDM Section Data
-        bdm_business_background: bdmSectionData.business_background,
-        bdm_project_overview: bdmSectionData.project_overview,
         bdm_primary_contact_name: bdmSectionData.primary_contact_name,
         bdm_primary_contact_position: bdmSectionData.primary_contact_position,
         bdm_primary_contact_email: bdmSectionData.primary_contact_email,

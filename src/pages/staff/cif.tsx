@@ -451,6 +451,7 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
       "Has Claimed Before": formData.hasClaimedBefore,
       "Projects Discussed": formData.projectsDiscussed,
       "Fee Terms Discussed": formData.feeTermsDiscussed,
+      "Additional Information": formData.additionalInfo,
     };
 
     // Add conditional required fields
@@ -941,7 +942,7 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="additional-info">Any further information to help with the feasibility study?</Label>
+            <Label htmlFor="additional-info">Any further information to help with the feasibility study? *</Label>
             <Textarea
               id="additional-info"
               placeholder="Any additional notes or information..."
