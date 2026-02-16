@@ -115,17 +115,19 @@ export const cifService = {
   /**
    * Create new CIF record with BDM Section A data
    */
-  async createCIF(data: {
+  async createCIF({
+    prospectData,
+    bdmSectionData,
+    createdBy,
+  }: {
     prospectData: {
-      org_id?: string;
       company_name: string;
-      company_number?: string;
+      company_number: string;
       company_status?: string;
       registered_address?: string;
       sic_codes?: string[];
       incorporation_date?: string;
-      last_accounts_date?: string | null;
-      status?: string;
+      last_accounts_date?: string;
       number_of_directors?: number;
       number_of_employees?: number;
     };
@@ -145,101 +147,90 @@ export const cifService = {
       previous_claim_date_submitted?: string;
       company_research?: string;
       ai_research_data?: any;
+      can_answer_feasibility?: string;
+      alternate_contact_informed?: string;
+      understands_scheme?: string;
+      scheme_understanding_details?: string;
+      previous_claim_details?: string;
+      projects_discussed?: string;
+      projects_details?: string;
+      fee_terms_discussed?: string;
+      fee_terms_details?: string;
+      additional_info?: string;
     };
     createdBy: string;
-  }): Promise<{ cif: CIFRecord; prospect: Prospect } | null> {
-    try {
-      console.log("[cifService.createCIF] Starting CIF creation with data:", data);
+  }) {
+    // 1. Create or get Profile
+    // Note: In a real app we'd probably want to create a contact record first
+    // For now we'll just store contact info directly on the CIF or Prospect
 
-      // 1. Create prospect record
-      console.log("[cifService.createCIF] Step 1: Creating prospect record...");
-      const prospectInsert: ProspectInsert = {
-        company_name: data.prospectData.company_name,
-        company_number: data.prospectData.company_number,
-        company_status: data.prospectData.company_status || "active",
-        registered_address: data.prospectData.registered_address,
-        sic_codes: data.prospectData.sic_codes || [],
-        incorporation_date: data.prospectData.incorporation_date || null,
-        last_accounts_date: data.prospectData.last_accounts_date || null,
-        number_of_directors: data.prospectData.number_of_directors || null,
-        number_of_employees: data.prospectData.number_of_employees || null,
-        bd_owner_id: data.createdBy,
-        status: "section1_in_progress"
-      };
-      console.log("[cifService.createCIF] Prospect insert data:", prospectInsert);
+    // 2. Create Prospect
+    const { data: prospect, error: prospectError } = await supabase
+      .from("prospects")
+      .insert({
+        company_name: prospectData.company_name,
+        company_number: prospectData.company_number,
+        company_status: prospectData.company_status,
+        registered_address: prospectData.registered_address,
+        sic_codes: prospectData.sic_codes,
+        incorporation_date: prospectData.incorporation_date,
+        last_accounts_date: prospectData.last_accounts_date,
+        number_of_directors: prospectData.number_of_directors,
+        number_of_employees: prospectData.number_of_employees,
+        primary_contact_name: bdmSectionData.primary_contact_name,
+        primary_contact_email: bdmSectionData.primary_contact_email,
+        primary_contact_phone: bdmSectionData.primary_contact_phone,
+      })
+      .select()
+      .single();
 
-      const { data: prospect, error: prospectError } = await supabase
-        .from("prospects")
-        .insert(prospectInsert)
-        .select()
-        .single();
+    if (prospectError) throw prospectError;
 
-      if (prospectError) {
-        console.error("[cifService.createCIF] Prospect creation error:", prospectError);
-        console.error("[cifService.createCIF] Error details:", {
-          code: prospectError.code,
-          message: prospectError.message,
-          details: prospectError.details,
-          hint: prospectError.hint
-        });
-        throw prospectError;
-      }
-      
-      if (!prospect) {
-        console.error("[cifService.createCIF] Prospect creation returned null");
-        throw new Error("Failed to create prospect - no data returned");
-      }
-
-      console.log("[cifService.createCIF] Prospect created successfully:", prospect);
-
-      // 2. Create CIF record
-      console.log("[cifService.createCIF] Step 2: Creating CIF record...");
-      const cifData: CIFInsert = {
+    // 3. Create CIF Record
+    const { data: cif, error: cifError } = await supabase
+      .from("cif_records")
+      .insert({
         prospect_id: prospect.id,
-        section1_completed_by: data.createdBy,
+        created_by: createdBy,
         current_stage: "bdm_section",
-        cif_status: "in_progress",
-        business_background: data.bdmSectionData.business_background,
-        project_overview: data.bdmSectionData.project_overview,
-        primary_contact_name: data.bdmSectionData.primary_contact_name,
-        primary_contact_position: data.bdmSectionData.primary_contact_position,
-        primary_contact_email: data.bdmSectionData.primary_contact_email,
-        primary_contact_phone: data.bdmSectionData.primary_contact_phone,
-        primary_contact_landline: data.bdmSectionData.primary_contact_landline,
-        rd_themes: data.bdmSectionData.rd_themes,
-        expected_feasibility_date: data.bdmSectionData.expected_feasibility_date,
-        has_claimed_before: data.bdmSectionData.has_claimed_before,
-        previous_claim_year_end_date: data.bdmSectionData.previous_claim_year_end_date,
-        previous_claim_value: data.bdmSectionData.previous_claim_value,
-        previous_claim_date_submitted: data.bdmSectionData.previous_claim_date_submitted,
-        bdm_last_updated: new Date().toISOString(),
-        company_research: data.bdmSectionData.company_research,
-        ai_research_data: data.bdmSectionData.ai_research_data,
-      };
-      console.log("[cifService.createCIF] CIF insert data:", cifData);
+        
+        // BDM Section Data
+        bdm_business_background: bdmSectionData.business_background,
+        bdm_project_overview: bdmSectionData.project_overview,
+        bdm_primary_contact_name: bdmSectionData.primary_contact_name,
+        bdm_primary_contact_position: bdmSectionData.primary_contact_position,
+        bdm_primary_contact_email: bdmSectionData.primary_contact_email,
+        bdm_primary_contact_phone: bdmSectionData.primary_contact_phone,
+        bdm_primary_contact_landline: bdmSectionData.primary_contact_landline,
+        bdm_rd_themes: bdmSectionData.rd_themes,
+        bdm_expected_feasibility_date: bdmSectionData.expected_feasibility_date,
+        has_claimed_before: bdmSectionData.has_claimed_before,
+        previous_claim_year_end_date: bdmSectionData.previous_claim_year_end_date,
+        previous_claim_value: bdmSectionData.previous_claim_value,
+        previous_claim_date_submitted: bdmSectionData.previous_claim_date_submitted,
+        
+        // New Fields
+        can_answer_feasibility: bdmSectionData.can_answer_feasibility,
+        alternate_contact_informed: bdmSectionData.alternate_contact_informed,
+        understands_scheme: bdmSectionData.understands_scheme,
+        scheme_understanding_details: bdmSectionData.scheme_understanding_details,
+        previous_claim_details: bdmSectionData.previous_claim_details,
+        projects_discussed: bdmSectionData.projects_discussed,
+        projects_details: bdmSectionData.projects_details,
+        fee_terms_discussed: bdmSectionData.fee_terms_discussed,
+        fee_terms_details: bdmSectionData.fee_terms_details,
+        additional_info: bdmSectionData.additional_info,
 
-      const { data: cif, error: cifError } = await supabase
-        .from("cif_records")
-        .insert(cifData)
-        .select()
-        .single();
+        // AI Research
+        bdm_company_research: bdmSectionData.company_research,
+        bdm_ai_research_data: bdmSectionData.ai_research_data,
+      })
+      .select()
+      .single();
 
-      if (cifError) {
-        console.error("[cifService.createCIF] CIF creation error:", cifError);
-        throw cifError;
-      }
+    if (cifError) throw cifError;
 
-      if (!cif) {
-        console.error("[cifService.createCIF] CIF creation returned null");
-        throw new Error("Failed to create CIF - no data returned");
-      }
-
-      console.log("[cifService.createCIF] CIF created successfully:", cif);
-      return { cif, prospect };
-    } catch (error) {
-      console.error("[cifService.createCIF] Error creating CIF:", error);
-      throw error; // Re-throw so the caller can handle it
-    }
+    return { cif, prospect };
   },
 
   /**
