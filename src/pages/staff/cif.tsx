@@ -13,12 +13,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { MessageWidget } from "@/components/MessageWidget";
 
 export default function StaffCIFPage() {
   const router = useRouter();
-  const { profileWithOrg: profile, isStaff } = useApp();
+  const { isStaff } = useApp();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -349,7 +347,10 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
   const [researchLoading, setResearchLoading] = useState(false);
   const [companyResearch, setCompanyResearch] = useState("");
   const [analysisData, setAnalysisData] = useState<any>(null);
+  
+  // Define formData state with explicit initial values for ALL fields
   const [formData, setFormData] = useState({
+    numberOfEmployees: "",
     businessBackground: "",
     projectOverview: "",
     primaryContactName: "",
@@ -357,9 +358,19 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
     primaryContactEmail: "",
     primaryContactPhone: "",
     primaryContactLandline: "",
+    canAnswerFeasibility: "",
+    alternateContactInformed: "",
+    understandsScheme: "",
+    schemeUnderstandingDetails: "",
+    hasClaimedBefore: "",
+    previousClaimDetails: "",
+    projectsDiscussed: "",
+    projectsDetails: "",
+    feeTermsDiscussed: "",
+    feeTermsDetails: "",
+    additionalInfo: "",
     rdThemes: "",
     expectedFeasibilityDate: "",
-    hasClaimedBefore: false,
     previousClaimYearEndDate: "",
     previousClaimValue: "",
     previousClaimDateSubmitted: "",
@@ -438,9 +449,32 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
 
     // Validate required fields
     const missingFields: string[] = [];
+    if (!formData.numberOfEmployees.trim()) missingFields.push("Number of Employees");
     if (!formData.businessBackground.trim()) missingFields.push("Business Background");
     if (!formData.projectOverview.trim()) missingFields.push("Project Overview");
     if (!formData.primaryContactName.trim()) missingFields.push("Primary Contact Name");
+    if (!formData.primaryContactEmail.trim()) missingFields.push("Primary Contact Email");
+    if (!formData.primaryContactPhone.trim()) missingFields.push("Primary Contact Phone");
+    if (!formData.canAnswerFeasibility) missingFields.push("Can Answer Feasibility");
+    if (formData.canAnswerFeasibility === "no" && !formData.alternateContactInformed) {
+      missingFields.push("Alternate Contact Informed");
+    }
+    if (!formData.understandsScheme) missingFields.push("Understands Scheme");
+    if (formData.understandsScheme === "yes" && !formData.schemeUnderstandingDetails.trim()) {
+      missingFields.push("Scheme Understanding Details");
+    }
+    if (!formData.hasClaimedBefore) missingFields.push("Has Claimed Before");
+    if (formData.hasClaimedBefore === "yes" && !formData.previousClaimDetails.trim()) {
+      missingFields.push("Previous Claim Details");
+    }
+    if (!formData.projectsDiscussed) missingFields.push("Projects Discussed");
+    if (formData.projectsDiscussed === "yes" && !formData.projectsDetails.trim()) {
+      missingFields.push("Projects Details");
+    }
+    if (!formData.feeTermsDiscussed) missingFields.push("Fee Terms Discussed");
+    if (formData.feeTermsDiscussed === "yes" && !formData.feeTermsDetails.trim()) {
+      missingFields.push("Fee Terms Details");
+    }
     
     if (missingFields.length > 0) {
       toast({ 
@@ -463,22 +497,30 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
           incorporation_date: companyData.date_of_creation,
           last_accounts_date: companyData.last_accounts_date,
           number_of_directors: companyData.number_of_directors,
-          number_of_employees: companyData.number_of_employees,
+          number_of_employees: parseInt(formData.numberOfEmployees) || undefined,
         },
         bdmSectionData: {
           business_background: formData.businessBackground,
           project_overview: formData.projectOverview,
           primary_contact_name: formData.primaryContactName,
           primary_contact_position: formData.primaryContactPosition || undefined,
-          primary_contact_email: formData.primaryContactEmail || undefined,
-          primary_contact_phone: formData.primaryContactPhone || undefined,
+          primary_contact_email: formData.primaryContactEmail,
+          primary_contact_phone: formData.primaryContactPhone,
           primary_contact_landline: formData.primaryContactLandline || undefined,
+          can_answer_feasibility: formData.canAnswerFeasibility,
+          alternate_contact_informed: formData.alternateContactInformed || undefined,
+          understands_scheme: formData.understandsScheme,
+          scheme_understanding_details: formData.schemeUnderstandingDetails || undefined,
+          // Convert string state to boolean for DB (yes=true, otherwise false)
+          has_claimed_before: formData.hasClaimedBefore === "yes",
+          previous_claim_details: formData.previousClaimDetails || undefined,
+          projects_discussed: formData.projectsDiscussed,
+          projects_details: formData.projectsDetails || undefined,
+          fee_terms_discussed: formData.feeTermsDiscussed,
+          fee_terms_details: formData.feeTermsDetails || undefined,
+          additional_info: formData.additionalInfo || undefined,
           rd_themes: formData.rdThemes ? formData.rdThemes.split("\n").filter(t => t.trim()) : undefined,
           expected_feasibility_date: formData.expectedFeasibilityDate || undefined,
-          has_claimed_before: formData.hasClaimedBefore,
-          previous_claim_year_end_date: formData.previousClaimYearEndDate || undefined,
-          previous_claim_value: formData.previousClaimValue ? parseFloat(formData.previousClaimValue) : undefined,
-          previous_claim_date_submitted: formData.previousClaimDateSubmitted || undefined,
           company_research: companyResearch,
           ai_research_data: analysisData || undefined,
         },
