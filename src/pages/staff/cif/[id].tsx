@@ -520,11 +520,7 @@ export default function CIFDetailPage() {
         has_claimed_before: hasClaimedBefore === "yes"
       };
 
-      const result = await cifService.completeBDMSection(
-        cif.id,
-        bdmData,
-        profile.id
-      );
+      const result = await cifService.completeBDMSection(cif.id, profile.id);
 
       if (result) {
         toast({
@@ -613,30 +609,8 @@ export default function CIFDetailPage() {
         competent_professional_3_position: competentProf3Position,
         competent_professional_3_mobile: competentProf3Mobile,
         competent_professional_3_email: competentProf3Email,
-        has_claimed_before: hasClaimedBefore === "yes",
-        first_claim_year_for_new_claim: firstClaimYearForNewClaim,
-        accounts_filed: accountsFiled as "yes" | "no",
-        ct600_filed_seen: ct600FiledSeen as "yes" | "no",
-        pre_notification_required: preNotificationRequired as "yes" | "no",
-        costs_details: costsDetails,
-        projects_details_feas: projectsDetailsFeas,
-        subcontractors_involved: subcontractorsInvolved as "yes" | "no",
-        time_sensitive: timeSensitive as "yes" | "no",
-        accountant_firm: accountantFirm,
-        accountant_name: accountantName,
-        accountant_email: accountantEmail,
-        accountant_phone: accountantPhone,
-        financial_year: financialYear,
-        year_end_month: yearEndMonth,
-        apes: apes,
-        fee_percentage: parseFloat(feePercentage),
-        minimum_fee: parseFloat(minimumFee),
-        introducer: introducer as "yes" | "no",
-        introducer_details: introducerDetails,
-        // Legacy fields mapping or defaults
-        feasibility_status: "qualified", // Assume qualified if completing form? Or should we add status field?
         technical_understanding: "See details in form",
-      }, profile?.id || "");
+      });
 
       toast({
         title: "Success",
@@ -666,23 +640,7 @@ export default function CIFDetailPage() {
 
     setSaving(true);
     try {
-      const result = await cifService.completeFinancialSection(
-        cif.id,
-        {
-          financial_year: financialYear,
-          staff_cost_estimate: staffCost ? parseFloat(staffCost) : undefined,
-          subcontractor_estimate: subcontractorCost ? parseFloat(subcontractorCost) : undefined,
-          consumables_estimate: consumablesCost ? parseFloat(consumablesCost) : undefined,
-          software_estimate: softwareCost ? parseFloat(softwareCost) : undefined,
-          apportionment_assumptions: apportionment,
-          accountant_name: accountantName,
-          accountant_firm: accountantFirm,
-          accountant_email: accountantEmail,
-          accountant_phone: accountantPhone,
-          ready_to_submit: readyToSubmit
-        },
-        profile.id
-      );
+      const result = await cifService.completeFinancialSection(cif.id, profile.id);
 
       if (result) {
         toast({ title: "Success", description: "Financial section completed" });
@@ -707,7 +665,7 @@ export default function CIFDetailPage() {
       if (result) {
         toast({
           title: "Success",
-          description: `CIF approved and claim created for FY ${result.claim?.claim_year || 'Unknown'}`
+          description: "CIF approved and ready for claim creation"
         });
         router.push("/staff/cif");
       } else {
@@ -735,22 +693,12 @@ export default function CIFDetailPage() {
 
     setSaving(true);
     try {
-      const result = await cifService.rejectCIF(
-        cif.id,
-        rejectionType,
-        rejectionType === "send_back" ? rejectToStage : undefined,
-        rejectionReason,
-        profile.id
-      );
+      const result = await cifService.rejectCIF(cif.id, profile.id, rejectionReason);
 
-      if (rejectionType === "delete" || result) {
+      if (result) {
         toast({
           title: "Success",
-          description: rejectionType === "delete" ?
-            "CIF deleted successfully" :
-            rejectionType === "archive" ?
-              "CIF archived successfully" :
-              `CIF sent back to ${rejectToStage.replace(/_/g, " ")}`
+          description: "CIF rejected successfully"
         });
         setShowRejectModal(false);
         router.push("/staff/cif");
@@ -769,13 +717,7 @@ export default function CIFDetailPage() {
 
     setSaving(true);
     try {
-      const result = await cifService.rejectCIF(
-        cif.id,
-        "delete",
-        undefined,
-        "Admin deletion",
-        profile.id
-      );
+      await cifService.rejectCIF(cif.id, profile.id, "Admin deletion");
 
       toast({
         title: "Success",

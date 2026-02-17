@@ -76,12 +76,12 @@ export default function CIFArchivePage() {
     if (!selectedCIF) return;
 
     try {
-      const result = await cifService.reactivateCIF(selectedCIF.id, reactivateStage);
+      const result = await cifService.reactivateCIF(selectedCIF.id);
       
       if (result) {
         toast({ 
           title: "Success", 
-          description: `CIF reactivated and sent to ${reactivateStage.replace(/_/g, " ")}` 
+          description: "CIF reactivated and sent to BDM Section" 
         });
         setShowReactivateModal(false);
         setSelectedCIF(null);
