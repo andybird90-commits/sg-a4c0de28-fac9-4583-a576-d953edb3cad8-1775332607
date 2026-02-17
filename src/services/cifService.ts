@@ -325,7 +325,13 @@ export const cifService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data as CIFWithDetails[];
+    
+    return (data || []).map(cif => ({
+      ...cif,
+      created_by_profile: Array.isArray(cif.created_by_profile) 
+        ? cif.created_by_profile[0] 
+        : cif.created_by_profile
+    })) as CIFWithDetails[];
   },
 
   /**
@@ -344,7 +350,13 @@ export const cifService = {
       .single();
 
     if (error) throw error;
-    return data as CIFWithDetails;
+    
+    return {
+      ...data,
+      created_by_profile: Array.isArray(data.created_by_profile) 
+        ? data.created_by_profile[0] 
+        : data.created_by_profile
+    } as CIFWithDetails;
   },
 
   /**
@@ -404,7 +416,13 @@ export const cifService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data as CIFWithDetails[];
+    
+    return (data || []).map(cif => ({
+      ...cif,
+      created_by_profile: Array.isArray(cif.created_by_profile) 
+        ? cif.created_by_profile[0] 
+        : cif.created_by_profile
+    })) as CIFWithDetails[];
   },
 
   /**
@@ -518,7 +536,13 @@ export const cifService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data as CIFWithDetails[];
+    
+    return (data || []).map(cif => ({
+      ...cif,
+      created_by_profile: Array.isArray(cif.created_by_profile) 
+        ? cif.created_by_profile[0] 
+        : cif.created_by_profile
+    })) as CIFWithDetails[];
   },
 
   /**
@@ -537,7 +561,13 @@ export const cifService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data as CIFWithDetails[];
+    
+    return (data || []).map(cif => ({
+      ...cif,
+      created_by_profile: Array.isArray(cif.created_by_profile) 
+        ? cif.created_by_profile[0] 
+        : cif.created_by_profile
+    })) as CIFWithDetails[];
   },
 
   /**
@@ -556,7 +586,13 @@ export const cifService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data as CIFWithDetails[];
+    
+    return (data || []).map(cif => ({
+      ...cif,
+      created_by_profile: Array.isArray(cif.created_by_profile) 
+        ? cif.created_by_profile[0] 
+        : cif.created_by_profile
+    })) as CIFWithDetails[];
   },
 
   /**
@@ -575,6 +611,12 @@ export const cifService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data as CIFWithDetails[];
+    
+    return (data || []).map(cif => ({
+      ...cif,
+      created_by_profile: Array.isArray(cif.created_by_profile) 
+        ? cif.created_by_profile[0] 
+        : cif.created_by_profile
+    })) as CIFWithDetails[];
   },
 };
