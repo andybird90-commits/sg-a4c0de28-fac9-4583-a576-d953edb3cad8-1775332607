@@ -190,7 +190,7 @@ export const cifService = {
       .from("cif_records")
       .insert({
         prospect_id: prospect.id,
-        created_by: createdBy,
+        bdm_section_created_by: createdBy,
         current_stage: "bdm_section",
         
         // BDM Section Data
@@ -320,7 +320,7 @@ export const cifService = {
       .select(`
         *,
         prospects (*),
-        created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+        created_by_profile:profiles!cif_records_bdm_section_created_by_fkey(full_name, email)
       `)
       .order("created_at", { ascending: false });
 
@@ -343,7 +343,7 @@ export const cifService = {
       .select(`
         *,
         prospects (*),
-        created_by_profile:profiles!cif_records_created_by_fkey(full_name, email),
+        created_by_profile:profiles!cif_records_bdm_section_created_by_fkey(full_name, email),
         claim:claims(*)
       `)
       .eq("id", id)
@@ -410,7 +410,7 @@ export const cifService = {
       .select(`
         *,
         prospects (*),
-        created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+        created_by_profile:profiles!cif_records_bdm_section_created_by_fkey(full_name, email)
       `)
       .eq("archived", true)
       .order("created_at", { ascending: false });
@@ -434,7 +434,7 @@ export const cifService = {
       .update({
         current_stage: "feasibility_pending",
         bdm_completed_at: new Date().toISOString(),
-        bdm_completed_by: userId,
+        section1_completed_by: userId,
       })
       .eq("id", cifId)
       .select()
@@ -452,8 +452,8 @@ export const cifService = {
       .from("cif_records")
       .update({
         current_stage: "financial_complete",
-        financial_completed_at: new Date().toISOString(),
-        financial_completed_by: userId,
+        section4_completed_at: new Date().toISOString(),
+        section4_completed_by: userId,
       })
       .eq("id", cifId)
       .select()
@@ -471,8 +471,8 @@ export const cifService = {
       .from("cif_records")
       .update({
         current_stage: "approved",
-        approved_at: new Date().toISOString(),
-        approved_by: userId,
+        section4_completed_at: new Date().toISOString(),
+        section4_completed_by: userId,
       })
       .eq("id", cifId)
       .select()
@@ -490,8 +490,8 @@ export const cifService = {
       .from("cif_records")
       .update({
         current_stage: "rejected",
-        rejected_at: new Date().toISOString(),
-        rejected_by: userId,
+        section4_completed_at: new Date().toISOString(),
+        section4_completed_by: userId,
         rejection_reason: rejectionReason,
       })
       .eq("id", cifId)
@@ -529,7 +529,7 @@ export const cifService = {
       .select(`
         *,
         prospects (*),
-        created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+        created_by_profile:profiles!cif_records_bdm_section_created_by_fkey(full_name, email)
       `)
       .eq("current_stage", "bdm_section")
       .eq("archived", false)
@@ -554,7 +554,7 @@ export const cifService = {
       .select(`
         *,
         prospects (*),
-        created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+        created_by_profile:profiles!cif_records_bdm_section_created_by_fkey(full_name, email)
       `)
       .eq("current_stage", "feasibility_pending")
       .eq("archived", false)
@@ -579,7 +579,7 @@ export const cifService = {
       .select(`
         *,
         prospects (*),
-        created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+        created_by_profile:profiles!cif_records_bdm_section_created_by_fkey(full_name, email)
       `)
       .eq("current_stage", "feasibility_complete")
       .eq("archived", false)
@@ -604,7 +604,7 @@ export const cifService = {
       .select(`
         *,
         prospects (*),
-        created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+        created_by_profile:profiles!cif_records_bdm_section_created_by_fkey(full_name, email)
       `)
       .eq("current_stage", "rejected")
       .eq("archived", false)
