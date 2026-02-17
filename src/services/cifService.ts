@@ -406,4 +406,175 @@ export const cifService = {
     if (error) throw error;
     return data as CIFWithDetails[];
   },
+
+  /**
+   * Complete BDM Section
+   */
+  async completeBDMSection(cifId: string, userId: string) {
+    const { data, error } = await supabase
+      .from("cif_records")
+      .update({
+        current_stage: "feasibility_pending",
+        bdm_completed_at: new Date().toISOString(),
+        bdm_completed_by: userId,
+      })
+      .eq("id", cifId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Complete Financial Section (legacy method - now merged into completeFeasibilitySection)
+   */
+  async completeFinancialSection(cifId: string, userId: string) {
+    const { data, error } = await supabase
+      .from("cif_records")
+      .update({
+        current_stage: "financial_complete",
+        financial_completed_at: new Date().toISOString(),
+        financial_completed_by: userId,
+      })
+      .eq("id", cifId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Approve CIF and convert to claim
+   */
+  async approveCIF(cifId: string, userId: string) {
+    const { data, error } = await supabase
+      .from("cif_records")
+      .update({
+        current_stage: "approved",
+        approved_at: new Date().toISOString(),
+        approved_by: userId,
+      })
+      .eq("id", cifId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Reject CIF
+   */
+  async rejectCIF(cifId: string, userId: string, rejectionReason?: string) {
+    const { data, error } = await supabase
+      .from("cif_records")
+      .update({
+        current_stage: "rejected",
+        rejected_at: new Date().toISOString(),
+        rejected_by: userId,
+        rejection_reason: rejectionReason,
+      })
+      .eq("id", cifId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Reactivate archived CIF
+   */
+  async reactivateCIF(id: string) {
+    const { data, error } = await supabase
+      .from("cif_records")
+      .update({ 
+        archived: false,
+        current_stage: "bdm_section"
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Get Job Board A CIFs (BDM Section stage)
+   */
+  async getJobBoardA() {
+    const { data, error } = await supabase
+      .from("cif_records")
+      .select(`
+        *,
+        prospects (*),
+        created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+      `)
+      .eq("current_stage", "bdm_section")
+      .eq("archived", false)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data as CIFWithDetails[];
+  },
+
+  /**
+   * Get Job Board B CIFs (Feasibility Pending stage)
+   */
+  async getJobBoardB() {
+    const { data, error } = await supabase
+      .from("cif_records")
+      .select(`
+        *,
+        prospects (*),
+        created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+      `)
+      .eq("current_stage", "feasibility_pending")
+      .eq("archived", false)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data as CIFWithDetails[];
+  },
+
+  /**
+   * Get Job Board C CIFs (Feasibility Complete stage)
+   */
+  async getJobBoardC() {
+    const { data, error } = await supabase
+      .from("cif_records")
+      .select(`
+        *,
+        prospects (*),
+        created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+      `)
+      .eq("current_stage", "feasibility_complete")
+      .eq("archived", false)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data as CIFWithDetails[];
+  },
+
+  /**
+   * Get Rejected CIFs
+   */
+  async getRejectedCIFs() {
+    const { data, error } = await supabase
+      .from("cif_records")
+      .select(`
+        *,
+        prospects (*),
+        created_by_profile:profiles!cif_records_created_by_fkey(full_name, email)
+      `)
+      .eq("current_stage", "rejected")
+      .eq("archived", false)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data as CIFWithDetails[];
+  },
 };
