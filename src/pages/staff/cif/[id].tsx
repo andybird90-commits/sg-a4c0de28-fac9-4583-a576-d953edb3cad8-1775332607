@@ -1379,7 +1379,7 @@ export default function CIFDetailPage() {
                         {aiResearchData.prenotification_required ? "Yes" : "No"}
                       </Badge>
                       {aiResearchData.prenotification_reason && (
-                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
                           {aiResearchData.prenotification_reason}
                         </p>
                       )}
@@ -1764,7 +1764,7 @@ export default function CIFDetailPage() {
 
                 <Separator />
 
-                {/* FEASIBILITY SECTION */}
+                {/* FEASIBILITY */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/20 px-3 py-2 -mx-3">
                     FEASIBILITY
@@ -2059,7 +2059,7 @@ export default function CIFDetailPage() {
                         id="year_end"
                         value={financialYear}
                         onChange={(e) => setFinancialYear(e.target.value)}
-                        placeholder="e.g., 31/03/2024"
+                        placeholder="e.g., 31-03-2024"
                         disabled={!canEdit || cif.current_stage !== "financial_section"}
                       />
                     </div>
@@ -2153,11 +2153,16 @@ export default function CIFDetailPage() {
                 <Separator />
 
                 {/* Complete Feasibility Button */}
-                {canEdit && cif.current_stage === "tech_feasibility" && (
-                  <Button onClick={handleCompleteTechnical} disabled={saving} className="w-full" size="lg">
-                    <Save className="h-4 w-4 mr-2" />
-                    {saving ? "Saving..." : "Complete Feasibility & Submit for Admin Approval"}
-                  </Button>
+                {canEdit && (
+                  <div className="space-y-2">
+                    <Button onClick={handleCompleteTechnical} disabled={saving} className="w-full" size="lg">
+                      <Save className="h-4 w-4 mr-2" />
+                      {saving ? "Saving..." : "Complete Feasibility & Submit for Admin Approval"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      This will mark the feasibility section as complete and move this CIF to admin review.
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
