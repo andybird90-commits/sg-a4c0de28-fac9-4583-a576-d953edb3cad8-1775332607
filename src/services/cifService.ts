@@ -268,10 +268,21 @@ export const cifService = {
       missing_information_flags?: string[];
     }
   ) {
+    // Map feasibility_status into one of the allowed current_stage values
+    let nextStage: CIFRecord["current_stage"] = "tech_feasibility";
+
+    if (feasibilityData.feasibility_status === "qualified") {
+      nextStage = "feasibility_complete_go";
+    } else if (feasibilityData.feasibility_status === "not_qualified") {
+      nextStage = "feasibility_complete_no_rd_archived";
+    } else if (feasibilityData.feasibility_status === "needs_more_info") {
+      nextStage = "tech_feasibility";
+    }
+
     const { data, error } = await supabase
       .from("cif_records")
       .update({
-        current_stage: "feasibility_complete",
+        current_stage: nextStage,
         feasibility_completed_by_name: feasibilityData.completed_by_name,
         feasibility_call_date: feasibilityData.feasibility_call_date,
         any_issues_gathering_info: feasibilityData.any_issues_gathering_info,
@@ -432,7 +443,7 @@ export const cifService = {
     const { data, error } = await supabase
       .from("cif_records")
       .update({
-        current_stage: "feasibility_pending",
+        current_stage: "awaiting_feasibility",
         section1_completed_at: new Date().toISOString(),
         section1_completed_by: userId,
       })
@@ -451,7 +462,7 @@ export const cifService = {
     const { data, error } = await supabase
       .from("cif_records")
       .update({
-        current_stage: "financial_complete",
+        current_stage: "financial_section",
         section4_completed_at: new Date().toISOString(),
         section4_completed_by: userId,
       })
@@ -556,7 +567,7 @@ export const cifService = {
         prospects (*),
         created_by_profile:profiles!cif_records_bdm_section_created_by_fkey(full_name, email)
       `)
-      .eq("current_stage", "feasibility_pending")
+      .eq("current_stage", "awaiting_feasibility")
       .eq("archived", false)
       .order("created_at", { ascending: false });
 
@@ -581,7 +592,7 @@ export const cifService = {
         prospects (*),
         created_by_profile:profiles!cif_records_bdm_section_created_by_fkey(full_name, email)
       `)
-      .eq("current_stage", "feasibility_complete")
+      .in("current_stage", ["feasibility_complete_go", "feasibility_complete_no_rd_archived"])
       .eq("archived", false)
       .order("created_at", { ascending: false });
 
