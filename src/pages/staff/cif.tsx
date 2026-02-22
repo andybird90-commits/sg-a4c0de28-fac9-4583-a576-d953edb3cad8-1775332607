@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SidekickResearchPanel } from "@/components/staff/cif/SidekickResearchPanel";
 
 export default function StaffCIFPage() {
   const router = useRouter();
@@ -612,14 +613,10 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
 
           {/* AI Analysis Result */}
           {analysisData && (
-            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                RD Sidekick Research
-              </h3>
-              <div className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap max-h-[400px] overflow-y-auto">
-                {companyResearch || JSON.stringify(analysisData, null, 2)}
-              </div>
-            </div>
+            <SidekickResearchPanel
+              analysisData={analysisData}
+              fallbackText={companyResearch}
+            />
           )}
 
           {/* BUSINESS DETAILS */}
