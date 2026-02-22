@@ -617,7 +617,7 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
                 RD Sidekick Research
               </h3>
               <div className="text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap max-h-[400px] overflow-y-auto">
-                {analysisData}
+                {companyResearch || JSON.stringify(analysisData, null, 2)}
               </div>
             </div>
           )}
