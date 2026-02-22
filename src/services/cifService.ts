@@ -218,9 +218,9 @@ export const cifService = {
         fee_terms_details: bdmSectionData.fee_terms_details,
         additional_info: bdmSectionData.additional_info,
 
-        // AI Research
-        bdm_company_research: bdmSectionData.company_research,
-        bdm_ai_research_data: bdmSectionData.ai_research_data,
+        // AI Research (matches cif_records schema)
+        company_research: bdmSectionData.company_research,
+        ai_research_data: bdmSectionData.ai_research_data,
       })
       .select()
       .single();
