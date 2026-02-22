@@ -125,14 +125,24 @@ export async function createAvailabilitySlots(slots: AvailabilityInsert[]) {
  * Delete multiple availability slots
  */
 export async function deleteAvailabilitySlots(slotIds: string[]) {
-  const { error } = await supabase
-    .from("feasibility_availability")
-    .delete()
-    .in("id", slotIds);
+  if (!slotIds || slotIds.length === 0) {
+    return;
+  }
 
-  if (error) {
-    console.error("Error deleting availability slots:", error);
-    throw error;
+  const CHUNK_SIZE = 50;
+
+  for (let i = 0; i < slotIds.length; i += CHUNK_SIZE) {
+    const chunk = slotIds.slice(i, i + CHUNK_SIZE);
+
+    const { error } = await supabase
+      .from("feasibility_availability")
+      .delete()
+      .in("id", chunk);
+
+    if (error) {
+      console.error("Error deleting availability slots chunk:", error);
+      throw error;
+    }
   }
 }
 
