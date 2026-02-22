@@ -433,7 +433,7 @@ export const cifService = {
       .from("cif_records")
       .update({
         current_stage: "feasibility_pending",
-        bdm_completed_at: new Date().toISOString(),
+        section1_completed_at: new Date().toISOString(),
         section1_completed_by: userId,
       })
       .eq("id", cifId)
