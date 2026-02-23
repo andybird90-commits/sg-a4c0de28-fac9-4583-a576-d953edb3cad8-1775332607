@@ -11,6 +11,16 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { useApp } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
 
 type Prospect = Database["public"]["Tables"]["prospects"]["Row"];
 type ClientToBeOnboarded = Database["public"]["Tables"]["clients_to_be_onboarded"]["Row"];
@@ -25,6 +35,38 @@ interface BulkState {
   completed: number;
 }
 
+interface ClientFormState {
+  company_name: string;
+  contact_name: string;
+  title: string;
+  email: string;
+  phone: string;
+  landline: string;
+  address: string;
+  company_number: string;
+  utr: string;
+  fee_percent: string;
+  year_end_month: string;
+  ref_by: string;
+  comments: string;
+}
+
+const createClientFormState = (client: ClientToBeOnboarded): ClientFormState => ({
+  company_name: client.company_name || "",
+  contact_name: client.contact_name || "",
+  title: client.title || "",
+  email: client.email || "",
+  phone: client.phone || "",
+  landline: client.landline || "",
+  address: client.address || "",
+  company_number: client.company_number || "",
+  utr: client.utr || "",
+  fee_percent: client.fee_percent !== null && client.fee_percent !== undefined ? String(client.fee_percent) : "",
+  year_end_month: client.year_end_month || "",
+  ref_by: client.ref_by || "",
+  comments: client.comments || ""
+});
+
 export default function StaffClients() {
   const router = useRouter();
   const { isStaff, isAdmin } = useApp();
@@ -36,6 +78,11 @@ export default function StaffClients() {
   const [clientsToOnboard, setClientsToOnboard] = useState<ClientToBeOnboarded[]>([]);
   const [enrichmentState, setEnrichmentState] = useState<EnrichmentState>({});
   const [bulkState, setBulkState] = useState<BulkState>({ running: false, total: 0, completed: 0 });
+  const [selectedClient, setSelectedClient] = useState<ClientToBeOnboarded | null>(null);
+  const [clientForm, setClientForm] = useState<ClientFormState | null>(null);
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [clientSaving, setClientSaving] = useState(false);
+  const [clientDeleting, setClientDeleting] = useState(false);
 
   useEffect(() => {
     if (!isStaff) {
@@ -112,6 +159,138 @@ export default function StaffClients() {
         ? `/staff/cif?companyNumber=${encodeURIComponent(companyNumber)}`
         : "/staff/cif"
     );
+  };
+
+  const handleOpenClientDetail = (client: ClientToBeOnboarded) => {
+    setSelectedClient(client);
+    setClientForm(createClientFormState(client));
+    setClientDialogOpen(true);
+  };
+
+  const handleClientFieldChange = (field: keyof ClientFormState, value: string) => {
+    setClientForm((prev) => (prev ? { ...prev, [field]: value } : prev));
+  };
+
+  const handleSaveClient = async () => {
+    if (!selectedClient || !clientForm) return;
+
+    if (!clientForm.company_name.trim()) {
+      toast({
+        title: "Company name required",
+        description: "Please enter a company name before saving.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setClientSaving(true);
+    try {
+      let feePercentValue: number | null = null;
+      if (clientForm.fee_percent.trim()) {
+        const numericPart = clientForm.fee_percent.replace(/[^0-9.]/g, "");
+        const parsed = Number(numericPart);
+        if (!Number.isNaN(parsed)) {
+          feePercentValue = parsed;
+        }
+      }
+
+      const updatePayload: Partial<ClientToBeOnboarded> = {
+        company_name: clientForm.company_name.trim(),
+        contact_name: clientForm.contact_name.trim() || null,
+        title: clientForm.title.trim() || null,
+        email: clientForm.email.trim() || null,
+        phone: clientForm.phone.trim() || null,
+        landline: clientForm.landline.trim() || null,
+        address: clientForm.address.trim() || null,
+        company_number: clientForm.company_number.trim() || null,
+        utr: clientForm.utr.trim() || null,
+        fee_percent: feePercentValue,
+        year_end_month: clientForm.year_end_month.trim() || null,
+        ref_by: clientForm.ref_by.trim() || null,
+        comments: clientForm.comments.trim() || null
+      };
+
+      const { error } = await supabase
+        .from("clients_to_be_onboarded")
+        .update(updatePayload)
+        .eq("id", selectedClient.id);
+
+      if (error) {
+        console.error("Error updating client_to_be_onboarded:", error);
+        toast({
+          title: "Update failed",
+          description: "Unable to save changes to this client.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Client updated",
+        description: "The client details have been saved."
+      });
+
+      setClientDialogOpen(false);
+      setSelectedClient(null);
+      setClientForm(null);
+      await loadProspects();
+    } catch (error) {
+      console.error("Unexpected error updating client_to_be_onboarded:", error);
+      toast({
+        title: "Update failed",
+        description: "An unexpected error occurred while saving this client.",
+        variant: "destructive"
+      });
+    } finally {
+      setClientSaving(false);
+    }
+  };
+
+  const handleDeleteClientFromDialog = async () => {
+    if (!selectedClient) return;
+    const confirmed = window.confirm(
+      `Delete client "${selectedClient.company_name}" from clients to be onboarded? This cannot be undone.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setClientDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("clients_to_be_onboarded")
+        .delete()
+        .eq("id", selectedClient.id);
+
+      if (error) {
+        console.error("Error deleting client_to_be_onboarded:", error);
+        toast({
+          title: "Delete failed",
+          description: "Unable to delete this client.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Client deleted",
+        description: "The client has been removed from clients to be onboarded."
+      });
+
+      setClientDialogOpen(false);
+      setSelectedClient(null);
+      setClientForm(null);
+      await loadProspects();
+    } catch (error) {
+      console.error("Unexpected error deleting client_to_be_onboarded:", error);
+      toast({
+        title: "Delete failed",
+        description: "An unexpected error occurred while deleting this client.",
+        variant: "destructive"
+      });
+    } finally {
+      setClientDeleting(false);
+    }
   };
 
   const enrichProspect = async (prospect: Prospect, options?: { suppressToast?: boolean }) => {
@@ -223,6 +402,10 @@ export default function StaffClients() {
   };
 
   const handleBulkEnrich = async () => {
+    if (bulkState.running) {
+      return;
+    }
+
     const candidates = prospectsToOnboard.filter((p) => !!p.company_number);
 
     if (candidates.length === 0) {
@@ -415,7 +598,8 @@ export default function StaffClients() {
                           {clientsToOnboard.map((client) => (
                             <Card
                               key={client.id}
-                              className="border border-slate-200 hover:shadow-sm transition-shadow"
+                              className="border border-slate-200 hover:shadow-sm transition-shadow cursor-pointer hover:bg-slate-50"
+                              onClick={() => handleOpenClientDetail(client)}
                             >
                               <CardContent className="py-3 px-4">
                                 <p className="font-semibold text-sm">
@@ -620,6 +804,176 @@ export default function StaffClients() {
             </Card>
           </div>
         </div>
+
+        <Dialog open={clientDialogOpen} onOpenChange={setClientDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {clientForm?.company_name || "Client details"}
+              </DialogTitle>
+              <DialogDescription>
+                View and edit details for this imported client. Changes are saved to the
+                clients_to_be_onboarded table.
+              </DialogDescription>
+            </DialogHeader>
+            {clientForm && (
+              <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-slate-700">Company name</p>
+                  <Input
+                    value={clientForm.company_name}
+                    onChange={(e) => handleClientFieldChange("company_name", e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-slate-700">Contact name</p>
+                    <Input
+                      value={clientForm.contact_name}
+                      onChange={(e) => handleClientFieldChange("contact_name", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-slate-700">Title</p>
+                    <Input
+                      value={clientForm.title}
+                      onChange={(e) => handleClientFieldChange("title", e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-slate-700">Email</p>
+                    <Input
+                      type="email"
+                      value={clientForm.email}
+                      onChange={(e) => handleClientFieldChange("email", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-slate-700">Phone</p>
+                    <Input
+                      value={clientForm.phone}
+                      onChange={(e) => handleClientFieldChange("phone", e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-slate-700">Landline</p>
+                    <Input
+                      value={clientForm.landline}
+                      onChange={(e) => handleClientFieldChange("landline", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-slate-700">Company number</p>
+                    <Input
+                      value={clientForm.company_number}
+                      onChange={(e) => handleClientFieldChange("company_number", e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-slate-700">UTR</p>
+                    <Input
+                      value={clientForm.utr}
+                      onChange={(e) => handleClientFieldChange("utr", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-slate-700">Fee percentage</p>
+                    <Input
+                      value={clientForm.fee_percent}
+                      onChange={(e) => handleClientFieldChange("fee_percent", e.target.value)}
+                      placeholder="e.g. 20"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-slate-700">Year end month</p>
+                    <Input
+                      value={clientForm.year_end_month}
+                      onChange={(e) => handleClientFieldChange("year_end_month", e.target.value)}
+                      placeholder="e.g. March"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-slate-700">Referred by</p>
+                    <Input
+                      value={clientForm.ref_by}
+                      onChange={(e) => handleClientFieldChange("ref_by", e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-slate-700">Address</p>
+                  <Textarea
+                    value={clientForm.address}
+                    onChange={(e) => handleClientFieldChange("address", e.target.value)}
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-slate-700">Comments</p>
+                  <Textarea
+                    value={clientForm.comments}
+                    onChange={(e) => handleClientFieldChange("comments", e.target.value)}
+                    rows={4}
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter className="flex items-center justify-between">
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={handleDeleteClientFromDialog}
+                disabled={clientDeleting || clientSaving}
+              >
+                {clientDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete client"
+                )}
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setClientDialogOpen(false);
+                    setSelectedClient(null);
+                    setClientForm(null);
+                  }}
+                  disabled={clientSaving || clientDeleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSaveClient}
+                  disabled={clientSaving || clientDeleting}
+                >
+                  {clientSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save changes"
+                  )}
+                </Button>
+              </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </StaffLayout>
     </>
   );
