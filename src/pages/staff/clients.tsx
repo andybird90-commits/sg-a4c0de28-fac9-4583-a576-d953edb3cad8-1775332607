@@ -406,42 +406,154 @@ export default function StaffClients() {
     }
   };
 
+  const enrichImportedClient = async (
+    client: ClientToBeOnboarded,
+    options?: { suppressToast?: boolean }
+  ) => {
+    if (!client.company_number) {
+      if (!options?.suppressToast) {
+        toast({
+          title: "Company number required",
+          description: "Add a Companies House number before enriching this client.",
+          variant: "destructive"
+        });
+      }
+      return;
+    }
+
+    try {
+      console.log("Enriching imported client", {
+        id: client.id,
+        company_name: client.company_name,
+        company_number: client.company_number
+      });
+
+      const lookupRes = await fetch(
+        `/api/companies-house/lookup?number=${encodeURIComponent(client.company_number)}&includeHistory=true`
+      );
+
+      if (!lookupRes.ok) {
+        console.error("Companies House lookup failed for imported client:", lookupRes.status, lookupRes.statusText);
+        throw new Error("Companies House lookup failed");
+      }
+
+      const lookupData: any = await lookupRes.json();
+
+      const registeredAddress = lookupData.registered_address
+        ? [
+            lookupData.registered_address.address_line_1,
+            lookupData.registered_address.address_line_2,
+            lookupData.registered_address.locality,
+            lookupData.registered_address.postal_code,
+            lookupData.registered_address.country
+          ]
+            .filter(Boolean)
+            .join(", ")
+        : null;
+
+      const updatePayload: Partial<ClientToBeOnboarded> = {
+        company_name: lookupData.company_name || client.company_name,
+        address: registeredAddress || client.address || null,
+        company_number: lookupData.company_number || client.company_number
+      };
+
+      const { error: updateError } = await supabase
+        .from("clients_to_be_onboarded")
+        .update(updatePayload)
+        .eq("id", client.id);
+
+      if (updateError) {
+        console.error("Error updating imported client after enrichment:", updateError);
+        throw updateError;
+      }
+
+      if (!options?.suppressToast) {
+        toast({
+          title: "Client enriched",
+          description: `Company details updated for ${lookupData.company_name || client.company_name}.`
+        });
+      }
+    } catch (error) {
+      console.error("Error enriching imported client:", error);
+      if (!options?.suppressToast) {
+        toast({
+          title: "Enrichment failed",
+          description: "Unable to enrich this imported client. Please try again.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
   const handleBulkEnrich = async () => {
+    // Prevent double-runs
     if (bulkState.running) {
       console.log("Bulk enrich click ignored because a run is already in progress");
       return;
     }
 
     console.log("Bulk enrich starting", {
-      prospectsToOnboardCount: prospectsToOnboard.length
+      prospectsToOnboardCount: prospectsToOnboard.length,
+      clientsToOnboardCount: clientsToOnboard.length
     });
 
-    const candidates = prospectsToOnboard.filter((p) => !!p.company_number);
+    const prospectCandidates = prospectsToOnboard.filter((p) => !!p.company_number);
+    const importedCandidates = clientsToOnboard.filter((c) => !!c.company_number);
 
     console.log("Bulk enrich candidates", {
-      candidateCount: candidates.length,
-      candidateIds: candidates.map((c) => c.id)
+      prospectCandidateCount: prospectCandidates.length,
+      importedCandidateCount: importedCandidates.length,
+      prospectCandidateIds: prospectCandidates.map((c) => c.id),
+      importedCandidateIds: importedCandidates.map((c) => c.id)
     });
 
-    if (candidates.length === 0) {
+    if (prospectCandidates.length === 0 && importedCandidates.length === 0) {
+      console.log(
+        "Bulk enrich: no candidates found (no imported clients or RD prospects with company_number)"
+      );
       toast({
         title: "No clients to enrich",
-        description: "Add company numbers to RD Companion prospects before running bulk enrichment.",
+        description:
+          "Add company numbers to clients to be onboarded or RD Companion prospects before running bulk enrichment.",
         variant: "destructive"
       });
       return;
     }
 
+    const total = prospectCandidates.length + importedCandidates.length;
+
     toast({
       title: "Bulk enrichment started",
-      description: `Running enrichment for ${candidates.length} client${candidates.length === 1 ? "" : "s"}.`
+      description: `Running enrichment for ${total} client${total === 1 ? "" : "s"}.`
     });
 
-    setBulkState({ running: true, total: candidates.length, completed: 0 });
+    setBulkState({ running: true, total, completed: 0 });
 
     try {
-      for (const prospect of candidates) {
-        console.log("Enriching prospect", {
+      for (const client of importedCandidates) {
+        console.log("Bulk enriching imported client", {
+          id: client.id,
+          company_name: client.company_name,
+          company_number: client.company_number
+        });
+
+        await enrichImportedClient(client, { suppressToast: true });
+
+        setBulkState((prev) => {
+          const nextCompleted = prev.completed + 1;
+          console.log("Bulk enrich progress (imported)", {
+            completed: nextCompleted,
+            total: prev.total
+          });
+          return {
+            ...prev,
+            completed: nextCompleted
+          };
+        });
+      }
+
+      for (const prospect of prospectCandidates) {
+        console.log("Bulk enriching RD prospect", {
           id: prospect.id,
           company_name: prospect.company_name,
           company_number: prospect.company_number
@@ -449,24 +561,35 @@ export default function StaffClients() {
 
         await enrichProspect(prospect, { suppressToast: true });
 
-        setBulkState((prev) => ({
-          ...prev,
-          completed: prev.completed + 1
-        }));
+        setBulkState((prev) => {
+          const nextCompleted = prev.completed + 1;
+          console.log("Bulk enrich progress (prospects)", {
+            completed: nextCompleted,
+            total: prev.total
+          });
+          return {
+            ...prev,
+            completed: nextCompleted
+          };
+        });
       }
+
+      console.log("Bulk enrichment loop complete");
 
       toast({
         title: "Bulk enrichment complete",
-        description: `Enriched ${candidates.length} client${candidates.length === 1 ? "" : "s"}.`
+        description: `Enriched ${total} client${total === 1 ? "" : "s"}.`
       });
     } catch (error) {
       console.error("Bulk enrichment failed", error);
       toast({
         title: "Bulk enrichment failed",
-        description: "An error occurred while running bulk enrichment. Please check the console for details.",
+        description:
+          "An error occurred while running bulk enrichment. Please check the console for details.",
         variant: "destructive"
       });
     } finally {
+      console.log("Bulk enrichment finished, resetting running flag and reloading prospects");
       setBulkState((prev) => ({ ...prev, running: false }));
       await loadProspects();
     }
@@ -689,7 +812,7 @@ export default function StaffClients() {
                     )}
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    Runs enrichment for all RD Companion prospects with a Companies House number.
+                    Runs enrichment for all clients to be onboarded (imported and RD Companion prospects) that have a Companies House number.
                   </p>
                 </div>
 
