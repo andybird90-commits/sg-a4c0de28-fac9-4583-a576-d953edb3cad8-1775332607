@@ -69,6 +69,15 @@ const createClientFormState = (client: ClientToBeOnboarded): ClientFormState => 
   comments: client.comments || ""
 });
 
+const isValidCompaniesHouseNumber = (value: string | null | undefined): boolean => {
+  if (!value) return false;
+  const cleaned = value.trim().toUpperCase();
+  if (!cleaned) return false;
+  const compact = cleaned.replace(/\s+/g, "");
+  // Typical Companies House numbers are 6–8 alphanumeric characters (e.g. 07399692, SC256359)
+  return /^[A-Z0-9]{6,8}$/.test(compact);
+};
+
 export default function StaffClients() {
   const router = useRouter();
   const { isStaff, isAdmin } = useApp();
@@ -301,14 +310,19 @@ export default function StaffClients() {
   };
 
   const enrichProspect = async (prospect: Prospect, options?: { suppressToast?: boolean }) => {
-    if (!prospect.company_number) {
+    if (!prospect.company_number || !isValidCompaniesHouseNumber(prospect.company_number)) {
       if (!options?.suppressToast) {
         toast({
-          title: "Company number required",
-          description: "Add a Companies House number before enriching this client.",
+          title: "Valid company number required",
+          description: "The company number for this client appears to be invalid. Please correct it before enriching.",
           variant: "destructive"
         });
       }
+      console.warn("Skipping enrichment for prospect with invalid company number", {
+        id: prospect.id,
+        company_name: prospect.company_name,
+        company_number: prospect.company_number
+      });
       return;
     }
 
@@ -412,14 +426,19 @@ export default function StaffClients() {
     client: ClientToBeOnboarded,
     options?: { suppressToast?: boolean }
   ) => {
-    if (!client.company_number) {
+    if (!client.company_number || !isValidCompaniesHouseNumber(client.company_number)) {
       if (!options?.suppressToast) {
         toast({
-          title: "Company number required",
-          description: "Add a Companies House number before enriching this client.",
+          title: "Valid company number required",
+          description: "The company number for this imported client appears to be invalid. Please correct it before enriching.",
           variant: "destructive"
         });
       }
+      console.warn("Skipping enrichment for imported client with invalid company number", {
+        id: client.id,
+        company_name: client.company_name,
+        company_number: client.company_number
+      });
       return;
     }
 
@@ -499,8 +518,12 @@ export default function StaffClients() {
       clientsToOnboardCount: clientsToOnboard.length
     });
 
-    const prospectCandidates = prospectsToOnboard.filter((p) => !!p.company_number);
-    const importedCandidates = clientsToOnboard.filter((c) => !!c.company_number);
+    const prospectCandidates = prospectsToOnboard.filter(
+      (p) => isValidCompaniesHouseNumber(p.company_number)
+    );
+    const importedCandidates = clientsToOnboard.filter(
+      (c) => isValidCompaniesHouseNumber(c.company_number)
+    );
 
     console.log("Bulk enrich candidates", {
       prospectCandidateCount: prospectCandidates.length,
@@ -511,12 +534,12 @@ export default function StaffClients() {
 
     if (prospectCandidates.length === 0 && importedCandidates.length === 0) {
       console.log(
-        "Bulk enrich: no candidates found (no imported clients or RD prospects with company_number)"
+        "Bulk enrich: no candidates found (no imported clients or RD prospects with valid company_number)"
       );
       toast({
         title: "No clients to enrich",
         description:
-          "Add company numbers to clients to be onboarded or RD Companion prospects before running bulk enrichment.",
+          "Add valid Companies House numbers to clients to be onboarded or RD Companion prospects before running bulk enrichment.",
         variant: "destructive"
       });
       return;
