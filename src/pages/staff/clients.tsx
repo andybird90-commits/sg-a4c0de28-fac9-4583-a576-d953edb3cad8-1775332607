@@ -84,6 +84,11 @@ export default function StaffClients() {
   const [clientSaving, setClientSaving] = useState(false);
   const [clientDeleting, setClientDeleting] = useState(false);
 
+  const [searchToOnboard, setSearchToOnboard] = useState<string>("");
+  const [sortToOnboard, setSortToOnboard] = useState<"name-asc" | "name-desc">("name-asc");
+  const [searchOnboarded, setSearchOnboarded] = useState<string>("");
+  const [sortOnboarded, setSortOnboarded] = useState<"name-asc" | "name-desc">("name-asc");
+
   useEffect(() => {
     if (!isStaff) {
       router.push("/home");
@@ -411,7 +416,7 @@ export default function StaffClients() {
     if (candidates.length === 0) {
       toast({
         title: "No clients to enrich",
-        description: "Add company numbers to clients before running bulk enrichment.",
+        description: "Add company numbers to RD Companion prospects before running bulk enrichment.",
         variant: "destructive"
       });
       return;
@@ -488,6 +493,76 @@ export default function StaffClients() {
   const hasClientsToOnboard = clientsToOnboard.length > 0;
   const hasProspectsToOnboard = prospectsToOnboard.length > 0;
 
+  const toOnboardSearch = searchToOnboard.trim().toLowerCase();
+  const onboardedSearch = searchOnboarded.trim().toLowerCase();
+
+  const sortFactorToOnboard = sortToOnboard === "name-asc" ? 1 : -1;
+  const sortFactorOnboarded = sortOnboarded === "name-asc" ? 1 : -1;
+
+  const filteredClientsToOnboard = clientsToOnboard
+    .filter((client) => {
+      if (!toOnboardSearch) return true;
+      const haystack = [
+        client.company_name,
+        client.company_number,
+        client.contact_name,
+        client.email
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(toOnboardSearch);
+    })
+    .sort((a, b) => {
+      const nameA = (a.company_name || "").toLowerCase();
+      const nameB = (b.company_name || "").toLowerCase();
+      if (nameA < nameB) return -1 * sortFactorToOnboard;
+      if (nameA > nameB) return 1 * sortFactorToOnboard;
+      return 0;
+    });
+
+  const filteredProspectsToOnboard = prospectsToOnboard
+    .filter((prospect) => {
+      if (!toOnboardSearch) return true;
+      const haystack = [
+        prospect.company_name,
+        prospect.company_number,
+        prospect.company_status
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(toOnboardSearch);
+    })
+    .sort((a, b) => {
+      const nameA = (a.company_name || "").toLowerCase();
+      const nameB = (b.company_name || "").toLowerCase();
+      if (nameA < nameB) return -1 * sortFactorToOnboard;
+      if (nameA > nameB) return 1 * sortFactorToOnboard;
+      return 0;
+    });
+
+  const filteredProspectsOnboarded = prospectsOnboarded
+    .filter((prospect) => {
+      if (!onboardedSearch) return true;
+      const haystack = [
+        prospect.company_name,
+        prospect.company_number,
+        prospect.company_status
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(onboardedSearch);
+    })
+    .sort((a, b) => {
+      const nameA = (a.company_name || "").toLowerCase();
+      const nameB = (b.company_name || "").toLowerCase();
+      if (nameA < nameB) return -1 * sortFactorOnboarded;
+      if (nameA > nameB) return 1 * sortFactorOnboarded;
+      return 0;
+    });
+
   return (
     <>
       <SEO
@@ -539,17 +614,35 @@ export default function StaffClients() {
                 )}
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <Input
+                    placeholder="Search clients..."
+                    value={searchToOnboard}
+                    onChange={(e) => setSearchToOnboard(e.target.value)}
+                    className="max-w-xs"
+                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Sort by</span>
+                    <select
+                      value={sortToOnboard}
+                      onChange={(e) =>
+                        setSortToOnboard(e.target.value === "name-desc" ? "name-desc" : "name-asc")
+                      }
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                    >
+                      <option value="name-asc">Name A–Z</option>
+                      <option value="name-desc">Name Z–A</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Button
                       size="sm"
                       variant="default"
                       onClick={handleBulkEnrich}
-                      disabled={
-                        loading ||
-                        bulkState.running ||
-                        prospectsToOnboard.filter((p) => !!p.company_number).length === 0
-                      }
+                      disabled={loading || bulkState.running}
                     >
                       {bulkState.running ? (
                         <>
@@ -564,7 +657,7 @@ export default function StaffClients() {
                       )}
                     </Button>
                     <p className="text-xs text-muted-foreground">
-                      Runs enrichment for all clients with a Companies House number.
+                      Runs enrichment for all RD Companion prospects with a Companies House number.
                     </p>
                   </div>
                 </div>
@@ -595,7 +688,7 @@ export default function StaffClients() {
                           Imported clients to be onboarded
                         </p>
                         <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-                          {clientsToOnboard.map((client) => (
+                          {filteredClientsToOnboard.map((client) => (
                             <Card
                               key={client.id}
                               className="border border-slate-200 hover:shadow-sm transition-shadow cursor-pointer hover:bg-slate-50"
@@ -640,7 +733,7 @@ export default function StaffClients() {
                           </p>
                         )}
                         <div className="space-y-3">
-                          {prospectsToOnboard.map((prospect) => {
+                          {filteredProspectsToOnboard.map((prospect) => {
                             const state = enrichmentState[prospect.id] || "idle";
                             const isEnriched =
                               !!prospect.company_status ||
@@ -752,19 +845,41 @@ export default function StaffClients() {
                   </Badge>
                 )}
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <Input
+                    placeholder="Search onboarded clients..."
+                    value={searchOnboarded}
+                    onChange={(e) => setSearchOnboarded(e.target.value)}
+                    className="max-w-xs"
+                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Sort by</span>
+                    <select
+                      value={sortOnboarded}
+                      onChange={(e) =>
+                        setSortOnboarded(e.target.value === "name-desc" ? "name-desc" : "name-asc")
+                      }
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                    >
+                      <option value="name-asc">Name A–Z</option>
+                      <option value="name-desc">Name Z–A</option>
+                    </select>
+                  </div>
+                </div>
+
                 {loading ? (
                   <div className="flex items-center justify-center py-10 text-muted-foreground">
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                     Loading clients...
                   </div>
-                ) : prospectsOnboarded.length === 0 ? (
+                ) : filteredProspectsOnboarded.length === 0 ? (
                   <div className="py-8 text-center text-sm text-muted-foreground">
                     No onboarded clients yet.
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {prospectsOnboarded.map((prospect) => (
+                    {filteredProspectsOnboarded.map((prospect) => (
                       <Card
                         key={prospect.id}
                         className="border border-slate-200 hover:shadow-sm transition-shadow"
@@ -775,9 +890,7 @@ export default function StaffClients() {
                               {prospect.company_name}
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {prospectsOnboarded.length === 0
-                                ? "No company number recorded"
-                                : prospect.company_number
+                              {prospect.company_number
                                 ? `Company no. ${prospect.company_number}`
                                 : "No company number recorded"}
                             </p>
