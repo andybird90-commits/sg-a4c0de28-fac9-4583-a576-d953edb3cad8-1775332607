@@ -1047,6 +1047,74 @@ export type Database = {
           },
         ]
       }
+      clients_to_be_onboarded: {
+        Row: {
+          address: string | null
+          bdm: string | null
+          comments: string | null
+          company_name: string
+          company_number: string | null
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          fee_percent: number | null
+          id: string
+          landline: string | null
+          phone: string | null
+          ref_by: string | null
+          ref_fee: number | null
+          title: string | null
+          utr: string | null
+          year_end_month: string | null
+        }
+        Insert: {
+          address?: string | null
+          bdm?: string | null
+          comments?: string | null
+          company_name: string
+          company_number?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          fee_percent?: number | null
+          id?: string
+          landline?: string | null
+          phone?: string | null
+          ref_by?: string | null
+          ref_fee?: number | null
+          title?: string | null
+          utr?: string | null
+          year_end_month?: string | null
+        }
+        Update: {
+          address?: string | null
+          bdm?: string | null
+          comments?: string | null
+          company_name?: string
+          company_number?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          fee_percent?: number | null
+          id?: string
+          landline?: string | null
+          phone?: string | null
+          ref_by?: string | null
+          ref_fee?: number | null
+          title?: string | null
+          utr?: string | null
+          year_end_month?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_to_be_onboarded_bdm_fkey"
+            columns: ["bdm"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_mentions: {
         Row: {
           comment_id: string
