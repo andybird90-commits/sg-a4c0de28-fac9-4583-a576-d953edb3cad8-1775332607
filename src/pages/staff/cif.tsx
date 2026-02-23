@@ -28,6 +28,9 @@ export default function StaffCIFPage() {
   const [archivedCIFs, setArchivedCIFs] = useState<CIFWithDetails[]>([]);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
+  const initialCompanyNumber =
+    typeof router.query.companyNumber === "string" ? router.query.companyNumber : "";
+
   useEffect(() => {
     if (!isStaff) {
       router.push("/home");
@@ -155,6 +158,7 @@ export default function StaffCIFPage() {
                   fetchAllBoards();
                 }}
                 onCancel={() => setCreateDialogOpen(false)}
+                initialCompanyNumber={initialCompanyNumber}
               />
             </DialogContent>
           </Dialog>
@@ -302,13 +306,21 @@ export default function StaffCIFPage() {
 }
 
 // CIF Creation Form Component
-function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+function CIFCreationForm({
+  onSuccess,
+  onCancel,
+  initialCompanyNumber
+}: {
+  onSuccess: () => void;
+  onCancel: () => void;
+  initialCompanyNumber?: string;
+}) {
   const { profileWithOrg: profile } = useApp();
   const { toast } = useToast();
   const router = useRouter();
 
   const [step, setStep] = useState<"lookup" | "bdm">("lookup");
-  const [companyNumber, setCompanyNumber] = useState("");
+  const [companyNumber, setCompanyNumber] = useState(initialCompanyNumber || "");
   const [lookupLoading, setLookupLoading] = useState(false);
   const [companyData, setCompanyData] = useState<any>(null);
   const [saving, setSaving] = useState(false);
@@ -336,6 +348,12 @@ function CIFCreationForm({ onSuccess, onCancel }: { onSuccess: () => void; onCan
     feeTermsDetails: "",
     additionalInfo: "",
   });
+
+  useEffect(() => {
+    if (initialCompanyNumber) {
+      setCompanyNumber(initialCompanyNumber);
+    }
+  }, [initialCompanyNumber]);
 
   const handleCompanyLookup = async () => {
     if (!companyNumber.trim()) {

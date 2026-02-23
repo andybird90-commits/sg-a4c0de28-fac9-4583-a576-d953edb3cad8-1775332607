@@ -2236,6 +2236,7 @@ export type Database = {
       }
       prospects: {
         Row: {
+          ai_research_data: Json | null
           bd_owner_id: string
           commercial_lead_id: string | null
           company_name: string
@@ -2248,6 +2249,7 @@ export type Database = {
           id: string
           incorporation_date: string | null
           last_accounts_date: string | null
+          last_enriched_at: string | null
           number_of_directors: number | null
           number_of_employees: number | null
           org_id: string | null
@@ -2258,6 +2260,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_research_data?: Json | null
           bd_owner_id: string
           commercial_lead_id?: string | null
           company_name: string
@@ -2270,6 +2273,7 @@ export type Database = {
           id?: string
           incorporation_date?: string | null
           last_accounts_date?: string | null
+          last_enriched_at?: string | null
           number_of_directors?: number | null
           number_of_employees?: number | null
           org_id?: string | null
@@ -2280,6 +2284,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_research_data?: Json | null
           bd_owner_id?: string
           commercial_lead_id?: string | null
           company_name?: string
@@ -2292,6 +2297,7 @@ export type Database = {
           id?: string
           incorporation_date?: string | null
           last_accounts_date?: string | null
+          last_enriched_at?: string | null
           number_of_directors?: number | null
           number_of_employees?: number | null
           org_id?: string | null
