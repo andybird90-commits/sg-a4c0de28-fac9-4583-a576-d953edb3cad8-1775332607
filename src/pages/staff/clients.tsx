@@ -22,6 +22,8 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
 type Prospect = Database["public"]["Tables"]["prospects"]["Row"];
 type ClientToBeOnboarded = Database["public"]["Tables"]["clients_to_be_onboarded"]["Row"];
 
@@ -538,6 +540,7 @@ export default function StaffClients() {
         });
 
         await enrichImportedClient(client, { suppressToast: true });
+        await delay(2000);
 
         setBulkState((prev) => {
           const nextCompleted = prev.completed + 1;
@@ -560,6 +563,7 @@ export default function StaffClients() {
         });
 
         await enrichProspect(prospect, { suppressToast: true });
+        await delay(2000);
 
         setBulkState((prev) => {
           const nextCompleted = prev.completed + 1;
@@ -1120,6 +1124,31 @@ export default function StaffClients() {
                 clients_to_be_onboarded table.
               </DialogDescription>
             </DialogHeader>
+            {selectedClient && (
+              <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs">
+                <p className="mb-1 font-semibold text-slate-800">
+                  Enriched company details
+                </p>
+                {selectedClient.company_number && (
+                  <p className="text-slate-700">
+                    <span className="font-medium">Company number:</span>{" "}
+                    {selectedClient.company_number}
+                  </p>
+                )}
+                {selectedClient.address && (
+                  <p className="mt-0.5 text-slate-700">
+                    <span className="font-medium">Registered address:</span>{" "}
+                    {selectedClient.address}
+                  </p>
+                )}
+                {!selectedClient.company_number && !selectedClient.address && (
+                  <p className="text-slate-500">
+                    No enrichment data saved yet. Run enrichment for this client from the
+                    Clients page to pull in Companies House details.
+                  </p>
+                )}
+              </div>
+            )}
             {clientForm && (
               <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
                 <div className="space-y-1">
