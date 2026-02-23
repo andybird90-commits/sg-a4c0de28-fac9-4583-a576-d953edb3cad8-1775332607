@@ -1264,88 +1264,6 @@ export default function StaffClients() {
                   clients_to_be_onboarded table.
                 </DialogDescription>
               </DialogHeader>
-              {selectedClient && (
-                <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs">
-                  <p className="mb-1 font-semibold text-slate-800">
-                    Enriched company details
-                  </p>
-
-                  {clientEnrichmentLoading && (
-                    <p className="text-slate-600 flex items-center gap-2">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Looking up Companies House details for this client...
-                    </p>
-                  )}
-
-                  {!clientEnrichmentLoading && clientEnrichmentError && (
-                    <p className="text-slate-500">
-                      {clientEnrichmentError}
-                    </p>
-                  )}
-
-                  {!clientEnrichmentLoading && !clientEnrichmentError && clientEnrichment && (
-                    <>
-                      <p className="text-slate-700">
-                        <span className="font-medium">Company name:</span>{" "}
-                        {clientEnrichment.company_name || selectedClient.company_name}
-                      </p>
-                      {(clientEnrichment.company_number || selectedClient.company_number) && (
-                        <p className="text-slate-700">
-                          <span className="font-medium">Company number:</span>{" "}
-                          {clientEnrichment.company_number || selectedClient.company_number}
-                        </p>
-                      )}
-                      {clientEnrichment.company_status && (
-                        <p className="mt-0.5 text-slate-700">
-                          <span className="font-medium">Status:</span>{" "}
-                          {clientEnrichment.company_status}
-                        </p>
-                      )}
-                      {getRegisteredAddressFromEnrichment(clientEnrichment) && (
-                        <p className="mt-0.5 text-slate-700">
-                          <span className="font-medium">Registered address:</span>{" "}
-                          {getRegisteredAddressFromEnrichment(clientEnrichment)}
-                        </p>
-                      )}
-                      {clientEnrichment.date_of_creation && (
-                        <p className="mt-0.5 text-slate-700">
-                          <span className="font-medium">Incorporated:</span>{" "}
-                          {clientEnrichment.date_of_creation}
-                        </p>
-                      )}
-                      {clientEnrichment.last_accounts_date && (
-                        <p className="mt-0.5 text-slate-700">
-                          <span className="font-medium">Last accounts filed:</span>{" "}
-                          {clientEnrichment.last_accounts_date}
-                        </p>
-                      )}
-                    </>
-                  )}
-
-                  {!clientEnrichmentLoading && !clientEnrichment && !clientEnrichmentError && (
-                    <>
-                      {selectedClient.company_number && (
-                        <p className="text-slate-700">
-                          <span className="font-medium">Company number:</span>{" "}
-                          {selectedClient.company_number}
-                        </p>
-                      )}
-                      {selectedClient.address && (
-                        <p className="mt-0.5 text-slate-700">
-                          <span className="font-medium">Registered address:</span>{" "}
-                          {selectedClient.address}
-                        </p>
-                      )}
-                      {!selectedClient.company_number && !selectedClient.address && (
-                        <p className="text-slate-500">
-                          No enrichment data saved yet. Run enrichment for this client from the
-                          Clients page to pull in Companies House details.
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
 
               {selectedClient && (
                 <>
@@ -1359,6 +1277,7 @@ export default function StaffClients() {
                       </CardContent>
                     </Card>
                   )}
+
                   {clientAnalysisData && (
                     <div className="mb-3">
                       <SidekickResearchPanel
@@ -1367,6 +1286,87 @@ export default function StaffClients() {
                       />
                     </div>
                   )}
+
+                  <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs">
+                    <p className="mb-1 font-semibold text-slate-800">
+                      Enriched company details
+                    </p>
+
+                    {clientEnrichmentLoading && (
+                      <p className="text-slate-600 flex items-center gap-2">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Looking up Companies House details for this client...
+                      </p>
+                    )}
+
+                    {!clientEnrichmentLoading && clientEnrichmentError && (
+                      <p className="text-slate-500">
+                        {clientEnrichmentError}
+                      </p>
+                    )}
+
+                    {!clientEnrichmentLoading && !clientEnrichmentError && clientEnrichment && (
+                      <>
+                        <p className="text-slate-700">
+                          <span className="font-medium">Company name:</span>{" "}
+                          {clientEnrichment.company_name || selectedClient.company_name}
+                        </p>
+                        {(clientEnrichment.company_number || selectedClient.company_number) && (
+                          <p className="text-slate-700">
+                            <span className="font-medium">Company number:</span>{" "}
+                            {clientEnrichment.company_number || selectedClient.company_number}
+                          </p>
+                        )}
+                        {clientEnrichment.company_status && (
+                          <p className="mt-0.5 text-slate-700">
+                            <span className="font-medium">Status:</span>{" "}
+                            {clientEnrichment.company_status}
+                          </p>
+                        )}
+                        {getRegisteredAddressFromEnrichment(clientEnrichment) && (
+                          <p className="mt-0.5 text-slate-700">
+                            <span className="font-medium">Registered address:</span>{" "}
+                            {getRegisteredAddressFromEnrichment(clientEnrichment)}
+                          </p>
+                        )}
+                        {clientEnrichment.date_of_creation && (
+                          <p className="mt-0.5 text-slate-700">
+                            <span className="font-medium">Incorporated:</span>{" "}
+                            {clientEnrichment.date_of_creation}
+                          </p>
+                        )}
+                        {clientEnrichment.last_accounts_date && (
+                          <p className="mt-0.5 text-slate-700">
+                            <span className="font-medium">Last accounts filed:</span>{" "}
+                            {clientEnrichment.last_accounts_date}
+                          </p>
+                        )}
+                      </>
+                    )}
+
+                    {!clientEnrichmentLoading && !clientEnrichment && !clientEnrichmentError && (
+                      <>
+                        {selectedClient.company_number && (
+                          <p className="text-slate-700">
+                            <span className="font-medium">Company number:</span>{" "}
+                            {selectedClient.company_number}
+                          </p>
+                        )}
+                        {selectedClient.address && (
+                          <p className="mt-0.5 text-slate-700">
+                            <span className="font-medium">Registered address:</span>{" "}
+                            {selectedClient.address}
+                          </p>
+                        )}
+                        {!selectedClient.company_number && !selectedClient.address && (
+                          <p className="text-slate-500">
+                            No enrichment data saved yet. Run enrichment for this client from the
+                            Clients page to pull in Companies House details.
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </>
               )}
 
