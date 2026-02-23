@@ -4,6 +4,7 @@ import { authService } from "@/services/authService";
 import { organisationService, type UserOrganisation } from "@/services/organisationService";
 import { profileService } from "@/services/profileService";
 import { isStaff as checkIsStaff, type ProfileWithOrg } from "@/lib/auth/roles";
+import { isAdmin as checkIsAdmin } from "@/lib/auth/roles";
 
 interface AppContextType {
   user: any;
@@ -15,6 +16,7 @@ interface AppContextType {
   organisationsLoading: boolean;
   isStaff: boolean;
   profileWithOrg: ProfileWithOrg | null;
+  isAdmin: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -27,6 +29,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [organisationsLoading, setOrganisationsLoading] = useState(false);
   const [isStaff, setIsStaff] = useState(false);
   const [profileWithOrg, setProfileWithOrg] = useState<ProfileWithOrg | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Handler to update currentOrg and save to localStorage
   const handleSetCurrentOrg = (org: UserOrganisation) => {
@@ -91,6 +94,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setIsStaff(false);
           setProfileWithOrg(null);
+          setIsAdmin(false);
           setLoading(false);
           return;
         }
@@ -114,6 +118,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             setUser(null);
             setIsStaff(false);
             setProfileWithOrg(null);
+            setIsAdmin(false);
             setLoading(false);
             // Redirect to login if not already there
             if (typeof window !== "undefined" && window.location.pathname !== '/auth/login') {
@@ -124,6 +129,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setIsStaff(false);
           setProfileWithOrg(null);
+          setIsAdmin(false);
           setLoading(false);
           return;
         }
@@ -132,6 +138,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setIsStaff(false);
           setProfileWithOrg(null);
+          setIsAdmin(false);
           setLoading(false);
           return;
         }
@@ -148,6 +155,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const staffStatus = checkIsStaff(profile);
         console.log("[AppContext] Staff status:", staffStatus);
         setIsStaff(staffStatus);
+
+        // Determine if user is admin
+        const adminStatus = checkIsAdmin(profile);
+        console.log("[AppContext] Admin status:", adminStatus);
+        setIsAdmin(adminStatus);
 
         const { data: profileData } = await supabase
           .from("profiles")
@@ -203,6 +215,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setIsStaff(false);
         setProfileWithOrg(null);
+        setIsAdmin(false);
       } finally {
         setLoading(false);
       }
@@ -218,6 +231,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setCurrentOrg(null);
         setIsStaff(false);
         setProfileWithOrg(null);
+        setIsAdmin(false);
       } else if (event === "SIGNED_IN" && session) {
         // Re-check user and fetch profile
         await checkUser();
@@ -257,6 +271,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         organisationsLoading,
         isStaff,
         profileWithOrg,
+        isAdmin,
       }}
     >
       {children}

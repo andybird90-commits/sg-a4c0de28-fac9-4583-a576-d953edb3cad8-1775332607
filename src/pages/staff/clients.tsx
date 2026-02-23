@@ -26,7 +26,7 @@ interface BulkState {
 
 export default function StaffClients() {
   const router = useRouter();
-  const { isStaff } = useApp();
+  const { isStaff, isAdmin } = useApp();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -233,6 +233,46 @@ export default function StaffClients() {
     await loadProspects();
   };
 
+  const handleDeleteProspect = async (prospect: Prospect) => {
+    const confirmed = window.confirm(
+      `Delete prospect "${prospect.company_name}" from clients to be onboarded? This cannot be undone.`
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("prospects")
+        .delete()
+        .eq("id", prospect.id);
+
+      if (error) {
+        console.error("Error deleting prospect:", error);
+        toast({
+          title: "Delete failed",
+          description: "Unable to delete this client. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Client deleted",
+        description: `${prospect.company_name} has been removed from clients to be onboarded.`
+      });
+
+      await loadProspects();
+    } catch (error) {
+      console.error("Unexpected error deleting prospect:", error);
+      toast({
+        title: "Delete failed",
+        description: "An unexpected error occurred while deleting this client.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (!isStaff) {
     return null;
   }
@@ -409,6 +449,16 @@ export default function StaffClients() {
                                   </>
                                 )}
                               </Button>
+                              {isAdmin && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="w-36 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => void handleDeleteProspect(prospect)}
+                                >
+                                  Delete
+                                </Button>
+                              )}
                             </div>
                           </CardContent>
                         </Card>

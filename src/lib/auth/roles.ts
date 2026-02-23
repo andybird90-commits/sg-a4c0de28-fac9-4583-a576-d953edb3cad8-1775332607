@@ -32,6 +32,16 @@ export function isStaff(profile: ProfileWithOrg | null): boolean {
 }
 
 /**
+ * Check if a user is an admin based on their profile
+ * @param profile - User profile with organisation info
+ * @returns true if user is admin (internal_role === "admin")
+ */
+export function isAdmin(profile: ProfileWithOrg | null): boolean {
+  if (!profile) return false;
+  return profile.internal_role === "admin";
+}
+
+/**
  * Get display name for internal role
  */
 export function getInternalRoleDisplayName(role: InternalRole | null): string {
