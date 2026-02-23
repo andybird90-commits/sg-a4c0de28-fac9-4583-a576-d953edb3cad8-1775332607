@@ -408,10 +408,20 @@ export default function StaffClients() {
 
   const handleBulkEnrich = async () => {
     if (bulkState.running) {
+      console.log("Bulk enrich click ignored because a run is already in progress");
       return;
     }
 
+    console.log("Bulk enrich starting", {
+      prospectsToOnboardCount: prospectsToOnboard.length
+    });
+
     const candidates = prospectsToOnboard.filter((p) => !!p.company_number);
+
+    console.log("Bulk enrich candidates", {
+      candidateCount: candidates.length,
+      candidateIds: candidates.map((c) => c.id)
+    });
 
     if (candidates.length === 0) {
       toast({
@@ -422,24 +432,44 @@ export default function StaffClients() {
       return;
     }
 
-    setBulkState({ running: true, total: candidates.length, completed: 0 });
-
-    for (const prospect of candidates) {
-      await enrichProspect(prospect, { suppressToast: true });
-      setBulkState((prev) => ({
-        ...prev,
-        completed: prev.completed + 1
-      }));
-    }
-
-    setBulkState((prev) => ({ ...prev, running: false }));
-
     toast({
-      title: "Bulk enrichment complete",
-      description: `Enriched ${candidates.length} client${candidates.length === 1 ? "" : "s"}.`
+      title: "Bulk enrichment started",
+      description: `Running enrichment for ${candidates.length} client${candidates.length === 1 ? "" : "s"}.`
     });
 
-    await loadProspects();
+    setBulkState({ running: true, total: candidates.length, completed: 0 });
+
+    try {
+      for (const prospect of candidates) {
+        console.log("Enriching prospect", {
+          id: prospect.id,
+          company_name: prospect.company_name,
+          company_number: prospect.company_number
+        });
+
+        await enrichProspect(prospect, { suppressToast: true });
+
+        setBulkState((prev) => ({
+          ...prev,
+          completed: prev.completed + 1
+        }));
+      }
+
+      toast({
+        title: "Bulk enrichment complete",
+        description: `Enriched ${candidates.length} client${candidates.length === 1 ? "" : "s"}.`
+      });
+    } catch (error) {
+      console.error("Bulk enrichment failed", error);
+      toast({
+        title: "Bulk enrichment failed",
+        description: "An error occurred while running bulk enrichment. Please check the console for details.",
+        variant: "destructive"
+      });
+    } finally {
+      setBulkState((prev) => ({ ...prev, running: false }));
+      await loadProspects();
+    }
   };
 
   const handleDeleteProspect = async (prospect: Prospect) => {
