@@ -13,6 +13,7 @@ import { useApp } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
 
 type Prospect = Database["public"]["Tables"]["prospects"]["Row"];
+type ClientToBeOnboarded = Database["public"]["Tables"]["clients_to_be_onboarded"]["Row"];
 
 interface EnrichmentState {
   [prospectId: string]: "idle" | "loading" | "success" | "error";
@@ -32,6 +33,7 @@ export default function StaffClients() {
   const [loading, setLoading] = useState(true);
   const [prospectsToOnboard, setProspectsToOnboard] = useState<Prospect[]>([]);
   const [prospectsOnboarded, setProspectsOnboarded] = useState<Prospect[]>([]);
+  const [clientsToOnboard, setClientsToOnboard] = useState<ClientToBeOnboarded[]>([]);
   const [enrichmentState, setEnrichmentState] = useState<EnrichmentState>({});
   const [bulkState, setBulkState] = useState<BulkState>({ running: false, total: 0, completed: 0 });
 
@@ -60,7 +62,25 @@ export default function StaffClients() {
         });
         setProspectsToOnboard([]);
         setProspectsOnboarded([]);
+        setClientsToOnboard([]);
         return;
+      }
+
+      const { data: clientsData, error: clientsError } = await supabase
+        .from("clients_to_be_onboarded")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (clientsError) {
+        console.error("Error loading clients_to_be_onboarded:", clientsError);
+        toast({
+          title: "Error loading clients to be onboarded",
+          description: "Unable to load imported clients from the server.",
+          variant: "destructive"
+        });
+        setClientsToOnboard([]);
+      } else {
+        setClientsToOnboard(clientsData || []);
       }
 
       const all = data || [];
@@ -79,6 +99,7 @@ export default function StaffClients() {
       });
       setProspectsToOnboard([]);
       setProspectsOnboarded([]);
+      setClientsToOnboard([]);
     } finally {
       setLoading(false);
     }
@@ -280,6 +301,10 @@ export default function StaffClients() {
   const bulkProgress =
     bulkState.total > 0 ? Math.round((bulkState.completed / bulkState.total) * 100) : 0;
 
+  const totalToOnboardCount = clientsToOnboard.length + prospectsToOnboard.length;
+  const hasClientsToOnboard = clientsToOnboard.length > 0;
+  const hasProspectsToOnboard = prospectsToOnboard.length > 0;
+
   return (
     <>
       <SEO
@@ -323,10 +348,10 @@ export default function StaffClients() {
                     </CardDescription>
                   </div>
                 </div>
-                {prospectsToOnboard.length > 0 && (
+                {totalToOnboardCount > 0 && (
                   <Badge variant="outline" className="ml-2">
-                    {prospectsToOnboard.length} client
-                    {prospectsToOnboard.length === 1 ? "" : "s"}
+                    {totalToOnboardCount} client
+                    {totalToOnboardCount === 1 ? "" : "s"}
                   </Badge>
                 )}
               </CardHeader>
@@ -375,95 +400,148 @@ export default function StaffClients() {
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                     Loading clients...
                   </div>
-                ) : prospectsToOnboard.length === 0 ? (
+                ) : !hasClientsToOnboard && !hasProspectsToOnboard ? (
                   <div className="py-8 text-center text-sm text-muted-foreground">
-                    No clients awaiting onboarding. Add prospects to see them here.
+                    No clients awaiting onboarding. Add prospects or imported clients to see them here.
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {prospectsToOnboard.map((prospect) => {
-                      const state = enrichmentState[prospect.id] || "idle";
-                      const isEnriched =
-                        !!prospect.company_status ||
-                        !!prospect.registered_address ||
-                        !!prospect.last_accounts_date;
-
-                      return (
-                        <Card
-                          key={prospect.id}
-                          className="border border-slate-200 hover:shadow-sm transition-shadow"
-                        >
-                          <CardContent className="py-3 px-4 flex items-start justify-between gap-4">
-                            <div>
-                              <div className="flex items-center gap-2">
+                  <div className="space-y-4">
+                    {hasClientsToOnboard && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-slate-700">
+                          Imported clients to be onboarded
+                        </p>
+                        <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                          {clientsToOnboard.map((client) => (
+                            <Card
+                              key={client.id}
+                              className="border border-slate-200 hover:shadow-sm transition-shadow"
+                            >
+                              <CardContent className="py-3 px-4">
                                 <p className="font-semibold text-sm">
-                                  {prospect.company_name}
+                                  {client.company_name}
                                 </p>
-                                {isEnriched && (
-                                  <Badge variant="outline" className="text-xs">
-                                    Enriched
-                                  </Badge>
+                                {client.company_number && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Company no. {client.company_number}
+                                  </p>
                                 )}
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {prospect.company_number
-                                  ? `Company no. ${prospect.company_number}`
-                                  : "No company number set"}
-                              </p>
-                              {prospect.company_status && (
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  Status: {prospect.company_status}
-                                </p>
-                              )}
-                              {prospect.registered_address && (
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                  {prospect.registered_address}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex flex-col gap-2 items-end">
-                              <Button
-                                size="sm"
-                                className="w-36"
-                                onClick={() => handleStartCIF(prospect)}
-                              >
-                                <Play className="h-3 w-3 mr-1" />
-                                Start CIF
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-36"
-                                onClick={() => void enrichProspect(prospect)}
-                                disabled={state === "loading"}
-                              >
-                                {state === "loading" ? (
-                                  <>
-                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                    Enriching...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Sparkles className="h-3 w-3 mr-1" />
-                                    Enrich
-                                  </>
+                                {client.contact_name && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    Contact: {client.contact_name}
+                                  </p>
                                 )}
-                              </Button>
-                              {isAdmin && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="w-36 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => void handleDeleteProspect(prospect)}
-                                >
-                                  Delete
-                                </Button>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
+                                {client.email && (
+                                  <p className="text-xs text-muted-foreground mt-0.5 break-all">
+                                    {client.email}
+                                  </p>
+                                )}
+                                {client.address && (
+                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                    {client.address}
+                                  </p>
+                                )}
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {hasProspectsToOnboard && (
+                      <div className="space-y-2">
+                        {hasClientsToOnboard && (
+                          <p className="text-xs font-medium text-slate-700 pt-2 border-t border-slate-100">
+                            Prospects in RD Companion
+                          </p>
+                        )}
+                        <div className="space-y-3">
+                          {prospectsToOnboard.map((prospect) => {
+                            const state = enrichmentState[prospect.id] || "idle";
+                            const isEnriched =
+                              !!prospect.company_status ||
+                              !!prospect.registered_address ||
+                              !!prospect.last_accounts_date;
+
+                            return (
+                              <Card
+                                key={prospect.id}
+                                className="border border-slate-200 hover:shadow-sm transition-shadow"
+                              >
+                                <CardContent className="py-3 px-4 flex items-start justify-between gap-4">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-semibold text-sm">
+                                        {prospect.company_name}
+                                      </p>
+                                      {isEnriched && (
+                                        <Badge variant="outline" className="text-xs">
+                                          Enriched
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {prospect.company_number
+                                        ? `Company no. ${prospect.company_number}`
+                                        : "No company number set"}
+                                    </p>
+                                    {prospect.company_status && (
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        Status: {prospect.company_status}
+                                      </p>
+                                    )}
+                                    {prospect.registered_address && (
+                                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                        {prospect.registered_address}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-2 items-end">
+                                    <Button
+                                      size="sm"
+                                      className="w-36"
+                                      onClick={() => handleStartCIF(prospect)}
+                                    >
+                                      <Play className="h-3 w-3 mr-1" />
+                                      Start CIF
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="w-36"
+                                      onClick={() => void enrichProspect(prospect)}
+                                      disabled={state === "loading"}
+                                    >
+                                      {state === "loading" ? (
+                                        <>
+                                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                          Enriching...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Sparkles className="h-3 w-3 mr-1" />
+                                          Enrich
+                                        </>
+                                      )}
+                                    </Button>
+                                    {isAdmin && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="w-36 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        onClick={() => void handleDeleteProspect(prospect)}
+                                      >
+                                        Delete
+                                      </Button>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -513,7 +591,9 @@ export default function StaffClients() {
                               {prospect.company_name}
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {prospect.company_number
+                              {prospectsOnboarded.length === 0
+                                ? "No company number recorded"
+                                : prospect.company_number
                                 ? `Company no. ${prospect.company_number}`
                                 : "No company number recorded"}
                             </p>
