@@ -773,21 +773,25 @@ export default function CIFDetailPage() {
   };
 
   const handleDeleteCIF = async () => {
-    if (!cif || !profile?.id) return;
+    if (!cif) return;
 
     setSaving(true);
     try {
-      await cifService.rejectCIF(cif.id, profile.id, "Admin deletion");
+      await cifService.deleteCIF(cif.id);
 
       toast({
-        title: "Success",
-        description: "CIF deleted successfully"
+        title: "CIF deleted",
+        description: "The CIF and all associated data have been permanently deleted."
       });
       setShowDeleteModal(false);
       router.push("/staff/cif");
     } catch (error) {
       console.error("Error deleting CIF:", error);
-      toast({ title: "Error", description: "Failed to delete CIF", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to delete CIF",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
