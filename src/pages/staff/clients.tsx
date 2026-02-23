@@ -662,14 +662,19 @@ export default function StaffClients() {
                   </div>
                 </div>
 
-                {bulkState.running && (
-                  <div className="space-y-1">
-                    <Progress value={bulkProgress} className="h-2" />
-                    <p className="text-xs text-muted-foreground">
-                      {bulkState.completed} of {bulkState.total} enriched ({bulkProgress}%)
-                    </p>
-                  </div>
-                )}
+                <div className="space-y-1">
+                  <Progress
+                    value={bulkState.total > 0 ? bulkProgress : 0}
+                    className="h-2"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {bulkState.running
+                      ? `${bulkState.completed} of ${bulkState.total} enriched (${bulkProgress}%)`
+                      : bulkState.total > 0
+                        ? `Last run enriched ${bulkState.total} client${bulkState.total === 1 ? "" : "s"}.`
+                        : "Bulk enrichment has not been run yet."}
+                  </p>
+                </div>
 
                 {loading ? (
                   <div className="flex items-center justify-center py-10 text-muted-foreground">
