@@ -131,6 +131,7 @@ export default function StaffClients() {
   const [clientResearchLoading, setClientResearchLoading] = useState(false);
   const [clientAnalysisData, setClientAnalysisData] = useState<any | null>(null);
   const [clientResearchFallbackText, setClientResearchFallbackText] = useState("");
+  const [clientSidekickLoading, setClientSidekickLoading] = useState(false);
 
   const [searchToOnboard, setSearchToOnboard] = useState<string>("");
   const [sortToOnboard, setSortToOnboard] = useState<"name-asc" | "name-desc">("name-asc");
@@ -213,6 +214,7 @@ export default function StaffClients() {
       setClientAnalysisData(null);
       setClientResearchFallbackText("");
       setClientResearchLoading(false);
+      setClientSidekickLoading(false);
       return;
     }
 
@@ -222,6 +224,7 @@ export default function StaffClients() {
     setClientAnalysisData(null);
     setClientResearchFallbackText("");
     setClientResearchLoading(true);
+    setClientSidekickLoading(true);
 
     try {
       const res = await fetch(
@@ -262,6 +265,8 @@ export default function StaffClients() {
         }
       } catch (researchError) {
         console.error("Error loading AI research for imported client:", researchError);
+      } finally {
+        setClientSidekickLoading(false);
       }
     } catch (error) {
       console.error("Error loading Companies House enrichment for imported client:", error);
@@ -1249,283 +1254,214 @@ export default function StaffClients() {
               setClientEnrichment(null);
               setClientEnrichmentError(null);
               setClientEnrichmentLoading(false);
+              setClientSidekickLoading(false);
               setClientAnalysisData(null);
-              setClientResearchFallbackText("");
-              setClientResearchLoading(false);
             }
           }}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {clientForm?.company_name || "Client details"}
-                </DialogTitle>
-                <DialogDescription>
-                  View and edit details for this imported client. Changes are saved to the
-                  clients_to_be_onboarded table.
-                </DialogDescription>
-              </DialogHeader>
-
+            <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
               {selectedClient && (
                 <>
-                  {clientResearchLoading && (
-                    <Card className="mb-3 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200 dark:border-blue-800">
-                      <CardContent className="py-3">
-                        <div className="flex items-center justify-center gap-2 text-xs text-blue-800 dark:text-blue-100">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          <span>RD Companion is researching this company...</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                  <DialogHeader>
+                    <DialogTitle>{selectedClient.company_name}</DialogTitle>
+                    <DialogDescription>
+                      View and edit details for this imported client. Changes are saved to the{" "}
+                      <code className="font-mono">clients_to_be_onboarded</code> table.
+                    </DialogDescription>
+                  </DialogHeader>
 
-                  {clientAnalysisData && (
-                    <div className="mb-3">
-                      <SidekickResearchPanel
-                        analysisData={clientAnalysisData}
-                        fallbackText={clientResearchFallbackText}
-                      />
-                    </div>
-                  )}
-
-                  <div className="mb-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs">
-                    <p className="mb-1 font-semibold text-slate-800">
-                      Enriched company details
-                    </p>
-
-                    {clientEnrichmentLoading && (
-                      <p className="text-slate-600 flex items-center gap-2">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        Looking up Companies House details for this client...
-                      </p>
-                    )}
-
-                    {!clientEnrichmentLoading && clientEnrichmentError && (
-                      <p className="text-slate-500">
-                        {clientEnrichmentError}
-                      </p>
-                    )}
-
-                    {!clientEnrichmentLoading && !clientEnrichmentError && clientEnrichment && (
-                      <>
+                  <div className="mt-2 space-y-4 overflow-y-auto pr-1 flex-1">
+                    {/* Sidekick research panel */}
+                    {clientSidekickLoading && (
+                      <div className="rounded-lg border bg-gradient-to-b from-sky-50 to-sky-100 p-4 text-sm text-slate-800 shadow-sm">
+                        <div className="font-medium mb-1">RD Companion is researching this company…</div>
                         <p className="text-slate-700">
-                          <span className="font-medium">Company name:</span>{" "}
-                          {clientEnrichment.company_name || selectedClient.company_name}
+                          Analysing industry, size, and public information to provide background detail similar to the CIF creation flow.
                         </p>
-                        {(clientEnrichment.company_number || selectedClient.company_number) && (
-                          <p className="text-slate-700">
-                            <span className="font-medium">Company number:</span>{" "}
-                            {clientEnrichment.company_number || selectedClient.company_number}
-                          </p>
-                        )}
-                        {clientEnrichment.company_status && (
-                          <p className="mt-0.5 text-slate-700">
-                            <span className="font-medium">Status:</span>{" "}
-                            {clientEnrichment.company_status}
-                          </p>
-                        )}
-                        {getRegisteredAddressFromEnrichment(clientEnrichment) && (
-                          <p className="mt-0.5 text-slate-700">
-                            <span className="font-medium">Registered address:</span>{" "}
-                            {getRegisteredAddressFromEnrichment(clientEnrichment)}
-                          </p>
-                        )}
-                        {clientEnrichment.date_of_creation && (
-                          <p className="mt-0.5 text-slate-700">
-                            <span className="font-medium">Incorporated:</span>{" "}
-                            {clientEnrichment.date_of_creation}
-                          </p>
-                        )}
-                        {clientEnrichment.last_accounts_date && (
-                          <p className="mt-0.5 text-slate-700">
-                            <span className="font-medium">Last accounts filed:</span>{" "}
-                            {clientEnrichment.last_accounts_date}
-                          </p>
-                        )}
-                      </>
+                      </div>
                     )}
 
-                    {!clientEnrichmentLoading && !clientEnrichment && !clientEnrichmentError && (
-                      <>
-                        {selectedClient.company_number && (
-                          <p className="text-slate-700">
-                            <span className="font-medium">Company number:</span>{" "}
-                            {selectedClient.company_number}
+                    {clientAnalysisData && (
+                      <div className="rounded-lg border bg-gradient-to-b from-sky-50 to-sky-100 p-4 shadow-sm">
+                        <SidekickResearchPanel
+                          analysisData={clientAnalysisData}
+                          fallbackText={clientResearchFallbackText}
+                        />
+                      </div>
+                    )}
+
+                    {/* Companies House enrichment block */}
+                    <div className="rounded-lg border bg-slate-50 p-4 text-sm text-slate-800">
+                      <div className="font-semibold mb-2">Enriched company details</div>
+                      {clientEnrichmentLoading && (
+                        <p className="text-slate-700">Looking up Companies House details for this client…</p>
+                      )}
+                      {clientEnrichmentError && (
+                        <p className="text-sm text-red-600">{clientEnrichmentError}</p>
+                      )}
+                      {!clientEnrichmentLoading && !clientEnrichmentError && (
+                        <>
+                          <p>
+                            <span className="font-medium">Company name:</span>{" "}
+                            {clientEnrichment?.company_name || selectedClient.company_name || "Not available"}
                           </p>
-                        )}
-                        {selectedClient.address && (
-                          <p className="mt-0.5 text-slate-700">
-                            <span className="font-medium">Registered address:</span>{" "}
-                            {selectedClient.address}
-                          </p>
-                        )}
-                        {!selectedClient.company_number && !selectedClient.address && (
-                          <p className="text-slate-500">
-                            No enrichment data saved yet. Run enrichment for this client from the
-                            Clients page to pull in Companies House details.
-                          </p>
-                        )}
-                      </>
+                          {(clientEnrichment?.company_number || selectedClient.company_number) && (
+                            <p>
+                              <span className="font-medium">Company number:</span>{" "}
+                              {clientEnrichment?.company_number || selectedClient.company_number}
+                            </p>
+                          )}
+                          {clientEnrichment?.company_status && (
+                            <p>
+                              <span className="font-medium">Status:</span>{" "}
+                              {clientEnrichment.company_status}
+                            </p>
+                          )}
+                          {(clientEnrichment?.registered_office_address || selectedClient.address) && (
+                            <p>
+                              <span className="font-medium">Registered address:</span>{" "}
+                              {clientEnrichment?.registered_office_address
+                                ? getRegisteredAddressFromEnrichment(clientEnrichment)
+                                : selectedClient.address}
+                            </p>
+                          )}
+                          {clientEnrichment?.date_of_creation && (
+                            <p>
+                              <span className="font-medium">Incorporated:</span>{" "}
+                              {clientEnrichment.date_of_creation}
+                            </p>
+                          )}
+                          {clientEnrichment?.last_accounts_date && (
+                            <p>
+                              <span className="font-medium">Last accounts filed:</span>{" "}
+                              {clientEnrichment.last_accounts_date}
+                            </p>
+                          )}
+                          {!clientEnrichment && !selectedClient.company_number && !selectedClient.address && (
+                            <p className="text-slate-700">
+                              No enrichment data saved yet. Make sure this client has a valid Companies House number
+                              and run enrichment from the clients list to pull in details.
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Editable client form */}
+                    {clientForm && (
+                      <div className="space-y-3 py-2">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700">Company name</label>
+                          <Input
+                            value={clientForm.company_name}
+                            onChange={(e) => handleClientFieldChange("company_name", e.target.value)}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700">Contact name</label>
+                            <Input
+                              value={clientForm.contact_name || ""}
+                              onChange={(e) => handleClientFieldChange("contact_name", e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700">Title</label>
+                            <Input
+                              value={clientForm.title || ""}
+                              onChange={(e) => handleClientFieldChange("title", e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700">Email</label>
+                            <Input
+                              value={clientForm.email || ""}
+                              onChange={(e) => handleClientFieldChange("email", e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700">Phone</label>
+                            <Input
+                              value={clientForm.phone || ""}
+                              onChange={(e) => handleClientFieldChange("phone", e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700">Landline</label>
+                          <Input
+                            value={clientForm.landline || ""}
+                            onChange={(e) => handleClientFieldChange("landline", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700">Address</label>
+                          <Textarea
+                            value={clientForm.address || ""}
+                            onChange={(e) => handleClientFieldChange("address", e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700">Company number</label>
+                            <Input
+                              value={clientForm.company_number || ""}
+                              onChange={(e) => handleClientFieldChange("company_number", e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700">UTR</label>
+                            <Input
+                              value={clientForm.utr || ""}
+                              onChange={(e) => handleClientFieldChange("utr", e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700">Fee percentage</label>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              value={clientForm.fee_percent ?? ""}
+                              onChange={(e) =>
+                                handleClientFieldChange(
+                                  "fee_percent",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700">Year end month</label>
+                            <Input
+                              value={clientForm.year_end_month || ""}
+                              onChange={(e) => handleClientFieldChange("year_end_month", e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700">Referred by</label>
+                          <Input
+                            value={clientForm.ref_by || ""}
+                            onChange={(e) => handleClientFieldChange("ref_by", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700">Comments</label>
+                          <Textarea
+                            value={clientForm.comments || ""}
+                            onChange={(e) => handleClientFieldChange("comments", e.target.value)}
+                            rows={4}
+                          />
+                        </div>
+                      </div>
                     )}
                   </div>
                 </>
               )}
-
-              {clientForm && (
-                <div className="space-y-3 py-2 max-h-[60vh] overflow-y-auto pr-1">
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-slate-700">Company name</p>
-                    <Input
-                      value={clientForm.company_name}
-                      onChange={(e) => handleClientFieldChange("company_name", e.target.value)}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-700">Contact name</p>
-                      <Input
-                        value={clientForm.contact_name}
-                        onChange={(e) => handleClientFieldChange("contact_name", e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-700">Title</p>
-                      <Input
-                        value={clientForm.title}
-                        onChange={(e) => handleClientFieldChange("title", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-700">Email</p>
-                      <Input
-                        type="email"
-                        value={clientForm.email}
-                        onChange={(e) => handleClientFieldChange("email", e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-700">Phone</p>
-                      <Input
-                        value={clientForm.phone}
-                        onChange={(e) => handleClientFieldChange("phone", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-700">Landline</p>
-                      <Input
-                        value={clientForm.landline}
-                        onChange={(e) => handleClientFieldChange("landline", e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-700">Company number</p>
-                      <Input
-                        value={clientForm.company_number}
-                        onChange={(e) => handleClientFieldChange("company_number", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-700">UTR</p>
-                      <Input
-                        value={clientForm.utr}
-                        onChange={(e) => handleClientFieldChange("utr", e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-700">Fee percentage</p>
-                      <Input
-                        value={clientForm.fee_percent}
-                        onChange={(e) => handleClientFieldChange("fee_percent", e.target.value)}
-                        placeholder="e.g. 20"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-700">Year end month</p>
-                      <Input
-                        value={clientForm.year_end_month}
-                        onChange={(e) => handleClientFieldChange("year_end_month", e.target.value)}
-                        placeholder="e.g. March"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-700">Referred by</p>
-                      <Input
-                        value={clientForm.ref_by}
-                        onChange={(e) => handleClientFieldChange("ref_by", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-slate-700">Address</p>
-                    <Textarea
-                      value={clientForm.address}
-                      onChange={(e) => handleClientFieldChange("address", e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-medium text-slate-700">Comments</p>
-                    <Textarea
-                      value={clientForm.comments}
-                      onChange={(e) => handleClientFieldChange("comments", e.target.value)}
-                      rows={4}
-                    />
-                  </div>
-                </div>
-              )}
-              <DialogFooter className="flex items-center justify-between">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={handleDeleteClientFromDialog}
-                  disabled={clientDeleting || clientSaving}
-                >
-                  {clientDeleting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    "Delete client"
-                  )}
-                </Button>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setClientDialogOpen(false);
-                      setSelectedClient(null);
-                      setClientForm(null);
-                    }}
-                    disabled={clientSaving || clientDeleting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleSaveClient}
-                    disabled={clientSaving || clientDeleting}
-                  >
-                    {clientSaving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save changes"
-                    )}
-                  </Button>
-                </div>
-              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
