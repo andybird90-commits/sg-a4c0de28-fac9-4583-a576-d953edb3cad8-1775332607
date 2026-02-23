@@ -202,10 +202,13 @@ export const feasibilityBookingService = {
 
       if (updateError) throw updateError;
 
-      // Update CIF stage
+      // Update CIF stage and store feasibility call datetime
       const { error: cifError } = await supabase
         .from("cif_records")
-        .update({ current_stage: "feasibility_booked" })
+        .update({ 
+          current_stage: "feasibility_booked",
+          feasibility_call_date: slot.start_time
+        })
         .eq("id", cifId);
 
       if (cifError) throw cifError;

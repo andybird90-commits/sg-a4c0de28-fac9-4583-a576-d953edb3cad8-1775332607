@@ -271,6 +271,20 @@ export default function CIFDetailPage() {
       setContactNumber(cifData.primary_contact_phone || "");
       setContactEmail(cifData.primary_contact_email || "");
       
+      // Feasibility call date/time (from booked diary slot or saved feasibility data)
+      const rawFeasibilityCallDate = (cifData as any).feasibility_call_date as string | null | undefined;
+      if (rawFeasibilityCallDate) {
+        const parsed = new Date(rawFeasibilityCallDate);
+        if (!Number.isNaN(parsed.getTime())) {
+          const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16);
+          setFeasibilityCallDate(local);
+        }
+      } else {
+        setFeasibilityCallDate("");
+      }
+      
       // Start Point Information
       setCanAnswerFeasibility(cifData.can_answer_feasibility || "yes");
       setAlternateContactInformed(cifData.alternate_contact_informed || "no");
@@ -284,6 +298,15 @@ export default function CIFDetailPage() {
       setPreviousClaimDetails(cifData.previous_claim_details || "");
       
       // Projects & Fee Terms
+      setProjectsDiscussed(cifData.projects_discussed || "no");
+      setProjectsDetails(cifData.projects_details || "");
+      setFeeTermsDiscussed(cifData.fee_terms_discussed || "no");
+      setFeeTermsDetails(cifData.fee_terms_details || "");
+      setAdditionalInfo(cifData.additional_info || "");
+
+      // Legacy fields for compatibility
+      setHasClaimedBefore(cifData.has_claimed_before === true ? "yes" : "no");
+      setPreviousClaimDetails(cifData.previous_claim_details || "");
       setProjectsDiscussed(cifData.projects_discussed || "no");
       setProjectsDetails(cifData.projects_details || "");
       setFeeTermsDiscussed(cifData.fee_terms_discussed || "no");
@@ -796,7 +819,6 @@ export default function CIFDetailPage() {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="bdm">BDM</TabsTrigger>
             <TabsTrigger value="feasibility">Feasibility</TabsTrigger>
-            <TabsTrigger value="financial">Financial</TabsTrigger>
             <TabsTrigger value="admin">Admin</TabsTrigger>
           </TabsList>
 
@@ -1319,8 +1341,8 @@ export default function CIFDetailPage() {
                       <div className="p-4 bg-white/50 dark:bg-gray-900/50 rounded-lg">
                         <h4 className="font-semibold text-sm mb-2">Previous Claims Likelihood</h4>
                         <Badge variant={
-                          aiResearchData.previous_claims_likelihood === 'high' ? 'default' :
-                            aiResearchData.previous_claims_likelihood === 'medium' ? 'secondary' : 'outline'
+                          aiResearchData.previous_claims_likelihood === "high" ? "default" :
+                            aiResearchData.previous_claims_likelihood === "medium" ? "secondary" : "outline"
                         }>
                           {aiResearchData.previous_claims_likelihood}
                         </Badge>
@@ -2168,264 +2190,6 @@ export default function CIFDetailPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="financial" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Financial Information</CardTitle>
-                <CardDescription>
-                  Cost estimates and financial details
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="financial-year">Financial Year *</Label>
-                  <Input
-                    id="financial-year"
-                    placeholder="e.g. YE 31-03-2024 or 2023/24"
-                    value={financialYear}
-                    onChange={(e) => setFinancialYear(e.target.value)}
-                    disabled={!canEdit || cif.current_stage !== "financial_section"}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="staff-cost">Staff Cost Estimate (£)</Label>
-                    <Input
-                      id="staff-cost"
-                      type="number"
-                      placeholder="0.00"
-                      value={staffCost}
-                      onChange={(e) => setStaffCost(e.target.value)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="subcontractor-cost">Subcontractor Estimate (£)</Label>
-                    <Input
-                      id="subcontractor-cost"
-                      type="number"
-                      placeholder="0.00"
-                      value={subcontractorCost}
-                      onChange={(e) => setSubcontractorCost(e.target.value)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="consumables-cost">Consumables Estimate (£)</Label>
-                    <Input
-                      id="consumables-cost"
-                      type="number"
-                      placeholder="0.00"
-                      value={consumablesCost}
-                      onChange={(e) => setConsumablesCost(e.target.value)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="software-cost">Software Estimate (£)</Label>
-                    <Input
-                      id="software-cost"
-                      type="number"
-                      placeholder="0.00"
-                      value={softwareCost}
-                      onChange={(e) => setSoftwareCost(e.target.value)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="apportionment">Apportionment Assumptions</Label>
-                  <Textarea
-                    id="apportionment"
-                    placeholder="Describe cost allocation methodology..."
-                    value={apportionment}
-                    onChange={(e) => setApportionment(e.target.value)}
-                    rows={3}
-                    disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Accountant Details</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="accountant-name">Accountant Name *</Label>
-                      <Input
-                        id="accountant-name"
-                        placeholder="Accountant name"
-                        value={accountantName}
-                        onChange={(e) => setAccountantName(e.target.value)}
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="accountant-firm">Firm Name *</Label>
-                      <Input
-                        id="accountant-firm"
-                        placeholder="Accounting firm"
-                        value={accountantFirm}
-                        onChange={(e) => setAccountantFirm(e.target.value)}
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="accountant-email">Email</Label>
-                      <Input
-                        id="accountant-email"
-                        type="email"
-                        placeholder="accountant@firm.com"
-                        value={accountantEmail}
-                        onChange={(e) => setAccountantEmail(e.target.value)}
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="accountant-phone">Phone</Label>
-                      <Input
-                        id="accountant-phone"
-                        placeholder="+44 20 1234 5678"
-                        value={accountantPhone}
-                        onChange={(e) => setAccountantPhone(e.target.value)}
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Required Documents</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="block mb-2">Letter of Authority</Label>
-                      <input
-                        type="file"
-                        id="loa-upload"
-                        accept=".pdf,.doc,.docx"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, "loa");
-                        }}
-                        className="hidden"
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
-                      />
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => document.getElementById("loa-upload")?.click()}
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingLOA}
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        {uploadingLOA ? "Uploading..." : "Upload Letter of Authority"}
-                      </Button>
-                    </div>
-
-                    <div>
-                      <Label className="block mb-2">Anti-Slavery Statement</Label>
-                      <input
-                        type="file"
-                        id="ass-upload"
-                        accept=".pdf,.doc,.docx"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, "anti_slavery");
-                        }}
-                        className="hidden"
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
-                      />
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => document.getElementById("ass-upload")?.click()}
-                        disabled={!canEdit || cif.current_stage !== "financial_section" || uploadingASS}
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        {uploadingASS ? "Uploading..." : "Upload Anti-Slavery Statement"}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {documents.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      <h4 className="text-sm font-semibold">Uploaded Documents</h4>
-                      {documents.map((doc) => (
-                        <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <FileText className="h-5 w-5 text-muted-foreground" />
-                            <div>
-                              <p className="text-sm font-medium">
-                                {doc.doc_type === "loa" ? "Letter of Authority" : "Anti-Slavery Statement"}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {doc.notes} • Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDownloadDocument(doc.file_path, doc.notes)}
-                            >
-                              Download
-                            </Button>
-                            {canEdit && cif.current_stage === "financial_section" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Ready to Submit</h3>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="ready-submit"
-                      checked={readyToSubmit}
-                      onCheckedChange={(checked) => setReadyToSubmit(checked as boolean)}
-                      disabled={!canEdit || cif.current_stage !== "financial_section"}
-                    />
-                    <Label htmlFor="ready-submit" className="cursor-pointer">
-                      Ready to submit to admin for approval
-                    </Label>
-                  </div>
-
-                  {canEdit && cif.current_stage === "financial_section" && (
-                    <Button onClick={handleCompleteFinancial} disabled={saving} className="w-full">
-                      <Save className="h-4 w-4 mr-2" />
-                      {saving ? "Saving..." : "Complete Financial Section"}
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="admin" className="mt-6">
             <Card>
               <CardHeader>
@@ -2488,20 +2252,6 @@ export default function CIFDetailPage() {
                     </p>
                   </div>
                   {cif.ready_to_submit ? (
-                    <CheckCircle className="h-6 w-6 text-green-500" />
-                  ) : (
-                    <XCircle className="h-6 w-6 text-orange-500" />
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <p className="font-semibold">Required Documents</p>
-                    <p className="text-sm text-muted-foreground">
-                      {documents.length} document{documents.length !== 1 ? "s" : ""} uploaded
-                    </p>
-                  </div>
-                  {documents.length >= 2 ? (
                     <CheckCircle className="h-6 w-6 text-green-500" />
                   ) : (
                     <XCircle className="h-6 w-6 text-orange-500" />
