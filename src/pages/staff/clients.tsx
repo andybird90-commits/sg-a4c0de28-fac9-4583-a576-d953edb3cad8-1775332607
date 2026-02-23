@@ -636,30 +636,31 @@ export default function StaffClients() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      onClick={handleBulkEnrich}
-                      disabled={loading || bulkState.running}
-                    >
-                      {bulkState.running ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Bulk enriching...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Bulk Enrich
-                        </>
-                      )}
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
-                      Runs enrichment for all RD Companion prospects with a Companies House number.
-                    </p>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => {
+                      console.log("Bulk Enrich button clicked");
+                      void handleBulkEnrich();
+                    }}
+                    disabled={loading || bulkState.running}
+                  >
+                    {bulkState.running ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Bulk enriching...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Bulk Enrich
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Runs enrichment for all RD Companion prospects with a Companies House number.
+                  </p>
                 </div>
 
                 <div className="space-y-1">
