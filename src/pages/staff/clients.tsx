@@ -635,6 +635,21 @@ export default function StaffClients() {
     }
   };
 
+  const handleStartImportedClientCIF = (client: ClientToBeOnboarded) => {
+    if (!client.company_number) {
+      toast({
+        title: "Company number required",
+        description: "Add a Companies House number before starting a CIF for this client.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    router.push(
+      `/staff/cif?companyNumber=${encodeURIComponent(client.company_number)}`
+    );
+  };
+
   if (!isStaff) {
     return null;
   }
@@ -854,29 +869,46 @@ export default function StaffClients() {
                               onClick={() => handleOpenClientDetail(client)}
                             >
                               <CardContent className="py-3 px-4">
-                                <p className="font-semibold text-sm">
-                                  {client.company_name}
-                                </p>
-                                {client.company_number && (
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    Company no. {client.company_number}
-                                  </p>
-                                )}
-                                {client.contact_name && (
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    Contact: {client.contact_name}
-                                  </p>
-                                )}
-                                {client.email && (
-                                  <p className="text-xs text-muted-foreground mt-0.5 break-all">
-                                    {client.email}
-                                  </p>
-                                )}
-                                {client.address && (
-                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                    {client.address}
-                                  </p>
-                                )}
+                                <div className="flex items-start justify-between gap-4">
+                                  <div>
+                                    <p className="font-semibold text-sm">
+                                      {client.company_name}
+                                    </p>
+                                    {client.company_number && (
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        Company no. {client.company_number}
+                                      </p>
+                                    )}
+                                    {client.contact_name && (
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        Contact: {client.contact_name}
+                                      </p>
+                                    )}
+                                    {client.email && (
+                                      <p className="text-xs text-muted-foreground mt-0.5 break-all">
+                                        {client.email}
+                                      </p>
+                                    )}
+                                    {client.address && (
+                                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                        {client.address}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col items-end gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStartImportedClientCIF(client);
+                                      }}
+                                    >
+                                      <Play className="h-3 w-3 mr-1" />
+                                      Start CIF
+                                    </Button>
+                                  </div>
+                                </div>
                               </CardContent>
                             </Card>
                           ))}
