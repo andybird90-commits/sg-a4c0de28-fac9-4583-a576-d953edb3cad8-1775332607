@@ -129,7 +129,7 @@ export function SidekickResearchPanel(props: SidekickResearchPanelProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-300" />
-          <CardTitle className="text-base">RD Sidekick Research</CardTitle>
+          <CardTitle className="text-base">RD Companion Research</CardTitle>
         </div>
         <p className="mt-1 text-xs text-blue-800/80 dark:text-blue-200/80">
           This is an AI-generated overview to help you prepare your feasibility

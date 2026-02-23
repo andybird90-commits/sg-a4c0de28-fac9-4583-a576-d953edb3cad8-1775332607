@@ -155,7 +155,7 @@ export default function SidekickEvidenceDetailPage() {
   return (
     <>
       <SEO
-        title={`${evidence.title || "Evidence"} - RD Sidekick`}
+        title={`${evidence.title || "Evidence"} - RD Companion`}
         description={evidence.body || "Evidence details"}
       />
       <Layout>

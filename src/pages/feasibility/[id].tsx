@@ -217,8 +217,8 @@ export default function FeasibilityResultPage() {
         }
       `}</style>
       <SEO
-        title={`Analysis: ${analysis.idea_title || "New Idea"} - RD Sidekick`}
-        description="Feasibility analysis results"
+        title={`Analysis: ${analysis.idea_title || "New Idea"} - RD Companion`}
+        description="R&D feasibility analysis"
       />
       <Layout>
         <div className="max-w-5xl mx-auto px-4 py-8 print-full-width">

@@ -137,7 +137,11 @@ export default function CIFDetailPage() {
   // Document upload state
   const [uploadingLOA, setUploadingLOA] = useState(false);
   const [uploadingASS, setUploadingASS] = useState(false);
+  const [uploadingAML, setUploadingAML] = useState(false);
+  const [uploadingKYC, setUploadingKYC] = useState(false);
   const [documents, setDocuments] = useState<any[]>([]);
+  const hasAmlDocument = documents.some((doc) => doc.doc_type === "aml");
+  const hasKycDocument = documents.some((doc) => doc.doc_type === "kyc");
 
   // Add state for extracted feasibility analysis
   const [feasibilityExtract, setFeasibilityExtract] = useState<string>("");
@@ -402,10 +406,23 @@ export default function CIFDetailPage() {
     }
   };
 
-  const handleFileUpload = async (file: File, docType: "loa" | "anti_slavery") => {
+  const handleFileUpload = async (
+    file: File,
+    docType: "loa" | "anti_slavery" | "aml" | "kyc"
+  ) => {
     if (!cif || !profile?.id) return;
 
-    const setUploading = docType === "loa" ? setUploadingLOA : setUploadingASS;
+    let setUploading: (value: boolean) => void;
+    if (docType === "loa") {
+      setUploading = setUploadingLOA;
+    } else if (docType === "anti_slavery") {
+      setUploading = setUploadingASS;
+    } else if (docType === "aml") {
+      setUploading = setUploadingAML;
+    } else {
+      setUploading = setUploadingKYC;
+    }
+
     setUploading(true);
 
     try {
@@ -436,7 +453,17 @@ export default function CIFDetailPage() {
         return;
       }
 
-      toast({ title: "Success", description: `${docType === "loa" ? "Letter of Authority" : "Anti-Slavery Statement"} uploaded` });
+      toast({
+        title: "Success",
+        description:
+          docType === "loa"
+            ? "Letter of Authority uploaded"
+            : docType === "anti_slavery"
+            ? "Anti-Slavery Statement uploaded"
+            : docType === "aml"
+            ? "AML document uploaded"
+            : "KYC document uploaded",
+      });
       fetchDocuments(cif.id);
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -567,6 +594,16 @@ export default function CIFDetailPage() {
     setSaving(true);
     
     try {
+      if (!hasAmlDocument || !hasKycDocument) {
+        toast({
+          title: "Missing compliance documents",
+          description: "Please upload both AML and KYC documents before submitting feasibility for admin approval.",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+
       // Validate required fields
       const requiredFields: Record<string, any> = {
         "Completed By": completedByName,
@@ -833,7 +870,7 @@ export default function CIFDetailPage() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    RD Sidekick Business Intelligence
+                    RD Companion Business Intelligence
                   </CardTitle>
                   <CardDescription>AI-powered company analysis and R&D potential assessment</CardDescription>
                 </CardHeader>
@@ -1312,7 +1349,7 @@ export default function CIFDetailPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
                     <Zap className="h-5 w-5" />
-                    RD Sidekick Feasibility Analysis
+                    RD Companion Feasibility Analysis
                   </CardTitle>
                   <CardDescription>
                     AI-powered R&D potential and technical assessment
@@ -2170,6 +2207,168 @@ export default function CIFDetailPage() {
                       />
                     </div>
                   )}
+
+                  {/* Compliance & Anti-Money Laundering */}
+                  <div className="space-y-4 p-4 bg-muted/40 rounded-lg border border-muted-foreground/20">
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold">Compliance & Anti-Money Laundering</h4>
+                      <p className="text-sm text-muted-foreground">
+                        As part of onboarding, ensure that standard Anti-Money Laundering (AML), Know Your Customer (KYC)
+                        and Anti-Bribery checks have been completed in line with your firm&apos;s policies before progressing
+                        this engagement.
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                        <li>Client identity and beneficial ownership verified</li>
+                        <li>Source of funds and business activities understood</li>
+                        <li>Sanctions and politically exposed persons (PEP) screening completed</li>
+                      </ul>
+                      <p className="text-xs text-destructive mt-1">
+                        AML and KYC documentation must be uploaded before submitting feasibility for admin approval.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {/* AML upload */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">AML Document (required)</Label>
+                        {documents.filter((doc) => doc.doc_type === "aml").length > 0 && (
+                          <div className="space-y-1">
+                            {documents
+                              .filter((doc) => doc.doc_type === "aml")
+                              .map((doc) => (
+                                <div
+                                  key={doc.id}
+                                  className="flex items-center justify-between rounded-md border bg-background px-2 py-1 text-xs"
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleDownloadDocument(doc.file_path, doc.notes || "aml_document")
+                                    }
+                                    className="flex items-center gap-1 text-primary hover:underline"
+                                  >
+                                    <FileText className="h-3 w-3" />
+                                    <span className="truncate max-w-[140px]">
+                                      {doc.notes || "AML document"}
+                                    </span>
+                                  </button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-destructive"
+                                    onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
+                                    disabled={saving}
+                                  >
+                                    <XCircle className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                        <label className="inline-flex cursor-pointer items-center justify-center rounded-md border border-dashed px-3 py-2 text-xs font-medium hover:bg-muted/60">
+                          <Upload className="mr-2 h-3 w-3" />
+                          <span>{uploadingAML ? "Uploading..." : "Upload AML file (PDF/Word)"}</span>
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            disabled={!canEdit || uploadingAML || saving}
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (!file) return;
+                              const extension = file.name.split(".").pop()?.toLowerCase();
+                              const allowedExtensions = ["pdf", "doc", "docx"];
+                              if (!extension || !allowedExtensions.includes(extension)) {
+                                toast({
+                                  title: "Invalid file type",
+                                  description: "Please upload a PDF or Word document.",
+                                  variant: "destructive",
+                                });
+                                event.target.value = "";
+                                return;
+                              }
+                              handleFileUpload(file, "aml");
+                              event.target.value = "";
+                            }}
+                          />
+                        </label>
+                        {!hasAmlDocument && (
+                          <p className="text-xs text-destructive">AML document is required.</p>
+                        )}
+                      </div>
+
+                      {/* KYC upload */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">KYC Document (required)</Label>
+                        {documents.filter((doc) => doc.doc_type === "kyc").length > 0 && (
+                          <div className="space-y-1">
+                            {documents
+                              .filter((doc) => doc.doc_type === "kyc")
+                              .map((doc) => (
+                                <div
+                                  key={doc.id}
+                                  className="flex items-center justify-between rounded-md border bg-background px-2 py-1 text-xs"
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleDownloadDocument(doc.file_path, doc.notes || "kyc_document")
+                                    }
+                                    className="flex items-center gap-1 text-primary hover:underline"
+                                  >
+                                    <FileText className="h-3 w-3" />
+                                    <span className="truncate max-w-[140px]">
+                                      {doc.notes || "KYC document"}
+                                    </span>
+                                  </button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-destructive"
+                                    onClick={() => handleDeleteDocument(doc.id, doc.file_path)}
+                                    disabled={saving}
+                                  >
+                                    <XCircle className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                        <label className="inline-flex cursor-pointer items-center justify-center rounded-md border border-dashed px-3 py-2 text-xs font-medium hover:bg-muted/60">
+                          <Upload className="mr-2 h-3 w-3" />
+                          <span>{uploadingKYC ? "Uploading..." : "Upload KYC file (PDF/Word)"}</span>
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            disabled={!canEdit || uploadingKYC || saving}
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (!file) return;
+                              const extension = file.name.split(".").pop()?.toLowerCase();
+                              const allowedExtensions = ["pdf", "doc", "docx"];
+                              if (!extension || !allowedExtensions.includes(extension)) {
+                                toast({
+                                  title: "Invalid file type",
+                                  description: "Please upload a PDF or Word document.",
+                                  variant: "destructive",
+                                });
+                                event.target.value = "";
+                                return;
+                              }
+                              handleFileUpload(file, "kyc");
+                              event.target.value = "";
+                            }}
+                          />
+                        </label>
+                        {!hasKycDocument && (
+                          <p className="text-xs text-destructive">KYC document is required.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <Separator />
@@ -2177,12 +2376,18 @@ export default function CIFDetailPage() {
                 {/* Complete Feasibility Button */}
                 {canEdit && (
                   <div className="space-y-2">
-                    <Button onClick={handleCompleteTechnical} disabled={saving} className="w-full" size="lg">
+                    <Button
+                      onClick={handleCompleteTechnical}
+                      disabled={saving || !hasAmlDocument || !hasKycDocument}
+                      className="w-full"
+                      size="lg"
+                    >
                       <Save className="h-4 w-4 mr-2" />
                       {saving ? "Saving..." : "Complete Feasibility & Submit for Admin Approval"}
                     </Button>
                     <p className="text-xs text-muted-foreground text-center">
                       This will mark the feasibility section as complete and move this CIF to admin review.
+                      AML and KYC documents are required before submission.
                     </p>
                   </div>
                 )}

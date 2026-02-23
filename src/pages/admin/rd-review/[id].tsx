@@ -330,8 +330,8 @@ export default function RDReviewProjectPage() {
   return (
     <>
       <SEO
-        title={`Review: ${project.name} - RD Sidekick Admin`}
-        description="Review Sidekick project"
+        title={`Review: ${project.name} - RD Companion Admin`}
+        description="Review Companion project"
       />
       <Layout>
         <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -373,9 +373,8 @@ export default function RDReviewProjectPage() {
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     {project.organisations?.sidekick_enabled && isLinked && (
-                      <Badge className="bg-green-600">
-                        <Shield className="w-3 h-3 mr-1" />
-                        Sidekick Enabled
+                      <Badge variant="outline" className="text-xs">
+                        Companion Enabled
                       </Badge>
                     )}
                     {isLinked ? (
@@ -852,7 +851,9 @@ export default function RDReviewProjectPage() {
           <Dialog open={showVerifyDialog} onOpenChange={setShowVerifyDialog}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Verify Business</DialogTitle>
+                <DialogTitle className="text-lg font-semibold">
+                  Link this Companion company to an existing Conexa company
+                </DialogTitle>
                 <DialogDescription>
                   Link this Sidekick company to an existing Conexa company
                 </DialogDescription>

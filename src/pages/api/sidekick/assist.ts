@@ -27,7 +27,7 @@ export default async function handler(
         messages: [
           {
             role: "system",
-            content: `You are RD Sidekick, an AI assistant helping R&D tax credit consultants with ${type} analysis. Provide clear, concise, and actionable insights. Be helpful but always remind users that this is preliminary guidance.`
+            content: `You are RD Companion, an AI assistant helping R&D tax credit consultants with ${type} analysis. Provide clear, concise, and actionable insights. Be helpful but always remind users that this is preliminary guidance.`
           },
           {
             role: "user",

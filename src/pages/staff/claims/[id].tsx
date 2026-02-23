@@ -731,7 +731,7 @@ export default function ClaimDetailPage() {
                   <RefreshCw className="h-6 w-6 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">AI Sidekick</p>
+                  <p className="text-sm text-slate-600">AI Companion</p>
                   <p className="text-2xl font-bold">Ready</p>
                 </div>
               </div>
@@ -746,7 +746,7 @@ export default function ClaimDetailPage() {
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="costs">Costs</TabsTrigger>
             <TabsTrigger value="evidence">Evidence</TabsTrigger>
-            <TabsTrigger value="sidekick">Sidekick</TabsTrigger>
+            <TabsTrigger value="sidekick">Companion</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -1262,7 +1262,7 @@ export default function ClaimDetailPage() {
             </Card>
           </TabsContent>
 
-          {/* Sidekick Tab */}
+          {/* Companion Tab (internal value still 'sidekick') */}
           <TabsContent value="sidekick" className="mt-6">
             <Card>
               <CardHeader>
@@ -1270,7 +1270,7 @@ export default function ClaimDetailPage() {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <RefreshCw className="h-5 w-5 text-orange-600" />
-                      AI Sidekick Analysis
+                      AI Companion Analysis
                     </CardTitle>
                     <CardDescription>
                       Get AI-powered insights and recommendations for this claim
@@ -1402,7 +1402,7 @@ export default function ClaimDetailPage() {
                           <RefreshCw className="h-5 w-5 text-orange-600" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-slate-900 mb-1">
+                          <h3 className="text-lg font-semibold text-slate-900 mb-2">
                             AI Analysis Results
                           </h3>
                           <p className="text-sm text-slate-600">

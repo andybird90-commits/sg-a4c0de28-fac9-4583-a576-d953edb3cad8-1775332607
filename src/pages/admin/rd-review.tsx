@@ -77,8 +77,8 @@ export default function RDReviewPage() {
   return (
     <>
       <SEO
-        title="RD Review Queue - RD Sidekick Admin"
-        description="Review Sidekick projects from clients"
+        title="RD Review Queue - RD Companion Admin"
+        description="Review Companion projects from clients"
       />
       <Layout>
         <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -86,8 +86,8 @@ export default function RDReviewPage() {
 
           <div className="mt-8">
             <h1 className="text-3xl font-bold mb-2">RD Review Queue</h1>
-            <p className="text-muted-foreground mb-6">
-              Review and manage Sidekick projects submitted by clients
+            <p className="text-sm text-slate-600">
+              Review and manage Companion projects submitted by clients
             </p>
 
             <Tabs value={statusFilter} onValueChange={setStatusFilter} className="space-y-6">
@@ -137,8 +137,8 @@ export default function RDReviewPage() {
                                     <Building2 className="w-4 h-4" />
                                     <span>{project.organisations.name}</span>
                                     {project.organisations.sidekick_enabled && (
-                                      <Badge variant="outline" className="ml-1">
-                                        Sidekick Enabled
+                                      <Badge variant="outline" className="text-xs">
+                                        Companion Enabled
                                       </Badge>
                                     )}
                                     {project.organisations.linked_conexa_company_name && (
