@@ -4,6 +4,7 @@ import { StaffLayout } from "@/components/staff/StaffLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Users, Settings, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -19,14 +20,59 @@ export default function AdminDashboard() {
   }, []);
 
   const loadStats = async () => {
-    // Stats will be loaded from services
-    // Placeholder for now
-    setStats({
-      totalOrganisations: 4,
-      totalUsers: 12,
-      totalClaims: 8,
-      activeClaims: 5
-    });
+    try {
+      // Organisations count
+      const { count: orgCount, error: orgError } = await supabase
+        .from("organisations")
+        .select("id", { count: "exact", head: true });
+
+      if (orgError) {
+        console.error("Error loading organisation count:", orgError);
+      }
+
+      // Users count (profiles)
+      const { count: userCount, error: userError } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true });
+
+      if (userError) {
+        console.error("Error loading user count:", userError);
+      }
+
+      // Total claims
+      const { count: claimCount, error: claimError } = await supabase
+        .from("claims")
+        .select("id", { count: "exact", head: true });
+
+      if (claimError) {
+        console.error("Error loading total claims count:", claimError);
+      }
+
+      // Active claims (anything not completed)
+      const { count: activeClaimCount, error: activeError } = await supabase
+        .from("claims")
+        .select("id", { count: "exact", head: true })
+        .neq("status", "completed");
+
+      if (activeError) {
+        console.error("Error loading active claims count:", activeError);
+      }
+
+      setStats({
+        totalOrganisations: orgCount ?? 0,
+        totalUsers: userCount ?? 0,
+        totalClaims: claimCount ?? 0,
+        activeClaims: activeClaimCount ?? 0
+      });
+    } catch (error) {
+      console.error("Error loading admin dashboard stats:", error);
+      setStats({
+        totalOrganisations: 0,
+        totalUsers: 0,
+        totalClaims: 0,
+        activeClaims: 0
+      });
+    }
   };
 
   const adminSections = [
@@ -118,7 +164,11 @@ export default function AdminDashboard() {
           {adminSections.map((section) => {
             const Icon = section.icon;
             return (
-              <Card key={section.href} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(section.href)}>
+              <Card
+                key={section.href}
+                className="hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => router.push(section.href)}
+              >
                 <CardHeader>
                   <div className="flex items-center gap-4">
                     <div className={`${section.color} p-3 rounded-lg`}>
@@ -126,7 +176,9 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex-1">
                       <CardTitle>{section.title}</CardTitle>
-                      <CardDescription className="mt-1">{section.description}</CardDescription>
+                      <CardDescription className="mt-1">
+                        {section.description}
+                      </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
