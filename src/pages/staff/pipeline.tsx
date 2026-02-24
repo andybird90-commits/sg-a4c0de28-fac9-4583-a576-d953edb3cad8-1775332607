@@ -32,7 +32,7 @@ export default function PipelinePage() {
   // Filters
   // Default to a very wide date range so the initial view shows all entries.
   // Users can then narrow the range using the filters.
-  const [filterStartDate, setFilterStartDate] = useState("2000-01-01");
+  const [filterStartDate, setFilterStartDate] = useState("2026-01-01");
   const [filterEndDate, setFilterEndDate] = useState("2100-12-31");
   const [minConfidence, setMinConfidence] = useState(0);
 
@@ -294,6 +294,13 @@ export default function PipelinePage() {
                   ? new Date(entry.expected_accounts_filing_date) 
                   : null;
                 const confidence = entry.filing_confidence_score || 0;
+                const avgLagDays = entry.average_filing_lag_days || 0;
+                let yearEndDate: Date | null = null;
+
+                if (expectedFilingDate && avgLagDays > 0) {
+                  yearEndDate = new Date(expectedFilingDate);
+                  yearEndDate.setDate(yearEndDate.getDate() - avgLagDays);
+                }
 
                 return (
                   <div
@@ -325,9 +332,17 @@ export default function PipelinePage() {
                         </div>
                         <div className="mt-2 space-y-1 text-sm text-muted-foreground">
                           <div className="flex items-center space-x-4">
-                            <span>Pipeline Start: <strong>{format(pipelineDate, "dd MMM yyyy")}</strong></span>
+                            {yearEndDate && (
+                              <span>
+                                Year End:{" "}
+                                <strong>{format(yearEndDate, "MMM yyyy")}</strong>
+                              </span>
+                            )}
                             {expectedFilingDate && (
-                              <span>Expected Filing: <strong>{format(expectedFilingDate, "dd MMM yyyy")}</strong></span>
+                              <span>
+                                Expected Filing:{" "}
+                                <strong>{format(expectedFilingDate, "dd MMM yyyy")}</strong>
+                              </span>
                             )}
                           </div>
                           <div className="flex items-center space-x-4">

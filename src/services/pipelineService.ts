@@ -175,8 +175,10 @@ export async function calculatePredictedFilingDate(
   }
 
   let yearsTradingFromFilings = 0;
-  if (filingsWithDates.length > 0) {
-    const years = filingsWithDates.map((f) =>
+  const filingsWithPeriodEnd = safeFilings.filter((f) => f.period_end_date);
+
+  if (filingsWithPeriodEnd.length > 0) {
+    const years = filingsWithPeriodEnd.map((f) =>
       new Date(f.period_end_date as string).getFullYear()
     );
     const minYear = Math.min(...years);
