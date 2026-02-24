@@ -33,6 +33,12 @@ export default function LoginPage() {
     validateAndClearSession();
   }, []);
 
+  useEffect(() => {
+    if (!appLoading) {
+      setLoading(false);
+    }
+  }, [appLoading]);
+
   // Handle routing after user is loaded by AppContext
   useEffect(() => {
     if (!appLoading && user) {
