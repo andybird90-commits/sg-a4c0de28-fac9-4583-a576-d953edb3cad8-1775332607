@@ -30,8 +30,10 @@ export default function PipelinePage() {
   const [missingCompanies, setMissingCompanies] = useState<MissingCompanyNumberClient[]>([]);
   
   // Filters
-  const [filterStartDate, setFilterStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [filterEndDate, setFilterEndDate] = useState(format(addMonths(new Date(), 6), "yyyy-MM-dd"));
+  // Default to a very wide date range so the initial view shows all entries.
+  // Users can then narrow the range using the filters.
+  const [filterStartDate, setFilterStartDate] = useState("2000-01-01");
+  const [filterEndDate, setFilterEndDate] = useState("2100-12-31");
   const [minConfidence, setMinConfidence] = useState(0);
 
   // Editing State
