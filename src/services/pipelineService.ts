@@ -26,7 +26,7 @@ export interface PipelineWithDetails extends PipelineEntry {
 export async function calculatePredictedFilingDate(
   orgId: string,
   companiesHouseNumber: string
-): Promise<{ predictedDate: Date; confidence: number; avgLag: number }> {
+): Promise<{ predictedDate: Date; confidence: number; avgLag: number; yearsTrading: number }> {
   // Get filing history
   const { data: filings, error } = await supabase
     .from("companies_house_filings")
@@ -37,10 +37,12 @@ export async function calculatePredictedFilingDate(
 
   if (error) throw error;
 
-  // Calculate average lag
+  // Calculate average lag from year end to filing
   let avgLag = 60; // Default 60 days
   if (filings && filings.length > 0) {
-    const lags = filings.map((f) => f.filing_lag_days || 0).filter((l) => l > 0);
+    const lags = filings
+      .map((f: CompaniesHouseFiling) => f.filing_lag_days || 0)
+      .filter((l) => l > 0);
     if (lags.length > 0) {
       avgLag = Math.round(lags.reduce((a, b) => a + b, 0) / lags.length);
     }
@@ -56,7 +58,11 @@ export async function calculatePredictedFilingDate(
   let yearsTrading = 0;
   if (orgData?.incorporation_date) {
     const incDate = new Date(orgData.incorporation_date);
-    yearsTrading = Math.max(0, new Date().getFullYear() - incDate.getFullYear());
+    const now = new Date();
+    yearsTrading = Math.max(
+      0,
+      now.getFullYear() - incDate.getFullYear() - (now < new Date(incDate.getFullYear() + (now.getFullYear() - incDate.getFullYear()), incDate.getMonth(), incDate.getDate()) ? 1 : 0)
+    );
   }
 
   // Calculate confidence based on filing history and years trading
@@ -82,7 +88,7 @@ export async function calculatePredictedFilingDate(
   const predictedDate = new Date(nextYearEnd);
   predictedDate.setDate(predictedDate.getDate() + avgLag);
 
-  return { predictedDate, confidence, avgLag };
+  return { predictedDate, confidence, avgLag, yearsTrading };
 }
 
 /**
@@ -233,18 +239,36 @@ export async function autoCreatePipelineEntry(
   let predictedFilingDate: Date;
   let confidence: number;
   let avgLag: number;
+  let yearsTrading = 0;
 
   if (companiesHouseNumber) {
     const prediction = await calculatePredictedFilingDate(orgId, companiesHouseNumber);
     predictedFilingDate = prediction.predictedDate;
     confidence = prediction.confidence;
     avgLag = prediction.avgLag;
+    yearsTrading = prediction.yearsTrading;
   } else {
     // No Companies House number - use defaults
     predictedFilingDate = new Date();
     predictedFilingDate.setMonth(predictedFilingDate.getMonth() + 3);
     confidence = 20;
     avgLag = 60;
+
+    // Fallback years trading from organisation incorporation_date if available
+    const { data: orgData } = await supabase
+      .from("organisations")
+      .select("incorporation_date")
+      .eq("id", orgId)
+      .single();
+
+    if (orgData?.incorporation_date) {
+      const incDate = new Date(orgData.incorporation_date);
+      const now = new Date();
+      yearsTrading = Math.max(
+        0,
+        now.getFullYear() - incDate.getFullYear() - (now < new Date(incDate.getFullYear() + (now.getFullYear() - incDate.getFullYear()), incDate.getMonth(), incDate.getDate()) ? 1 : 0)
+      );
+    }
   }
 
   const pipelineStartDate = calculatePipelineStartDate(predictedFilingDate);
@@ -254,11 +278,11 @@ export async function autoCreatePipelineEntry(
     org_id: orgId,
     claim_id: claimId,
     pipeline_start_date: pipelineStartDate.toISOString().split("T")[0],
-    expected_accounts_filing_date: predictedFilingDate.toISOString().split("T")[0], // Mapped correctly
-    predicted_revenue: 0, // Manual entry required
-    filing_confidence_score: confidence, // Mapped correctly
-    average_filing_lag_days: avgLag, // Mapped correctly
-    years_trading: 0, // Should be calculated
+    expected_accounts_filing_date: predictedFilingDate.toISOString().split("T")[0],
+    predicted_revenue: 0,
+    filing_confidence_score: confidence,
+    average_filing_lag_days: avgLag,
+    years_trading: yearsTrading,
     auto_created: true,
     created_by: (await supabase.auth.getUser()).data.user?.id || "",
   });
@@ -277,22 +301,19 @@ export async function refreshPipelinePredictions(pipelineId: string): Promise<vo
   if (error) throw error;
   if (!pipeline) return;
 
+  const orgId = (pipeline as any).org_id as string;
+
   // We need to fetch companies_house_number separately or add it to the query if it exists on organisations
-  // For now, let's assume we can fetch it via prospect link or direct lookup
-  // But wait, organisations table doesn't have companies_house_number in the type definition I saw earlier
-  // It has 'organisation_code'. 
-  // Let's check prospects table for company number link
-  
   const { data: prospect } = await supabase
     .from("prospects")
     .select("company_number")
-    .eq("org_id", pipeline.org_id)
+    .eq("org_id", orgId)
     .single();
     
   if (!prospect?.company_number) return;
 
   const prediction = await calculatePredictedFilingDate(
-    pipeline.org_id,
+    orgId,
     prospect.company_number
   );
 
@@ -303,6 +324,7 @@ export async function refreshPipelinePredictions(pipelineId: string): Promise<vo
     pipeline_start_date: pipelineStartDate.toISOString().split("T")[0],
     filing_confidence_score: prediction.confidence,
     average_filing_lag_days: prediction.avgLag,
+    years_trading: prediction.yearsTrading,
   });
 }
 

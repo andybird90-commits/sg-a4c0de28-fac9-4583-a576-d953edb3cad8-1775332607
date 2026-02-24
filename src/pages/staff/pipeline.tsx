@@ -296,6 +296,11 @@ export default function PipelinePage() {
                           <Badge variant={getConfidenceBadge(confidence)}>
                             {confidence}% confident
                           </Badge>
+                          <Badge
+                            variant={entry.claim_id ? "outline" : "secondary"}
+                          >
+                            {entry.claim_id ? "Onboarded client" : "Client not yet onboarded"}
+                          </Badge>
                           {entry.auto_created && (
                             <Badge variant="outline">Auto</Badge>
                           )}

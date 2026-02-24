@@ -262,6 +262,8 @@ export default function StaffClients() {
           if (summary) {
             setClientResearchFallbackText(summary);
           }
+        } else {
+          console.error("Sidekick research returned non-OK status for imported client:", researchRes.status);
         }
       } catch (researchError) {
         console.error("Error loading AI research for imported client:", researchError);
@@ -272,6 +274,8 @@ export default function StaffClients() {
       console.error("Error loading Companies House enrichment for imported client:", error);
       setClientEnrichment(null);
       setClientEnrichmentError("Unable to load Companies House details for this client.");
+      // Ensure we also clear the Sidekick loading state if CH lookup fails before research runs
+      setClientSidekickLoading(false);
     } finally {
       setClientEnrichmentLoading(false);
       setClientResearchLoading(false);
@@ -541,7 +545,7 @@ export default function StaffClients() {
       if (!options?.suppressToast) {
         toast({
           title: "Valid company number required",
-          description: "The company number for this imported client appears to be invalid. Please correct it before enriching.",
+          description: "The company number for this imported client appears to be invalid. Please correct it before enrichinging.",
           variant: "destructive"
         });
       }
