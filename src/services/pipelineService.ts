@@ -8,6 +8,7 @@ type CompaniesHouseFiling = Database["public"]["Tables"]["companies_house_filing
 type Prospect = Database["public"]["Tables"]["prospects"]["Row"];
 type ClientToBeOnboarded = Database["public"]["Tables"]["clients_to_be_onboarded"]["Row"];
 type Organisation = Database["public"]["Tables"]["organisations"]["Row"];
+type OrganisationInsert = Database["public"]["Tables"]["organisations"]["Insert"];
 
 export interface PipelineWithDetails extends PipelineEntry {
   organisation?: {
@@ -493,7 +494,7 @@ async function ensurePlaceholderOrganisationForClient(
     return existing.id;
   }
 
-  const insertPayload: Partial<Organisation> = {
+  const insertPayload: OrganisationInsert = {
     name,
     organisation_code: placeholderCode,
   };
@@ -567,12 +568,9 @@ export async function syncPipelineFromClients(): Promise<void> {
   const { data: authData, error: authError } = await supabase.auth.getUser();
   if (authError) {
     console.error("Error getting current user for pipeline sync:", authError);
-    return;
   }
-  const userId = authData?.user?.id;
-  if (!userId) {
-    return;
-  }
+
+  const userId = authData?.user?.id || "";
 
   const { data: importedClients, error: importedError } = await supabase
     .from("clients_to_be_onboarded")
@@ -609,7 +607,9 @@ export async function syncPipelineFromClients(): Promise<void> {
     if (!isValidCompaniesHouseNumber(client.company_number)) {
       continue;
     }
-    const orgId = await ensurePlaceholderOrganisationForClient(client as ClientToBeOnboarded);
+    const orgId = await ensurePlaceholderOrganisationForClient(
+      client as ClientToBeOnboarded
+    );
     if (!orgId) {
       continue;
     }
