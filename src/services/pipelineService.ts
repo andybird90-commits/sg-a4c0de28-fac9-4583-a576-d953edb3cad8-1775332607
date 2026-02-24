@@ -27,7 +27,6 @@ export async function calculatePredictedFilingDate(
   orgId: string,
   companiesHouseNumber: string
 ): Promise<{ predictedDate: Date; confidence: number; avgLag: number; yearsTrading: number }> {
-  // Get filing history
   const { data: filings, error } = await supabase
     .from("companies_house_filings")
     .select("*")
@@ -35,56 +34,115 @@ export async function calculatePredictedFilingDate(
     .order("accounts_filing_date", { ascending: false })
     .limit(5);
 
-  if (error) throw error;
+  if (error) {
+    throw error;
+  }
 
-  // Calculate average lag from year end to filing
-  let avgLag = 60; // Default 60 days
-  if (filings && filings.length > 0) {
-    const lags = filings
-      .map((f: CompaniesHouseFiling) => f.filing_lag_days || 0)
+  const safeFilings = (filings || []) as CompaniesHouseFiling[];
+
+  // Only use filings where we have both year end and filing date
+  const filingsWithDates = safeFilings.filter(
+    (f) => f.period_end_date && f.accounts_filing_date
+  );
+
+  // 1) Days lag per year (year end -> filing), then average across years
+  let avgLag = 60;
+  let lags: number[] = [];
+
+  if (filingsWithDates.length > 0) {
+    lags = filingsWithDates
+      .map((f) => {
+        const yearEnd = new Date(f.period_end_date as string);
+        const filingDate = new Date(f.accounts_filing_date as string);
+        const msDiff = filingDate.getTime() - yearEnd.getTime();
+        const daysDiff = Math.round(msDiff / (1000 * 60 * 60 * 24));
+        return daysDiff > 0 ? daysDiff : 0;
+      })
       .filter((l) => l > 0);
+
     if (lags.length > 0) {
-      avgLag = Math.round(lags.reduce((a, b) => a + b, 0) / lags.length);
+      avgLag = Math.round(
+        lags.reduce((a, b) => a + b, 0) / lags.length
+      );
     }
   }
 
-  // Get company age (years trading)
+  // 2) Years trading from filings (based on period_end_date year span)
+  let yearsTradingFromFilings = 0;
+  if (filingsWithDates.length > 0) {
+    const years = filingsWithDates.map((f) =>
+      new Date(f.period_end_date as string).getFullYear()
+    );
+    const minYear = Math.min(...years);
+    const maxYear = Math.max(...years);
+    yearsTradingFromFilings = maxYear - minYear + 1;
+  }
+
+  // 3) Company age from incorporation date as fallback/upper bound
   const { data: orgData } = await supabase
     .from("organisations")
     .select("incorporation_date")
     .eq("id", orgId)
     .single();
 
-  let yearsTrading = 0;
+  let yearsTradingFromIncorporation = 0;
   if (orgData?.incorporation_date) {
     const incDate = new Date(orgData.incorporation_date);
     const now = new Date();
-    yearsTrading = Math.max(
+    yearsTradingFromIncorporation = Math.max(
       0,
-      now.getFullYear() - incDate.getFullYear() - (now < new Date(incDate.getFullYear() + (now.getFullYear() - incDate.getFullYear()), incDate.getMonth(), incDate.getDate()) ? 1 : 0)
+      now.getFullYear() -
+        incDate.getFullYear() -
+        (now <
+        new Date(
+          incDate.getFullYear() +
+            (now.getFullYear() - incDate.getFullYear()),
+          incDate.getMonth(),
+          incDate.getDate()
+        )
+          ? 1
+          : 0)
     );
   }
 
-  // Calculate confidence based on filing history and years trading
-  const filingHistoryCount = filings?.length || 0;
-  let confidence = Math.min(filingHistoryCount * 15, 60); // Max 60 from history
-  confidence += Math.min(yearsTrading * 5, 30); // Max 30 from age
-  confidence = Math.max(20, Math.min(100, confidence)); // Clamp 20-100
+  const yearsTrading = Math.max(
+    yearsTradingFromFilings,
+    yearsTradingFromIncorporation
+  );
 
-  // Calculate predicted filing date
-  // Assume next year end is 12 months from last year end (or use fiscal year end)
-  const lastFiling = filings?.[0];
+  // 4) Confidence: based on number of years filed and average lag
+  const yearsFiled = yearsTradingFromFilings || safeFilings.length;
+  let confidence = 30;
+
+  if (yearsFiled > 0) {
+    confidence += Math.min(yearsFiled * 10, 40);
+  }
+
+  if (yearsTrading > 0) {
+    confidence += Math.min(yearsTrading * 5, 20);
+  }
+
+  if (avgLag <= 90) {
+    confidence += 5;
+  } else if (avgLag >= 180) {
+    confidence -= 5;
+  }
+
+  confidence = Math.max(20, Math.min(100, confidence));
+
+  // 5) Predicted filing date:
+  //    next year end (based on most recent period_end_date) + average lag
+  const lastFiling = safeFilings[0];
   let nextYearEnd: Date;
 
   if (lastFiling?.period_end_date) {
     nextYearEnd = new Date(lastFiling.period_end_date);
     nextYearEnd.setFullYear(nextYearEnd.getFullYear() + 1);
   } else {
-    // Default to March 31 next year if no history
-    nextYearEnd = new Date(new Date().getFullYear() + 1, 2, 31); // March 31
+    // Default to 31 March next year if no history at all
+    nextYearEnd = new Date(new Date().getFullYear() + 1, 2, 31);
   }
 
-  // Add average lag to get predicted filing date
   const predictedDate = new Date(nextYearEnd);
   predictedDate.setDate(predictedDate.getDate() + avgLag);
 
