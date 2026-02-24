@@ -19,12 +19,23 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+import {
+  parseAverageFeeCsv,
+  buildInternalClients,
+  reconcileFeesWithClients,
+} from "@/services/clientFeeReconciliationService";
+
+type ClientToBeOnboardedRow =
+  Database["public"]["Tables"]["clients_to_be_onboarded"]["Row"];
 
 export default function PipelinePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [applyingFees, setApplyingFees] = useState(false);
   const [pipeline, setPipeline] = useState<PipelineWithDetails[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [missingCompanies, setMissingCompanies] = useState<MissingCompanyNumberClient[]>([]);
@@ -112,6 +123,159 @@ export default function PipelinePage() {
     }
   }
 
+  async function handleApplyAverageFees() {
+    try {
+      setApplyingFees(true);
+
+      const { data: clientRows, error: clientError } = await supabase
+        .from("clients_to_be_onboarded")
+        .select("id, company_name");
+
+      if (clientError) {
+        console.error(
+          "Error loading clients_to_be_onboarded:",
+          clientError
+        );
+        toast({
+          title: "Error",
+          description: "Failed to load clients not yet onboarded",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!clientRows || clientRows.length === 0) {
+        toast({
+          title: "No clients found",
+          description:
+            "There are no clients in the 'clients_to_be_onboarded' list to match against.",
+        });
+        return;
+      }
+
+      const res = await fetch(
+        "/client_average_claim_fees_for_softgen_v2.csv"
+      );
+      if (!res.ok) {
+        toast({
+          title: "Error",
+          description:
+            "Could not load client_average_claim_fees_for_softgen_v2.csv",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const csvText = await res.text();
+      const uploaded = parseAverageFeeCsv(csvText);
+
+      if (uploaded.length === 0) {
+        toast({
+          title: "No CSV rows",
+          description:
+            "The average fee CSV did not contain any valid rows.",
+        });
+        return;
+      }
+
+      const internalClients = buildInternalClients(
+        clientRows as ClientToBeOnboardedRow[]
+      );
+
+      const result = reconcileFeesWithClients(
+        uploaded,
+        internalClients
+      );
+
+      let appliedCount = 0;
+
+      for (const match of result.exactMatches) {
+        const clientId = match.client.id;
+        const fee = match.uploaded.averageClaimFee;
+        const placeholderCode = `PL-${clientId.slice(0, 8)}`;
+
+        const { data: org, error: orgError } = await supabase
+          .from("organisations")
+          .select("id")
+          .eq("organisation_code", placeholderCode)
+          .maybeSingle();
+
+        if (orgError || !org) {
+          console.warn(
+            "[Fee Reconciliation] No organisation found for client",
+            clientId,
+            "placeholderCode",
+            placeholderCode,
+            orgError
+          );
+          continue;
+        }
+
+        const { data: pipelineEntry, error: pipelineError } =
+          await supabase
+            .from("pipeline_entries")
+            .select("id")
+            .eq("org_id", org.id)
+            .maybeSingle();
+
+        if (pipelineError || !pipelineEntry) {
+          console.warn(
+            "[Fee Reconciliation] No pipeline entry found for org",
+            org.id,
+            pipelineError
+          );
+          continue;
+        }
+
+        const { error: updateError } = await supabase
+          .from("pipeline_entries")
+          .update({ predicted_revenue: fee })
+          .eq("id", pipelineEntry.id);
+
+        if (updateError) {
+          console.error(
+            "[Fee Reconciliation] Failed to update pipeline entry",
+            pipelineEntry.id,
+            updateError
+          );
+          continue;
+        }
+
+        appliedCount += 1;
+      }
+
+      console.log(
+        "[Fee Reconciliation] Exact matches applied:",
+        result.exactMatches
+      );
+      console.log(
+        "[Fee Reconciliation] Non-exact matches (copy this into chat so we can resolve):",
+        {
+          suggestedMatches: result.suggestedMatches,
+          ambiguousMatches: result.ambiguousMatches,
+          noMatches: result.noMatches,
+        }
+      );
+
+      toast({
+        title: "Average fees applied",
+        description: `Updated ${appliedCount} pipeline entries from exact name matches. Check the browser console for ambiguous or unmatched clients and share here to resolve.`,
+      });
+
+      await loadPipeline();
+      await loadSummary();
+    } catch (error) {
+      console.error("Error applying average fees:", error);
+      toast({
+        title: "Error",
+        description: "Failed to apply average claim fees",
+        variant: "destructive",
+      });
+    } finally {
+      setApplyingFees(false);
+    }
+  }
+
   function handleEditClick(entry: PipelineWithDetails, e: React.MouseEvent) {
     e.stopPropagation(); // Prevent navigation
     setEditingEntry(entry);
@@ -177,10 +341,24 @@ export default function PipelinePage() {
               Predicted work based on Companies House filing patterns
             </p>
           </div>
-          <Button onClick={handleRefreshAll} disabled={refreshing}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh Predictions
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleRefreshAll} disabled={refreshing}>
+              <RefreshCw
+                className={`w-4 h-4 mr-2 ${
+                  refreshing ? "animate-spin" : ""
+                }`}
+              />
+              Refresh Predictions
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleApplyAverageFees}
+              disabled={applyingFees}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Apply Avg Fees
+            </Button>
+          </div>
         </div>
 
         {/* Summary Cards */}
