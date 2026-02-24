@@ -32,7 +32,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [profileWithOrg, setProfileWithOrg] = useState<ProfileWithOrg | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Handler to update currentOrg and save to localStorage
   const handleSetCurrentOrg = (org: UserOrganisation) => {
     setCurrentOrg(org);
     if (typeof window !== "undefined") {
@@ -52,8 +51,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const orgs = await organisationService.getUserOrganisations();
       setOrganisations(orgs);
 
-      // Try to restore last selected org from localStorage
-      const savedOrgId = typeof window !== "undefined" ? localStorage.getItem("selectedOrgId") : null;
+      const savedOrgId =
+        typeof window !== "undefined" ? localStorage.getItem("selectedOrgId") : null;
       if (savedOrgId) {
         const savedOrg = orgs.find((org) => org.id === savedOrgId);
         if (savedOrg) {
@@ -62,7 +61,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Auto-select if only one org
       if (orgs.length === 1) {
         setCurrentOrg(orgs[0]);
         if (typeof window !== "undefined") {
@@ -81,7 +79,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Setup global error handler for 403 errors
     authService.setupGlobalErrorHandler();
 
     let retryCount = 0;
@@ -90,7 +87,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const checkUser = async (existingSession?: Session | null) => {
       try {
         const session = existingSession ?? (await authService.validateSession());
-        
+
         if (!session) {
           setUser(null);
           setIsStaff(false);
@@ -106,40 +103,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
               return prev;
             }
             return {
-              id: session.user?.id,
-              email: session.user?.email ?? "",
-              fullName: ""
+              id: session.user.id,
+              email: session.user.email ?? "",
+              fullName: "",
             };
           });
         }
 
-        const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
-        
+        const {
+          data: { user: authUser },
+          error: userError,
+        } = await supabase.auth.getUser();
+
         if (userError) {
+          const anyUserError = userError as any;
+
+          if (
+            anyUserError?.name === "AbortError" ||
+            anyUserError?.message?.toString().toLowerCase().includes("aborted")
+          ) {
+            console.warn("User fetch aborted, not clearing session", anyUserError);
+            setLoading(false);
+            return;
+          }
+
           console.error("Error fetching user:", userError);
-          
-          // Retry on network errors
+
           if (userError.message?.includes("Failed to fetch") && retryCount < maxRetries) {
             retryCount++;
             console.log(`Retrying user fetch (${retryCount}/${maxRetries})...`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+            await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
             return checkUser();
           }
-          
-          // Handle 403 or session errors
-          if (userError.status === 403 || userError.message?.includes("session") || userError.message?.includes("JWT")) {
+
+          if (
+            userError.status === 403 ||
+            userError.message?.includes("session") ||
+            userError.message?.includes("JWT")
+          ) {
             await authService.clearInvalidSession();
             setUser(null);
             setIsStaff(false);
             setProfileWithOrg(null);
             setIsAdmin(false);
             setLoading(false);
-            // Redirect to login if not already there
-            if (typeof window !== "undefined" && window.location.pathname !== '/auth/login') {
-              window.location.href = '/auth/login';
+            if (
+              typeof window !== "undefined" &&
+              window.location.pathname !== "/auth/login"
+            ) {
+              window.location.href = "/auth/login";
             }
             return;
           }
+
           setUser(null);
           setIsStaff(false);
           setProfileWithOrg(null);
@@ -157,20 +173,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Reset retry count on success
         retryCount = 0;
 
-        // Fetch profile with organisation info for staff detection
         const profile = await profileService.getCurrentUserProfileWithOrg();
         console.log("[AppContext] Profile fetched:", profile);
         setProfileWithOrg(profile);
-        
-        // Determine if user is staff
+
         const staffStatus = checkIsStaff(profile);
         console.log("[AppContext] Staff status:", staffStatus);
         setIsStaff(staffStatus);
 
-        // Determine if user is admin
         const adminStatus = checkIsAdmin(profile);
         console.log("[AppContext] Admin status:", adminStatus);
         setIsAdmin(adminStatus);
@@ -188,18 +200,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             fullName: profileData.full_name,
           });
 
-          // Fetch organisations using the service
           try {
             setOrganisationsLoading(true);
             const orgs = await organisationService.getUserOrganisations();
             setOrganisations(orgs);
 
             if (orgs.length > 0) {
-              const savedOrgId = localStorage.getItem("selectedOrgId");
+              const savedOrgId =
+                typeof window !== "undefined"
+                  ? localStorage.getItem("selectedOrgId")
+                  : null;
               const savedOrg = orgs.find((o) => o.id === savedOrgId);
               setCurrentOrg(savedOrg || orgs[0]);
               if (savedOrg || orgs.length === 1) {
-                localStorage.setItem("selectedOrgId", (savedOrg || orgs[0]).id);
+                if (typeof window !== "undefined") {
+                  localStorage.setItem(
+                    "selectedOrgId",
+                    (savedOrg || orgs[0]).id
+                  );
+                }
               }
             }
           } catch (orgError) {
@@ -211,7 +230,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       } catch (error: any) {
         console.error("Error in checkUser:", error);
 
-        // Treat AbortError as non-fatal: do not clear session, just stop here
         if (
           error?.name === "AbortError" ||
           error?.message?.toString().toLowerCase().includes("aborted")
@@ -221,7 +239,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Retry on network errors
         if (error?.message?.includes("Failed to fetch") && retryCount < maxRetries) {
           retryCount++;
           console.log(`Retrying checkUser (${retryCount}/${maxRetries})...`);
@@ -229,13 +246,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return checkUser();
         }
 
-        // Handle any unexpected errors
         if (error?.status === 403 || error?.message?.includes("session")) {
           await authService.clearInvalidSession();
-          if (typeof window !== "undefined" && window.location.pathname !== "/auth/login") {
+          if (
+            typeof window !== "undefined" &&
+            window.location.pathname !== "/auth/login"
+          ) {
             window.location.href = "/auth/login";
           }
         }
+
         setUser(null);
         setIsStaff(false);
         setProfileWithOrg(null);
@@ -248,8 +268,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     checkUser();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log("[AppContext] Auth state change:", event);
+
         if (event === "SIGNED_OUT" || !session) {
           setUser(null);
           setOrganisations([]);
@@ -257,9 +278,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setIsStaff(false);
           setProfileWithOrg(null);
           setIsAdmin(false);
-        } else if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
-          // Use the session provided by Supabase; any AbortError inside checkUser is treated as non-fatal
-          await checkUser(session);
+          return;
+        }
+
+        if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
+          if (session.user) {
+            setUser((prev: any) => {
+              if (prev) {
+                return prev;
+              }
+              return {
+                id: session.user.id,
+                email: session.user.email ?? "",
+                fullName: "",
+              };
+            });
+          }
+          checkUser(session);
         }
       }
     );
@@ -278,10 +313,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setOrganisations([]);
       setCurrentOrg(null);
       if (typeof window !== "undefined") {
-        localStorage.removeItem("selectedOrgId"); // Use consistent key
+        localStorage.removeItem("selectedOrgId");
       }
     }
-  }, [user]);
+  }, [user, organisationsLoading]);
 
   return (
     <AppContext.Provider
