@@ -364,6 +364,11 @@ export default function PipelinePage() {
     return { month, revenue, count: monthPipeline.length };
   });
 
+  const totalPipelineRevenue = useMemo(
+    () => revenueByMonth.reduce((sum, m) => sum + m.revenue, 0),
+    [revenueByMonth]
+  );
+
   function getConfidenceBadge(confidence: number) {
     if (confidence >= 70) return "default"; // dark/black
     if (confidence >= 40) return "secondary"; // gray
@@ -408,7 +413,12 @@ export default function PipelinePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Pipeline</p>
-                  <p className="text-3xl font-bold mt-1">£{summary.totalRevenue.toLocaleString()}</p>
+                  <p className="text-3xl font-bold mt-1">
+                    £{totalPipelineRevenue.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-blue-500" />
               </div>
