@@ -102,13 +102,13 @@ export default function StaffHomePage() {
 
   const monthlyBuckets: MonthlyBucket[] = visiblePipeline.reduce(
     (buckets, entry) => {
-      if (!entry.pipeline_start_date) return buckets;
+      if (!entry.expected_accounts_filing_date) return buckets;
 
-      const pipelineDate = new Date(entry.pipeline_start_date);
+      const filingDate = new Date(entry.expected_accounts_filing_date);
       const monthIndex = months.findIndex(
         (m) =>
-          m.getFullYear() === pipelineDate.getFullYear() &&
-          m.getMonth() === pipelineDate.getMonth()
+          m.getFullYear() === filingDate.getFullYear() &&
+          m.getMonth() === filingDate.getMonth()
       );
       if (monthIndex === -1) return buckets;
 
@@ -150,11 +150,67 @@ export default function StaffHomePage() {
           tickStep,
           Math.ceil(maxMonthTotal / tickStep) * tickStep
         )
-      : tickStep * 10;
+      : tickStep;
 
   const yAxisTicks: number[] = [];
   for (let value = 0; value <= maxScaleValue; value += tickStep) {
     yAxisTicks.push(value);
+  }
+
+  type MonthlyClientsBucket = {
+    date: Date;
+    onboardedCount: number;
+    notOnboardedCount: number;
+  };
+
+  const initialClientBuckets: MonthlyClientsBucket[] = months.map((date) => ({
+    date,
+    onboardedCount: 0,
+    notOnboardedCount: 0,
+  }));
+
+  const monthlyClientsBuckets: MonthlyClientsBucket[] = visiblePipeline.reduce(
+    (buckets, entry) => {
+      if (!entry.expected_accounts_filing_date) return buckets;
+
+      const filingDate = new Date(entry.expected_accounts_filing_date);
+      const monthIndex = months.findIndex(
+        (m) =>
+          m.getFullYear() === filingDate.getFullYear() &&
+          m.getMonth() === filingDate.getMonth()
+      );
+      if (monthIndex === -1) return buckets;
+
+      if (entry.claim_id) {
+        buckets[monthIndex].onboardedCount += 1;
+      } else {
+        buckets[monthIndex].notOnboardedCount += 1;
+      }
+
+      return buckets;
+    },
+    initialClientBuckets
+  );
+
+  const maxClientsCount = Math.max(
+    0,
+    ...monthlyClientsBuckets.map(
+      (bucket) => bucket.onboardedCount + bucket.notOnboardedCount
+    )
+  );
+
+  const clientYAxisTicks: number[] = [];
+  if (maxClientsCount === 0) {
+    clientYAxisTicks.push(0, 1);
+  } else {
+    const clientTickStep =
+      maxClientsCount <= 5 ? 1 : maxClientsCount <= 20 ? 2 : 5;
+    const clientMaxScale =
+      Math.ceil(maxClientsCount / clientTickStep) * clientTickStep;
+
+    for (let value = 0; value <= clientMaxScale; value += clientTickStep) {
+      clientYAxisTicks.push(value);
+    }
   }
 
   const getConfidenceBadge = (score: number | null) => {
@@ -386,6 +442,116 @@ export default function StaffHomePage() {
                       Showing secured (onboarded) revenue only.
                     </span>
                   )}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Monthly Predicted Submissions Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Monthly Predicted Submissions
+            </CardTitle>
+            <CardDescription>
+              Number of clients expected to submit in each month
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Loading submission data...
+              </div>
+            ) : monthlyClientsBuckets.every(
+                (bucket) =>
+                  bucket.onboardedCount === 0 &&
+                  bucket.notOnboardedCount === 0
+              ) ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No predicted submissions in the next 24 months.
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-4 h-64 pb-6">
+                  <div className="flex flex-col justify-between h-40 text-xs text-muted-foreground pr-2">
+                    {clientYAxisTicks
+                      .slice()
+                      .reverse()
+                      .map((value) => (
+                        <span key={value}>{value}</span>
+                      ))}
+                  </div>
+                  <div className="flex items-end gap-3 h-64 flex-1 border-l border-b border-border pl-4 pb-6 overflow-x-auto">
+                    {monthlyClientsBuckets.map((bucket, idx) => {
+                      const totalCount =
+                        bucket.onboardedCount + bucket.notOnboardedCount;
+
+                      const onboardedHeight =
+                        maxClientsCount > 0
+                          ? (bucket.onboardedCount / maxClientsCount) * 100
+                          : 0;
+                      const notOnboardedHeight =
+                        maxClientsCount > 0
+                          ? (bucket.notOnboardedCount / maxClientsCount) * 100
+                          : 0;
+
+                      const hoverTitle = `Total: ${totalCount} client${
+                        totalCount === 1 ? "" : "s"
+                      }\nOnboarded: ${
+                        bucket.onboardedCount
+                      }\nNot onboarded: ${bucket.notOnboardedCount}`;
+
+                      return (
+                        <div
+                          key={idx}
+                          className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
+                        >
+                          <div
+                            className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-muted"
+                            title={hoverTitle}
+                          >
+                            {totalCount > 0 && (
+                              <>
+                                {bucket.onboardedCount > 0 && (
+                                  <div
+                                    className="bg-emerald-500"
+                                    style={{
+                                      height: `${onboardedHeight}%`,
+                                    }}
+                                    title={`Onboarded: ${bucket.onboardedCount}`}
+                                  />
+                                )}
+                                {bucket.notOnboardedCount > 0 && (
+                                  <div
+                                    className="bg-amber-400"
+                                    style={{
+                                      height: `${notOnboardedHeight}%`,
+                                    }}
+                                    title={`Not onboarded: ${bucket.notOnboardedCount}`}
+                                  />
+                                )}
+                              </>
+                            )}
+                          </div>
+                          <span className="mt-2 text-xs text-muted-foreground rotate-[-30deg] origin-top">
+                            {formatMonthYear(bucket.date)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-4 text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded-sm bg-emerald-500" />
+                    <span>Onboarded clients (has claim)</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded-sm bg-amber-400" />
+                    <span>Not yet onboarded</span>
+                  </div>
                 </div>
               </>
             )}

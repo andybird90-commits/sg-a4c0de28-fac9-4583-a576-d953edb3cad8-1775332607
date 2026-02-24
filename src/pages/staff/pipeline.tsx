@@ -356,11 +356,18 @@ export default function PipelinePage() {
   const revenueByMonth = months.map(month => {
     const monthStart = startOfMonth(month);
     const monthEnd = endOfMonth(month);
+
     const monthPipeline = expandedPipeline.filter(p => {
-      const pipelineDate = new Date(p.pipeline_start_date);
-      return pipelineDate >= monthStart && pipelineDate <= monthEnd;
+      if (!p.expected_accounts_filing_date) return false;
+      const expectedDate = parseISO(p.expected_accounts_filing_date);
+      return expectedDate >= monthStart && expectedDate <= monthEnd;
     });
-    const revenue = monthPipeline.reduce((sum, p) => sum + (p.predicted_revenue || 0), 0);
+
+    const revenue = monthPipeline.reduce(
+      (sum, p) => sum + (p.predicted_revenue || 0),
+      0
+    );
+
     return { month, revenue, count: monthPipeline.length };
   });
 
