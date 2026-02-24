@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { StaffLayout } from "@/components/staff/StaffLayout";
 import {
@@ -100,7 +100,36 @@ export default function StaffHomePage() {
     ? pipelineData.filter((entry) => Boolean(entry.claim_id))
     : pipelineData;
 
-  const monthlyBuckets: MonthlyBucket[] = visiblePipeline.reduce(
+  const expandedPipeline = useMemo(() => {
+    const endYear = months[months.length - 1]?.getFullYear();
+    const result: PipelineWithDetails[] = [];
+
+    for (const entry of visiblePipeline) {
+      result.push(entry);
+
+      if (entry.expected_accounts_filing_date) {
+        const expected = new Date(entry.expected_accounts_filing_date);
+        const nextYear = expected.getFullYear() + 1;
+
+        if (endYear && nextYear <= endYear) {
+          const nextExpected = new Date(expected);
+          nextExpected.setFullYear(nextYear);
+
+          result.push({
+            ...entry,
+            id: `${entry.id}-repeat-${nextYear}`,
+            expected_accounts_filing_date: nextExpected
+              .toISOString()
+              .split("T")[0],
+          } as PipelineWithDetails);
+        }
+      }
+    }
+
+    return result;
+  }, [visiblePipeline, months]);
+
+  const monthlyBuckets: MonthlyBucket[] = expandedPipeline.reduce(
     (buckets, entry) => {
       if (!entry.expected_accounts_filing_date) return buckets;
 
@@ -169,7 +198,7 @@ export default function StaffHomePage() {
     notOnboardedCount: 0,
   }));
 
-  const monthlyClientsBuckets: MonthlyClientsBucket[] = visiblePipeline.reduce(
+  const monthlyClientsBuckets: MonthlyClientsBucket[] = expandedPipeline.reduce(
     (buckets, entry) => {
       if (!entry.expected_accounts_filing_date) return buckets;
 
