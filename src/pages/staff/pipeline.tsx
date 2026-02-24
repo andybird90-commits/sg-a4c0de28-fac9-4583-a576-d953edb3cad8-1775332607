@@ -75,6 +75,7 @@ export default function PipelinePage() {
   async function handleRefreshAll() {
     try {
       setRefreshing(true);
+      await pipelineService.syncPipelineFromClients();
       await pipelineService.refreshAllPipelinePredictions();
       await loadPipeline();
       await loadSummary();

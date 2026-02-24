@@ -5,6 +5,9 @@ type PipelineEntry = Database["public"]["Tables"]["pipeline_entries"]["Row"];
 type PipelineInsert = Database["public"]["Tables"]["pipeline_entries"]["Insert"];
 type PipelineUpdate = Database["public"]["Tables"]["pipeline_entries"]["Update"];
 type CompaniesHouseFiling = Database["public"]["Tables"]["companies_house_filings"]["Row"];
+type Prospect = Database["public"]["Tables"]["prospects"]["Row"];
+type ClientToBeOnboarded = Database["public"]["Tables"]["clients_to_be_onboarded"]["Row"];
+type Organisation = Database["public"]["Tables"]["organisations"]["Row"];
 
 export interface PipelineWithDetails extends PipelineEntry {
   organisation?: {
@@ -458,6 +461,175 @@ export async function getPipelineSummary() {
   };
 }
 
+const isValidCompaniesHouseNumber = (value: string | null | undefined): boolean => {
+  if (!value) return false;
+  const cleaned = value.trim().toUpperCase();
+  if (!cleaned) return false;
+  const compact = cleaned.replace(/\s+/g, "");
+  return /^[A-Z0-9]{6,8}$/.test(compact);
+};
+
+async function ensurePlaceholderOrganisationForClient(
+  client: ClientToBeOnboarded
+): Promise<string | null> {
+  const name = client.company_name?.trim();
+  if (!name) {
+    return null;
+  }
+
+  const placeholderCode = `PL-${client.id.slice(0, 8)}`;
+
+  const { data: existing, error: existingError } = await supabase
+    .from("organisations")
+    .select("id")
+    .eq("organisation_code", placeholderCode)
+    .maybeSingle();
+
+  if (existingError) {
+    console.error("Error checking existing placeholder organisation:", existingError);
+  }
+
+  if (existing?.id) {
+    return existing.id;
+  }
+
+  const insertPayload: Partial<Organisation> = {
+    name,
+    organisation_code: placeholderCode,
+  };
+
+  if ("companies_house_number" in ({} as Organisation) && client.company_number) {
+    (insertPayload as any).companies_house_number = client.company_number;
+  }
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("organisations")
+    .insert(insertPayload)
+    .select("id")
+    .single();
+
+  if (insertError) {
+    console.error("Error creating placeholder organisation for imported client:", insertError);
+    return null;
+  }
+
+  return inserted.id;
+}
+
+async function upsertPipelineEntryForClient(
+  orgId: string,
+  claimId: string | null,
+  companyNumber: string | null,
+  createdBy: string
+): Promise<void> {
+  if (!companyNumber || !isValidCompaniesHouseNumber(companyNumber)) {
+    return;
+  }
+
+  const prediction = await calculatePredictedFilingDate(orgId, companyNumber);
+  const pipelineStartDate = calculatePipelineStartDate(prediction.predictedDate);
+
+  const { data: existing, error: existingError } = await supabase
+    .from("pipeline_entries")
+    .select("id")
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (existingError) {
+    console.error("Error checking existing pipeline entry:", existingError);
+  }
+
+  const payload: PipelineUpdate = {
+    org_id: orgId,
+    claim_id: claimId,
+    expected_accounts_filing_date: prediction.predictedDate.toISOString().split("T")[0],
+    pipeline_start_date: pipelineStartDate.toISOString().split("T")[0],
+    filing_confidence_score: prediction.confidence,
+    average_filing_lag_days: prediction.avgLag,
+    years_trading: prediction.yearsTrading,
+  } as PipelineUpdate;
+
+  if (existing?.id) {
+    await updatePipelineEntry(existing.id, payload);
+  } else {
+    const insertPayload: PipelineInsert = {
+      ...(payload as any),
+      predicted_revenue: 0,
+      auto_created: true,
+      created_by: createdBy,
+    } as PipelineInsert;
+
+    await createPipelineEntry(insertPayload);
+  }
+}
+
+export async function syncPipelineFromClients(): Promise<void> {
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError) {
+    console.error("Error getting current user for pipeline sync:", authError);
+    return;
+  }
+  const userId = authData?.user?.id;
+  if (!userId) {
+    return;
+  }
+
+  const { data: importedClients, error: importedError } = await supabase
+    .from("clients_to_be_onboarded")
+    .select("id, company_name, company_number");
+
+  if (importedError) {
+    console.error("Error loading imported clients for pipeline sync:", importedError);
+  }
+
+  const { data: prospects, error: prospectsError } = await supabase
+    .from("prospects")
+    .select("id, org_id, company_number");
+
+  if (prospectsError) {
+    console.error("Error loading prospects for pipeline sync:", prospectsError);
+  }
+
+  const { data: claims, error: claimsError } = await supabase
+    .from("claims")
+    .select("id, org_id");
+
+  if (claimsError) {
+    console.error("Error loading claims for pipeline sync:", claimsError);
+  }
+
+  const claimByOrgId = new Map<string, string>();
+  (claims || []).forEach((claim) => {
+    if (claim.org_id && !claimByOrgId.has(claim.org_id)) {
+      claimByOrgId.set(claim.org_id, claim.id);
+    }
+  });
+
+  for (const client of importedClients || []) {
+    if (!isValidCompaniesHouseNumber(client.company_number)) {
+      continue;
+    }
+    const orgId = await ensurePlaceholderOrganisationForClient(client as ClientToBeOnboarded);
+    if (!orgId) {
+      continue;
+    }
+    await upsertPipelineEntryForClient(orgId, null, client.company_number, userId);
+  }
+
+  for (const prospect of prospects || []) {
+    if (!prospect.org_id || !isValidCompaniesHouseNumber(prospect.company_number)) {
+      continue;
+    }
+    const claimId = claimByOrgId.get(prospect.org_id) || null;
+    await upsertPipelineEntryForClient(
+      prospect.org_id,
+      claimId,
+      prospect.company_number,
+      userId
+    );
+  }
+}
+
 export const pipelineService = {
   getAllPipelineEntries,
   getPipelineByDateRange,
@@ -470,4 +642,5 @@ export const pipelineService = {
   getPipelineSummary,
   calculatePredictedFilingDate,
   calculatePipelineStartDate,
+  syncPipelineFromClients,
 };
