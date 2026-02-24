@@ -489,25 +489,21 @@ export async function refreshPipelinePredictions(
 
   const orgId = (pipeline as any).org_id as string;
 
-  const { data: prospect, error: prospectError } = await supabase
+  const { data: prospectRows } = await supabase
     .from("prospects")
     .select("company_number")
-    .eq("org_id", orgId)
-    .maybeSingle();
+    .eq("org_id", orgId);
 
-  if (prospectError) {
-    console.error(
-      "Error loading prospect for pipeline refresh:",
-      prospectError
-    );
-    return;
-  }
+  const companiesHouseNumber =
+    Array.isArray(prospectRows) && prospectRows.length > 0
+      ? prospectRows[0]?.company_number || null
+      : null;
 
-  if (!prospect?.company_number) return;
+  if (!companiesHouseNumber) return;
 
   const prediction = await calculatePredictedFilingDate(
     orgId,
-    prospect.company_number
+    companiesHouseNumber
   );
 
   const pipelineStartDate = calculatePipelineStartDate(prediction.predictedDate);

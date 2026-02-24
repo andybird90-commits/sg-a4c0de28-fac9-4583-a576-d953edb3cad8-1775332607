@@ -202,32 +202,22 @@ export class ClaimService {
 
       // Auto-create pipeline entry if claim is enabled
       if (data && data.status === "active") {
-        try {
-          // Get organisation's Companies House number
-          const { data: org } = await supabase
-            .from("organisations")
-            .select("id")
-            .eq("id", data.org_id)
-            .single();
+        // Try to get company_number from prospects (optional, may have 0 or multiple rows)
+        const { data: prospectRows } = await supabase
+          .from("prospects")
+          .select("company_number")
+          .eq("org_id", data.org_id);
 
-          if (org) {
-            // Get Companies House number from prospects (if available)
-            const { data: prospect } = await supabase
-              .from("prospects")
-              .select("company_number")
-              .eq("org_id", data.org_id)
-              .maybeSingle();
+        const companyNumber =
+          Array.isArray(prospectRows) && prospectRows.length > 0
+            ? prospectRows[0]?.company_number || null
+            : null;
 
-            await pipelineService.autoCreatePipelineEntry(
-              data.id,
-              data.org_id,
-              prospect?.company_number || null
-            );
-          }
-        } catch (pipelineError) {
-          console.error("Failed to auto-create pipeline entry:", pipelineError);
-          // Don't fail the whole claim creation if pipeline fails
-        }
+        await pipelineService.autoCreatePipelineEntry(
+          data.id,
+          data.org_id,
+          companyNumber
+        );
       }
 
       return data;
@@ -253,29 +243,21 @@ export class ClaimService {
 
       // Auto-create pipeline entry if claim status changed to active
       if (data && updates.status === "active") {
-        try {
-          const { data: org } = await supabase
-            .from("organisations")
-            .select("id")
-            .eq("id", data.org_id)
-            .single();
+        const { data: prospectRows } = await supabase
+          .from("prospects")
+          .select("company_number")
+          .eq("org_id", data.org_id);
 
-          if (org) {
-            const { data: prospect } = await supabase
-              .from("prospects")
-              .select("company_number")
-              .eq("org_id", data.org_id)
-              .maybeSingle();
+        const companyNumber =
+          Array.isArray(prospectRows) && prospectRows.length > 0
+            ? prospectRows[0]?.company_number || null
+            : null;
 
-            await pipelineService.autoCreatePipelineEntry(
-              data.id,
-              data.org_id,
-              prospect?.company_number || null
-            );
-          }
-        } catch (pipelineError) {
-          console.error("Failed to auto-create pipeline entry:", pipelineError);
-        }
+        await pipelineService.autoCreatePipelineEntry(
+          data.id,
+          data.org_id,
+          companyNumber
+        );
       }
 
       return data;
