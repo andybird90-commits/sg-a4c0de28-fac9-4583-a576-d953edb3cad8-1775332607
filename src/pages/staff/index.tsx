@@ -143,6 +143,12 @@ export default function StaffHomePage() {
     )
   );
 
+  const yAxisTicks = maxMonthTotal
+    ? Array.from({ length: 5 }, (_, index) =>
+        Math.round((maxMonthTotal / 4) * index)
+      )
+    : [0, 25000, 50000, 75000, 100000];
+
   const getConfidenceBadge = (score: number | null) => {
     if (!score) return <Badge variant="outline">Unknown</Badge>;
     if (score >= 80) return <Badge className="bg-green-500">High</Badge>;
@@ -283,58 +289,68 @@ export default function StaffHomePage() {
               </div>
             ) : (
               <>
-                <div className="flex items-end gap-3 h-72 border-l border-b border-border pl-4 pb-6 overflow-x-auto">
-                  {monthlyBuckets.map((bucket, idx) => {
-                    const total =
-                      bucket.onboarded + bucket.notOnboarded;
-                    const onboardedHeight =
-                      maxMonthTotal > 0
-                        ? (bucket.onboarded / maxMonthTotal) * 100
-                        : 0;
-                    const notOnboardedHeight =
-                      maxMonthTotal > 0
-                        ? (bucket.notOnboarded / maxMonthTotal) * 100
-                        : 0;
+                <div className="flex gap-4 h-72 pb-6">
+                  <div className="flex flex-col justify-between h-48 text-xs text-muted-foreground pr-2">
+                    {yAxisTicks
+                      .slice()
+                      .reverse()
+                      .map((value) => (
+                        <span key={value}>{formatCurrency(value)}</span>
+                      ))}
+                  </div>
+                  <div className="flex items-end gap-3 h-72 flex-1 border-l border-b border-border pl-4 pb-6 overflow-x-auto">
+                    {monthlyBuckets.map((bucket, idx) => {
+                      const total =
+                        bucket.onboarded + bucket.notOnboarded;
+                      const onboardedHeight =
+                        maxMonthTotal > 0
+                          ? (bucket.onboarded / maxMonthTotal) * 100
+                          : 0;
+                      const notOnboardedHeight =
+                        maxMonthTotal > 0
+                          ? (bucket.notOnboarded / maxMonthTotal) * 100
+                          : 0;
 
-                    return (
-                      <div
-                        key={idx}
-                        className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
-                      >
-                        <div className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-muted">
-                          {total > 0 && (
-                            <>
-                              {bucket.onboarded > 0 && (
-                                <div
-                                  className="bg-emerald-500"
-                                  style={{
-                                    height: `${onboardedHeight}%`,
-                                  }}
-                                  title={`Onboarded: ${formatCurrency(
-                                    bucket.onboarded
-                                  )}`}
-                                />
-                              )}
-                              {bucket.notOnboarded > 0 && (
-                                <div
-                                  className="bg-amber-400"
-                                  style={{
-                                    height: `${notOnboardedHeight}%`,
-                                  }}
-                                  title={`Not onboarded: ${formatCurrency(
-                                    bucket.notOnboarded
-                                  )}`}
-                                />
-                              )}
-                            </>
-                          )}
+                      return (
+                        <div
+                          key={idx}
+                          className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
+                        >
+                          <div className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-muted">
+                            {total > 0 && (
+                              <>
+                                {bucket.onboarded > 0 && (
+                                  <div
+                                    className="bg-emerald-500"
+                                    style={{
+                                      height: `${onboardedHeight}%`,
+                                    }}
+                                    title={`Onboarded: ${formatCurrency(
+                                      bucket.onboarded
+                                    )}`}
+                                  />
+                                )}
+                                {bucket.notOnboarded > 0 && (
+                                  <div
+                                    className="bg-amber-400"
+                                    style={{
+                                      height: `${notOnboardedHeight}%`,
+                                    }}
+                                    title={`Not onboarded: ${formatCurrency(
+                                      bucket.notOnboarded
+                                    )}`}
+                                  />
+                                )}
+                              </>
+                            )}
+                          </div>
+                          <span className="mt-2 text-xs text-muted-foreground rotate-[-30deg] origin-top">
+                            {formatMonthYear(bucket.date)}
+                          </span>
                         </div>
-                        <span className="mt-2 text-xs text-muted-foreground rotate-[-30deg] origin-top">
-                          {formatMonthYear(bucket.date)}
-                        </span>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-4 text-xs">
                   <div className="flex items-center gap-1">
