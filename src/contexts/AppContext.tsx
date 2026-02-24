@@ -5,6 +5,7 @@ import { organisationService, type UserOrganisation } from "@/services/organisat
 import { profileService } from "@/services/profileService";
 import { isStaff as checkIsStaff, type ProfileWithOrg } from "@/lib/auth/roles";
 import { isAdmin as checkIsAdmin } from "@/lib/auth/roles";
+import type { Session } from "@supabase/supabase-js";
 
 interface AppContextType {
   user: any;
@@ -86,9 +87,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let retryCount = 0;
     const maxRetries = 2;
 
-    const checkUser = async () => {
+    const checkUser = async (existingSession?: Session | null) => {
       try {
-        const session = await authService.validateSession();
+        const session = existingSession ?? (await authService.validateSession());
         
         if (!session) {
           setUser(null);
@@ -97,6 +98,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           setIsAdmin(false);
           setLoading(false);
           return;
+        }
+
+        if (session.user) {
+          setUser((prev: any) => {
+            if (prev) {
+              return prev;
+            }
+            return {
+              id: session.user?.id,
+              email: session.user?.email ?? "",
+              fullName: ""
+            };
+          });
         }
 
         const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
@@ -196,20 +210,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error: any) {
         console.error("Error in checkUser:", error);
-        
+
+        // Treat AbortError as non-fatal: do not clear session, just stop here
+        if (
+          error?.name === "AbortError" ||
+          error?.message?.toString().toLowerCase().includes("aborted")
+        ) {
+          console.warn("checkUser aborted, not clearing session");
+          setLoading(false);
+          return;
+        }
+
         // Retry on network errors
         if (error?.message?.includes("Failed to fetch") && retryCount < maxRetries) {
           retryCount++;
           console.log(`Retrying checkUser (${retryCount}/${maxRetries})...`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+          await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
           return checkUser();
         }
-        
+
         // Handle any unexpected errors
         if (error?.status === 403 || error?.message?.includes("session")) {
           await authService.clearInvalidSession();
-          if (typeof window !== "undefined" && window.location.pathname !== '/auth/login') {
-            window.location.href = '/auth/login';
+          if (typeof window !== "undefined" && window.location.pathname !== "/auth/login") {
+            window.location.href = "/auth/login";
           }
         }
         setUser(null);
@@ -223,22 +247,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     checkUser();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("[AppContext] Auth state change:", event);
-      if (event === "SIGNED_OUT" || !session) {
-        setUser(null);
-        setOrganisations([]);
-        setCurrentOrg(null);
-        setIsStaff(false);
-        setProfileWithOrg(null);
-        setIsAdmin(false);
-      } else if (event === "SIGNED_IN" && session) {
-        // Re-check user and fetch profile
-        await checkUser();
-      } else if (event === "TOKEN_REFRESHED") {
-        await checkUser();
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("[AppContext] Auth state change:", event);
+        if (event === "SIGNED_OUT" || !session) {
+          setUser(null);
+          setOrganisations([]);
+          setCurrentOrg(null);
+          setIsStaff(false);
+          setProfileWithOrg(null);
+          setIsAdmin(false);
+        } else if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
+          // Use the session provided by Supabase; any AbortError inside checkUser is treated as non-fatal
+          await checkUser(session);
+        }
       }
-    });
+    );
 
     return () => {
       authListener.subscription.unsubscribe();
