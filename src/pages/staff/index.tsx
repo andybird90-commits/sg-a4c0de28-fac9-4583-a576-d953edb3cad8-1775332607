@@ -60,19 +60,6 @@ export default function StaffHomePage() {
     }
   };
 
-  if (!isStaff) {
-    return (
-      <StaffLayout>
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-red-600">Access Denied</h2>
-          <p className="text-muted-foreground mt-2">
-            You do not have permission to access the staff area.
-          </p>
-        </div>
-      </StaffLayout>
-    );
-  }
-
   const userName = profileWithOrg?.full_name || "Staff Member";
   const orgCode = profileWithOrg?.organisation_code || "N/A";
   const role = profileWithOrg?.internal_role || "Staff";
@@ -153,6 +140,13 @@ export default function StaffHomePage() {
     initialBuckets
   );
 
+  const halfMonths = Math.floor(monthlyBuckets.length / 2);
+  for (let i = halfMonths; i < monthlyBuckets.length; i += 1) {
+    const source = monthlyBuckets[i - halfMonths];
+    monthlyBuckets[i].onboarded = source.onboarded;
+    monthlyBuckets[i].notOnboarded = source.notOnboarded;
+  }
+
   const totalForecastedRevenue = monthlyBuckets.reduce(
     (sum, bucket) => sum + bucket.onboarded + bucket.notOnboarded,
     0
@@ -221,6 +215,13 @@ export default function StaffHomePage() {
     initialClientBuckets
   );
 
+  const clientHalfMonths = Math.floor(monthlyClientsBuckets.length / 2);
+  for (let i = clientHalfMonths; i < monthlyClientsBuckets.length; i += 1) {
+    const source = monthlyClientsBuckets[i - clientHalfMonths];
+    monthlyClientsBuckets[i].onboardedCount = source.onboardedCount;
+    monthlyClientsBuckets[i].notOnboardedCount = source.notOnboardedCount;
+  }
+
   const maxClientsCount = Math.max(
     0,
     ...monthlyClientsBuckets.map(
@@ -265,6 +266,19 @@ export default function StaffHomePage() {
       year: "numeric",
     });
   };
+
+  if (!isStaff) {
+    return (
+      <StaffLayout>
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-red-600">Access Denied</h2>
+          <p className="text-muted-foreground mt-2">
+            You do not have permission to access the staff area.
+          </p>
+        </div>
+      </StaffLayout>
+    );
+  }
 
   return (
     <StaffLayout>
