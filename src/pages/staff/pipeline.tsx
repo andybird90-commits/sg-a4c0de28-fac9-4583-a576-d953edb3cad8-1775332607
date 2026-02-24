@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, TrendingUp, RefreshCw, Filter, Pencil, Save, X } from "lucide-react";
-import { pipelineService, PipelineWithDetails } from "@/services/pipelineService";
+import { pipelineService } from "@/services/pipelineService";
+import type { PipelineWithDetails, MissingCompanyNumberClient } from "@/services/pipelineService";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, addMonths, eachMonthOfInterval, parseISO } from "date-fns";
 import {
@@ -26,6 +27,7 @@ export default function PipelinePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [pipeline, setPipeline] = useState<PipelineWithDetails[]>([]);
   const [summary, setSummary] = useState<any>(null);
+  const [missingCompanies, setMissingCompanies] = useState<MissingCompanyNumberClient[]>([]);
   
   // Filters
   const [filterStartDate, setFilterStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
@@ -44,6 +46,10 @@ export default function PipelinePage() {
     loadPipeline();
     loadSummary();
   }, [filterStartDate, filterEndDate, minConfidence]);
+
+  useEffect(() => {
+    loadMissingCompanies();
+  }, []);
 
   async function loadPipeline() {
     try {
@@ -69,6 +75,15 @@ export default function PipelinePage() {
       setSummary(data);
     } catch (error) {
       console.error("Error loading summary:", error);
+    }
+  }
+
+  async function loadMissingCompanies() {
+    try {
+      const data = await pipelineService.getClientsMissingCompanyNumber();
+      setMissingCompanies(data);
+    } catch (error) {
+      console.error("Error loading missing company numbers:", error);
     }
   }
 
@@ -357,6 +372,36 @@ export default function PipelinePage() {
             </div>
           )}
         </Card>
+
+        {missingCompanies.length > 0 && (
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-2">
+              Clients missing Companies House number
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              These clients were skipped from the revenue pipeline because they do not have a company number set.
+            </p>
+            <div className="space-y-2">
+              {missingCompanies.map((client) => (
+                <div
+                  key={`${client.source}-${client.id}`}
+                  className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2"
+                >
+                  <div>
+                    <div className="font-medium">{client.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Source:{" "}
+                      {client.source === "imported"
+                        ? "Imported client"
+                        : "Prospect / onboarded client"}
+                      {client.org_id ? ` · Org: ${client.org_id}` : ""}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         {/* Edit Dialog */}
         <Dialog open={!!editingEntry} onOpenChange={(open) => !open && setEditingEntry(null)}>
