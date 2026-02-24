@@ -33,7 +33,7 @@ export default function PipelinePage() {
   // Default to a very wide date range so the initial view shows all entries.
   // Users can then narrow the range using the filters.
   const [filterStartDate, setFilterStartDate] = useState("2026-01-01");
-  const [filterEndDate, setFilterEndDate] = useState("2100-12-31");
+  const [filterEndDate, setFilterEndDate] = useState("2027-12-31");
   const [minConfidence, setMinConfidence] = useState(0);
 
   // Editing State
