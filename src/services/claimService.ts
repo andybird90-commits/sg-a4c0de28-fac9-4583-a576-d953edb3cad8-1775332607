@@ -216,7 +216,7 @@ export class ClaimService {
               .from("prospects")
               .select("company_number")
               .eq("org_id", data.org_id)
-              .single();
+              .maybeSingle();
 
             await pipelineService.autoCreatePipelineEntry(
               data.id,
@@ -265,7 +265,7 @@ export class ClaimService {
               .from("prospects")
               .select("company_number")
               .eq("org_id", data.org_id)
-              .single();
+              .maybeSingle();
 
             await pipelineService.autoCreatePipelineEntry(
               data.id,
