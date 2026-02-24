@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { StaffLayout } from "@/components/staff/StaffLayout";
 import { Button } from "@/components/ui/button";
@@ -307,6 +307,46 @@ export default function PipelinePage() {
     }
   }
 
+  // Expand pipeline so each entry also shows once in the following year
+  // (e.g. a 2026 filing also appears in 2027 at the same time) as long as it
+  // falls within the current filter end date year.
+  const expandedPipeline = useMemo(() => {
+    const endYear = parseISO(filterEndDate).getFullYear();
+    const result: PipelineWithDetails[] = [];
+
+    for (const entry of pipeline) {
+      result.push(entry);
+
+      if (entry.expected_accounts_filing_date && entry.pipeline_start_date) {
+        const expected = parseISO(entry.expected_accounts_filing_date);
+        const baseYear = expected.getFullYear();
+        const nextYear = baseYear + 1;
+
+        if (nextYear <= endYear) {
+          const nextExpected = new Date(expected);
+          nextExpected.setFullYear(nextYear);
+
+          const pipelineStart = parseISO(entry.pipeline_start_date);
+          const nextPipelineStart = new Date(pipelineStart);
+          nextPipelineStart.setFullYear(pipelineStart.getFullYear() + 1);
+
+          result.push({
+            ...entry,
+            id: `${entry.id}-repeat-${nextYear}`,
+            expected_accounts_filing_date: nextExpected
+              .toISOString()
+              .split("T")[0],
+            pipeline_start_date: nextPipelineStart
+              .toISOString()
+              .split("T")[0],
+          } as PipelineWithDetails);
+        }
+      }
+    }
+
+    return result;
+  }, [pipeline, filterEndDate]);
+
   // Generate months for Gantt view
   const startDate = parseISO(filterStartDate);
   const endDate = parseISO(filterEndDate);
@@ -316,7 +356,7 @@ export default function PipelinePage() {
   const revenueByMonth = months.map(month => {
     const monthStart = startOfMonth(month);
     const monthEnd = endOfMonth(month);
-    const monthPipeline = pipeline.filter(p => {
+    const monthPipeline = expandedPipeline.filter(p => {
       const pipelineDate = new Date(p.pipeline_start_date);
       return pipelineDate >= monthStart && pipelineDate <= monthEnd;
     });
@@ -455,18 +495,18 @@ export default function PipelinePage() {
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Pipeline Timeline</h2>
-            <Badge variant="outline">{pipeline.length} entries</Badge>
+            <Badge variant="outline">{expandedPipeline.length} entries</Badge>
           </div>
           
           {loading ? (
             <div className="text-center py-12 text-muted-foreground">Loading pipeline...</div>
-          ) : pipeline.length === 0 ? (
+          ) : expandedPipeline.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               No pipeline entries found. Customers will appear here when their CIF is complete and claim is enabled.
             </div>
           ) : (
             <div className="space-y-2">
-              {pipeline.map((entry) => {
+              {expandedPipeline.map((entry) => {
                 const pipelineDate = new Date(entry.pipeline_start_date);
                 const expectedFilingDate = entry.expected_accounts_filing_date 
                   ? new Date(entry.expected_accounts_filing_date) 
