@@ -42,7 +42,7 @@ export default function StaffHomePage() {
 
       const today = new Date();
       const start = new Date(today.getFullYear(), today.getMonth(), 1);
-      const end = new Date(today.getFullYear(), today.getMonth() + 12, 0);
+      const end = new Date(today.getFullYear(), today.getMonth() + 24, 0);
 
       const startStr = start.toISOString().split("T")[0];
       const endStr = end.toISOString().split("T")[0];
@@ -80,7 +80,7 @@ export default function StaffHomePage() {
   // Build 12-month window from the start of the current month
   const today = new Date();
   const months: Date[] = [];
-  for (let i = 0; i < 12; i += 1) {
+  for (let i = 0; i < 24; i += 1) {
     months.push(new Date(today.getFullYear(), today.getMonth() + i, 1));
   }
 
@@ -143,11 +143,19 @@ export default function StaffHomePage() {
     )
   );
 
-  const yAxisTicks = maxMonthTotal
-    ? Array.from({ length: 5 }, (_, index) =>
-        Math.round((maxMonthTotal / 4) * index)
-      )
-    : [0, 25000, 50000, 75000, 100000];
+  const tickStep = 50000;
+  const maxScaleValue =
+    maxMonthTotal > 0
+      ? Math.max(
+          tickStep,
+          Math.ceil(maxMonthTotal / tickStep) * tickStep
+        )
+      : tickStep * 10;
+
+  const yAxisTicks: number[] = [];
+  for (let value = 0; value <= maxScaleValue; value += tickStep) {
+    yAxisTicks.push(value);
+  }
 
   const getConfidenceBadge = (score: number | null) => {
     if (!score) return <Badge variant="outline">Unknown</Badge>;
@@ -206,7 +214,7 @@ export default function StaffHomePage() {
                 {formatCurrency(totalForecastedRevenue)}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Next 12 months
+                Next 24 months
               </p>
             </CardContent>
           </Card>
@@ -302,6 +310,15 @@ export default function StaffHomePage() {
                     {monthlyBuckets.map((bucket, idx) => {
                       const total =
                         bucket.onboarded + bucket.notOnboarded;
+
+                      const hoverTitle = `Total: ${formatCurrency(
+                        total
+                      )}\nOnboarded: ${formatCurrency(
+                        bucket.onboarded
+                      )}\nNot onboarded: ${formatCurrency(
+                        bucket.notOnboarded
+                      )}`;
+
                       const onboardedHeight =
                         maxMonthTotal > 0
                           ? (bucket.onboarded / maxMonthTotal) * 100
@@ -316,7 +333,10 @@ export default function StaffHomePage() {
                           key={idx}
                           className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
                         >
-                          <div className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-muted">
+                          <div
+                            className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-muted"
+                            title={hoverTitle}
+                          >
                             {total > 0 && (
                               <>
                                 {bucket.onboarded > 0 && (
