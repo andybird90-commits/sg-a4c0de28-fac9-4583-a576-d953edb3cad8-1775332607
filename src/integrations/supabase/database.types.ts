@@ -2083,6 +2083,21 @@ export type Database = {
           },
         ]
       }
+      pipeline_settings: {
+        Row: {
+          setting_key: string
+          setting_value: string
+        }
+        Insert: {
+          setting_key: string
+          setting_value: string
+        }
+        Update: {
+          setting_key?: string
+          setting_value?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -366,12 +366,17 @@ export async function refreshPipelinePredictions(pipelineId: string): Promise<vo
   const orgId = (pipeline as any).org_id as string;
 
   // We need to fetch companies_house_number separately or add it to the query if it exists on organisations
-  const { data: prospect } = await supabase
+  const { data: prospect, error: prospectError } = await supabase
     .from("prospects")
     .select("company_number")
     .eq("org_id", orgId)
-    .single();
+    .maybeSingle();
     
+  if (prospectError) {
+    console.error("Error loading prospect for pipeline refresh:", prospectError);
+    return;
+  }
+
   if (!prospect?.company_number) return;
 
   const prediction = await calculatePredictedFilingDate(
