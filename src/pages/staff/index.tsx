@@ -1,35 +1,34 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { StaffLayout } from "@/components/staff/StaffLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useApp } from "@/contexts/AppContext";
-import { FileText, Users, Shield, Briefcase, TrendingUp, Calendar, ArrowRight } from "lucide-react";
+import {
+  FileText,
+  Users,
+  Shield,
+  Briefcase,
+  TrendingUp,
+  Calendar,
+  ArrowRight,
+} from "lucide-react";
 import { pipelineService } from "@/services/pipelineService";
-import type { Database } from "@/integrations/supabase/types";
-
-type PipelineEntry = Database["public"]["Tables"]["pipeline_entries"]["Row"] & {
-  organisations?: {
-    name: string;
-    companies_house_number: string | null;
-  } | null;
-};
+import type { PipelineWithDetails } from "@/services/pipelineService";
 
 export default function StaffHomePage() {
   const router = useRouter();
   const { profileWithOrg, isStaff } = useApp();
-  const [pipelineData, setPipelineData] = useState<PipelineEntry[]>([]);
+  const [pipelineData, setPipelineData] = useState<PipelineWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState<{
-    totalRevenue: number;
-    byMonth: Record<string, number>;
-    byQuarter: Record<string, number>;
-  }>({
-    totalRevenue: 0,
-    byMonth: {},
-    byQuarter: {},
-  });
+  const [securedOnly, setSecuredOnly] = useState(false);
 
   useEffect(() => {
     if (isStaff) {
@@ -40,11 +39,20 @@ export default function StaffHomePage() {
   const loadPipelineData = async () => {
     try {
       setLoading(true);
-      const entries = await pipelineService.getAllPipelineEntries();
-      setPipelineData(entries.slice(0, 10)); // Show top 10 on dashboard
 
-      const summaryData = await pipelineService.getPipelineSummary();
-      setSummary(summaryData);
+      const today = new Date();
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      const end = new Date(today.getFullYear(), today.getMonth() + 12, 0);
+
+      const startStr = start.toISOString().split("T")[0];
+      const endStr = end.toISOString().split("T")[0];
+
+      const entries = await pipelineService.getPipelineByDateRange(
+        startStr,
+        endStr
+      );
+
+      setPipelineData(entries);
     } catch (error) {
       console.error("Failed to load pipeline data:", error);
     } finally {
@@ -57,7 +65,9 @@ export default function StaffHomePage() {
       <StaffLayout>
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold text-red-600">Access Denied</h2>
-          <p className="text-muted-foreground mt-2">You do not have permission to access the staff area.</p>
+          <p className="text-muted-foreground mt-2">
+            You do not have permission to access the staff area.
+          </p>
         </div>
       </StaffLayout>
     );
@@ -67,13 +77,71 @@ export default function StaffHomePage() {
   const orgCode = profileWithOrg?.organisation_code || "N/A";
   const role = profileWithOrg?.internal_role || "Staff";
 
-  // Calculate date range for timeline (next 6 months)
+  // Build 12-month window from the start of the current month
   const today = new Date();
-  const timelineMonths: Date[] = [];
-  for (let i = 0; i < 6; i++) {
-    const month = new Date(today.getFullYear(), today.getMonth() + i, 1);
-    timelineMonths.push(month);
+  const months: Date[] = [];
+  for (let i = 0; i < 12; i += 1) {
+    months.push(new Date(today.getFullYear(), today.getMonth() + i, 1));
   }
+
+  type MonthlyBucket = {
+    date: Date;
+    onboarded: number;
+    notOnboarded: number;
+  };
+
+  const initialBuckets: MonthlyBucket[] = months.map((date) => ({
+    date,
+    onboarded: 0,
+    notOnboarded: 0,
+  }));
+
+  const visiblePipeline = securedOnly
+    ? pipelineData.filter((entry) => Boolean(entry.claim_id))
+    : pipelineData;
+
+  const monthlyBuckets: MonthlyBucket[] = visiblePipeline.reduce(
+    (buckets, entry) => {
+      if (!entry.pipeline_start_date) return buckets;
+
+      const pipelineDate = new Date(entry.pipeline_start_date);
+      const monthIndex = months.findIndex(
+        (m) =>
+          m.getFullYear() === pipelineDate.getFullYear() &&
+          m.getMonth() === pipelineDate.getMonth()
+      );
+      if (monthIndex === -1) return buckets;
+
+      const revenue = entry.predicted_revenue || 0;
+      if (entry.claim_id) {
+        buckets[monthIndex].onboarded += revenue;
+      } else {
+        buckets[monthIndex].notOnboarded += revenue;
+      }
+
+      return buckets;
+    },
+    initialBuckets
+  );
+
+  const totalForecastedRevenue = monthlyBuckets.reduce(
+    (sum, bucket) => sum + bucket.onboarded + bucket.notOnboarded,
+    0
+  );
+
+  const thisMonthBucket = monthlyBuckets[0];
+  const thisMonthRevenue =
+    (thisMonthBucket?.onboarded || 0) +
+    (thisMonthBucket?.notOnboarded || 0);
+
+  const activeItems = visiblePipeline.length;
+
+  const maxMonthTotal = Math.max(
+    0,
+    ...monthlyBuckets.map(
+      (bucket) => bucket.onboarded + bucket.notOnboarded
+    )
+  );
 
   const getConfidenceBadge = (score: number | null) => {
     if (!score) return <Badge variant="outline">Unknown</Badge>;
@@ -93,7 +161,10 @@ export default function StaffHomePage() {
   };
 
   const formatMonthYear = (date: Date) => {
-    return date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+    return date.toLocaleDateString("en-GB", {
+      month: "short",
+      year: "numeric",
+    });
   };
 
   return (
@@ -115,7 +186,7 @@ export default function StaffHomePage() {
           </Button>
         </div>
 
-        {/* Revenue Summary Cards */}
+        {/* Revenue Summary Cards (Next 12 Months) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader>
@@ -125,8 +196,12 @@ export default function StaffHomePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{formatCurrency(summary.totalRevenue)}</p>
-              <p className="text-sm text-muted-foreground mt-1">Next 12 months</p>
+              <p className="text-3xl font-bold">
+                {formatCurrency(totalForecastedRevenue)}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Next 12 months
+              </p>
             </CardContent>
           </Card>
 
@@ -138,8 +213,10 @@ export default function StaffHomePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{pipelineData.length}</p>
-              <p className="text-sm text-muted-foreground mt-1">Clients in pipeline</p>
+              <p className="text-3xl font-bold">{activeItems}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Clients in pipeline
+              </p>
             </CardContent>
           </Card>
 
@@ -152,130 +229,152 @@ export default function StaffHomePage() {
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">
-                {formatCurrency(summary.byMonth[formatMonthYear(today)] || 0)}
+                {formatCurrency(thisMonthRevenue)}
               </p>
-              <p className="text-sm text-muted-foreground mt-1">Expected revenue</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Expected revenue
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Gantt-Style Pipeline View */}
+        {/* 12-Month Pipeline Chart */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Pipeline Timeline (Next 6 Months)
-              </span>
-              <Button variant="outline" size="sm" onClick={() => router.push("/staff/pipeline")}>
-                View All
+                12-Month Pipeline
+              </CardTitle>
+              <CardDescription>
+                Revenue forecast and budget analysis (onboarded vs not yet
+                onboarded)
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={securedOnly ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSecuredOnly((prev) => !prev)}
+              >
+                Secured Only
               </Button>
-            </CardTitle>
-            <CardDescription>Visual representation of predicted work and revenue</CardDescription>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/staff/pipeline")}
+              >
+                View Gantt
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading pipeline data...</div>
-            ) : pipelineData.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No pipeline entries yet. Enable claims to auto-generate predictions.
+                Loading pipeline data...
+              </div>
+            ) : monthlyBuckets.every(
+                (bucket) =>
+                  bucket.onboarded === 0 && bucket.notOnboarded === 0
+              ) ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No pipeline entries in the next 12 months. Enable claims or
+                import clients to build your pipeline forecast.
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Timeline Header */}
-                <div className="flex items-center gap-2 border-b pb-2">
-                  <div className="w-48 font-semibold text-sm">Client</div>
-                  <div className="flex-1 grid grid-cols-6 gap-1">
-                    {timelineMonths.map((month, idx) => (
-                      <div key={idx} className="text-xs font-semibold text-center">
-                        {formatMonthYear(month)}
+              <>
+                <div className="flex items-end gap-3 h-72 border-l border-b border-border pl-4 pb-6 overflow-x-auto">
+                  {monthlyBuckets.map((bucket, idx) => {
+                    const total =
+                      bucket.onboarded + bucket.notOnboarded;
+                    const onboardedHeight =
+                      maxMonthTotal > 0
+                        ? (bucket.onboarded / maxMonthTotal) * 100
+                        : 0;
+                    const notOnboardedHeight =
+                      maxMonthTotal > 0
+                        ? (bucket.notOnboarded / maxMonthTotal) * 100
+                        : 0;
+
+                    return (
+                      <div
+                        key={idx}
+                        className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
+                      >
+                        <div className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-muted">
+                          {total > 0 && (
+                            <>
+                              {bucket.onboarded > 0 && (
+                                <div
+                                  className="bg-emerald-500"
+                                  style={{
+                                    height: `${onboardedHeight}%`,
+                                  }}
+                                  title={`Onboarded: ${formatCurrency(
+                                    bucket.onboarded
+                                  )}`}
+                                />
+                              )}
+                              {bucket.notOnboarded > 0 && (
+                                <div
+                                  className="bg-amber-400"
+                                  style={{
+                                    height: `${notOnboardedHeight}%`,
+                                  }}
+                                  title={`Not onboarded: ${formatCurrency(
+                                    bucket.notOnboarded
+                                  )}`}
+                                />
+                              )}
+                            </>
+                          )}
+                        </div>
+                        <span className="mt-2 text-xs text-muted-foreground rotate-[-30deg] origin-top">
+                          {formatMonthYear(bucket.date)}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                  <div className="w-32 text-right font-semibold text-sm">Revenue</div>
+                    );
+                  })}
                 </div>
-
-                {/* Pipeline Entries */}
-                {pipelineData.slice(0, 8).map((entry) => {
-                  const pipelineStart = entry.pipeline_start_date ? new Date(entry.pipeline_start_date) : null;
-                  const filingDate = entry.expected_accounts_filing_date ? new Date(entry.expected_accounts_filing_date) : null;
-
-                  // Calculate which months this entry spans
-                  const startMonth = pipelineStart ? pipelineStart.getMonth() : null;
-                  const startYear = pipelineStart ? pipelineStart.getFullYear() : null;
-                  const endMonth = filingDate ? filingDate.getMonth() : null;
-                  const endYear = filingDate ? filingDate.getFullYear() : null;
-
-                  return (
-                    <div key={entry.id} className="flex items-center gap-2 py-2 hover:bg-muted/50 rounded">
-                      <div className="w-48 truncate">
-                        <p className="font-medium text-sm">{entry.organisations?.name || "Unknown"}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          {getConfidenceBadge(entry.filing_confidence_score)}
-                        </p>
-                      </div>
-                      <div className="flex-1 grid grid-cols-6 gap-1">
-                        {timelineMonths.map((month, idx) => {
-                          const monthNum = month.getMonth();
-                          const yearNum = month.getFullYear();
-                          
-                          // Check if this month is within the pipeline period
-                          let isInPeriod = false;
-                          if (startMonth !== null && startYear !== null && endMonth !== null && endYear !== null) {
-                            const monthDate = new Date(yearNum, monthNum);
-                            const start = new Date(startYear, startMonth);
-                            const end = new Date(endYear, endMonth);
-                            isInPeriod = monthDate >= start && monthDate <= end;
-                          }
-
-                          // Highlight filing month
-                          const isFilingMonth = endMonth === monthNum && endYear === yearNum;
-
-                          return (
-                            <div
-                              key={idx}
-                              className={`h-8 rounded ${
-                                isFilingMonth
-                                  ? "bg-blue-500"
-                                  : isInPeriod
-                                  ? "bg-blue-200 dark:bg-blue-900"
-                                  : "bg-gray-100 dark:bg-gray-800"
-                              }`}
-                              title={
-                                isFilingMonth
-                                  ? "Filing month"
-                                  : isInPeriod
-                                  ? "Active pipeline work"
-                                  : ""
-                              }
-                            />
-                          );
-                        })}
-                      </div>
-                      <div className="w-32 text-right font-semibold text-sm">
-                        {formatCurrency(entry.predicted_revenue)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                <div className="mt-4 flex flex-wrap items-center gap-4 text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded-sm bg-emerald-500" />
+                    <span>Onboarded clients (has claim)</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="w-3 h-3 rounded-sm bg-amber-400" />
+                    <span>Not yet onboarded</span>
+                  </div>
+                  {securedOnly && (
+                    <span className="text-xs text-muted-foreground">
+                      Showing secured (onboarded) revenue only.
+                    </span>
+                  )}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
 
         {/* Quick Access Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/staff/claims")}>
+          <Card
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => router.push("/staff/claims")}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
                 Claims
               </CardTitle>
-              <CardDescription>Manage R&D tax credit claims</CardDescription>
+              <CardDescription>Manage R&amp;D tax credit claims</CardDescription>
             </CardHeader>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/staff/cif")}>
+          <Card
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => router.push("/staff/cif")}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Briefcase className="h-5 w-5" />
@@ -285,7 +384,10 @@ export default function StaffHomePage() {
             </CardHeader>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/staff/clients")}>
+          <Card
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => router.push("/staff/clients")}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
@@ -295,7 +397,10 @@ export default function StaffHomePage() {
             </CardHeader>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push("/staff/admin")}>
+          <Card
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => router.push("/staff/admin")}
+          >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
