@@ -523,7 +523,8 @@ async function upsertPipelineEntryForClient(
   companyNumber: string | null,
   createdBy: string
 ): Promise<void> {
-  if (!companyNumber || !isValidCompaniesHouseNumber(companyNumber)) {
+  // Only skip when there is no company number at all; allow broader formats
+  if (!companyNumber) {
     return;
   }
 
@@ -603,10 +604,13 @@ export async function syncPipelineFromClients(): Promise<void> {
     }
   });
 
+  // Imported clients -> placeholder organisations, no claim_id (not yet onboarded)
   for (const client of importedClients || []) {
-    if (!isValidCompaniesHouseNumber(client.company_number)) {
+    // Only require a non-empty company number now
+    if (!client.company_number) {
       continue;
     }
+
     const orgId = await ensurePlaceholderOrganisationForClient(
       client as ClientToBeOnboarded
     );
@@ -616,8 +620,10 @@ export async function syncPipelineFromClients(): Promise<void> {
     await upsertPipelineEntryForClient(orgId, null, client.company_number, userId);
   }
 
+  // Prospects -> real organisations, may have claim_id (onboarded)
   for (const prospect of prospects || []) {
-    if (!prospect.org_id || !isValidCompaniesHouseNumber(prospect.company_number)) {
+    // Keep org_id requirement; just require a non-empty company number
+    if (!prospect.org_id || !prospect.company_number) {
       continue;
     }
     const claimId = claimByOrgId.get(prospect.org_id) || null;
