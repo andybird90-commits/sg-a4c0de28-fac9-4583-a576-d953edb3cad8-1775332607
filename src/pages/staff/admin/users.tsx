@@ -136,13 +136,22 @@ export default function AdminUsers() {
       if (orgUsersError) throw orgUsersError;
 
       // Merge the data
-      const usersWithOrgs = profilesData?.map(profile => {
-        const orgMembership = orgUsersData?.find(ou => ou.user_id === profile.id);
-        return {
-          ...profile,
-          organisation: orgMembership?.organisations || null
-        };
-      }) || [];
+      const usersWithOrgs =
+        profilesData?.map((profile) => {
+          const userMemberships =
+            orgUsersData?.filter((ou: any) => ou.user_id === profile.id) || [];
+
+          // Prefer RDTax (code 'uzmktkqt') if the user belongs to multiple organisations
+          const primaryMembership =
+            userMemberships.find(
+              (ou: any) => ou.organisations?.organisation_code === "uzmktkqt"
+            ) || userMemberships[0] || null;
+
+          return {
+            ...profile,
+            organisation: primaryMembership?.organisations || null,
+          };
+        }) || [];
 
       setUsers(usersWithOrgs);
     } catch (error) {
