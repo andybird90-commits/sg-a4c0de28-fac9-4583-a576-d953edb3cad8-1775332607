@@ -305,10 +305,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (user && !organisationsLoading) {
+    if (user) {
       console.log("[AppContext] User set, refreshing organisations");
       refreshOrganisations();
-    } else if (!user) {
+    } else {
       console.log("[AppContext] User cleared, resetting organisations");
       setOrganisations([]);
       setCurrentOrg(null);
@@ -316,7 +316,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem("selectedOrgId");
       }
     }
-  }, [user, organisationsLoading]);
+  }, [user]);
 
   return (
     <AppContext.Provider
