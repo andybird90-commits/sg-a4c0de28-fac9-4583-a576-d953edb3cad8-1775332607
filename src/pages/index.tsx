@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useApp } from "@/contexts/AppContext";
 import {
   Camera,
   FileText,
@@ -24,6 +25,19 @@ import {
 
 export default function LandingPage() {
   const router = useRouter();
+  const { user, loading, isStaff } = useApp();
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    if (user && isStaff) {
+      router.replace("/staff");
+    } else if (user && !isStaff) {
+      router.replace("/home");
+    }
+  }, [user, isStaff, loading, router]);
 
   const features = [
     {
