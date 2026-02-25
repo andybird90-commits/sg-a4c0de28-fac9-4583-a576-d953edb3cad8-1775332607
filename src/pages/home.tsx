@@ -32,7 +32,7 @@ import { useNotifications } from "@/contexts/NotificationContext";
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, currentOrg, loading: authLoading } = useApp();
+  const { user, currentOrg, loading: authLoading, isStaff } = useApp();
   const { notify } = useNotifications();
   const [projects, setProjects] = useState<Project[]>([]);
   const [stats, setStats] = useState({
@@ -50,6 +50,12 @@ export default function HomePage() {
       return;
     }
 
+    // If user is staff, always use the staff dashboard instead of the client dashboard
+    if (user && isStaff) {
+      router.replace("/staff");
+      return;
+    }
+
     // If no user after auth loads, redirect to login
     if (!user) {
       router.push("/auth/login");
@@ -62,7 +68,7 @@ export default function HomePage() {
     } else {
       setLoading(false);
     }
-  }, [user, currentOrg, authLoading]);
+  }, [user, currentOrg, authLoading, isStaff, router]);
 
   const loadDashboardData = async () => {
     if (!currentOrg) return;
