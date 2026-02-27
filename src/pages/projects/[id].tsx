@@ -724,7 +724,8 @@ export default function ProjectDetailPage() {
     claimProject.workflow_status === "revision_requested";
 
   const canEdit = !claimProject || isDraftLikeStatus;
-  const canSendToTeam = !!claimProject && isDraftLikeStatus;
+  const canSendToTeam =
+    workflowStatus === "draft" || workflowStatus === "revision_requested";
   const needsClientReview =
     claimProject && claimProject.workflow_status === "awaiting_client_review";
   const isApproved = claimProject && claimProject.workflow_status === "approved";
