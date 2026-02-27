@@ -528,9 +528,27 @@ export default function ClaimDetailPage() {
 
     try {
       setLoadingAnalysis(true);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        toast({
+          title: "Not authenticated",
+          description: "You need to be logged in to generate an AI analysis.",
+          variant: "destructive",
+        });
+        setLoadingAnalysis(false);
+        return;
+      }
+
       const response = await fetch("/api/claims/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ claimId: claim.id }),
       });
 
