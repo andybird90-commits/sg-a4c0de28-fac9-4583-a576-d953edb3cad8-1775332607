@@ -452,10 +452,13 @@ export default function ClaimDetailPage() {
     if (!claim) return;
 
     try {
+      const projectId =
+        costForm.project_id === "none" ? null : costForm.project_id || null;
+
       await claimService.createCost({
         claim_id: claim.id,
         org_id: claim.org_id,
-        project_id: costForm.project_id || null,
+        project_id: projectId,
         cost_type: costForm.cost_type as any,
         description: costForm.description,
         amount: parseFloat(costForm.amount),
@@ -479,12 +482,15 @@ export default function ClaimDetailPage() {
     if (!editingCost) return;
 
     try {
+      const projectId =
+        costForm.project_id === "none" ? null : costForm.project_id || null;
+
       await claimService.updateCost(editingCost.id, {
         cost_type: costForm.cost_type as any,
         description: costForm.description,
         amount: parseFloat(costForm.amount),
         cost_date: costForm.cost_date || null,
-        project_id: costForm.project_id || null,
+        project_id: projectId,
       });
 
       toast({ title: "Success", description: "Cost entry updated successfully" });
@@ -581,7 +587,9 @@ export default function ClaimDetailPage() {
 
     try {
       setUploadingDocument(true);
-      
+      const projectId =
+        documentProjectId === "none" ? null : documentProjectId || null;
+
       // Upload file to Supabase Storage
       const fileExt = selectedFile.name.split(".").pop();
       const fileName = `${claim.id}_${Date.now()}.${fileExt}`;
@@ -601,7 +609,7 @@ export default function ClaimDetailPage() {
       await claimService.createDocument({
         claim_id: claim.id,
         org_id: claim.org_id,
-        project_id: documentProjectId || null,
+        project_id: projectId,
         doc_type: documentType as any,
         title: selectedFile.name,
         file_name: selectedFile.name,
@@ -1046,7 +1054,7 @@ export default function ClaimDetailPage() {
                               <SelectValue placeholder="Select project..." />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">No project (general cost)</SelectItem>
+                              <SelectItem value="none">No project (general cost)</SelectItem>
                               {claim.projects?.map((proj) => (
                                 <SelectItem key={proj.id} value={proj.id}>
                                   <div className="flex items-center justify-between gap-2">
@@ -1237,7 +1245,7 @@ export default function ClaimDetailPage() {
                               <SelectValue placeholder="Select project..." />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">General (not project-specific)</SelectItem>
+                              <SelectItem value="none">General (not project-specific)</SelectItem>
                               {claim.projects?.map((proj) => (
                                 <SelectItem key={proj.id} value={proj.id}>
                                   {proj.name}
