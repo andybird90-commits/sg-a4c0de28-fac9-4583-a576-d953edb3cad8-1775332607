@@ -546,6 +546,135 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const resetCostAdviceForm = () => {
+    setCostType("");
+    setCostAmount("");
+    setCostDescription("");
+    setCostNotes("");
+    setEditingCostId(null);
+  };
+
+  const handleSubmitCostAdvice = async () => {
+    if (!project) return;
+
+    if (!costType) {
+      toast({
+        title: "Choose a cost type",
+        description: "Please select the type of cost you are advising.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!costAmount) {
+      toast({
+        title: "Enter an amount",
+        description: "Please add an estimated amount for this cost.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const numericAmount = Number(costAmount);
+    if (Number.isNaN(numericAmount) || numericAmount <= 0) {
+      toast({
+        title: "Amount looks incorrect",
+        description: "Please enter a positive number for the amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingCostAdvice(true);
+    try {
+      if (editingCostId) {
+        const updated = await sidekickCostAdviceService.updateAdvice(editingCostId, {
+          cost_type: costType,
+          amount: numericAmount,
+          description: costDescription || null,
+          notes: costNotes || null,
+        });
+
+        setCostAdvice((prev) =>
+          prev.map((item) => (item.id === updated.id ? updated : item))
+        );
+
+        toast({
+          title: "Cost advice updated",
+          description: "Your changes have been saved.",
+        });
+      } else {
+        const created = await sidekickCostAdviceService.createAdvice({
+          project_id: project.id,
+          cost_type: costType,
+          amount: numericAmount,
+          description: costDescription || null,
+          notes: costNotes || null,
+        });
+
+        setCostAdvice((prev) => [created, ...prev]);
+
+        toast({
+          title: "Cost advice saved",
+          description: "Your estimate has been shared with the R&D team.",
+        });
+      }
+
+      resetCostAdviceForm();
+    } catch (error) {
+      console.error("Error saving cost advice:", error);
+      toast({
+        title: "Could not save cost advice",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingCostAdvice(false);
+    }
+  };
+
+  const handleCancelEditCostAdvice = () => {
+    resetCostAdviceForm();
+  };
+
+  const handleEditCostAdvice = (item: SidekickCostAdvice) => {
+    setCostType(item.cost_type || "");
+    setCostAmount(
+      typeof item.amount === "number" ? String(item.amount) : item.amount || ""
+    );
+    setCostDescription(item.description || "");
+    setCostNotes(item.notes || "");
+    setEditingCostId(item.id);
+  };
+
+  const handleDeleteCostAdvice = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this cost advice?")) return;
+
+    setIsSubmittingCostAdvice(true);
+    try {
+      await sidekickCostAdviceService.deleteAdvice(id);
+      setCostAdvice((prev) => prev.filter((item) => item.id !== id));
+
+      if (editingCostId === id) {
+        resetCostAdviceForm();
+      }
+
+      toast({
+        title: "Cost advice deleted",
+        description: "This cost will no longer be used by the R&D team.",
+      });
+    } catch (error) {
+      console.error("Error deleting cost advice:", error);
+      toast({
+        title: "Could not delete cost advice",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingCostAdvice(false);
+    }
+  };
+
   const getSLAStatus = () => {
     if (!claimProject?.due_date) return null;
     
