@@ -649,14 +649,13 @@ export default function ProjectDetailPage() {
   }
 
   const workflowStatus = claimProject?.workflow_status || project.status;
-  const canEdit =
-    !claimProject ||
+  const isDraftLikeStatus =
+    !claimProject?.workflow_status ||
     claimProject.workflow_status === "draft" ||
     claimProject.workflow_status === "revision_requested";
-  const canSendToTeam =
-    !!claimProject &&
-    (claimProject.workflow_status === "draft" ||
-      claimProject.workflow_status === "revision_requested");
+
+  const canEdit = !claimProject || isDraftLikeStatus;
+  const canSendToTeam = !!claimProject && isDraftLikeStatus;
   const needsClientReview =
     claimProject && claimProject.workflow_status === "awaiting_client_review";
   const isApproved = claimProject && claimProject.workflow_status === "approved";
