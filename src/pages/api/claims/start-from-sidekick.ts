@@ -53,7 +53,12 @@ export default async function handler(
 
     if (claimError || !claim) {
       console.error("[start-from-sidekick] Error creating claim:", claimError);
-      res.status(500).json({ error: "Failed to create claim" });
+      res.status(500).json({
+        error:
+          (claimError as any)?.message ||
+          (claimError as any)?.details ||
+          "Failed to create claim",
+      });
       return;
     }
 
@@ -67,7 +72,12 @@ export default async function handler(
         "[start-from-sidekick] Error loading sidekick projects:",
         sidekickError
       );
-      res.status(500).json({ error: "Failed to load projects" });
+      res.status(500).json({
+        error:
+          (sidekickError as any)?.message ||
+          (sidekickError as any)?.details ||
+          "Failed to load projects",
+      });
       return;
     }
 
@@ -107,7 +117,12 @@ export default async function handler(
         "[start-from-sidekick] Error creating claim projects:",
         claimProjectsError
       );
-      res.status(500).json({ error: "Failed to create claim projects" });
+      res.status(500).json({
+        error:
+          (claimProjectsError as any)?.message ||
+          (claimProjectsError as any)?.details ||
+          "Failed to create claim projects",
+      });
       return;
     }
 
