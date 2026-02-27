@@ -157,8 +157,8 @@ export default function ProjectsPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {projects.map((project) => (
                 <Card key={project.id} className="relative hover:shadow-lg transition-shadow h-full group">
-                  <Link 
-                    href={project.type === "sidekick" ? `/evidence/sidekick/${project.id}` : `/projects/${project.id}`}
+                  <Link
+                    href={`/projects/${project.id}`}
                     className="absolute inset-0 z-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg"
                   >
                     <span className="sr-only">View {project.name}</span>
