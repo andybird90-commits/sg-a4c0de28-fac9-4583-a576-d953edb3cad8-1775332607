@@ -87,18 +87,18 @@ export const sidekickEvidenceService = {
     } as SidekickEvidenceInsert);
   },
 
-  async getEvidenceById(evidenceId: string): Promise<SidekickEvidenceItem> {
+  async getEvidenceById(evidenceId: string): Promise<SidekickEvidenceItem | null> {
     const { data, error } = await supabase
       .from("sidekick_evidence_items")
       .select("*")
       .eq("id", evidenceId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching evidence:", error);
       throw new Error(error.message || "Failed to fetch evidence");
     }
-    return data;
+    return data ?? null;
   },
 
   async getEvidenceByProject(projectId: string): Promise<SidekickEvidenceItem[]> {

@@ -49,9 +49,13 @@ export default function SidekickEvidenceDetailPage() {
       try {
         setLoading(true);
         const data = await sidekickEvidenceService.getEvidenceById(id as string);
+        if (!data) {
+          setEvidence(null);
+          setFileUrl(null);
+          return;
+        }
         setEvidence(data);
 
-        // If there's a file, get the signed URL
         if (data.file_path) {
           const url = await sidekickEvidenceService.getSignedUrl(data.file_path);
           setFileUrl(url);
