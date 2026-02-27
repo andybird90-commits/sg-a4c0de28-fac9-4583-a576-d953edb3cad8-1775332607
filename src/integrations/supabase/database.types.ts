@@ -2589,6 +2589,47 @@ export type Database = {
           },
         ]
       }
+      sidekick_project_cost_advice: {
+        Row: {
+          amount: number
+          cost_type: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          notes: string | null
+          project_id: string
+        }
+        Insert: {
+          amount: number
+          cost_type: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          project_id: string
+        }
+        Update: {
+          amount?: number
+          cost_type?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sidekick_project_cost_advice_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "sidekick_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sidekick_projects: {
         Row: {
           accepted_at: string | null

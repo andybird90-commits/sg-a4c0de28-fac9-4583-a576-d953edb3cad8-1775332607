@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Lightbulb, FileText, MessageSquare, Send, Upload, Link as LinkIcon, Trash2, ExternalLink, Sparkles, Edit, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { MessageWidget } from "@/components/MessageWidget";
+import { sidekickCostAdviceService, type SidekickCostAdvice } from "@/services/sidekickCostAdviceService";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
 type SidekickEvidenceItem = Database["public"]["Tables"]["sidekick_evidence_items"]["Row"];
@@ -73,6 +74,14 @@ export default function ProjectDetailPage() {
   const [feasibilityLoading, setFeasibilityLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [runningFeasibility, setRunningFeasibility] = useState(false);
+
+  // Cost advice state (client suggestions for staff calculator)
+  const [costAdvice, setCostAdvice] = useState<SidekickCostAdvice[]>([]);
+  const [costLoading, setCostLoading] = useState(false);
+  const [costSubmitting, setCostSubmitting] = useState(false);
+  const [costType, setCostType] = useState<SidekickCostAdvice["cost_type"]>("staff");
+  const [costAmount, setCostAmount] = useState("");
+  const [costDescription, setCostDescription] = useState("");
 
   // Evidence form state
   const [evidenceType, setEvidenceType] = useState<"note" | "file" | "link">("note");
@@ -135,6 +144,17 @@ export default function ProjectDetailPage() {
         setProject(projectData);
         setEvidence(evidenceData);
         setComments(commentsData);
+
+        // Fetch client cost advice for this project
+        setCostLoading(true);
+        try {
+          const advice = await sidekickCostAdviceService.getByProject(id as string);
+          setCostAdvice(advice);
+        } catch (costError) {
+          console.error("Error fetching cost advice:", costError);
+        } finally {
+          setCostLoading(false);
+        }
 
         // Check if this project is linked to a claim project
         try {
@@ -370,6 +390,37 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleAddCostAdvice = async () => {
+    if (!project || !user) return;
+    const parsedAmount = parseFloat(costAmount);
+    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+      alert("Please enter a valid cost amount greater than zero.");
+      return;
+    }
+
+    setCostSubmitting(true);
+    try {
+      await sidekickCostAdviceService.createAdvice({
+        project_id: project.id,
+        created_by: user.id,
+        cost_type: costType,
+        amount: parsedAmount,
+        description: costDescription || null,
+      });
+
+      const updated = await sidekickCostAdviceService.getByProject(project.id);
+      setCostAdvice(updated);
+
+      setCostAmount("");
+      setCostDescription("");
+    } catch (error) {
+      console.error("Error adding cost advice:", error);
+      alert("Failed to add cost advice");
+    } finally {
+      setCostSubmitting(false);
+    }
+  };
+
   const handleRunFeasibility = async () => {
     if (!project || !user) return;
 
@@ -586,7 +637,7 @@ export default function ProjectDetailPage() {
           </div>
 
           <Tabs defaultValue="feasibility" className="space-y-4 sm:space-y-6">
-            <TabsList className="w-full sm:w-auto grid grid-cols-3 h-auto gap-1">
+            <TabsList className="w-full sm:w-auto grid grid-cols-4 h-auto gap-1">
               <TabsTrigger value="feasibility" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
                 <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Feasibility</span>
@@ -601,6 +652,11 @@ export default function ProjectDetailPage() {
                 <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Comments</span>
                 <span className="sm:hidden">Chat</span>
+              </TabsTrigger>
+              <TabsTrigger value="costs" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Costs</span>
+                <span className="sm:hidden">£</span>
               </TabsTrigger>
             </TabsList>
 
@@ -912,6 +968,117 @@ export default function ProjectDetailPage() {
                     )}
                   </CardContent>
                 </Card>
+
+                <TabsContent value="costs">
+                  <div className="space-y-4 sm:space-y-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg sm:text-xl">Cost Advice</CardTitle>
+                        <CardDescription className="text-sm">
+                          Share your view of the costs linked to this project so the R&amp;D team can build the claim.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="space-y-1">
+                            <Label htmlFor="cost-type" className="text-sm">Cost type</Label>
+                            <select
+                              id="cost-type"
+                              className="border rounded-md px-2 py-2 text-sm bg-background"
+                              value={costType}
+                              onChange={(e) => setCostType(e.target.value as SidekickCostAdvice["cost_type"])}
+                            >
+                              <option value="staff">Staff</option>
+                              <option value="subcontractor">Subcontractor</option>
+                              <option value="consumables">Consumables</option>
+                              <option value="software">Software</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor="cost-amount" className="text-sm">Amount (£)</Label>
+                            <Input
+                              id="cost-amount"
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={costAmount}
+                              onChange={(e) => setCostAmount(e.target.value)}
+                              className="text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1 sm:col-span-1 sm:self-end">
+                            <Button
+                              size="sm"
+                              className="w-full sm:w-auto"
+                              onClick={handleAddCostAdvice}
+                              disabled={costSubmitting}
+                            >
+                              {costSubmitting ? "Saving..." : "Add Cost Advice"}
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="cost-description" className="text-sm">Notes for the R&amp;D team (optional)</Label>
+                          <Textarea
+                            id="cost-description"
+                            rows={3}
+                            value={costDescription}
+                            onChange={(e) => setCostDescription(e.target.value)}
+                            placeholder="Explain what this cost relates to, who it is for, or any assumptions."
+                            className="text-sm resize-none"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg sm:text-xl">Your Cost Advice ({costAdvice.length})</CardTitle>
+                        <CardDescription className="text-sm">
+                          These entries are visible to your R&amp;D team. They will use them alongside their own calculator.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {costLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                          </div>
+                        ) : costAdvice.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-8">
+                            No cost advice yet. Add your first entry above.
+                          </p>
+                        ) : (
+                          <div className="space-y-3">
+                            {costAdvice.map((item) => (
+                              <div key={item.id} className="p-3 sm:p-4 border rounded-lg">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge variant="secondary" className="text-xs capitalize">
+                                      {item.cost_type}
+                                    </Badge>
+                                    <span className="font-semibold text-sm">
+                                      £{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground flex-shrink-0">
+                                    {item.created_at ? new Date(item.created_at).toLocaleDateString() : ""}
+                                  </span>
+                                </div>
+                                {item.description && (
+                                  <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap break-words">
+                                    {item.description}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
               </div>
             </TabsContent>
           </Tabs>

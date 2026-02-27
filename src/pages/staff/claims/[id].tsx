@@ -195,6 +195,7 @@ export default function ClaimDetailPage() {
   const [loading, setLoading] = useState(true);
   const [claim, setClaim] = useState<ClaimWithDetails | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [clientCostAdviceCounts, setClientCostAdviceCounts] = useState<Record<string, number>>({});
 
   // Available sidekick projects for import
   const [sidekickProjects, setSidekickProjects] = useState<any[]>([]);
@@ -262,6 +263,12 @@ export default function ClaimDetailPage() {
       setLoading(true);
       const data = await claimService.getClaimById(claimId);
       setClaim(data);
+
+      if (data?.projects && data.projects.length > 0) {
+        await loadClientCostAdviceCounts(data.projects as ClaimProject[]);
+      } else {
+        setClientCostAdviceCounts({});
+      }
     } catch (error) {
       console.error("Error loading claim:", error);
       toast({
@@ -272,6 +279,61 @@ export default function ClaimDetailPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadSidekickProjects = async (orgId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("sidekick_projects")
+        .select("*")
+        .eq("company_id", orgId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setSidekickProjects(data || []);
+    } catch (error) {
+      console.error("Error loading sidekick projects:", error);
+    }
+  };
+
+  const loadClientCostAdviceCounts = async (projects: ClaimProject[]) => {
+    const sidekickToClaim = new Map<string, string>();
+    const sidekickIds: string[] = [];
+
+    projects.forEach((project) => {
+      const sourceId = project.source_sidekick_project_id as string | null;
+      if (sourceId) {
+        sidekickToClaim.set(sourceId, project.id);
+        sidekickIds.push(sourceId);
+      }
+    });
+
+    if (sidekickIds.length === 0) {
+      setClientCostAdviceCounts({});
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("sidekick_project_cost_advice")
+      .select("id, project_id")
+      .in("project_id", sidekickIds);
+
+    if (error) {
+      console.error("Error loading client cost advice counts:", error);
+      return;
+    }
+
+    const counts: Record<string, number> = {};
+    (data || []).forEach((row: any) => {
+      const projectId =
+        typeof row.project_id === "string" ? row.project_id : null;
+      if (!projectId) return;
+      const claimProjectId = sidekickToClaim.get(projectId);
+      if (!claimProjectId) return;
+      counts[claimProjectId] = (counts[claimProjectId] || 0) + 1;
+    });
+
+    setClientCostAdviceCounts(counts);
   };
 
   const loadSidekickProjects = async (orgId: string) => {
@@ -1001,7 +1063,17 @@ export default function ClaimDetailPage() {
                             <SelectContent>
                               <SelectItem value="">No project (general cost)</SelectItem>
                               {claim.projects?.map((proj) => (
-                                <SelectItem key={proj.id} value={proj.id}>{proj.name}</SelectItem>
+                                <SelectItem key={proj.id} value={proj.id}>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span>{proj.name}</span>
+                                    {clientCostAdviceCounts[proj.id] ? (
+                                      <Badge variant="secondary" className="ml-2 text-[10px] uppercase">
+                                        {clientCostAdviceCounts[proj.id]} client cost
+                                        {clientCostAdviceCounts[proj.id] > 1 ? "s" : ""}
+                                      </Badge>
+                                    ) : null}
+                                  </div>
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
