@@ -15,6 +15,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_accounts: {
+        Row: {
+          access_token: string | null
+          access_token_expires_at: string | null
+          azure_oid: string
+          created_at: string
+          id: string
+          primary_calendar_id: string | null
+          provider: string
+          refresh_token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          access_token_expires_at?: string | null
+          azure_oid: string
+          created_at?: string
+          id?: string
+          primary_calendar_id?: string | null
+          provider: string
+          refresh_token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          access_token_expires_at?: string | null
+          azure_oid?: string
+          created_at?: string
+          id?: string
+          primary_calendar_id?: string | null
+          provider?: string
+          refresh_token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cif_documents: {
         Row: {
           cif_id: string

@@ -67,7 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const expiresIn = tokenResponse.expires_in;
     const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
-    const { error: upsertError } = await supabaseServer
+    const { error: upsertError } = await (supabaseServer as any)
       .from("calendar_accounts")
       .upsert(
         {

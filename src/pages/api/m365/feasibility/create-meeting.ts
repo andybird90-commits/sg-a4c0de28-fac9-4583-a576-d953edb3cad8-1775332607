@@ -2,6 +2,8 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { supabaseServer } from "@/integrations/supabase/serverClient";
 import { createTeamsMeetingEvent, refreshAccessToken } from "@/services/m365CalendarService";
 
+const supabaseAdmin = supabaseServer as any;
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -17,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { data: meeting, error: meetingError } = await supabaseServer
+    const { data: meeting, error: meetingError } = await supabaseAdmin
       .from("feasibility_meetings")
       .select(
         `
@@ -67,7 +69,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const organiserUserId: string = meeting.feasibility_user_id as string;
 
-    const { data: calendarAccount, error: calendarError } = await supabaseServer
+    const { data: rawCalendarAccount, error: calendarError } = await supabaseAdmin
       .from("calendar_accounts")
       .select("id, refresh_token, access_token, access_token_expires_at")
       .eq("user_id", organiserUserId)
@@ -80,10 +82,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return;
     }
 
-    if (!calendarAccount) {
+    if (!rawCalendarAccount) {
       res.status(200).json({ created: false, reason: "no_calendar_connected" });
       return;
     }
+
+    const calendarAccount = rawCalendarAccount as {
+      id: string;
+      refresh_token: string | null;
+      access_token: string | null;
+      access_token_expires_at: string | null;
+    };
 
     let accessToken: string | null = calendarAccount.access_token ?? null;
     const expiresAtRaw: string | null = calendarAccount.access_token_expires_at ?? null;
@@ -94,7 +103,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
 
-      const { error: updateError } = await supabaseServer
+      const { error: updateError } = await supabaseAdmin
         .from("calendar_accounts")
         .update({
           access_token: refreshed.access_token,
@@ -133,7 +142,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       meetingDetails
     );
 
-    const { error: updateMeetingError } = await supabaseServer
+    const { error: updateMeetingError } = await supabaseAdmin
       .from("feasibility_meetings")
       .update({
         teams_meeting_link: joinUrl,

@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { data, error } = await supabaseServer
+    const { data, error } = await (supabaseServer as any)
       .from("calendar_accounts")
       .select("id")
       .eq("user_id", userId)
