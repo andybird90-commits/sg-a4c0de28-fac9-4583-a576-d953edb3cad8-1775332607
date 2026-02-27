@@ -44,8 +44,9 @@ export class ClaimService {
     assigned_to_me?: boolean;
   }): Promise<ClaimWithDetails[]> {
     try {
-      // Validate session first
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         console.error("[claimService.getAllClaims] No active session");
         return [];
@@ -53,13 +54,15 @@ export class ClaimService {
 
       let query = supabase
         .from("claims")
-        .select(`
+        .select(
+          `
           *,
           organisations:org_id (id, name, organisation_code),
           bd_owner:bd_owner_id (id, full_name, email),
           technical_lead:technical_lead_id (id, full_name, email),
           cost_lead:cost_lead_id (id, full_name, email)
-        `)
+        `
+        )
         .order("created_at", { ascending: false });
 
       if (filters?.status) {
@@ -75,9 +78,13 @@ export class ClaimService {
       }
 
       if (filters?.assigned_to_me) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
-          query = query.or(`bd_owner_id.eq.${user.id},technical_lead_id.eq.${user.id},cost_lead_id.eq.${user.id},ops_owner_id.eq.${user.id}`);
+          query = query.or(
+            `bd_owner_id.eq.${user.id},technical_lead_id.eq.${user.id},cost_lead_id.eq.${user.id},ops_owner_id.eq.${user.id}`
+          );
         }
       }
 
@@ -85,9 +92,8 @@ export class ClaimService {
 
       if (error) throw error;
 
-      // Get project counts and total costs for each claim
       const claimsWithDetails = await Promise.all(
-        (data as any[] || []).map(async (claim) => {
+        ((data as any[]) || []).map(async (claim) => {
           const [projectsResult, costsResult, docsResult] = await Promise.all([
             supabase
               .from("claim_projects")
@@ -103,7 +109,11 @@ export class ClaimService {
               .eq("claim_id", claim.id),
           ]);
 
-          const totalCosts = costsResult.data?.reduce((sum, cost) => sum + Number(cost.amount || 0), 0) || 0;
+          const totalCosts =
+            costsResult.data?.reduce(
+              (sum, cost) => sum + Number(cost.amount || 0),
+              0
+            ) || 0;
 
           return {
             ...claim,
@@ -127,8 +137,9 @@ export class ClaimService {
    */
   async getClaimById(claimId: string): Promise<ClaimWithDetails | null> {
     try {
-      // Validate session first
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         console.error("[claimService.getClaimById] No active session");
         return null;
@@ -136,7 +147,8 @@ export class ClaimService {
 
       const { data: claim, error: claimError } = await supabase
         .from("claims")
-        .select(`
+        .select(
+          `
           *,
           organisations:org_id (id, name, organisation_code),
           bd_owner:bd_owner_id (id, full_name, email, avatar_url),
@@ -144,7 +156,8 @@ export class ClaimService {
           cost_lead:cost_lead_id (id, full_name, email, avatar_url),
           ops_owner:ops_owner_id (id, full_name, email, avatar_url),
           director:director_id (id, full_name, email, avatar_url)
-        `)
+        `
+        )
         .eq("id", claimId)
         .maybeSingle();
 
@@ -153,13 +166,9 @@ export class ClaimService {
 
       const typedClaim = claim as any;
 
-      // Get related data
       const [projects, costsResult, docsResult] = await Promise.all([
         this.getClaimProjects(claimId),
-        supabase
-          .from("claim_costs")
-          .select("*")
-          .eq("claim_id", claimId),
+        supabase.from("claim_costs").select("*").eq("claim_id", claimId),
         supabase
           .from("claim_documents")
           .select("*")
@@ -167,7 +176,11 @@ export class ClaimService {
           .order("uploaded_at", { ascending: false }),
       ]);
 
-      const totalCosts = costsResult.data?.reduce((sum, cost) => sum + Number(cost.amount || 0), 0) || 0;
+      const totalCosts =
+        costsResult.data?.reduce(
+          (sum, cost) => sum + Number(cost.amount || 0),
+          0
+        ) || 0;
 
       return {
         ...typedClaim,
@@ -196,9 +209,7 @@ export class ClaimService {
 
       if (error) throw error;
 
-      // Auto-create pipeline entry if claim is enabled
       if (data && data.status === "active") {
-        // Try to get company_number from prospects (optional, may have 0 or multiple rows)
         const { data: prospectRows } = await supabase
           .from("prospects")
           .select("company_number")
@@ -237,7 +248,6 @@ export class ClaimService {
 
       if (error) throw error;
 
-      // Auto-create pipeline entry if claim status changed to active
       if (data && updates.status === "active") {
         const { data: prospectRows } = await supabase
           .from("prospects")
@@ -268,10 +278,7 @@ export class ClaimService {
    */
   async deleteClaim(claimId: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from("claims")
-        .delete()
-        .eq("id", claimId);
+      const { error } = await supabase.from("claims").delete().eq("id", claimId);
 
       if (error) throw error;
     } catch (error) {
@@ -301,10 +308,10 @@ export class ClaimService {
 
       const projects: ClaimProject[] = data || [];
 
-      // Find projects that are linked to Sidekick and should be auto-synced
       const linkedProjects = projects.filter((p) => {
         const autoSynced = p.auto_synced;
-        const isAutoSynced = autoSynced === null || autoSynced === undefined || autoSynced === true;
+        const isAutoSynced =
+          autoSynced === null || autoSynced === undefined || autoSynced === true;
         return p.source_sidekick_project_id && isAutoSynced;
       });
 
@@ -369,7 +376,6 @@ export class ClaimService {
         return { ...project, ...patch };
       });
 
-      // Persist any updates back to claim_projects, but don't fail the whole call if they error
       if (updates.length > 0) {
         await Promise.all(
           updates.map(async (update) => {
@@ -380,10 +386,13 @@ export class ClaimService {
               .eq("id", id);
 
             if (updateError) {
-              console.error("[claimService.getClaimProjects] Failed to sync claim_project from sidekick:", {
-                projectId: id,
-                error: updateError,
-              });
+              console.error(
+                "[claimService.getClaimProjects] Failed to sync claim_project from sidekick:",
+                {
+                  projectId: id,
+                  error: updateError,
+                }
+              );
             }
           })
         );
@@ -433,17 +442,15 @@ export class ClaimService {
    */
   async createProject(projectData: ClaimProjectInsert): Promise<ClaimProject> {
     try {
-      // Ensure org_id is present if not provided in projectData
       const dataToInsert = { ...projectData };
-      
+
       if (!dataToInsert.org_id) {
-        // Fetch claim to get org_id
         const { data: claim } = await supabase
           .from("claims")
           .select("org_id")
           .eq("id", projectData.claim_id)
           .single();
-          
+
         if (claim) {
           dataToInsert.org_id = claim.org_id;
         }
@@ -466,7 +473,10 @@ export class ClaimService {
   /**
    * Update project
    */
-  async updateProject(projectId: string, updates: ClaimProjectUpdate): Promise<ClaimProject> {
+  async updateProject(
+    projectId: string,
+    updates: ClaimProjectUpdate
+  ): Promise<ClaimProject> {
     try {
       const { data, error } = await supabase
         .from("claim_projects")
@@ -485,11 +495,13 @@ export class ClaimService {
 
   /**
    * Import sidekick project as a claim project
-   * Fetches the sidekick project and creates a new claim project record
    */
-  async importSidekickProject(claimId: string, orgId: string, sidekickProjectId: string): Promise<ClaimProject> {
+  async importSidekickProject(
+    claimId: string,
+    orgId: string,
+    sidekickProjectId: string
+  ): Promise<ClaimProject> {
     try {
-      // 1. Fetch the sidekick project
       const { data: sp, error: spError } = await supabase
         .from("sidekick_projects")
         .select("*")
@@ -499,14 +511,13 @@ export class ClaimService {
       if (spError) throw spError;
       if (!sp) throw new Error("Sidekick project not found");
 
-      // 2. Create the claim project
       const projectData: ClaimProjectInsert = {
         claim_id: claimId,
         org_id: orgId,
         name: sp.name,
         description: sp.description,
-        rd_theme: sp.sector, // Map sector to rd_theme
-        // We can map other fields if they exist or leave them null for the user to fill
+        rd_theme: sp.sector,
+        source_sidekick_project_id: sp.id,
       };
 
       return await this.createProject(projectData);
@@ -561,16 +572,15 @@ export class ClaimService {
    */
   async createCost(costData: ClaimCostInsert): Promise<ClaimCost> {
     try {
-      // Ensure org_id is present
       const dataToInsert = { ...costData };
-      
+
       if (!dataToInsert.org_id) {
         const { data: claim } = await supabase
           .from("claims")
           .select("org_id")
           .eq("id", costData.claim_id)
           .single();
-          
+
         if (claim) {
           dataToInsert.org_id = claim.org_id;
         }
@@ -593,7 +603,10 @@ export class ClaimService {
   /**
    * Update cost entry
    */
-  async updateCost(costId: string, updates: Partial<ClaimCostInsert>): Promise<ClaimCost> {
+  async updateCost(
+    costId: string,
+    updates: Partial<ClaimCostInsert>
+  ): Promise<ClaimCost> {
     try {
       const { data, error } = await supabase
         .from("claim_costs")
@@ -680,16 +693,15 @@ export class ClaimService {
    */
   async createDocument(docData: ClaimDocumentInsert): Promise<ClaimDocument> {
     try {
-      // Ensure org_id is present
       const dataToInsert = { ...docData };
-      
+
       if (!dataToInsert.org_id) {
         const { data: claim } = await supabase
           .from("claims")
           .select("org_id")
           .eq("id", docData.claim_id)
           .single();
-          
+
         if (claim) {
           dataToInsert.org_id = claim.org_id;
         }
@@ -733,7 +745,10 @@ export class ClaimService {
   /**
    * Client sends project to team for R&D review
    */
-  async sendProjectToTeam(projectId: string, userId: string): Promise<ClaimProject> {
+  async sendProjectToTeam(
+    projectId: string,
+    userId: string
+  ): Promise<ClaimProject> {
     try {
       const { data, error } = await supabase
         .from("claim_projects")
@@ -748,8 +763,13 @@ export class ClaimService {
 
       if (error) throw error;
 
-      // Log status change
-      await this.logStatusChange(projectId, "draft", "submitted_to_team", userId, "Client submitted project for team review");
+      await this.logStatusChange(
+        projectId,
+        "draft",
+        "submitted_to_team",
+        userId,
+        "Client submitted project for team review"
+      );
 
       return data;
     } catch (error) {
@@ -761,7 +781,10 @@ export class ClaimService {
   /**
    * Team member claims a project for review
    */
-  async claimProject(projectId: string, userId: string): Promise<ClaimProject> {
+  async claimProject(
+    projectId: string,
+    userId: string
+  ): Promise<ClaimProject> {
     try {
       const { data, error } = await supabase
         .from("claim_projects")
@@ -780,8 +803,13 @@ export class ClaimService {
       if (error) throw error;
       if (!data) throw new Error("Project already claimed or not available");
 
-      // Log status change
-      await this.logStatusChange(projectId, "submitted_to_team", "team_in_progress", userId, "Team member claimed project");
+      await this.logStatusChange(
+        projectId,
+        "submitted_to_team",
+        "team_in_progress",
+        userId,
+        "Team member claimed project"
+      );
 
       return data;
     } catch (error) {
@@ -793,7 +821,10 @@ export class ClaimService {
   /**
    * Team sends project to client for review
    */
-  async sendProjectToClient(projectId: string, userId: string): Promise<ClaimProject> {
+  async sendProjectToClient(
+    projectId: string,
+    userId: string
+  ): Promise<ClaimProject> {
     try {
       const { data, error } = await supabase
         .from("claim_projects")
@@ -808,8 +839,13 @@ export class ClaimService {
 
       if (error) throw error;
 
-      // Log status change
-      await this.logStatusChange(projectId, "team_in_progress", "awaiting_client_review", userId, "Team submitted project for client review");
+      await this.logStatusChange(
+        projectId,
+        "team_in_progress",
+        "awaiting_client_review",
+        userId,
+        "Team submitted project for client review"
+      );
 
       return data;
     } catch (error) {
@@ -822,13 +858,15 @@ export class ClaimService {
    * Client approves project (full or partial)
    */
   async approveProject(
-    projectId: string, 
-    userId: string, 
+    projectId: string,
+    userId: string,
     approvalSections: Record<string, string>
   ): Promise<ClaimProject> {
     try {
-      const allApproved = Object.values(approvalSections).every(status => status === "approved");
-      
+      const allApproved = Object.values(approvalSections).every(
+        (status) => status === "approved"
+      );
+
       const { data, error } = await supabase
         .from("claim_projects")
         .update({
@@ -844,9 +882,16 @@ export class ClaimService {
 
       if (error) throw error;
 
-      // Log status change
-      const statusMessage = allApproved ? "Client approved all sections" : "Client requested revisions on some sections";
-      await this.logStatusChange(projectId, "awaiting_client_review", allApproved ? "approved" : "revision_requested", userId, statusMessage);
+      const statusMessage = allApproved
+        ? "Client approved all sections"
+        : "Client requested revisions on some sections";
+      await this.logStatusChange(
+        projectId,
+        "awaiting_client_review",
+        allApproved ? "approved" : "revision_requested",
+        userId,
+        statusMessage
+      );
 
       return data;
     } catch (error) {
@@ -865,18 +910,17 @@ export class ClaimService {
     sectionsNeedingRevision: string[]
   ): Promise<ClaimProject> {
     try {
-      // Get current project data
       const { data: project } = await supabase
         .from("claim_projects")
         .select("approval_status, revision_count")
         .eq("id", projectId)
         .single();
 
-      const approvalSections = (project?.approval_status as Record<string, string>) || {};
+      const approvalSections =
+        (project?.approval_status as Record<string, string>) || {};
       const currentRevisionCount = project?.revision_count || 0;
-      
-      // Mark requested sections as needs_revision
-      sectionsNeedingRevision.forEach(section => {
+
+      sectionsNeedingRevision.forEach((section) => {
         approvalSections[section] = "needs_revision";
       });
 
@@ -894,11 +938,20 @@ export class ClaimService {
 
       if (error) throw error;
 
-      // Add feedback comment
-      await this.addProjectComment(projectId, userId, "client_feedback", feedback);
+      await this.addProjectComment(
+        projectId,
+        userId,
+        "client_feedback",
+        feedback
+      );
 
-      // Log status change
-      await this.logStatusChange(projectId, "awaiting_client_review", "revision_requested", userId, `Client requested revisions: ${sectionsNeedingRevision.join(", ")}`);
+      await this.logStatusChange(
+        projectId,
+        "awaiting_client_review",
+        "revision_requested",
+        userId,
+        `Client requested revisions: ${sectionsNeedingRevision.join(", ")}`
+      );
 
       return data;
     } catch (error) {
@@ -910,7 +963,10 @@ export class ClaimService {
   /**
    * Team resubmits project after revisions
    */
-  async resubmitProject(projectId: string, userId: string): Promise<ClaimProject> {
+  async resubmitProject(
+    projectId: string,
+    userId: string
+  ): Promise<ClaimProject> {
     try {
       const { data, error } = await supabase
         .from("claim_projects")
@@ -925,8 +981,13 @@ export class ClaimService {
 
       if (error) throw error;
 
-      // Log status change
-      await this.logStatusChange(projectId, "revision_requested", "awaiting_client_review", userId, "Team resubmitted project after revisions");
+      await this.logStatusChange(
+        projectId,
+        "revision_requested",
+        "awaiting_client_review",
+        userId,
+        "Team resubmitted project after revisions"
+      );
 
       return data;
     } catch (error) {
@@ -938,7 +999,11 @@ export class ClaimService {
   /**
    * Cancel/withdraw project
    */
-  async cancelProject(projectId: string, userId: string, reason: string): Promise<ClaimProject> {
+  async cancelProject(
+    projectId: string,
+    userId: string,
+    reason: string
+  ): Promise<ClaimProject> {
     try {
       const { data: project } = await supabase
         .from("claim_projects")
@@ -960,11 +1025,15 @@ export class ClaimService {
 
       if (error) throw error;
 
-      // Add cancellation comment
       await this.addProjectComment(projectId, userId, "cancellation", reason);
 
-      // Log status change
-      await this.logStatusChange(projectId, previousStatus, "cancelled", userId, `Project cancelled: ${reason}`);
+      await this.logStatusChange(
+        projectId,
+        previousStatus,
+        "cancelled",
+        userId,
+        `Project cancelled: ${reason}`
+      );
 
       return data;
     } catch (error) {
@@ -980,15 +1049,17 @@ export class ClaimService {
   /**
    * Add collaborator to project
    */
-  async addCollaborator(projectId: string, userId: string, addedBy: string): Promise<void> {
+  async addCollaborator(
+    projectId: string,
+    userId: string,
+    addedBy: string
+  ): Promise<void> {
     try {
-      const { error } = await supabase
-        .from("project_collaborators")
-        .insert({
-          claim_project_id: projectId,
-          user_id: userId,
-          added_by: addedBy,
-        });
+      const { error } = await supabase.from("project_collaborators").insert({
+        claim_project_id: projectId,
+        user_id: userId,
+        added_by: addedBy,
+      });
 
       if (error) throw error;
     } catch (error) {
@@ -1000,7 +1071,10 @@ export class ClaimService {
   /**
    * Remove collaborator from project
    */
-  async removeCollaborator(projectId: string, userId: string): Promise<void> {
+  async removeCollaborator(
+    projectId: string,
+    userId: string
+  ): Promise<void> {
     try {
       const { error } = await supabase
         .from("project_collaborators")
@@ -1022,10 +1096,12 @@ export class ClaimService {
     try {
       const { data, error } = await supabase
         .from("project_collaborators")
-        .select(`
+        .select(
+          `
           *,
           user:user_id (id, full_name, email, avatar_url)
-        `)
+        `
+        )
         .eq("claim_project_id", projectId);
 
       if (error) throw error;
@@ -1050,14 +1126,12 @@ export class ClaimService {
     commentText: string
   ): Promise<void> {
     try {
-      const { error } = await supabase
-        .from("project_comments")
-        .insert({
-          claim_project_id: projectId,
-          user_id: userId,
-          comment_type: commentType,
-          comment_text: commentText,
-        });
+      const { error } = await supabase.from("project_comments").insert({
+        claim_project_id: projectId,
+        user_id: userId,
+        comment_type: commentType,
+        comment_text: commentText,
+      });
 
       if (error) throw error;
     } catch (error) {
@@ -1073,10 +1147,12 @@ export class ClaimService {
     try {
       const { data, error } = await supabase
         .from("project_comments")
-        .select(`
+        .select(
+          `
           *,
           user:user_id (id, full_name, email, avatar_url)
-        `)
+        `
+        )
         .eq("claim_project_id", projectId)
         .order("created_at", { ascending: false });
 
@@ -1103,20 +1179,17 @@ export class ClaimService {
     notes?: string
   ): Promise<void> {
     try {
-      const { error } = await supabase
-        .from("project_status_history")
-        .insert({
-          claim_project_id: projectId,
-          from_status: oldStatus,
-          to_status: newStatus,
-          changed_by: changedBy,
-          notes: notes,
-        });
+      const { error } = await supabase.from("project_status_history").insert({
+        claim_project_id: projectId,
+        from_status: oldStatus,
+        to_status: newStatus,
+        changed_by: changedBy,
+        notes: notes,
+      });
 
       if (error) throw error;
     } catch (error) {
       console.error("[claimService.logStatusChange] Error:", error);
-      // Don't throw - logging failures shouldn't break main flow
     }
   }
 
@@ -1127,10 +1200,12 @@ export class ClaimService {
     try {
       const { data, error } = await supabase
         .from("project_status_history")
-        .select(`
+        .select(
+          `
           *,
           user:changed_by (id, full_name, email, avatar_url)
-        `)
+        `
+        )
         .eq("claim_project_id", projectId)
         .order("changed_at", { ascending: false });
 
@@ -1145,7 +1220,10 @@ export class ClaimService {
   /**
    * Get projects by workflow status (for filtered views)
    */
-  async getProjectsByStatus(claimId: string, status: string): Promise<ClaimProject[]> {
+  async getProjectsByStatus(
+    claimId: string,
+    status: string
+  ): Promise<ClaimProject[]> {
     try {
       const { data, error } = await supabase
         .from("claim_projects")
