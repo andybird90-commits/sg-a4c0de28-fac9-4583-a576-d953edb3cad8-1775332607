@@ -25,6 +25,8 @@ export default function FeasibilityCallsPage() {
   const [meetings, setMeetings] = useState<MeetingWithDetails[]>([]);
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingWithDetails | null>(null);
   const [showOutcomeModal, setShowOutcomeModal] = useState(false);
+  const [calendarChecking, setCalendarChecking] = useState(false);
+  const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
   
   // Outcome form state
   const [outcomeStatus, setOutcomeStatus] = useState<"booked" | "completed" | "no_show" | "cancelled">("completed");
@@ -53,7 +55,29 @@ export default function FeasibilityCallsPage() {
     }
 
     loadMeetings();
+    checkCalendarStatus();
   }, [isStaff, profile?.id]);
+
+  const checkCalendarStatus = async () => {
+    if (!profile?.id) return;
+    setCalendarChecking(true);
+    try {
+      const response = await fetch(`/api/m365/status?userId=${profile.id}`);
+      const json = await response.json();
+      setCalendarConnected(json.connected === true);
+    } catch (error) {
+      console.error("Error checking calendar connection:", error);
+      setCalendarConnected(null);
+    } finally {
+      setCalendarChecking(false);
+    }
+  };
+
+  const handleConnectCalendar = () => {
+    if (!profile?.id) return;
+    const returnTo = encodeURIComponent("/staff/feasibility-calls");
+    window.location.href = `/api/m365/auth/start?userId=${profile.id}&returnTo=${returnTo}`;
+  };
 
   const loadMeetings = async () => {
     if (!profile?.id) return;
@@ -173,10 +197,34 @@ This call is to assess the company's R&D activities and determine eligibility fo
             <h1 className="text-3xl font-bold">My Feasibility Calls</h1>
             <p className="text-muted-foreground">Manage your feasibility assessments</p>
           </div>
-          <Button onClick={() => router.push("/staff/availability")} variant="outline">
-            <Calendar className="mr-2 h-4 w-4" />
-            Manage Availability
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button onClick={() => router.push("/staff/availability")} variant="outline">
+              <Calendar className="mr-2 h-4 w-4" />
+              Manage Availability
+            </Button>
+            <Button
+              onClick={handleConnectCalendar}
+              variant={calendarConnected ? "outline" : "default"}
+              disabled={calendarChecking}
+            >
+              {calendarChecking ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Checking 365 Calendar
+                </>
+              ) : calendarConnected ? (
+                <>
+                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                  365 Calendar Connected
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Connect 365 Calendar
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="upcoming" className="w-full">
@@ -224,6 +272,20 @@ This call is to assess the company's R&D activities and determine eligibility fo
                         </span>
                       </div>
                     </div>
+
+                    {meeting.teams_meeting_link && (
+                      <div className="flex items-center gap-2 text-sm text-blue-600">
+                        <ExternalLink className="h-4 w-4" />
+                        <a
+                          href={meeting.teams_meeting_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline"
+                        >
+                          Join Teams Meeting
+                        </a>
+                      </div>
+                    )}
 
                     <div className="flex gap-2">
                       <Button 

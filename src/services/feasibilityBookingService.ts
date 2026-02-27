@@ -221,6 +221,19 @@ export const feasibilityBookingService = {
         clientEmail
       );
 
+      // Trigger Microsoft 365 calendar event creation (non-blocking)
+      try {
+        await fetch("/api/m365/feasibility/create-meeting", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ meetingId: meeting.id })
+        });
+      } catch (calendarError) {
+        console.warn("Failed to trigger Microsoft 365 meeting creation:", calendarError);
+      }
+
       return meeting;
     } catch (error) {
       console.error("Error booking feasibility meeting:", error);
