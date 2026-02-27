@@ -149,7 +149,12 @@ export default function ProjectDetailPage() {
         try {
           const claimProjs = await claimService.getProjectsBySidekickId(id as string);
           if (claimProjs && claimProjs.length > 0) {
-            const claimProj = claimProjs[0];
+            const sorted = [...claimProjs].sort((a, b) => {
+              const aTime = a.created_at ? new Date(a.created_at as string).getTime() : 0;
+              const bTime = b.created_at ? new Date(b.created_at as string).getTime() : 0;
+              return bTime - aTime;
+            });
+            const claimProj = sorted[0];
             setClaimProject(claimProj);
 
             if (claimProj?.approval_status) {
@@ -190,7 +195,7 @@ export default function ProjectDetailPage() {
     };
 
     fetchData();
-  }, [id, user, router.isReady]);
+  }, [id, user, router.isReady, loadCostAdvice]);
 
   const handleRunFeasibility = async () => {
     if (!project || !user) return;
@@ -217,12 +222,23 @@ export default function ProjectDetailPage() {
   };
 
   const handleSendToTeam = async () => {
-    if (!project || !claimProject) return;
+    if (!project || !claimProject || !user) return;
     setSubmitting(true);
     try {
-      await claimService.updateProjectWorkflowStatus(claimProject.id, "submitted_to_team");
+      await claimService.sendProjectToTeam(claimProject.id, user.id);
+
       const updatedProjects = await claimService.getProjectsBySidekickId(project.id);
-      setClaimProject(updatedProjects?.[0] ?? null);
+      if (updatedProjects && updatedProjects.length > 0) {
+        const sorted = [...updatedProjects].sort((a, b) => {
+          const aTime = a.created_at ? new Date(a.created_at as string).getTime() : 0;
+          const bTime = b.created_at ? new Date(b.created_at as string).getTime() : 0;
+          return bTime - aTime;
+        });
+        setClaimProject(sorted[0]);
+      } else {
+        setClaimProject(null);
+      }
+
       setSendToTeamDialog(false);
       toast({
         title: "Sent to R&D team",
@@ -633,9 +649,16 @@ export default function ProjectDetailPage() {
   }
 
   const workflowStatus = claimProject?.workflow_status || project.status;
-  const canEdit = !claimProject || claimProject.workflow_status === "draft";
-  const canSendToTeam = claimProject && claimProject.workflow_status === "draft";
-  const needsClientReview = claimProject && claimProject.workflow_status === "awaiting_client_review";
+  const canEdit =
+    !claimProject ||
+    claimProject.workflow_status === "draft" ||
+    claimProject.workflow_status === "revision_requested";
+  const canSendToTeam =
+    !!claimProject &&
+    (claimProject.workflow_status === "draft" ||
+      claimProject.workflow_status === "revision_requested");
+  const needsClientReview =
+    claimProject && claimProject.workflow_status === "awaiting_client_review";
   const isApproved = claimProject && claimProject.workflow_status === "approved";
   const slaStatus = getSLAStatus();
 
