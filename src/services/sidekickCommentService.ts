@@ -16,6 +16,26 @@ export const sidekickCommentService = {
     return comment;
   },
 
+  async addComment(
+    projectId: string,
+    payload: { body: string; author_role: string }
+  ): Promise<SidekickProjectComment> {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    return this.createComment({
+      project_id: projectId,
+      author_id: user.id,
+      author_role: payload.author_role,
+      body: payload.body,
+    } as SidekickProjectCommentInsert);
+  },
+
   async getCommentsByProject(projectId: string): Promise<SidekickProjectComment[]> {
     const { data, error } = await supabase
       .from("sidekick_project_comments")

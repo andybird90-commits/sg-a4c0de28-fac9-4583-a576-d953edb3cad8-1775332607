@@ -24,6 +24,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { MessageWidget } from "@/components/MessageWidget";
 import { sidekickCostAdviceService, type SidekickCostAdvice } from "@/services/sidekickCostAdviceService";
 import { toast } from "@/hooks/use-toast";
+import { useCallback } from "react";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
 type SidekickEvidenceItem = Database["public"]["Tables"]["sidekick_evidence_items"]["Row"];
@@ -33,34 +34,12 @@ type SidekickProjectComment = Database["public"]["Tables"]["sidekick_project_com
 
 type ClaimProject = Database["public"]["Tables"]["claim_projects"]["Row"];
 
-const statusColors: Record<string, string> = {
-  draft: "bg-gray-500",
-  ready_for_review: "bg-blue-500",
-  in_review: "bg-yellow-500",
-  needs_changes: "bg-orange-500",
-  rejected: "bg-red-500",
-  transferred: "bg-green-500",
-  submitted_to_team: "bg-blue-500",
-  team_in_progress: "bg-yellow-500",
-  awaiting_client_review: "bg-purple-500",
-  revision_requested: "bg-orange-500",
-  approved: "bg-green-500",
-  cancelled: "bg-red-500",
-};
-
-const statusLabels: Record<string, string> = {
-  draft: "Draft",
-  ready_for_review: "Ready for Review",
-  in_review: "In Review",
-  needs_changes: "Needs Changes",
-  rejected: "Rejected",
-  transferred: "Transferred to Conexa",
-  submitted_to_team: "With R&D Team",
-  team_in_progress: "Team Working",
-  awaiting_client_review: "Review Required",
-  revision_requested: "Revisions Requested",
-  approved: "Approved",
-  cancelled: "Cancelled",
+type ApprovalSectionStatus = "approved" | "needs_revision";
+type ApprovalSections = {
+  basic_info: ApprovalSectionStatus;
+  technical_understanding: ApprovalSectionStatus;
+  challenges: ApprovalSectionStatus;
+  qualifying_activities: ApprovalSectionStatus;
 };
 
 export default function ProjectDetailPage() {
@@ -77,7 +56,41 @@ export default function ProjectDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [runningFeasibility, setRunningFeasibility] = useState(false);
 
-  // Cost advice state (client suggestions for staff calculator)
+  // Dialog and workflow state
+  const [sendToTeamDialog, setSendToTeamDialog] = useState(false);
+  const [reviewDialog, setReviewDialog] = useState(false);
+  const [cancelDialog, setCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [editingProject, setEditingProject] = useState(false);
+  const [deletingProject, setDeletingProject] = useState(false);
+  const [deletingEvidence, setDeletingEvidence] = useState<string | null>(null);
+
+  // Project edit fields
+  const [editProjectName, setEditProjectName] = useState("");
+  const [editProjectDescription, setEditProjectDescription] = useState("");
+  const [editProjectSector, setEditProjectSector] = useState("");
+  const [editProjectStage, setEditProjectStage] = useState("");
+
+  // Evidence form state
+  const [evidenceType, setEvidenceType] = useState<"" | "note" | "file" | "link">("");
+  const [evidenceTitle, setEvidenceTitle] = useState("");
+  const [evidenceBody, setEvidenceBody] = useState("");
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [evidenceUrl, setEvidenceUrl] = useState("");
+
+  // Comment form state
+  const [commentBody, setCommentBody] = useState("");
+
+  // Review / approval state
+  const [approvalSections, setApprovalSections] = useState<ApprovalSections>({
+    basic_info: "approved",
+    technical_understanding: "approved",
+    challenges: "approved",
+    qualifying_activities: "approved",
+  });
+  const [revisionFeedback, setRevisionFeedback] = useState("");
+
+  // Cost advice state (client suggestions for this Sidekick project)
   const [costAdvice, setCostAdvice] = useState<SidekickCostAdvice[]>([]);
   const [isLoadingCostAdvice, setIsLoadingCostAdvice] = useState(false);
   const [isSubmittingCostAdvice, setIsSubmittingCostAdvice] = useState(false);
@@ -85,44 +98,27 @@ export default function ProjectDetailPage() {
   const [costAmount, setCostAmount] = useState<string>("");
   const [costDescription, setCostDescription] = useState<string>("");
   const [costNotes, setCostNotes] = useState<string>("");
+  const [editingCostId, setEditingCostId] = useState<string | null>(null);
 
-  // Evidence form state
-  const [evidenceType, setEvidenceType] = useState<"note" | "file" | "link">("note");
-  const [evidenceTitle, setEvidenceTitle] = useState("");
-  const [evidenceBody, setEvidenceBody] = useState("");
-  const [evidenceUrl, setEvidenceUrl] = useState("");
-  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
-
-  // Comment form state
-  const [commentBody, setCommentBody] = useState("");
-  
-  // Edit project state
-  const [editingProject, setEditingProject] = useState(false);
-  const [editProjectName, setEditProjectName] = useState("");
-  const [editProjectDescription, setEditProjectDescription] = useState("");
-  const [editProjectSector, setEditProjectSector] = useState("");
-  const [editProjectStage, setEditProjectStage] = useState("");
-  
-  // Delete state
-  const [deletingProject, setDeletingProject] = useState(false);
-  const [deletingEvidence, setDeletingEvidence] = useState<string | null>(null);
-
-  // Workflow state
-  const [sendToTeamDialog, setSendToTeamDialog] = useState(false);
-  const [reviewDialog, setReviewDialog] = useState(false);
-  const [revisionDialog, setRevisionDialog] = useState(false);
-  const [cancelDialog, setCancelDialog] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
-  
-  // Partial approval state
-  const [approvalSections, setApprovalSections] = useState({
-    basic_info: "approved",
-    technical_understanding: "pending",
-    challenges: "pending",
-    qualifying_activities: "pending",
-  });
-  const [revisionFeedback, setRevisionFeedback] = useState("");
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const loadCostAdvice = useCallback(
+    async (projectId: string) => {
+      setIsLoadingCostAdvice(true);
+      try {
+        const data = (await sidekickCostAdviceService.getByProject(projectId)) ?? [];
+        setCostAdvice(data);
+      } catch (error) {
+        console.error("Failed to load cost advice", error);
+        toast({
+          title: "Could not load costs",
+          description: "There was a problem loading the costs shared for this project.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingCostAdvice(false);
+      }
+    },
+    [toast]
+  );
 
   useEffect(() => {
     if (!user) {
@@ -182,6 +178,10 @@ export default function ProjectDetailPage() {
         } finally {
           setFeasibilityLoading(false);
         }
+
+        if (projectData?.id) {
+          void loadCostAdvice(projectData.id);
+        }
       } catch (error) {
         console.error("Error fetching project data:", error);
       } finally {
@@ -192,25 +192,89 @@ export default function ProjectDetailPage() {
     fetchData();
   }, [id, user, router.isReady]);
 
-  useEffect(() => {
-    if (!project?.id) return;
-    loadCostAdvice(project.id);
-  }, [project?.id]);
-
-  const loadCostAdvice = async (projId: string) => {
-    setIsLoadingCostAdvice(true);
+  const handleRunFeasibility = async () => {
+    if (!project || !user) return;
+    setRunningFeasibility(true);
     try {
-      const advice = await sidekickCostAdviceService.getByProject(projId);
-      setCostAdvice(advice ?? []);
+      const analysis = await feasibilityService.runFeasibilityForProject(project.id);
+      if (analysis) {
+        setFeasibilityAnalysis(analysis);
+        toast({
+          title: "Feasibility analysis complete",
+          description: "You can now review the latest feasibility assessment.",
+        });
+      }
     } catch (error) {
-      console.error("Failed to load cost advice", error);
+      console.error("Error running feasibility analysis:", error);
       toast({
-        title: "Error loading costs",
-        description: "We could not load your cost information. Please try again.",
+        title: "Could not run feasibility analysis",
+        description: "Please try again or contact support if the problem continues.",
         variant: "destructive",
       });
     } finally {
-      setIsLoadingCostAdvice(false);
+      setRunningFeasibility(false);
+    }
+  };
+
+  const handleSendToTeam = async () => {
+    if (!project || !claimProject) return;
+    setSubmitting(true);
+    try {
+      await claimService.updateProjectWorkflowStatus(claimProject.id, "submitted_to_team");
+      const updatedProjects = await claimService.getProjectsBySidekickId(project.id);
+      setClaimProject(updatedProjects?.[0] ?? null);
+      setSendToTeamDialog(false);
+      toast({
+        title: "Sent to R&D team",
+        description: "Your project has been passed to the R&D team for review.",
+      });
+    } catch (error) {
+      console.error("Error sending project to team:", error);
+      toast({
+        title: "Could not send to team",
+        description: "Please try again in a moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleApproveProject = async () => {
+    if (!project || !claimProject) return;
+    setSubmitting(true);
+    try {
+      const allApproved = Object.values(approvalSections).every(
+        (status) => status === "approved"
+      );
+      const nextStatus = allApproved ? "approved" : "revision_requested";
+
+      await claimService.updateProjectApproval(
+        claimProject.id,
+        nextStatus,
+        approvalSections,
+        revisionFeedback || null
+      );
+
+      const updated = await claimService.getProjectsBySidekickId(project.id);
+      setClaimProject(updated?.[0] ?? null);
+      setReviewDialog(false);
+
+      toast({
+        title: allApproved ? "Project approved" : "Feedback sent",
+        description: allApproved
+          ? "The R&D team will now prepare the claim."
+          : "Your revision feedback has been sent to the R&D team.",
+      });
+    } catch (error) {
+      console.error("Error approving project:", error);
+      toast({
+        title: "Could not submit review",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -237,29 +301,44 @@ export default function ProjectDetailPage() {
 
     setIsSubmittingCostAdvice(true);
     try {
-      await sidekickCostAdviceService.createAdvice({
-        project_id: project.id,
-        created_by: user.id,
-        cost_type: costType as SidekickCostAdvice["cost_type"],
-        amount: parsedAmount,
-        description: costDescription || null,
-        notes: costNotes || null,
-      });
+      if (editingCostId) {
+        await sidekickCostAdviceService.updateAdvice(editingCostId, {
+          cost_type: costType as SidekickCostAdvice["cost_type"],
+          amount: parsedAmount,
+          description: costDescription || null,
+          notes: costNotes || null,
+        });
+
+        toast({
+          title: "Cost updated",
+          description: "Your cost information has been updated.",
+        });
+      } else {
+        await sidekickCostAdviceService.createAdvice({
+          project_id: project.id,
+          created_by: user.id,
+          cost_type: costType as SidekickCostAdvice["cost_type"],
+          amount: parsedAmount,
+          description: costDescription || null,
+          notes: costNotes || null,
+        } as any);
+
+        toast({
+          title: "Cost saved",
+          description: "Your cost information has been added for the R&D team to review.",
+        });
+      }
 
       setCostType("");
       setCostAmount("");
       setCostDescription("");
       setCostNotes("");
+      setEditingCostId(null);
       await loadCostAdvice(project.id);
-
-      toast({
-        title: "Cost saved",
-        description: "Your cost information has been added for the R&D team to review.",
-      });
     } catch (error) {
       console.error("Failed to save cost advice", error);
       toast({
-        title: "Could not save cost",
+        title: editingCostId ? "Could not update cost" : "Could not save cost",
         description: "There was a problem saving your cost information. Please try again.",
         variant: "destructive",
       });
@@ -268,128 +347,64 @@ export default function ProjectDetailPage() {
     }
   };
 
-  useEffect(() => {
-    if (editingProject && project) {
-      setEditProjectName(project.name);
-      setEditProjectDescription(project.description || "");
-      setEditProjectSector(project.sector || "");
-      setEditProjectStage(project.stage || "");
-    }
-  }, [editingProject, project]);
-
-  const handleSendToTeam = async () => {
-    if (!claimProject || !user) return;
-
-    setSubmitting(true);
-    try {
-      await claimService.sendProjectToTeam(claimProject.id, user.id);
-      
-      // Refresh claim project
-      const updated = await claimService.getProjectById(claimProject.id);
-      setClaimProject(updated);
-      
-      setSendToTeamDialog(false);
-      alert("Project sent to R&D team! They have 3 days to review and respond.");
-    } catch (error) {
-      console.error("Error sending to team:", error);
-      alert("Failed to send project to team");
-    } finally {
-      setSubmitting(false);
-    }
+  const handleCancelEditCostAdvice = () => {
+    setEditingCostId(null);
+    setCostType("");
+    setCostAmount("");
+    setCostDescription("");
+    setCostNotes("");
   };
 
-  const handleApproveProject = async () => {
-    if (!claimProject || !user) return;
-
-    setSubmitting(true);
-    try {
-      await claimService.approveProject(claimProject.id, user.id, approvalSections);
-      
-      // Refresh claim project
-      const updated = await claimService.getProjectById(claimProject.id);
-      setClaimProject(updated);
-      
-      setReviewDialog(false);
-      
-      const allApproved = Object.values(approvalSections).every(s => s === "approved");
-      if (allApproved) {
-        alert("Project fully approved! ✅");
-      } else {
-        alert("Feedback sent to team. They'll address your revision requests.");
-      }
-    } catch (error) {
-      console.error("Error approving project:", error);
-      alert("Failed to approve project");
-    } finally {
-      setSubmitting(false);
-    }
+  const handleEditCostAdvice = (item: SidekickCostAdvice) => {
+    setEditingCostId(item.id);
+    setCostType(item.cost_type);
+    setCostAmount(item.amount ? String(item.amount) : "");
+    setCostDescription(item.description ?? "");
+    setCostNotes(item.notes ?? "");
   };
 
-  const handleRequestRevisions = async () => {
-    if (!claimProject || !user || !revisionFeedback.trim()) return;
+  const handleDeleteCostAdvice = async (id: string) => {
+    if (!project) return;
+    const confirmed = window.confirm("Are you sure you want to delete this cost entry?");
+    if (!confirmed) return;
 
-    setSubmitting(true);
     try {
-      const sectionsNeedingRevision = Object.entries(approvalSections)
-        .filter(([_, status]) => status === "needs_revision")
-        .map(([section, _]) => section);
-
-      await claimService.requestRevisions(
-        claimProject.id,
-        user.id,
-        revisionFeedback,
-        sectionsNeedingRevision
-      );
-      
-      // Refresh claim project
-      const updated = await claimService.getProjectById(claimProject.id);
-      setClaimProject(updated);
-      
-      setRevisionDialog(false);
-      setRevisionFeedback("");
-      alert("Revision request sent to team!");
+      await sidekickCostAdviceService.deleteAdvice(id);
+      await loadCostAdvice(project.id);
+      toast({
+        title: "Cost deleted",
+        description: "The cost entry has been removed.",
+      });
     } catch (error) {
-      console.error("Error requesting revisions:", error);
-      alert("Failed to request revisions");
-    } finally {
-      setSubmitting(false);
+      console.error("Failed to delete cost advice", error);
+      toast({
+        title: "Could not delete cost",
+        description: "There was a problem deleting this cost entry. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleCancelProject = async () => {
-    if (!claimProject || !user || !cancelReason.trim()) return;
-
+    if (!project || !claimProject || !cancelReason.trim() || !user) return;
     setSubmitting(true);
     try {
-      await claimService.cancelProject(claimProject.id, user.id, cancelReason);
-      
-      // Refresh claim project
-      const updated = await claimService.getProjectById(claimProject.id);
-      setClaimProject(updated);
-      
+      await claimService.cancelProject(claimProject.id, cancelReason.trim(), user.id);
+      const updated = await claimService.getProjectsBySidekickId(project.id);
+      setClaimProject(updated?.[0] ?? null);
       setCancelDialog(false);
       setCancelReason("");
-      alert("Project cancelled");
+      toast({
+        title: "Project cancelled",
+        description: "The R&D team has been notified.",
+      });
     } catch (error) {
       console.error("Error cancelling project:", error);
-      alert("Failed to cancel project");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleMarkReadyForReview = async () => {
-    if (!project) return;
-
-    setSubmitting(true);
-    try {
-      await sidekickProjectService.markReadyForReview(project.id);
-      const updated = await sidekickProjectService.getProjectById(project.id);
-      setProject(updated);
-      alert("Project marked ready for review!");
-    } catch (error) {
-      console.error("Error marking ready for review:", error);
-      alert("Failed to mark ready for review");
+      toast({
+        title: "Could not cancel project",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -398,36 +413,85 @@ export default function ProjectDetailPage() {
   const handleAddEvidence = async () => {
     if (!project || !user) return;
 
+    if (!evidenceTitle.trim()) {
+      toast({
+        title: "Title required",
+        description: "Please add a short title for this evidence item.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!evidenceType) {
+      toast({
+        title: "Choose a type",
+        description: "Select whether this is a note, file, or link.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
-      let filePath = null;
-      if (evidenceType === "file" && evidenceFile) {
-        filePath = await sidekickEvidenceService.uploadFile(evidenceFile, project.id);
+      let newEvidence: SidekickEvidenceItem | null = null;
+
+      if (evidenceType === "note") {
+        newEvidence = await sidekickEvidenceService.createEvidenceNote(project.id, {
+          title: evidenceTitle,
+          body: evidenceBody || null,
+        });
+      } else if (evidenceType === "file") {
+        if (!evidenceFile) {
+          toast({
+            title: "File required",
+            description: "Choose a file to upload.",
+            variant: "destructive",
+          });
+          setSubmitting(false);
+          return;
+        }
+        newEvidence = await sidekickEvidenceService.createEvidenceFile(project.id, evidenceFile, {
+          title: evidenceTitle,
+          description: evidenceBody || null,
+        });
+      } else if (evidenceType === "link") {
+        if (!evidenceUrl.trim()) {
+          toast({
+            title: "URL required",
+            description: "Enter the external link for this evidence.",
+            variant: "destructive",
+          });
+          setSubmitting(false);
+          return;
+        }
+        newEvidence = await sidekickEvidenceService.createEvidenceLink(project.id, {
+          title: evidenceTitle,
+          url: evidenceUrl.trim(),
+          description: evidenceBody || null,
+        });
       }
 
-      await sidekickEvidenceService.createEvidence({
-        project_id: project.id,
-        created_by: user.id,
-        type: evidenceType,
-        title: evidenceTitle || null,
-        body: evidenceBody || null,
-        file_path: filePath,
-        external_url: evidenceType === "link" ? evidenceUrl : null,
-        sidekick_visible: true,
-        rd_internal_only: false,
-      });
+      if (newEvidence) {
+        setEvidence((prev) => [newEvidence!, ...prev]);
+      }
 
-      const evidenceData = await sidekickEvidenceService.getEvidenceByProject(project.id);
-      setEvidence(evidenceData);
-
+      setEvidenceType("");
       setEvidenceTitle("");
       setEvidenceBody("");
-      setEvidenceUrl("");
       setEvidenceFile(null);
-      alert("Evidence added successfully!");
+      setEvidenceUrl("");
+
+      toast({
+        title: "Evidence added",
+        description: "Your evidence has been saved for the R&D team.",
+      });
     } catch (error) {
       console.error("Error adding evidence:", error);
-      alert("Failed to add evidence");
+      toast({
+        title: "Could not add evidence",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -435,47 +499,31 @@ export default function ProjectDetailPage() {
 
   const handleAddComment = async () => {
     if (!project || !user || !commentBody.trim()) return;
-
     setSubmitting(true);
     try {
-      await sidekickCommentService.createComment({
-        project_id: project.id,
-        author_id: user.id,
+      const comment = await sidekickCommentService.addComment(project.id, {
+        body: commentBody.trim(),
         author_role: "client",
-        body: commentBody,
       });
 
-      const commentsData = await sidekickCommentService.getCommentsByProject(project.id);
-      setComments(commentsData);
-
+      if (comment) {
+        setComments((prev) => [comment, ...prev]);
+      }
       setCommentBody("");
+
+      toast({
+        title: "Comment posted",
+        description: "Your message has been shared with the R&D team.",
+      });
     } catch (error) {
       console.error("Error adding comment:", error);
-      alert("Failed to add comment");
+      toast({
+        title: "Could not add comment",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleRunFeasibility = async () => {
-    if (!project || !user) return;
-
-    setRunningFeasibility(true);
-    try {
-      const analysis = await feasibilityService.submitForAnalysis({
-        ideaDescription: project.description || project.name,
-        sector: project.sector || undefined,
-        stage: project.stage || undefined,
-        projectId: project.id
-      });
-
-      setFeasibilityAnalysis(analysis);
-      alert("Feasibility analysis completed successfully!");
-    } catch (error) {
-      console.error("Error running feasibility analysis:", error);
-      alert("Failed to run feasibility analysis");
-    } finally {
-      setRunningFeasibility(false);
     }
   };
 
@@ -494,10 +542,17 @@ export default function ProjectDetailPage() {
       const updated = await sidekickProjectService.getProjectById(project.id);
       setProject(updated);
       setEditingProject(false);
-      alert("Project updated successfully!");
+      toast({
+        title: "Project updated",
+        description: "Your project details have been saved.",
+      });
     } catch (error) {
       console.error("Error updating project:", error);
-      alert("Failed to update project");
+      toast({
+        title: "Failed to update project",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -584,6 +639,26 @@ export default function ProjectDetailPage() {
   const isApproved = claimProject && claimProject.workflow_status === "approved";
   const slaStatus = getSLAStatus();
 
+  const statusColors: Record<string, string> = {
+    draft: "bg-gray-500",
+    submitted_to_team: "bg-blue-600",
+    team_in_progress: "bg-blue-600",
+    awaiting_client_review: "bg-purple-600",
+    approved: "bg-green-600",
+    revision_requested: "bg-yellow-500",
+    cancelled: "bg-red-500",
+  };
+
+  const statusLabels: Record<string, string> = {
+    draft: "Draft",
+    submitted_to_team: "With R&D team",
+    team_in_progress: "R&D in progress",
+    awaiting_client_review: "Awaiting your review",
+    approved: "Approved",
+    revision_requested: "Revisions requested",
+    cancelled: "Cancelled",
+  };
+
   return (
     <>
       <SEO
@@ -629,7 +704,13 @@ export default function ProjectDetailPage() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setEditingProject(true)}
+                  onClick={() => {
+                    setEditProjectName(project.name ?? "");
+                    setEditProjectDescription(project.description ?? "");
+                    setEditProjectSector(project.sector ?? "");
+                    setEditProjectStage(project.stage ?? "");
+                    setEditingProject(true);
+                  }}
                   className="flex-1 sm:flex-none"
                 >
                   <Edit className="h-4 w-4 mr-2" />
@@ -1064,64 +1145,84 @@ export default function ProjectDetailPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cost-type">Cost type</Label>
-                      <Select value={costType} onValueChange={setCostType}>
-                        <SelectTrigger id="cost-type">
-                          <SelectValue placeholder="Choose a cost type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="staff">Staff</SelectItem>
-                          <SelectItem value="subcontractor">Subcontractor</SelectItem>
-                          <SelectItem value="consumables">Consumables / materials</SelectItem>
-                          <SelectItem value="software">Software</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="cost-type">Cost type</Label>
+                        <Select value={costType} onValueChange={setCostType}>
+                          <SelectTrigger id="cost-type">
+                            <SelectValue placeholder="Choose a cost type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="staff">Staff</SelectItem>
+                            <SelectItem value="subcontractor">Subcontractor</SelectItem>
+                            <SelectItem value="consumables">Consumables / materials</SelectItem>
+                            <SelectItem value="software">Software</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="cost-amount">Estimated amount</Label>
-                      <Input
-                        id="cost-amount"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={costAmount}
-                        onChange={(e) => setCostAmount(e.target.value)}
-                        placeholder="e.g. 12000"
-                      />
-                    </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cost-amount">Estimated amount</Label>
+                        <Input
+                          id="cost-amount"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={costAmount}
+                          onChange={(e) => setCostAmount(e.target.value)}
+                          placeholder="e.g. 12000"
+                        />
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="cost-description">What does this cover?</Label>
-                      <Textarea
-                        id="cost-description"
-                        value={costDescription}
-                        onChange={(e) => setCostDescription(e.target.value)}
-                        placeholder="Briefly describe the staff time, subcontractor work, materials, or other costs."
-                        rows={3}
-                      />
-                    </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cost-description">What does this cover?</Label>
+                        <Textarea
+                          id="cost-description"
+                          value={costDescription}
+                          onChange={(e) => setCostDescription(e.target.value)}
+                          placeholder="Briefly describe the staff time, subcontractor work, materials, or other costs."
+                          rows={3}
+                        />
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="cost-notes">Notes for the R&D team (optional)</Label>
-                      <Textarea
-                        id="cost-notes"
-                        value={costNotes}
-                        onChange={(e) => setCostNotes(e.target.value)}
-                        placeholder="Anything that will help the team interpret this number, such as assumptions or ranges."
-                        rows={2}
-                      />
-                    </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cost-notes">Notes for the R&D team (optional)</Label>
+                        <Textarea
+                          id="cost-notes"
+                          value={costNotes}
+                          onChange={(e) => setCostNotes(e.target.value)}
+                          placeholder="Anything that will help the team interpret this number, such as assumptions or ranges."
+                          rows={2}
+                        />
+                      </div>
 
-                    <Button
-                      type="button"
-                      onClick={handleSubmitCostAdvice}
-                      disabled={isSubmittingCostAdvice || !project}
-                    >
-                      {isSubmittingCostAdvice ? "Saving..." : "Save cost advice"}
-                    </Button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          onClick={handleSubmitCostAdvice}
+                          disabled={isSubmittingCostAdvice || !project}
+                        >
+                          {isSubmittingCostAdvice
+                            ? editingCostId
+                              ? "Updating..."
+                              : "Saving..."
+                            : editingCostId
+                            ? "Update cost advice"
+                            : "Save cost advice"}
+                        </Button>
+                        {editingCostId && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCancelEditCostAdvice}
+                            disabled={isSubmittingCostAdvice}
+                          >
+                            Cancel edit
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -1146,28 +1247,52 @@ export default function ProjectDetailPage() {
                             key={item.id}
                             className="rounded-lg border bg-card px-4 py-3 text-sm"
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="capitalize">
-                                  {item.cost_type.replace("_", " ")}
-                                </Badge>
-                                <span className="font-medium">
-                                  £
-                                  {Number(item.amount).toLocaleString("en-GB", {
-                                    maximumFractionDigits: 2,
-                                  })}
-                                </span>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 space-y-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="capitalize">
+                                      {item.cost_type.replace("_", " ")}
+                                    </Badge>
+                                    <span className="font-medium">
+                                      £
+                                      {Number(item.amount).toLocaleString("en-GB", {
+                                        maximumFractionDigits: 2,
+                                      })}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(item.created_at).toLocaleDateString("en-GB")}
+                                  </span>
+                                </div>
+                                {item.description && (
+                                  <p className="mt-1 text-muted-foreground">{item.description}</p>
+                                )}
+                                {item.notes && (
+                                  <p className="mt-1 text-xs text-muted-foreground">{item.notes}</p>
+                                )}
                               </div>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(item.created_at).toLocaleDateString("en-GB")}
-                              </span>
+                              <div className="flex flex-col gap-1 pl-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditCostAdvice(item)}
+                                  aria-label="Edit cost"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteCostAdvice(item.id)}
+                                  aria-label="Delete cost"
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
                             </div>
-                            {item.description && (
-                              <p className="mt-1 text-muted-foreground">{item.description}</p>
-                            )}
-                            {item.notes && (
-                              <p className="mt-1 text-xs text-muted-foreground">{item.notes}</p>
-                            )}
                           </div>
                         ))}
                       </div>

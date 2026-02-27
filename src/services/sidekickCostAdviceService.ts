@@ -1,11 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type SidekickCostAdvice = Database["public"]["Tables"]["sidekick_project_cost_advice"]["Row"];
-type SidekickCostAdviceInsert = Database["public"]["Tables"]["sidekick_project_cost_advice"]["Insert"];
+export type SidekickCostAdvice = Database["public"]["Tables"]["sidekick_project_cost_advice"]["Row"];
+export type SidekickCostAdviceInsert = Database["public"]["Tables"]["sidekick_project_cost_advice"]["Insert"];
 
 class SidekickCostAdviceService {
-  async getByProject(projectId: string): Promise<SidekickCostAdvice[]> {
+  async getByProject(projectId: string): Promise<SidekickCostAdvice[] | null> {
     const { data, error } = await supabase
       .from("sidekick_project_cost_advice")
       .select("*")
@@ -17,38 +17,38 @@ class SidekickCostAdviceService {
       throw error;
     }
 
-    return data ?? [];
+    return data;
   }
 
-  async createAdvice(input: {
-    project_id: string;
-    created_by: string;
-    cost_type: SidekickCostAdvice["cost_type"];
-    amount: number;
-    description?: string | null;
-    notes?: string | null;
-  }): Promise<SidekickCostAdvice | null> {
-    const payload: SidekickCostAdviceInsert = {
-      project_id: input.project_id,
-      created_by: input.created_by,
-      cost_type: input.cost_type,
-      amount: input.amount,
-      description: input.description ?? null,
-      notes: input.notes ?? null,
-    };
-
+  async createAdvice(payload: SidekickCostAdviceInsert): Promise<SidekickCostAdvice> {
     const { data, error } = await supabase
       .from("sidekick_project_cost_advice")
       .insert(payload)
-      .select("*")
-      .maybeSingle();
+      .select()
+      .single();
 
     if (error) {
       console.error("[sidekickCostAdviceService.createAdvice] Error:", error);
       throw error;
     }
 
-    return data ?? null;
+    return data;
+  }
+
+  async updateAdvice(id: string, updates: Partial<SidekickCostAdviceInsert>): Promise<SidekickCostAdvice> {
+    const { data, error } = await supabase
+      .from("sidekick_project_cost_advice")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[sidekickCostAdviceService.updateAdvice] Error:", error);
+      throw error;
+    }
+
+    return data;
   }
 
   async deleteAdvice(id: string): Promise<void> {
@@ -64,5 +64,4 @@ class SidekickCostAdviceService {
   }
 }
 
-export type { SidekickCostAdvice };
 export const sidekickCostAdviceService = new SidekickCostAdviceService();

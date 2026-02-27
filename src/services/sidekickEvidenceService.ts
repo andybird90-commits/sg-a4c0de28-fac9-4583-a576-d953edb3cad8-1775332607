@@ -19,6 +19,74 @@ export const sidekickEvidenceService = {
     return evidence;
   },
 
+  async createEvidenceNote(
+    projectId: string,
+    payload: { title: string; body: string | null }
+  ): Promise<SidekickEvidenceItem> {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    return this.createEvidence({
+      project_id: projectId,
+      created_by: user.id,
+      type: "note",
+      title: payload.title,
+      body: payload.body,
+    } as SidekickEvidenceInsert);
+  },
+
+  async createEvidenceFile(
+    projectId: string,
+    file: File,
+    payload: { title: string; description: string | null }
+  ): Promise<SidekickEvidenceItem> {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    const filePath = await this.uploadFile(file, projectId);
+
+    return this.createEvidence({
+      project_id: projectId,
+      created_by: user.id,
+      type: "file",
+      title: payload.title,
+      body: payload.description,
+      file_path: filePath,
+    } as SidekickEvidenceInsert);
+  },
+
+  async createEvidenceLink(
+    projectId: string,
+    payload: { title: string; url: string; description: string | null }
+  ): Promise<SidekickEvidenceItem> {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new Error("Not authenticated");
+    }
+
+    return this.createEvidence({
+      project_id: projectId,
+      created_by: user.id,
+      type: "link",
+      title: payload.title,
+      body: payload.description,
+      external_url: payload.url,
+    } as SidekickEvidenceInsert);
+  },
+
   async getEvidenceById(evidenceId: string): Promise<SidekickEvidenceItem> {
     const { data, error } = await supabase
       .from("sidekick_evidence_items")

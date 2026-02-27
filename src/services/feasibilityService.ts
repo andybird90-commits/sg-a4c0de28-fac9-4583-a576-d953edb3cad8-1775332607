@@ -61,6 +61,37 @@ export const feasibilityService = {
     return response.json();
   },
 
+  async runFeasibilityForProject(projectId: string): Promise<FeasibilityAnalysis> {
+    const { data: project, error } = await supabase
+      .from("sidekick_projects")
+      .select("id, name, description, sector, stage")
+      .eq("id", projectId)
+      .single();
+
+    if (error) {
+      console.error("[feasibilityService.runFeasibilityForProject] Error loading project:", error);
+      throw error;
+    }
+
+    const name = (project as any)?.name as string | undefined;
+    const description = (project as any)?.description as string | undefined;
+    const sector = (project as any)?.sector as string | undefined;
+    const stage = (project as any)?.stage as string | undefined;
+
+    const ideaDescription =
+      description ||
+      (name ? `Feasibility analysis for project: ${name}` : "Feasibility analysis for Sidekick project");
+
+    const input: FeasibilityInput = {
+      ideaDescription,
+      sector,
+      stage,
+      projectId,
+    };
+
+    return feasibilityService.submitForAnalysis(input);
+  },
+
   async getAnalyses(organisationId: string): Promise<FeasibilityAnalysis[]> {
     const { data, error } = await supabase
       .from("feasibility_analyses")
