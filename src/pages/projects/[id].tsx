@@ -120,6 +120,48 @@ export default function ProjectDetailPage() {
     [toast]
   );
 
+  const refreshClaimProject = useCallback(
+    async (sidekickProjectId: string) => {
+      try {
+        const response = await fetch(
+          `/api/projects/by-sidekick?id=${encodeURIComponent(sidekickProjectId)}`
+        );
+        if (!response.ok) {
+          let errorMessage = "There was a problem sending this project to the R&D team. Please try again.";
+          try {
+            const errorBody = (await response.json()) as { error?: string };
+            if (errorBody?.error) {
+              errorMessage = errorBody.error;
+            }
+            console.error("Error sending project to team:", errorBody);
+          } catch {
+            console.error(
+              "Error sending project to team:",
+              await response.text()
+            );
+          }
+
+          toast({
+            title: "Could not send to team",
+            description: errorMessage,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const data: { project: ClaimProject | null } = await response.json();
+        setClaimProject(data.project ?? null);
+
+        if (data.project?.approval_status) {
+          setApprovalSections(data.project.approval_status as any);
+        }
+      } catch (error) {
+        console.error("Error refreshing claim project:", error);
+      }
+    },
+    [setClaimProject, setApprovalSections]
+  );
+
   useEffect(() => {
     if (!user) {
       router.push("/auth/login");
@@ -145,25 +187,8 @@ export default function ProjectDetailPage() {
         setEvidence(evidenceData);
         setComments(commentsData);
 
-        // Check if this project is linked to a claim project
-        try {
-          const claimProjs = await claimService.getProjectsBySidekickId(id as string);
-          if (claimProjs && claimProjs.length > 0) {
-            const sorted = [...claimProjs].sort((a, b) => {
-              const aTime = a.created_at ? new Date(a.created_at as string).getTime() : 0;
-              const bTime = b.created_at ? new Date(b.created_at as string).getTime() : 0;
-              return bTime - aTime;
-            });
-            const claimProj = sorted[0];
-            setClaimProject(claimProj);
-
-            if (claimProj?.approval_status) {
-              setApprovalSections(claimProj.approval_status as any);
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching claim project:", error);
-        }
+        // Load linked claim project (server-side, using service role)
+        await refreshClaimProject(id as string);
 
         // Fetch feasibility analysis separately
         setFeasibilityLoading(true);
@@ -195,7 +220,7 @@ export default function ProjectDetailPage() {
     };
 
     fetchData();
-  }, [id, user, router.isReady, loadCostAdvice]);
+  }, [id, user, router.isReady, loadCostAdvice, refreshClaimProject]);
 
   const handleRunFeasibility = async () => {
     if (!project || !user) return;
@@ -222,22 +247,45 @@ export default function ProjectDetailPage() {
   };
 
   const handleSendToTeam = async () => {
-    if (!project || !claimProject || !user) return;
+    if (!project || !user) return;
     setSubmitting(true);
     try {
-      await claimService.sendProjectToTeam(claimProject.id, user.id);
+      const response = await fetch("/api/projects/send-to-team", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sidekickProjectId: project.id,
+          userId: user.id,
+        }),
+      });
 
-      const updatedProjects = await claimService.getProjectsBySidekickId(project.id);
-      if (updatedProjects && updatedProjects.length > 0) {
-        const sorted = [...updatedProjects].sort((a, b) => {
-          const aTime = a.created_at ? new Date(a.created_at as string).getTime() : 0;
-          const bTime = b.created_at ? new Date(b.created_at as string).getTime() : 0;
-          return bTime - aTime;
+      if (!response.ok) {
+        let errorMessage = "There was a problem sending this project to the R&D team. Please try again.";
+        try {
+          const errorBody = (await response.json()) as { error?: string };
+          if (errorBody?.error) {
+            errorMessage = errorBody.error;
+          }
+          console.error("Error sending project to team:", errorBody);
+        } catch {
+          console.error(
+            "Error sending project to team:",
+            await response.text()
+          );
+        }
+
+        toast({
+          title: "Could not send to team",
+          description: errorMessage,
+          variant: "destructive",
         });
-        setClaimProject(sorted[0]);
-      } else {
-        setClaimProject(null);
+        return;
       }
+
+      const data: { project: ClaimProject | null } = await response.json();
+      setClaimProject(data.project ?? null);
 
       setSendToTeamDialog(false);
       toast({
@@ -272,8 +320,7 @@ export default function ProjectDetailPage() {
         revisionFeedback || null
       );
 
-      const updated = await claimService.getProjectsBySidekickId(project.id);
-      setClaimProject(updated?.[0] ?? null);
+      await refreshClaimProject(project.id);
       setReviewDialog(false);
 
       toast({
@@ -294,120 +341,12 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleSubmitCostAdvice = async () => {
-    if (!project || !user) return;
-    if (!costType || !costAmount) {
-      toast({
-        title: "Missing information",
-        description: "Please choose a cost type and enter an amount.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const parsedAmount = Number(costAmount);
-    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Amount must be a positive number.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmittingCostAdvice(true);
-    try {
-      if (editingCostId) {
-        await sidekickCostAdviceService.updateAdvice(editingCostId, {
-          cost_type: costType as SidekickCostAdvice["cost_type"],
-          amount: parsedAmount,
-          description: costDescription || null,
-          notes: costNotes || null,
-        });
-
-        toast({
-          title: "Cost updated",
-          description: "Your cost information has been updated.",
-        });
-      } else {
-        await sidekickCostAdviceService.createAdvice({
-          project_id: project.id,
-          created_by: user.id,
-          cost_type: costType as SidekickCostAdvice["cost_type"],
-          amount: parsedAmount,
-          description: costDescription || null,
-          notes: costNotes || null,
-        } as any);
-
-        toast({
-          title: "Cost saved",
-          description: "Your cost information has been added for the R&D team to review.",
-        });
-      }
-
-      setCostType("");
-      setCostAmount("");
-      setCostDescription("");
-      setCostNotes("");
-      setEditingCostId(null);
-      await loadCostAdvice(project.id);
-    } catch (error) {
-      console.error("Failed to save cost advice", error);
-      toast({
-        title: editingCostId ? "Could not update cost" : "Could not save cost",
-        description: "There was a problem saving your cost information. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmittingCostAdvice(false);
-    }
-  };
-
-  const handleCancelEditCostAdvice = () => {
-    setEditingCostId(null);
-    setCostType("");
-    setCostAmount("");
-    setCostDescription("");
-    setCostNotes("");
-  };
-
-  const handleEditCostAdvice = (item: SidekickCostAdvice) => {
-    setEditingCostId(item.id);
-    setCostType(item.cost_type);
-    setCostAmount(item.amount ? String(item.amount) : "");
-    setCostDescription(item.description ?? "");
-    setCostNotes(item.notes ?? "");
-  };
-
-  const handleDeleteCostAdvice = async (id: string) => {
-    if (!project) return;
-    const confirmed = window.confirm("Are you sure you want to delete this cost entry?");
-    if (!confirmed) return;
-
-    try {
-      await sidekickCostAdviceService.deleteAdvice(id);
-      await loadCostAdvice(project.id);
-      toast({
-        title: "Cost deleted",
-        description: "The cost entry has been removed.",
-      });
-    } catch (error) {
-      console.error("Failed to delete cost advice", error);
-      toast({
-        title: "Could not delete cost",
-        description: "There was a problem deleting this cost entry. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleCancelProject = async () => {
     if (!project || !claimProject || !cancelReason.trim() || !user) return;
     setSubmitting(true);
     try {
       await claimService.cancelProject(claimProject.id, cancelReason.trim(), user.id);
-      const updated = await claimService.getProjectsBySidekickId(project.id);
-      setClaimProject(updated?.[0] ?? null);
+      await refreshClaimProject(project.id);
       setCancelDialog(false);
       setCancelReason("");
       toast({
