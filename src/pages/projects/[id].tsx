@@ -18,10 +18,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Lightbulb, FileText, MessageSquare, Send, Upload, Link as LinkIcon, Trash2, ExternalLink, Sparkles, Edit, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { MessageWidget } from "@/components/MessageWidget";
 import { sidekickCostAdviceService, type SidekickCostAdvice } from "@/services/sidekickCostAdviceService";
+import { toast } from "@/hooks/use-toast";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
 type SidekickEvidenceItem = Database["public"]["Tables"]["sidekick_evidence_items"]["Row"];
@@ -77,11 +79,12 @@ export default function ProjectDetailPage() {
 
   // Cost advice state (client suggestions for staff calculator)
   const [costAdvice, setCostAdvice] = useState<SidekickCostAdvice[]>([]);
-  const [costLoading, setCostLoading] = useState(false);
-  const [costSubmitting, setCostSubmitting] = useState(false);
-  const [costType, setCostType] = useState<SidekickCostAdvice["cost_type"]>("staff");
-  const [costAmount, setCostAmount] = useState("");
-  const [costDescription, setCostDescription] = useState("");
+  const [isLoadingCostAdvice, setIsLoadingCostAdvice] = useState(false);
+  const [isSubmittingCostAdvice, setIsSubmittingCostAdvice] = useState(false);
+  const [costType, setCostType] = useState<string>("");
+  const [costAmount, setCostAmount] = useState<string>("");
+  const [costDescription, setCostDescription] = useState<string>("");
+  const [costNotes, setCostNotes] = useState<string>("");
 
   // Evidence form state
   const [evidenceType, setEvidenceType] = useState<"note" | "file" | "link">("note");
@@ -119,6 +122,7 @@ export default function ProjectDetailPage() {
     qualifying_activities: "pending",
   });
   const [revisionFeedback, setRevisionFeedback] = useState("");
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -133,7 +137,7 @@ export default function ProjectDetailPage() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch project, evidence, and comments
         const [projectData, evidenceData, commentsData] = await Promise.all([
           sidekickProjectService.getProjectById(id as string),
@@ -145,26 +149,13 @@ export default function ProjectDetailPage() {
         setEvidence(evidenceData);
         setComments(commentsData);
 
-        // Fetch client cost advice for this project
-        setCostLoading(true);
-        try {
-          const advice = await sidekickCostAdviceService.getByProject(id as string);
-          setCostAdvice(advice);
-        } catch (costError) {
-          console.error("Error fetching cost advice:", costError);
-        } finally {
-          setCostLoading(false);
-        }
-
         // Check if this project is linked to a claim project
         try {
-          // Find the claim project that was created from this sidekick project
           const claimProjs = await claimService.getProjectsBySidekickId(id as string);
           if (claimProjs && claimProjs.length > 0) {
             const claimProj = claimProjs[0];
             setClaimProject(claimProj);
-            
-            // Initialize approval sections from claim project
+
             if (claimProj?.approval_status) {
               setApprovalSections(claimProj.approval_status as any);
             }
@@ -178,7 +169,7 @@ export default function ProjectDetailPage() {
         try {
           const analyses = await feasibilityService.getAnalysesByProject(id as string);
           if (analyses && analyses.length > 0) {
-            const sortedAnalyses = analyses.sort((a, b) => 
+            const sortedAnalyses = analyses.sort((a, b) =>
               new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             );
             setFeasibilityAnalysis(sortedAnalyses[0]);
@@ -200,6 +191,82 @@ export default function ProjectDetailPage() {
 
     fetchData();
   }, [id, user, router.isReady]);
+
+  useEffect(() => {
+    if (!project?.id) return;
+    loadCostAdvice(project.id);
+  }, [project?.id]);
+
+  const loadCostAdvice = async (projId: string) => {
+    setIsLoadingCostAdvice(true);
+    try {
+      const advice = await sidekickCostAdviceService.getByProject(projId);
+      setCostAdvice(advice ?? []);
+    } catch (error) {
+      console.error("Failed to load cost advice", error);
+      toast({
+        title: "Error loading costs",
+        description: "We could not load your cost information. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingCostAdvice(false);
+    }
+  };
+
+  const handleSubmitCostAdvice = async () => {
+    if (!project || !user) return;
+    if (!costType || !costAmount) {
+      toast({
+        title: "Missing information",
+        description: "Please choose a cost type and enter an amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const parsedAmount = Number(costAmount);
+    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Amount must be a positive number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingCostAdvice(true);
+    try {
+      await sidekickCostAdviceService.createAdvice({
+        project_id: project.id,
+        created_by: user.id,
+        cost_type: costType as SidekickCostAdvice["cost_type"],
+        amount: parsedAmount,
+        description: costDescription || null,
+        notes: costNotes || null,
+      });
+
+      setCostType("");
+      setCostAmount("");
+      setCostDescription("");
+      setCostNotes("");
+      await loadCostAdvice(project.id);
+
+      toast({
+        title: "Cost saved",
+        description: "Your cost information has been added for the R&D team to review.",
+      });
+    } catch (error) {
+      console.error("Failed to save cost advice", error);
+      toast({
+        title: "Could not save cost",
+        description: "There was a problem saving your cost information. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingCostAdvice(false);
+    }
+  };
 
   useEffect(() => {
     if (editingProject && project) {
@@ -387,37 +454,6 @@ export default function ProjectDetailPage() {
       alert("Failed to add comment");
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleAddCostAdvice = async () => {
-    if (!project || !user) return;
-    const parsedAmount = parseFloat(costAmount);
-    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-      alert("Please enter a valid cost amount greater than zero.");
-      return;
-    }
-
-    setCostSubmitting(true);
-    try {
-      await sidekickCostAdviceService.createAdvice({
-        project_id: project.id,
-        created_by: user.id,
-        cost_type: costType,
-        amount: parsedAmount,
-        description: costDescription || null,
-      });
-
-      const updated = await sidekickCostAdviceService.getByProject(project.id);
-      setCostAdvice(updated);
-
-      setCostAmount("");
-      setCostDescription("");
-    } catch (error) {
-      console.error("Error adding cost advice:", error);
-      alert("Failed to add cost advice");
-    } finally {
-      setCostSubmitting(false);
     }
   };
 
@@ -636,27 +672,15 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
-          <Tabs defaultValue="feasibility" className="space-y-4 sm:space-y-6">
-            <TabsList className="w-full sm:w-auto grid grid-cols-4 h-auto gap-1">
-              <TabsTrigger value="feasibility" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
-                <Lightbulb className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Feasibility</span>
-                <span className="sm:hidden">Idea</span>
-              </TabsTrigger>
-              <TabsTrigger value="evidence" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
-                <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Evidence</span>
-                <span className="sm:hidden">Files</span>
-              </TabsTrigger>
-              <TabsTrigger value="comments" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
-                <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Comments</span>
-                <span className="sm:hidden">Chat</span>
-              </TabsTrigger>
-              <TabsTrigger value="costs" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
-                <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Costs</span>
-                <span className="sm:hidden">£</span>
+          <Tabs defaultValue="feasibility" className="mt-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="feasibility">Feasibility</TabsTrigger>
+              <TabsTrigger value="evidence">Evidence</TabsTrigger>
+              <TabsTrigger value="comments">Comments</TabsTrigger>
+              <TabsTrigger value="costs">
+                <span className="flex items-center gap-2">
+                  <span>Costs</span>
+                </span>
               </TabsTrigger>
             </TabsList>
 
@@ -681,42 +705,62 @@ export default function ProjectDetailPage() {
                             <Sparkles className="h-4 w-4 text-blue-600" />
                             Analysis Summary
                           </h3>
-                          <p className="text-xs sm:text-sm text-muted-foreground break-words">{feasibilityAnalysis.summary}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground break-words">
+                            {feasibilityAnalysis.summary}
+                          </p>
                         </div>
                       )}
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                         {feasibilityAnalysis.technical_rating && (
                           <div className="p-3 sm:p-4 border rounded-lg">
-                            <div className="text-xs text-muted-foreground mb-1">Technical Feasibility</div>
-                            <div className="text-lg sm:text-xl font-bold">{feasibilityAnalysis.technical_rating}</div>
+                            <div className="text-xs text-muted-foreground mb-1">
+                              Technical Feasibility
+                            </div>
+                            <div className="text-lg sm:text-xl font-bold">
+                              {feasibilityAnalysis.technical_rating}
+                            </div>
                             {feasibilityAnalysis.technical_reasoning && (
-                              <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">{feasibilityAnalysis.technical_reasoning}</p>
+                              <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">
+                                {feasibilityAnalysis.technical_reasoning}
+                              </p>
                             )}
                           </div>
                         )}
                         {feasibilityAnalysis.commercial_rating && (
                           <div className="p-3 sm:p-4 border rounded-lg">
-                            <div className="text-xs text-muted-foreground mb-1">Commercial Viability</div>
-                            <div className="text-lg sm:text-xl font-bold">{feasibilityAnalysis.commercial_rating}</div>
+                            <div className="text-xs text-muted-foreground mb-1">
+                              Commercial Viability
+                            </div>
+                            <div className="text-lg sm:text-xl font-bold">
+                              {feasibilityAnalysis.commercial_rating}
+                            </div>
                             {feasibilityAnalysis.commercial_reasoning && (
-                              <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">{feasibilityAnalysis.commercial_reasoning}</p>
+                              <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">
+                                {feasibilityAnalysis.commercial_reasoning}
+                              </p>
                             )}
                           </div>
                         )}
                         {feasibilityAnalysis.rd_tax_flag && (
                           <div className="p-3 sm:p-4 border rounded-lg">
-                            <div className="text-xs text-muted-foreground mb-1">R&D Tax Eligibility</div>
-                            <div className="text-lg sm:text-xl font-bold">{feasibilityAnalysis.rd_tax_flag}</div>
+                            <div className="text-xs text-muted-foreground mb-1">
+                              R&D Tax Eligibility
+                            </div>
+                            <div className="text-lg sm:text-xl font-bold">
+                              {feasibilityAnalysis.rd_tax_flag}
+                            </div>
                             {feasibilityAnalysis.rd_tax_reasoning && (
-                              <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">{feasibilityAnalysis.rd_tax_reasoning}</p>
+                              <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">
+                                {feasibilityAnalysis.rd_tax_reasoning}
+                              </p>
                             )}
                           </div>
                         )}
                       </div>
 
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => router.push(`/feasibility/${feasibilityAnalysis.id}`)}
                         className="w-full sm:w-auto"
                         size="sm"
@@ -728,14 +772,10 @@ export default function ProjectDetailPage() {
                   ) : (
                     <div className="text-center py-8 space-y-4">
                       <p className="text-sm text-muted-foreground">No feasibility analysis yet</p>
-                      <Button 
-                        onClick={handleRunFeasibility} 
-                        disabled={runningFeasibility}
-                        size="sm"
-                      >
+                      <Button onClick={handleRunFeasibility} disabled={runningFeasibility} size="sm">
                         {runningFeasibility ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                             Running Analysis...
                           </>
                         ) : (
@@ -757,7 +797,9 @@ export default function ProjectDetailPage() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-lg sm:text-xl">Add Evidence</CardTitle>
-                      <CardDescription className="text-sm">Upload files, add notes, or link external resources</CardDescription>
+                      <CardDescription className="text-sm">
+                        Upload files, add notes, or link external resources
+                      </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex gap-2 flex-wrap">
@@ -795,7 +837,9 @@ export default function ProjectDetailPage() {
 
                       <div className="space-y-3">
                         <div>
-                          <Label htmlFor="evidenceTitle" className="text-sm">Title</Label>
+                          <Label htmlFor="evidenceTitle" className="text-sm">
+                            Title
+                          </Label>
                           <Input
                             id="evidenceTitle"
                             value={evidenceTitle}
@@ -807,7 +851,9 @@ export default function ProjectDetailPage() {
 
                         {evidenceType === "note" && (
                           <div>
-                            <Label htmlFor="evidenceBody" className="text-sm">Description</Label>
+                            <Label htmlFor="evidenceBody" className="text-sm">
+                              Description
+                            </Label>
                             <Textarea
                               id="evidenceBody"
                               value={evidenceBody}
@@ -821,7 +867,9 @@ export default function ProjectDetailPage() {
 
                         {evidenceType === "file" && (
                           <div>
-                            <Label htmlFor="evidenceFile" className="text-sm">Upload File</Label>
+                            <Label htmlFor="evidenceFile" className="text-sm">
+                              Upload File
+                            </Label>
                             <Input
                               id="evidenceFile"
                               type="file"
@@ -833,7 +881,9 @@ export default function ProjectDetailPage() {
 
                         {evidenceType === "link" && (
                           <div>
-                            <Label htmlFor="evidenceUrl" className="text-sm">External URL</Label>
+                            <Label htmlFor="evidenceUrl" className="text-sm">
+                              External URL
+                            </Label>
                             <Input
                               id="evidenceUrl"
                               value={evidenceUrl}
@@ -844,8 +894,8 @@ export default function ProjectDetailPage() {
                           </div>
                         )}
 
-                        <Button 
-                          onClick={handleAddEvidence} 
+                        <Button
+                          onClick={handleAddEvidence}
                           disabled={submitting}
                           className="w-full sm:w-auto"
                           size="sm"
@@ -859,26 +909,43 @@ export default function ProjectDetailPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg sm:text-xl">Evidence Items ({evidence.length})</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">
+                      Evidence Items ({evidence.length})
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {evidence.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-8">No evidence yet. Add your first evidence item above.</p>
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No evidence yet. Add your first evidence item above.
+                      </p>
                     ) : (
                       <div className="space-y-3">
                         {evidence.map((item) => (
-                          <div key={item.id} className="p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                          <div
+                            key={item.id}
+                            className="p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                          >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                  <Badge variant="secondary" className="text-xs">{item.type}</Badge>
-                                  {item.title && <h4 className="font-medium text-sm break-words">{item.title}</h4>}
+                                  <Badge variant="secondary" className="text-xs">
+                                    {item.type}
+                                  </Badge>
+                                  {item.title && (
+                                    <h4 className="font-medium text-sm break-words">
+                                      {item.title}
+                                    </h4>
+                                  )}
                                 </div>
-                                {item.body && <p className="text-xs sm:text-sm text-muted-foreground mb-2 break-words line-clamp-2">{item.body}</p>}
+                                {item.body && (
+                                  <p className="text-xs sm:text-sm text-muted-foreground mb-2 break-words line-clamp-2">
+                                    {item.body}
+                                  </p>
+                                )}
                                 {item.external_url && (
-                                  <a 
-                                    href={item.external_url} 
-                                    target="_blank" 
+                                  <a
+                                    href={item.external_url}
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-xs text-blue-600 hover:underline break-all"
                                   >
@@ -910,12 +977,14 @@ export default function ProjectDetailPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="comments">
+            <TabsContent value="comments" className="mt-6 space-y-6">
               <div className="space-y-4 sm:space-y-6">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg sm:text-xl">Add Comment</CardTitle>
-                    <CardDescription className="text-sm">Share updates or respond to RD staff feedback</CardDescription>
+                    <CardDescription className="text-sm">
+                      Share updates or respond to RD staff feedback
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <Textarea
@@ -939,146 +1008,172 @@ export default function ProjectDetailPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg sm:text-xl">Comments ({comments.length})</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">
+                      Comments ({comments.length})
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {comments.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-8">No comments yet. Start the conversation!</p>
+                      <p className="text-sm text-muted-foreground text-center py-8">
+                        No comments yet. Start the conversation!
+                      </p>
                     ) : (
                       <div className="space-y-4">
                         {comments.map((comment) => (
                           <div key={comment.id} className="p-3 sm:p-4 border rounded-lg">
                             <div className="flex items-start justify-between gap-3 mb-2">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <Badge variant={comment.author_role === "rd_staff" ? "default" : "secondary"} className="text-xs">
+                                <Badge
+                                  variant={
+                                    comment.author_role === "rd_staff" ? "default" : "secondary"
+                                  }
+                                  className="text-xs"
+                                >
                                   {comment.author_role === "rd_staff" ? "RD Staff" : "Client"}
                                 </Badge>
                                 {comment.author?.email && (
-                                  <span className="text-xs text-muted-foreground break-all">{comment.author.email}</span>
+                                  <span className="text-xs text-muted-foreground break-all">
+                                    {comment.author.email}
+                                  </span>
                                 )}
                               </div>
                               <span className="text-xs text-muted-foreground flex-shrink-0">
                                 {new Date(comment.created_at).toLocaleDateString()}
                               </span>
                             </div>
-                            <p className="text-sm break-words whitespace-pre-wrap">{comment.body}</p>
+                            <p className="text-sm break-words whitespace-pre-wrap">
+                              {comment.body}
+                            </p>
                           </div>
                         ))}
                       </div>
                     )}
                   </CardContent>
                 </Card>
+              </div>
+            </TabsContent>
 
-                <TabsContent value="costs">
-                  <div className="space-y-4 sm:space-y-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg sm:text-xl">Cost Advice</CardTitle>
-                        <CardDescription className="text-sm">
-                          Share your view of the costs linked to this project so the R&amp;D team can build the claim.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          <div className="space-y-1">
-                            <Label htmlFor="cost-type" className="text-sm">Cost type</Label>
-                            <select
-                              id="cost-type"
-                              className="border rounded-md px-2 py-2 text-sm bg-background"
-                              value={costType}
-                              onChange={(e) => setCostType(e.target.value as SidekickCostAdvice["cost_type"])}
-                            >
-                              <option value="staff">Staff</option>
-                              <option value="subcontractor">Subcontractor</option>
-                              <option value="consumables">Consumables</option>
-                              <option value="software">Software</option>
-                              <option value="other">Other</option>
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label htmlFor="cost-amount" className="text-sm">Amount (£)</Label>
-                            <Input
-                              id="cost-amount"
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={costAmount}
-                              onChange={(e) => setCostAmount(e.target.value)}
-                              className="text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1 sm:col-span-1 sm:self-end">
-                            <Button
-                              size="sm"
-                              className="w-full sm:w-auto"
-                              onClick={handleAddCostAdvice}
-                              disabled={costSubmitting}
-                            >
-                              {costSubmitting ? "Saving..." : "Add Cost Advice"}
-                            </Button>
-                          </div>
-                        </div>
+            <TabsContent value="costs" className="mt-6 space-y-6">
+              <div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Advise costs for this project</CardTitle>
+                    <CardDescription>
+                      Share your best view of the costs linked to this project. The R&D team will
+                      review and use these when preparing the claim.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cost-type">Cost type</Label>
+                      <Select value={costType} onValueChange={setCostType}>
+                        <SelectTrigger id="cost-type">
+                          <SelectValue placeholder="Choose a cost type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="staff">Staff</SelectItem>
+                          <SelectItem value="subcontractor">Subcontractor</SelectItem>
+                          <SelectItem value="consumables">Consumables / materials</SelectItem>
+                          <SelectItem value="software">Software</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                        <div className="space-y-2">
-                          <Label htmlFor="cost-description" className="text-sm">Notes for the R&amp;D team (optional)</Label>
-                          <Textarea
-                            id="cost-description"
-                            rows={3}
-                            value={costDescription}
-                            onChange={(e) => setCostDescription(e.target.value)}
-                            placeholder="Explain what this cost relates to, who it is for, or any assumptions."
-                            className="text-sm resize-none"
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <div className="space-y-2">
+                      <Label htmlFor="cost-amount">Estimated amount</Label>
+                      <Input
+                        id="cost-amount"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={costAmount}
+                        onChange={(e) => setCostAmount(e.target.value)}
+                        placeholder="e.g. 12000"
+                      />
+                    </div>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg sm:text-xl">Your Cost Advice ({costAdvice.length})</CardTitle>
-                        <CardDescription className="text-sm">
-                          These entries are visible to your R&amp;D team. They will use them alongside their own calculator.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {costLoading ? (
-                          <div className="flex items-center justify-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                          </div>
-                        ) : costAdvice.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-8">
-                            No cost advice yet. Add your first entry above.
-                          </p>
-                        ) : (
-                          <div className="space-y-3">
-                            {costAdvice.map((item) => (
-                              <div key={item.id} className="p-3 sm:p-4 border rounded-lg">
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <Badge variant="secondary" className="text-xs capitalize">
-                                      {item.cost_type}
-                                    </Badge>
-                                    <span className="font-semibold text-sm">
-                                      £{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                  </div>
-                                  <span className="text-xs text-muted-foreground flex-shrink-0">
-                                    {item.created_at ? new Date(item.created_at).toLocaleDateString() : ""}
-                                  </span>
-                                </div>
-                                {item.description && (
-                                  <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap break-words">
-                                    {item.description}
-                                  </p>
-                                )}
+                    <div className="space-y-2">
+                      <Label htmlFor="cost-description">What does this cover?</Label>
+                      <Textarea
+                        id="cost-description"
+                        value={costDescription}
+                        onChange={(e) => setCostDescription(e.target.value)}
+                        placeholder="Briefly describe the staff time, subcontractor work, materials, or other costs."
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="cost-notes">Notes for the R&D team (optional)</Label>
+                      <Textarea
+                        id="cost-notes"
+                        value={costNotes}
+                        onChange={(e) => setCostNotes(e.target.value)}
+                        placeholder="Anything that will help the team interpret this number, such as assumptions or ranges."
+                        rows={2}
+                      />
+                    </div>
+
+                    <Button
+                      type="button"
+                      onClick={handleSubmitCostAdvice}
+                      disabled={isSubmittingCostAdvice || !project}
+                    >
+                      {isSubmittingCostAdvice ? "Saving..." : "Save cost advice"}
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Costs shared so far</CardTitle>
+                    <CardDescription>
+                      These are the costs you or your colleagues have advised for this project.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {isLoadingCostAdvice ? (
+                      <p className="text-sm text-muted-foreground">Loading costs...</p>
+                    ) : costAdvice.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No costs advised yet. Add your first estimate on the left.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {costAdvice.map((item) => (
+                          <div
+                            key={item.id}
+                            className="rounded-lg border bg-card px-4 py-3 text-sm"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="capitalize">
+                                  {item.cost_type.replace("_", " ")}
+                                </Badge>
+                                <span className="font-medium">
+                                  £
+                                  {Number(item.amount).toLocaleString("en-GB", {
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </span>
                               </div>
-                            ))}
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(item.created_at).toLocaleDateString("en-GB")}
+                              </span>
+                            </div>
+                            {item.description && (
+                              <p className="mt-1 text-muted-foreground">{item.description}</p>
+                            )}
+                            {item.notes && (
+                              <p className="mt-1 text-xs text-muted-foreground">{item.notes}</p>
+                            )}
                           </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
           </Tabs>

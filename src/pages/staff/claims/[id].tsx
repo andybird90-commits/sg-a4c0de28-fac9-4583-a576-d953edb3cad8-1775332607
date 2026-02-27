@@ -336,21 +336,6 @@ export default function ClaimDetailPage() {
     setClientCostAdviceCounts(counts);
   };
 
-  const loadSidekickProjects = async (orgId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("sidekick_projects")
-        .select("*")
-        .eq("company_id", orgId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setSidekickProjects(data || []);
-    } catch (error) {
-      console.error("Error loading sidekick projects:", error);
-    }
-  };
-
   const handleImportSidekickProject = async (sidekickProjectId: string) => {
     if (!claim) return;
 
