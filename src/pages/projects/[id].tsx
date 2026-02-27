@@ -555,7 +555,7 @@ export default function ProjectDetailPage() {
   };
 
   const handleSubmitCostAdvice = async () => {
-    if (!project) return;
+    if (!project || !user) return;
 
     if (!costType) {
       toast({
@@ -610,6 +610,7 @@ export default function ProjectDetailPage() {
           amount: numericAmount,
           description: costDescription || null,
           notes: costNotes || null,
+          created_by: user.id,
         });
 
         setCostAdvice((prev) => [created, ...prev]);
