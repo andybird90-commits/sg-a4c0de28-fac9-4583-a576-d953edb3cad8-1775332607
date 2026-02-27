@@ -154,12 +154,8 @@ export class ClaimService {
       const typedClaim = claim as any;
 
       // Get related data
-      const [projectsResult, costsResult, docsResult] = await Promise.all([
-        supabase
-          .from("claim_projects")
-          .select("*")
-          .eq("claim_id", claimId)
-          .order("created_at", { ascending: false }),
+      const [projects, costsResult, docsResult] = await Promise.all([
+        this.getClaimProjects(claimId),
         supabase
           .from("claim_costs")
           .select("*")
@@ -175,7 +171,7 @@ export class ClaimService {
 
       return {
         ...typedClaim,
-        projects: projectsResult.data || [],
+        projects: projects,
         costs: costsResult.data || [],
         documents: docsResult.data || [],
         total_costs: totalCosts,
@@ -290,6 +286,8 @@ export class ClaimService {
 
   /**
    * Get all projects for a claim
+   * This will auto-sync key fields from linked sidekick_projects
+   * so staff always see up-to-date client-side details.
    */
   async getClaimProjects(claimId: string): Promise<ClaimProject[]> {
     try {
@@ -300,7 +298,98 @@ export class ClaimService {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+
+      const projects: ClaimProject[] = data || [];
+
+      // Find projects that are linked to Sidekick and should be auto-synced
+      const linkedProjects = projects.filter((p) => {
+        const autoSynced = p.auto_synced;
+        const isAutoSynced = autoSynced === null || autoSynced === undefined || autoSynced === true;
+        return p.source_sidekick_project_id && isAutoSynced;
+      });
+
+      if (linkedProjects.length === 0) {
+        return projects;
+      }
+
+      const sidekickIds = linkedProjects
+        .map((p) => p.source_sidekick_project_id)
+        .filter((id): id is string => typeof id === "string");
+
+      if (sidekickIds.length === 0) {
+        return projects;
+      }
+
+      const { data: sidekickData, error: sidekickError } = await supabase
+        .from("sidekick_projects")
+        .select("id, name, description, sector, start_date, end_date")
+        .in("id", sidekickIds);
+
+      if (sidekickError) throw sidekickError;
+
+      const sidekickById = new Map<string, any>(
+        (sidekickData || []).map((sp: any) => [sp.id as string, sp])
+      );
+
+      const updates: { id: string; [key: string]: any }[] = [];
+      const syncedProjects: ClaimProject[] = projects.map((project) => {
+        const sourceId = project.source_sidekick_project_id;
+        if (!sourceId) return project;
+
+        const sidekick = sidekickById.get(sourceId);
+        if (!sidekick) return project;
+
+        const patch: Partial<ClaimProject> = {};
+
+        if (sidekick.name && sidekick.name !== project.name) {
+          patch.name = sidekick.name;
+        }
+
+        if (sidekick.description && sidekick.description !== project.description) {
+          patch.description = sidekick.description;
+        }
+
+        if (sidekick.sector && sidekick.sector !== project.rd_theme) {
+          patch.rd_theme = sidekick.sector;
+        }
+
+        if (sidekick.start_date && sidekick.start_date !== project.start_date) {
+          patch.start_date = sidekick.start_date;
+        }
+
+        if (sidekick.end_date && sidekick.end_date !== project.end_date) {
+          patch.end_date = sidekick.end_date;
+        }
+
+        if (Object.keys(patch).length === 0) {
+          return project;
+        }
+
+        updates.push({ id: project.id, ...patch });
+        return { ...project, ...patch };
+      });
+
+      // Persist any updates back to claim_projects, but don't fail the whole call if they error
+      if (updates.length > 0) {
+        await Promise.all(
+          updates.map(async (update) => {
+            const { id, ...rest } = update;
+            const { error: updateError } = await supabase
+              .from("claim_projects")
+              .update(rest)
+              .eq("id", id);
+
+            if (updateError) {
+              console.error("[claimService.getClaimProjects] Failed to sync claim_project from sidekick:", {
+                projectId: id,
+                error: updateError,
+              });
+            }
+          })
+        );
+      }
+
+      return syncedProjects;
     } catch (error) {
       console.error("[claimService.getClaimProjects] Error:", error);
       throw error;
