@@ -313,6 +313,14 @@ export default function HomePage() {
                     <BarChart3 className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Browse Projects</span>
                   </Button>
+                  <Button
+                    onClick={() => router.push("/claims/new")}
+                    variant="outline"
+                    className="w-full justify-start hover:bg-primary hover:text-primary-foreground transition-professional border-slate-200 text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
+                  >
+                    <FileText className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Start New Claim</span>
+                  </Button>
                   <Button 
                     onClick={() => router.push("/feasibility")} 
                     variant="outline"
