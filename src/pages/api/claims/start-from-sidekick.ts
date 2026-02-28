@@ -55,6 +55,7 @@ export default async function handler(
       id: claimId,
       org_id: orgId,
       claim_year: claimYear,
+      bd_owner_id: userId ?? null,
       created_at: nowIso,
       updated_at: nowIso,
     });
