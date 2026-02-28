@@ -131,19 +131,27 @@ export default function FeasibilityResultPage() {
 
   const getRatingColor = (rating?: string) => {
     switch (rating?.toLowerCase()) {
-      case "high": return "bg-green-100 text-green-800 border-green-200";
-      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low": return "bg-red-100 text-red-800 border-red-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case "high":
+        return "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
+      case "medium":
+        return "bg-amber-500/20 text-amber-300 border-amber-500/40";
+      case "low":
+        return "bg-red-500/20 text-red-300 border-red-500/40";
+      default:
+        return "bg-slate-800 text-slate-100 border-slate-700";
     }
   };
 
   const getComplexityColor = (complexity?: string) => {
     switch (complexity?.toLowerCase()) {
-      case "low": return "bg-green-100 text-green-800 border-green-200";
-      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "high": return "bg-red-100 text-red-800 border-red-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case "low":
+        return "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
+      case "medium":
+        return "bg-amber-500/20 text-amber-300 border-amber-500/40";
+      case "high":
+        return "bg-red-500/20 text-red-300 border-red-500/40";
+      default:
+        return "bg-slate-800 text-slate-100 border-slate-700";
     }
   };
 
@@ -226,7 +234,7 @@ export default function FeasibilityResultPage() {
             <div className="flex items-center justify-between mb-8 print-hide">
               <Link 
                 href="/feasibility/history" 
-                className="text-gray-600 hover:text-[#001F3F] flex items-center gap-2"
+                className="text-slate-300 hover:text-slate-100 flex items-center gap-2"
               >
                 <ArrowLeft size={20} />
                 Back to Analysis History
@@ -258,10 +266,10 @@ export default function FeasibilityResultPage() {
 
             <div className="mb-8 print-header page-break-inside-avoid">
               <div className="flex items-center gap-3 mb-2">
-                <span className="bg-blue-100 text-blue-800 text-xs px-2.5 py-0.5 rounded-full font-medium">
+                <span className="bg-blue-500/20 text-blue-300 border border-blue-500/40 text-xs px-2.5 py-0.5 rounded-full font-medium">
                   {analysis.sector_guess || "General"}
                 </span>
-                <span className="text-gray-500 text-sm">
+                <span className="text-slate-400 text-sm">
                   {new Date(analysis.created_at).toLocaleDateString()}
                 </span>
               </div>
@@ -291,7 +299,7 @@ export default function FeasibilityResultPage() {
                   <p className="text-sm text-slate-300 mb-4">{analysis.technical_reasoning}</p>
                   {analysis.technical_constraints && analysis.technical_constraints.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-semibold text-gray-900 mb-2 uppercase">Key Constraints</h4>
+                      <h4 className="text-xs font-semibold text-slate-200 mb-2 uppercase">Key Constraints</h4>
                       <ul className="text-sm space-y-1">
                         {analysis.technical_constraints.map((item, i) => (
                           <li key={i} className="flex gap-2 text-slate-300">
@@ -322,10 +330,14 @@ export default function FeasibilityResultPage() {
                   
                   {analysis.target_customers && analysis.target_customers.length > 0 && (
                     <div className="mb-4">
-                      <h4 className="text-xs font-semibold text-gray-900 mb-2 uppercase">Target Customers</h4>
+                      <h4 className="text-xs font-semibold text-slate-200 mb-2 uppercase">Target Customers</h4>
                       <div className="flex flex-wrap gap-2">
                         {analysis.target_customers.map((tag, i) => (
-                          <Badge key={i} variant="secondary" className="bg-gray-100 text-gray-700 hover:bg-gray-200">
+                          <Badge
+                            key={i}
+                            variant="secondary"
+                            className="bg-slate-800 text-slate-100 border border-slate-600"
+                          >
                             {tag}
                           </Badge>
                         ))}
@@ -335,10 +347,10 @@ export default function FeasibilityResultPage() {
                   
                   {analysis.revenue_ideas && analysis.revenue_ideas.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-semibold text-gray-900 mb-2 uppercase">Revenue Models</h4>
+                      <h4 className="text-xs font-semibold text-slate-200 mb-2 uppercase">Revenue Models</h4>
                       <ul className="text-sm space-y-1">
                         {analysis.revenue_ideas.map((item, i) => (
-                          <li key={i} className="flex gap-2 text-gray-700">
+                          <li key={i} className="flex gap-2 text-sm text-slate-300">
                             <span className="text-green-500">•</span> {item}
                           </li>
                         ))}
@@ -371,10 +383,10 @@ export default function FeasibilityResultPage() {
                 <CardContent className="print-compact print-text-sm">
                   {analysis.delivery_dependencies && analysis.delivery_dependencies.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-semibold text-gray-900 mb-2 uppercase">Key Dependencies</h4>
+                      <h4 className="text-xs font-semibold text-slate-200 mb-2 uppercase">Key Dependencies</h4>
                       <ul className="text-sm space-y-1">
                         {analysis.delivery_dependencies.map((item, i) => (
-                          <li key={i} className="flex gap-2 text-gray-700">
+                          <li key={i} className="flex gap-2 text-sm text-slate-300">
                             <span className="text-purple-500">•</span> {item}
                           </li>
                         ))}
@@ -434,7 +446,7 @@ export default function FeasibilityResultPage() {
                   <CardContent className="print-compact print-text-sm">
                     <ul className="space-y-3">
                       {(analysis.next_actions || []).map((action, i) => (
-                        <li key={i} className="flex gap-3 text-sm text-gray-800">
+                        <li key={i} className="flex gap-3 text-sm text-slate-100">
                           <div className="bg-[#FF6B35] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
                             {i + 1}
                           </div>

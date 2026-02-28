@@ -942,17 +942,17 @@ export default function ProjectDetailPage() {
                 <CardContent className="space-y-4">
                   {feasibilityLoading ? (
                     <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                     </div>
                   ) : feasibilityAnalysis ? (
                     <div className="space-y-4">
                       {feasibilityAnalysis.summary && (
-                        <div className="p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <h3 className="font-semibold text-sm sm:text-base mb-2 flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 text-blue-600" />
+                        <div className="p-3 sm:p-4 rounded-lg bg-slate-900 border border-slate-700">
+                          <h3 className="font-semibold text-sm sm:text-base mb-2 flex items-center gap-2 text-slate-50">
+                            <Sparkles className="h-4 w-4 text-[#ff6b35]" />
                             Analysis Summary
                           </h3>
-                          <p className="text-xs sm:text-sm text-muted-foreground break-words">
+                          <p className="text-xs sm:text-sm text-slate-200 break-words">
                             {feasibilityAnalysis.summary}
                           </p>
                         </div>
