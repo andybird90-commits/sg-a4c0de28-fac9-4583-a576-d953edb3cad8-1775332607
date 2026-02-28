@@ -120,9 +120,9 @@ export default function ProjectsPage() {
         <div className="container mx-auto px-4 py-8 max-w-6xl">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold">Projects</h1>
-              <p className="text-muted-foreground mt-1">
-                Manage your R&D project ideas and feasibility analyses
+              <h1 className="text-3xl font-bold text-slate-50">Projects</h1>
+              <p className="mt-1 text-sm text-slate-400">
+                Manage your R&amp;D project ideas and feasibility analyses
               </p>
             </div>
             <Link href="/projects/new">
@@ -135,15 +135,15 @@ export default function ProjectsPage() {
 
           {loading ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">Loading projects...</p>
+              <p className="text-slate-400">Loading projects...</p>
             </div>
           ) : projects.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
-                <FolderOpen className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                <FolderOpen className="w-16 h-16 mx-auto text-slate-500 mb-4" />
                 <h3 className="text-xl font-semibold mb-2">No projects yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  Create your first project to start tracking R&D ideas and feasibility
+                <p className="text-slate-400 mb-4">
+                  Create your first project to start tracking R&amp;D ideas and feasibility
                 </p>
                 <Link href="/projects/new">
                   <Button>
@@ -156,18 +156,21 @@ export default function ProjectsPage() {
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {projects.map((project) => (
-                <Card key={project.id} className="relative hover:shadow-lg transition-shadow h-full group">
+                <Card
+                  key={project.id}
+                  className="relative h-full group bg-[#050b16] border border-slate-800 shadow-professional-md hover:border-[#ff6b35]/60 transition-colors"
+                >
                   <Link
                     href={`/projects/${project.id}`}
                     className="absolute inset-0 z-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg"
                   >
                     <span className="sr-only">View {project.name}</span>
                   </Link>
-                  <CardHeader className="relative z-10 pointer-events-none">
+                  <CardHeader className="relative z-10 pointer-events-none pb-4">
                     <div className="flex items-start justify-between mb-2">
-                      <CardTitle className="text-lg flex items-center gap-2">
+                      <CardTitle className="text-lg flex items-center gap-2 text-slate-50">
                         {project.type === "sidekick" && (
-                          <Lightbulb className="w-4 h-4 text-blue-500" />
+                          <Lightbulb className="w-4 h-4 text-[#ff6b35]" />
                         )}
                         {project.name}
                       </CardTitle>
@@ -184,13 +187,16 @@ export default function ProjectsPage() {
                         />
                       </div>
                     </div>
-                    <CardDescription className="line-clamp-2">
+                    <CardDescription className="line-clamp-2 text-sm text-slate-300">
                       {project.description || "No description"}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="relative z-10 pointer-events-none">
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                      <Badge variant="outline" className="bg-blue-50">
+                    <div className="flex items-center gap-4 text-sm text-slate-300 flex-wrap">
+                      <Badge
+                        variant="outline"
+                        className="bg-slate-900 text-slate-100 border-slate-700/80 text-[11px] px-2 py-0.5 rounded-full"
+                      >
                         {project.type === "sidekick" ? "Companion" : "Project"}
                       </Badge>
                       {project.sector && (
@@ -199,7 +205,7 @@ export default function ProjectsPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 mt-3 text-xs text-slate-400">
                       <Clock className="w-3 h-3" />
                       {new Date(project.created_at).toLocaleDateString()}
                     </div>
