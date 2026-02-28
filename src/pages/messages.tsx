@@ -20,7 +20,7 @@ export default function MessagesPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, currentOrg } = useApp();
-  const isStaff = useStaffStatus();
+  const { isStaff } = useStaffStatus();
   
   // Map context values to match component expectations
   const profile = user;

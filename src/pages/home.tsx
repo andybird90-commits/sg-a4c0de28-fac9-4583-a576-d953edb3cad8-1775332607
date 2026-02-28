@@ -230,77 +230,78 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-            <Card className="border border-slate-800 bg-slate-900/80 shadow-professional-md overflow-hidden">
-              <div className="gradient-info p-3 sm:p-4 lg:p-6">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-2xs sm:text-xs lg:text-sm font-medium text-white/80 mb-1 truncate">
-                      Total Evidence
-                    </p>
-                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white truncate">
-                      {stats.totalEvidence}
-                    </p>
-                  </div>
-                  <div className="bg-slate-900/40 p-1.5 sm:p-2 lg:p-3 rounded-lg flex-shrink-0">
-                    <Layers className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
-                  </div>
+          {/* Summary cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+            {/* Total Evidence */}
+            <Card className="bg-[#050b16] border border-slate-800 shadow-professional-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 text-slate-200">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-sky-500/15 text-sky-300">
+                    <Layers className="w-4 h-4" />
+                  </span>
+                  <span>Total Evidence</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-3xl font-bold text-slate-50">
+                  {stats.totalEvidence}
                 </div>
-              </div>
+                <p className="text-xs text-slate-400 mt-1">Across all projects</p>
+              </CardContent>
             </Card>
 
-            <Card className="border border-slate-800 bg-slate-900/80 shadow-professional-md overflow-hidden">
-              <div className="gradient-success p-3 sm:p-4 lg:p-6">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-2xs sm:text-xs lg:text-sm font-medium text-white/80 mb-1 truncate">
-                      This Month
-                    </p>
-                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white truncate">
-                      {stats.evidenceThisMonth}
-                    </p>
-                  </div>
-                  <div className="bg-slate-900/40 p-1.5 sm:p-2 lg:p-3 rounded-lg flex-shrink-0">
-                    <Calendar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
-                  </div>
+            {/* This Month */}
+            <Card className="bg-[#050b16] border border-slate-800 shadow-professional-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 text-slate-200">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-300">
+                    <Calendar className="w-4 h-4" />
+                  </span>
+                  <span>This Month</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-3xl font-bold text-slate-50">
+                  {stats.evidenceThisMonth}
                 </div>
-              </div>
+                <p className="text-xs text-slate-400 mt-1">Evidence items captured</p>
+              </CardContent>
             </Card>
 
-            <Card className="border border-slate-800 bg-slate-900/80 shadow-professional-md overflow-hidden">
-              <div className="gradient-secondary p-3 sm:p-4 lg:p-6">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-2xs sm:text-xs lg:text-sm font-medium text-white/80 mb-1 truncate">
-                      Active Projects
-                    </p>
-                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-white truncate">
-                      {stats.activeProjects}
-                    </p>
-                  </div>
-                  <div className="bg-slate-900/40 p-1.5 sm:p-2 lg:p-3 rounded-lg flex-shrink-0">
-                    <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
-                  </div>
+            {/* Active Projects */}
+            <Card className="bg-[#050b16] border border-slate-800 shadow-professional-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 text-slate-200">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-slate-500/20 text-slate-200">
+                    <FolderOpen className="w-4 h-4" />
+                  </span>
+                  <span>Active Projects</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-3xl font-bold text-slate-50">
+                  {stats.activeProjects}
                 </div>
-              </div>
+                <p className="text-xs text-slate-400 mt-1">Currently in progress</p>
+              </CardContent>
             </Card>
 
-            <Card className="border border-slate-800 bg-slate-900/80 shadow-professional-md overflow-hidden">
-              <div className="gradient-primary p-3 sm:p-4 lg:p-6">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-2xs sm:text-xs lg:text-sm font-medium text-slate-900/80 mb-1 truncate">
-                      Last 7 Days
-                    </p>
-                    <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-950 truncate">
-                      {stats.recentActivity}
-                    </p>
-                  </div>
-                  <div className="bg-slate-950/30 p-1.5 sm:p-2 lg:p-3 rounded-lg flex-shrink-0">
-                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-slate-950" />
-                  </div>
+            {/* Last 7 Days */}
+            <Card className="bg-[#050b16] border border-slate-800 shadow-professional-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 text-slate-200">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-[#ff6b35]/15 text-[#ff8c42]">
+                    <TrendingUp className="w-4 h-4" />
+                  </span>
+                  <span>Last 7 Days</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-3xl font-bold text-slate-50">
+                  {stats.recentActivity}
                 </div>
-              </div>
+                <p className="text-xs text-slate-400 mt-1">New evidence added</p>
+              </CardContent>
             </Card>
           </div>
 
