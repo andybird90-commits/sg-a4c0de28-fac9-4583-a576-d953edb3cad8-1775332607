@@ -24,24 +24,27 @@ export default function OrganisationSelectPage() {
 
   if (loading || !user || organisations.length <= 1) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-rd-orange" />
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-[#ff6b35]" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col">
       <div className="flex-1 flex flex-col justify-center px-6 py-12">
         <div className="w-full max-w-md mx-auto space-y-8">
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-rd-navy">Select Organisation</h1>
-            <p className="text-slate-600">Choose which organisation to access</p>
+            <h1 className="text-3xl font-bold text-slate-50">Select Organisation</h1>
+            <p className="text-slate-400">Choose which organisation to access</p>
           </div>
 
           <div className="space-y-3">
             {organisations.map((org) => (
-              <Card key={org.id} className="evidence-card cursor-pointer hover:shadow-lg transition-all">
+              <Card
+                key={org.id}
+                className="evidence-card cursor-pointer bg-[#050b16] border border-slate-800 hover:bg-slate-900/80 transition-all shadow-professional-md"
+              >
                 <CardContent className="p-0">
                   <Button
                     variant="ghost"
@@ -52,14 +55,14 @@ export default function OrganisationSelectPage() {
                     }}
                   >
                     <div className="flex items-center gap-4 w-full">
-                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-rd-navy to-[#1a3a5f] flex items-center justify-center flex-shrink-0">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center flex-shrink-0">
                         <Building2 className="h-7 w-7 text-white" strokeWidth={2.5} />
                       </div>
                       <div className="flex-1 text-left">
-                        <p className="font-bold text-lg text-rd-navy">{org.name}</p>
-                        <p className="text-sm text-slate-600 capitalize">{org.role} access</p>
+                        <p className="font-bold text-lg text-slate-50">{org.name}</p>
+                        <p className="text-sm text-slate-400 capitalize">{org.role} access</p>
                       </div>
-                      <ArrowRight className="h-6 w-6 text-slate-400 flex-shrink-0" />
+                      <ArrowRight className="h-6 w-6 text-slate-500 flex-shrink-0" />
                     </div>
                   </Button>
                 </CardContent>

@@ -36,18 +36,18 @@ export default function OnboardingPage() {
   const isLastSlide = currentSlide === slides.length - 1;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         <div className="w-full max-w-md space-y-12 text-center">
-          <div className="w-32 h-32 mx-auto rounded-3xl bg-gradient-to-br from-rd-orange to-orange-400 flex items-center justify-center shadow-lg">
+          <div className="w-32 h-32 mx-auto rounded-3xl accent-gradient flex items-center justify-center shadow-professional-md">
             <Icon className="w-16 h-16 text-white" strokeWidth={2.5} />
           </div>
           
           <div className="space-y-4">
-            <h1 className="text-4xl font-bold text-rd-navy leading-tight">
+            <h1 className="text-4xl font-bold text-slate-50 leading-tight">
               {slide.title}
             </h1>
-            <p className="text-xl text-slate-600 leading-relaxed">
+            <p className="text-xl text-slate-400 leading-relaxed">
               {slide.description}
             </p>
           </div>
@@ -58,8 +58,8 @@ export default function OnboardingPage() {
                 key={index}
                 className={`h-2 rounded-full transition-all duration-300 ${
                   index === currentSlide
-                    ? "w-8 bg-rd-orange"
-                    : "w-2 bg-slate-300"
+                    ? "w-8 bg-[#ff6b35]"
+                    : "w-2 bg-slate-700"
                 }`}
               />
             ))}
@@ -67,10 +67,10 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      <div className="p-6 space-y-3 safe-bottom">
+      <div className="p-6 space-y-3 safe-bottom bg-[#020617] border-t border-slate-800">
         {!isLastSlide ? (
           <Button 
-            className="w-full h-14 text-lg font-semibold bg-rd-orange hover:bg-[#E67510] rounded-xl shadow-lg"
+            className="w-full h-14 text-lg font-semibold bg-[#ff6b35] hover:bg-[#ff8c42] text-slate-950 rounded-xl shadow-professional-md"
             onClick={handleNext}
           >
             Next
@@ -78,13 +78,13 @@ export default function OnboardingPage() {
         ) : (
           <>
             <Button 
-              className="w-full h-14 text-lg font-semibold bg-rd-orange hover:bg-[#E67510] rounded-xl shadow-lg"
+              className="w-full h-14 text-lg font-semibold bg-[#ff6b35] hover:bg-[#ff8c42] text-slate-950 rounded-xl shadow-professional-md"
               onClick={() => router.push("/auth/login")}
             >
               Log in
             </Button>
             <Button 
-              className="w-full h-14 text-lg font-semibold bg-rd-navy hover:bg-[#1a3a5f] rounded-xl"
+              className="w-full h-14 text-lg font-semibold bg-slate-900 hover:bg-slate-800 text-slate-100 rounded-xl border border-slate-700"
               onClick={() => router.push("/auth/signup")}
             >
               Sign up

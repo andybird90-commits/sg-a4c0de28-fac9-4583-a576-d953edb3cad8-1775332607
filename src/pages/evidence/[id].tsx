@@ -77,15 +77,15 @@ export default function EvidenceDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-rd-orange" />
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-[#ff6b35]" />
       </div>
     );
   }
 
   if (!evidence) {
     return (
-      <div className="min-h-screen bg-white flex flex-col">
+      <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col">
         <div className="p-4 safe-top">
           <Button
             variant="ghost"
@@ -108,18 +108,18 @@ export default function EvidenceDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-200 safe-top">
+      <div className="sticky top-0 z-10 bg-[#020617] border-b border-slate-800 safe-top">
         <div className="px-6 py-4 flex items-center gap-4">
           <Button
             variant="ghost"
-            className="rounded-full w-10 h-10 p-0 -ml-2"
+            className="rounded-full w-10 h-10 p-0 -ml-2 text-slate-200 hover:bg-slate-800"
             onClick={() => router.back()}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-xl font-bold text-rd-navy">Evidence Detail</h1>
+          <h1 className="text-xl font-bold text-slate-50">Evidence Detail</h1>
         </div>
       </div>
 
@@ -133,10 +133,10 @@ export default function EvidenceDetailPage() {
 
         {/* File Preview */}
         {evidence.evidence_files.length > 0 && fileUrl && (
-          <Card className="overflow-hidden evidence-card">
+          <Card className="overflow-hidden evidence-card bg-[#050b16] border border-slate-800 shadow-professional-md">
             <CardContent className="p-0">
               {evidence.type === 'image' ? (
-                <div className="aspect-video relative bg-slate-100">
+                <div className="aspect-video relative bg-slate-900">
                   <Image
                     src={fileUrl}
                     alt="Evidence"
@@ -145,9 +145,9 @@ export default function EvidenceDetailPage() {
                   />
                 </div>
               ) : (
-                <div className="p-8 text-center bg-slate-50">
-                  <FileText className="h-16 w-16 mx-auto mb-4 text-rd-orange" />
-                  <p className="font-medium text-slate-700 mb-4">{evidence.evidence_files[0].file_type}</p>
+                <div className="p-8 text-center bg-[#050b16]">
+                  <FileText className="h-16 w-16 mx-auto mb-4 text-[#ff6b35]" />
+                  <p className="font-medium text-slate-200 mb-4">{evidence.evidence_files[0].file_type}</p>
                   <Button variant="outline" className="rounded-xl" asChild>
                     <a href={fileUrl} target="_blank" rel="noopener noreferrer">
                       <Download className="mr-2 h-4 w-4" />
@@ -163,11 +163,11 @@ export default function EvidenceDetailPage() {
         {/* Details */}
         <div className="space-y-6">
           <div>
-            <h2 className="text-2xl font-bold text-rd-navy mb-3">
+            <h2 className="text-2xl font-bold text-slate-50 mb-3">
               {evidence.project_name}
             </h2>
             {evidence.description && (
-              <p className="text-lg text-slate-700 leading-relaxed whitespace-pre-wrap">
+              <p className="text-lg text-slate-300 leading-relaxed whitespace-pre-wrap">
                 {evidence.description}
               </p>
             )}
@@ -175,13 +175,13 @@ export default function EvidenceDetailPage() {
 
           {/* Metadata */}
           <div className="space-y-3">
-            <div className="flex items-center gap-3 text-slate-600">
-              <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+            <div className="flex items-center gap-3 text-slate-300">
+              <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center">
                 <Calendar className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-xs font-medium text-slate-500">Created</p>
-                <p className="font-semibold text-slate-900">
+                <p className="font-semibold text-slate-100">
                   {new Date(evidence.created_at).toLocaleDateString('en-GB', {
                     day: 'numeric',
                     month: 'long',
@@ -192,13 +192,13 @@ export default function EvidenceDetailPage() {
             </div>
 
             {evidence.tag && (
-              <div className="flex items-center gap-3 text-slate-600">
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+              <div className="flex items-center gap-3 text-slate-300">
+                <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center">
                   <Tag className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-slate-500">Tag</p>
-                  <span className="inline-block px-3 py-1 bg-rd-orange text-white rounded-full font-semibold text-sm">
+                  <span className="inline-block px-3 py-1 bg-[#ff6b35] text-slate-950 rounded-full font-semibold text-sm">
                     {evidence.tag}
                   </span>
                 </div>
@@ -209,7 +209,7 @@ export default function EvidenceDetailPage() {
       </div>
 
       {/* Footer - Delete Button */}
-      <div className="p-6 border-t border-slate-200 bg-white safe-bottom">
+      <div className="p-6 border-t border-slate-800 bg-[#020617] safe-bottom">
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" className="w-full h-14 text-lg font-semibold rounded-xl">

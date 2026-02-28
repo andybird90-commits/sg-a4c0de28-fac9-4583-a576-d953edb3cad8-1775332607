@@ -206,23 +206,23 @@ export default function CaptureEvidencePage() {
   return (
     <Layout>
       <SEO title="Capture Evidence - RD Companion" />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50 py-8 px-4 sm:px-6">
+      <div className="min-h-screen bg-[#020617] py-8 px-4 sm:px-6">
         <div className="max-w-2xl mx-auto">
           <Button 
             variant="ghost" 
             onClick={() => router.push("/home")}
-            className="mb-6 hover:bg-white/50 text-muted-foreground"
+            className="mb-6 hover:bg-slate-800 text-slate-300"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
 
-          <Card className="border-0 shadow-professional-lg overflow-hidden">
-            <CardHeader className="bg-white border-b border-slate-100 pb-6">
+          <Card className="border border-slate-800 shadow-professional-lg overflow-hidden bg-[#050b16] text-slate-100">
+            <CardHeader className="bg-[#050b16] border-b border-slate-800 pb-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-2xl font-bold text-foreground">Capture Evidence</CardTitle>
-                  <CardDescription>Document your R&D progress</CardDescription>
+                  <CardTitle className="text-2xl font-bold text-slate-50">Capture Evidence</CardTitle>
+                  <CardDescription className="text-slate-400">Document your R&amp;D progress</CardDescription>
                 </div>
                 {!isOnline && (
                   <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/20">
@@ -237,7 +237,7 @@ export default function CaptureEvidencePage() {
                 {/* File Upload Area */}
                 <div 
                   className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all ${
-                    previewUrl ? "border-primary/20 bg-primary/5" : "border-slate-200 hover:border-primary/50 hover:bg-slate-50"
+                    previewUrl ? "border-[#ff6b35]/40 bg-slate-900" : "border-slate-700 hover:border-[#ff6b35]/60 hover:bg-slate-900/60"
                   }`}
                 >
                   <input
@@ -257,7 +257,7 @@ export default function CaptureEvidencePage() {
                           className="max-h-64 rounded-lg shadow-professional-md" 
                         />
                       ) : (
-                        <div className="h-32 w-32 bg-white rounded-lg shadow-professional flex items-center justify-center mx-auto">
+                        <div className="h-32 w-32 bg-slate-900 rounded-lg shadow-professional flex items-center justify-center mx-auto">
                           {fileType === 'video' && <Video className="h-12 w-12 text-primary" />}
                           {fileType === 'audio' && <Mic className="h-12 w-12 text-primary" />}
                           {fileType === 'document' && <FileText className="h-12 w-12 text-primary" />}
@@ -268,18 +268,18 @@ export default function CaptureEvidencePage() {
                         onClick={clearFile}
                         className="absolute -top-3 -right-3 bg-white rounded-full p-1.5 shadow-professional-md hover:bg-slate-100 border border-slate-200"
                       >
-                        <X className="h-4 w-4 text-slate-600" />
+                        <X className="h-4 w-4 text-slate-300" />
                       </button>
                       <p className="mt-4 text-sm font-medium text-foreground">{file?.name}</p>
                     </div>
                   ) : (
                     <div className="space-y-4 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                      <div className="mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-primary">
+                      <div className="mx-auto w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center text-[#ff6b35]">
                         <Upload className="h-8 w-8" />
                       </div>
                       <div>
-                        <p className="text-lg font-semibold text-foreground">Upload Evidence</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-lg font-semibold text-slate-50">Upload Evidence</p>
+                        <p className="text-sm text-slate-400">
                           Drag & drop or click to upload photo, video, or document
                         </p>
                       </div>

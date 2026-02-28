@@ -61,13 +61,13 @@ export function AdminNav() {
   const isActive = (path: string) => router.pathname === path;
 
   return (
-    <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm mb-8">
+    <Card className="border border-slate-800 shadow-professional-md bg-[#050b16]/95 backdrop-blur-sm mb-8 text-slate-100">
       <div className="p-4">
         <div className="flex items-center gap-4 flex-wrap">
           <Button
             variant="ghost"
             onClick={() => router.push("/home")}
-            className="text-slate-600 hover:text-slate-900"
+            className="text-slate-300 hover:text-slate-50 hover:bg-slate-800"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
@@ -86,9 +86,9 @@ export function AdminNav() {
                   variant={active ? "default" : "ghost"}
                   onClick={() => router.push(item.path)}
                   className={`${
-                    active 
-                      ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md" 
-                      : "text-slate-700 hover:bg-slate-100"
+                    active
+                      ? "bg-[#ff6b35] hover:bg-[#ff8c42] text-slate-950 shadow-md"
+                      : "text-slate-200 hover:bg-slate-800"
                   }`}
                 >
                   <Icon className="h-4 w-4 mr-2" />
