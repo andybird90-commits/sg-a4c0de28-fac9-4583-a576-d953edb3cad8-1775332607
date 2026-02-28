@@ -124,40 +124,66 @@ export default function ProjectDetailPage() {
     async (sidekickProjectId: string) => {
       try {
         const response = await fetch(
-          `/api/projects/by-sidekick?id=${encodeURIComponent(sidekickProjectId)}`
+          `/api/projects/by-sidekick?sidekickProjectId=${encodeURIComponent(
+            sidekickProjectId
+          )}`
         );
+
         if (!response.ok) {
-          let errorMessage =
-            "There was a problem sending this project to the R&D team. Please try again.";
+          let errorMessage = "Failed to refresh claim project";
+
           try {
-            const errorBody = (await response.json()) as { error?: string };
-            if (errorBody?.error) {
-              errorMessage = errorBody.error;
+            const contentType = response.headers.get("content-type") || "";
+
+            if (contentType.includes("application/json")) {
+              const errorBody = (await response.json()) as { error?: string };
+              if (errorBody?.error) {
+                errorMessage = errorBody.error;
+              }
+            } else {
+              const text = await response.text();
+              if (text) {
+                errorMessage = text;
+              }
             }
-            console.error("Error sending project to team:", errorBody);
           } catch (parseError) {
             console.error(
-              "Error sending project to team (failed to parse error body):",
+              "Error parsing error response in refreshClaimProject:",
               parseError
             );
           }
 
+          console.error("Error refreshing claim project:", errorMessage);
           toast({
-            title: "Could not send to team",
+            title: "Error refreshing claim project",
             description: errorMessage,
             variant: "destructive",
           });
+
           return;
         }
 
-        const data: { project: ClaimProject | null } = await response.json();
-        setClaimProject(data.project ?? null);
+        const data = (await response.json()) as {
+          claimProject: ClaimProject | null;
+          approvalSections?: Partial<ApprovalSections> | null;
+        };
 
-        if (data.project?.approval_status) {
-          setApprovalSections(data.project.approval_status as any);
+        setClaimProject(data.claimProject ?? null);
+
+        if (data.approvalSections) {
+          setApprovalSections((prev) => ({
+            ...prev,
+            ...data.approvalSections,
+          }));
         }
       } catch (error) {
-        console.error("Error refreshing claim project:", error);
+        console.error("Unexpected error refreshing claim project:", error);
+        toast({
+          title: "Error refreshing claim project",
+          description:
+            "An unexpected error occurred while refreshing the claim project.",
+          variant: "destructive",
+        });
       }
     },
     [setClaimProject, setApprovalSections, toast]
