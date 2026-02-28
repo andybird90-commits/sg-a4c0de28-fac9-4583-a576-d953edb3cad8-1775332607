@@ -31,6 +31,8 @@ export interface ClaimWithDetails extends Claim {
   cost_lead?: Profile | null;
   total_costs?: number;
   document_count?: number;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 }
 
 export class ClaimService {
@@ -63,6 +65,7 @@ export class ClaimService {
           cost_lead:cost_lead_id (id, full_name, email)
         `
         )
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
       if (filters?.status) {
@@ -128,6 +131,77 @@ export class ClaimService {
       return claimsWithDetails;
     } catch (error) {
       console.error("[claimService.getAllClaims] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get trashed (soft-deleted) claims
+   */
+  async getDeletedClaims(): Promise<ClaimWithDetails[]> {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        console.error("[claimService.getDeletedClaims] No active session");
+        return [];
+      }
+
+      const query = supabase
+        .from("claims")
+        .select(
+          `
+          *,
+          organisations:org_id (id, name, organisation_code),
+          bd_owner:bd_owner_id (id, full_name, email),
+          technical_lead:technical_lead_id (id, full_name, email),
+          cost_lead:cost_lead_id (id, full_name, email)
+        `
+        )
+        .not("deleted_at", "is", null)
+        .order("deleted_at", { ascending: false });
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      const claimsWithDetails = await Promise.all(
+        ((data as any[]) || []).map(async (claim) => {
+          const [projectsResult, costsResult, docsResult] = await Promise.all([
+            supabase
+              .from("claim_projects")
+              .select("*")
+              .eq("claim_id", claim.id),
+            supabase
+              .from("claim_costs")
+              .select("amount")
+              .eq("claim_id", claim.id),
+            supabase
+              .from("claim_documents")
+              .select("id")
+              .eq("claim_id", claim.id),
+          ]);
+
+          const totalCosts =
+            costsResult.data?.reduce(
+              (sum, cost) => sum + Number(cost.amount || 0),
+              0
+            ) || 0;
+
+          return {
+            ...claim,
+            projects: projectsResult.data || [],
+            costs: costsResult.data || [],
+            total_costs: totalCosts,
+            document_count: docsResult.data?.length || 0,
+          };
+        })
+      );
+
+      return claimsWithDetails;
+    } catch (error) {
+      console.error("[claimService.getDeletedClaims] Error:", error);
       throw error;
     }
   }
@@ -278,7 +352,18 @@ export class ClaimService {
    */
   async deleteClaim(claimId: string): Promise<void> {
     try {
-      const { error } = await supabase.from("claims").delete().eq("id", claimId);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const { error } = await supabase
+        .from("claims")
+        .update({
+          deleted_at: new Date().toISOString(),
+          deleted_by: user?.id ?? null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", claimId);
 
       if (error) throw error;
     } catch (error) {

@@ -63,30 +63,35 @@ export default function ClaimsPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [claims, setClaims] = useState<ClaimWithDetails[]>([]);
+  const [deletedClaims, setDeletedClaims] = useState<ClaimWithDetails[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadClaims();
-  }, []);
-
-  const loadClaims = async () => {
-    try {
+    async function loadData() {
       setLoading(true);
-      const data = await claimService.getAllClaims();
-      setClaims(data);
-    } catch (error) {
-      console.error("Error loading claims:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load claims",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      try {
+        const [activeClaims, deletedClaims] = await Promise.all([
+          claimService.getAllClaims(),
+          claimService.getDeletedClaims(),
+        ]);
+        setClaims(activeClaims);
+        setDeletedClaims(deletedClaims);
+      } catch (err) {
+        console.error("[StaffClaims] Failed to load claims", err);
+        toast({
+          title: "Error loading claims",
+          description: "We could not load the claims list. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
     }
-  };
+
+    loadData();
+  }, [toast]);
 
   const filteredClaims = claims.filter(claim => {
     const matchesSearch = 
@@ -326,6 +331,47 @@ export default function ClaimsPage() {
             )}
           </CardContent>
         </Card>
+
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold">Trashed Claims</h2>
+          <p className="text-sm text-muted-foreground">
+            Claims in the trash are kept for 28 days and then permanently deleted.
+          </p>
+          {deletedClaims.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No claims are currently in the trash.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {deletedClaims.map((claim) => (
+                <div
+                  key={claim.id}
+                  className="rounded-lg border bg-muted/40 p-4 text-sm"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="font-medium">
+                        {claim.organisations?.name || "Unknown organisation"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Claim year {claim.claim_year} • Status {claim.status}
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive">
+                      In trash
+                    </span>
+                  </div>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    Moved to trash{" "}
+                    {claim.deleted_at
+                      ? new Date(claim.deleted_at).toLocaleDateString()
+                      : "recently"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </StaffLayout>
   );

@@ -988,6 +988,8 @@ export type Database = {
           claim_year: number
           cost_lead_id: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           director_id: string | null
           engagement_id: string | null
           expected_submission_date: string | null
@@ -1008,6 +1010,8 @@ export type Database = {
           claim_year: number
           cost_lead_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           director_id?: string | null
           engagement_id?: string | null
           expected_submission_date?: string | null
@@ -1028,6 +1032,8 @@ export type Database = {
           claim_year?: number
           cost_lead_id?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           director_id?: string | null
           engagement_id?: string | null
           expected_submission_date?: string | null
@@ -1053,6 +1059,13 @@ export type Database = {
           {
             foreignKeyName: "claims_cost_lead_id_fkey"
             columns: ["cost_lead_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claims_deleted_by_fkey"
+            columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
