@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { pipelineService } from "./pipelineService";
 
 type Claim = Database["public"]["Tables"]["claims"]["Row"];
 type ClaimInsert = Database["public"]["Tables"]["claims"]["Insert"];
@@ -281,24 +280,6 @@ export class ClaimService {
 
       if (error) throw error;
 
-      if (data && data.status === "active") {
-        const { data: prospectRows } = await supabase
-          .from("prospects")
-          .select("company_number")
-          .eq("org_id", data.org_id);
-
-        const companyNumber =
-          Array.isArray(prospectRows) && prospectRows.length > 0
-            ? prospectRows[0]?.company_number || null
-            : null;
-
-        await pipelineService.autoCreatePipelineEntry(
-          data.id,
-          data.org_id,
-          companyNumber
-        );
-      }
-
       return data;
     } catch (error) {
       console.error("[claimService.createClaim] Error:", error);
@@ -319,24 +300,6 @@ export class ClaimService {
         .single();
 
       if (error) throw error;
-
-      if (data && updates.status === "active") {
-        const { data: prospectRows } = await supabase
-          .from("prospects")
-          .select("company_number")
-          .eq("org_id", data.org_id);
-
-        const companyNumber =
-          Array.isArray(prospectRows) && prospectRows.length > 0
-            ? prospectRows[0]?.company_number || null
-            : null;
-
-        await pipelineService.autoCreatePipelineEntry(
-          data.id,
-          data.org_id,
-          companyNumber
-        );
-      }
 
       return data;
     } catch (error) {
