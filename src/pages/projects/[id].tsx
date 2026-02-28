@@ -127,17 +127,18 @@ export default function ProjectDetailPage() {
           `/api/projects/by-sidekick?id=${encodeURIComponent(sidekickProjectId)}`
         );
         if (!response.ok) {
-          let errorMessage = "There was a problem sending this project to the R&D team. Please try again.";
+          let errorMessage =
+            "There was a problem sending this project to the R&D team. Please try again.";
           try {
             const errorBody = (await response.json()) as { error?: string };
             if (errorBody?.error) {
               errorMessage = errorBody.error;
             }
             console.error("Error sending project to team:", errorBody);
-          } catch {
+          } catch (parseError) {
             console.error(
-              "Error sending project to team:",
-              await response.text()
+              "Error sending project to team (failed to parse error body):",
+              parseError
             );
           }
 
@@ -159,7 +160,7 @@ export default function ProjectDetailPage() {
         console.error("Error refreshing claim project:", error);
       }
     },
-    [setClaimProject, setApprovalSections]
+    [setClaimProject, setApprovalSections, toast]
   );
 
   useEffect(() => {
@@ -246,8 +247,9 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleSendToTeam = async () => {
+  const handleSendToTeam = useCallback(async () => {
     if (!project || !user) return;
+
     setSubmitting(true);
     try {
       const response = await fetch("/api/projects/send-to-team", {
@@ -262,47 +264,55 @@ export default function ProjectDetailPage() {
       });
 
       if (!response.ok) {
-        let errorMessage = "There was a problem sending this project to the R&D team. Please try again.";
+        let errorMessage = "Failed to send project to team";
+
         try {
-          const errorBody = (await response.json()) as { error?: string };
-          if (errorBody?.error) {
-            errorMessage = errorBody.error;
+          const data = await response.json();
+          if (
+            data &&
+            typeof data === "object" &&
+            "error" in data &&
+            typeof (data as any).error === "string"
+          ) {
+            errorMessage = (data as any).error;
+          } else {
+            errorMessage = JSON.stringify(data);
           }
-          console.error("Error sending project to team:", errorBody);
-        } catch {
+        } catch (parseError) {
           console.error(
-            "Error sending project to team:",
-            await response.text()
+            "Error parsing error response when sending project to team:",
+            parseError
           );
         }
 
+        console.error("Error sending project to team:", errorMessage);
         toast({
-          title: "Could not send to team",
+          title: "Could not send project",
           description: errorMessage,
           variant: "destructive",
         });
         return;
       }
 
-      const data: { project: ClaimProject | null } = await response.json();
-      setClaimProject(data.project ?? null);
-
-      setSendToTeamDialog(false);
+      const data = await response.json();
+      setClaimProject(data.project);
       toast({
-        title: "Sent to R&D team",
-        description: "Your project has been passed to the R&D team for review.",
+        title: "Project sent to R&D team",
+        description:
+          "The project has been submitted to the R&D team for review.",
       });
     } catch (error) {
-      console.error("Error sending project to team:", error);
+      console.error("Unexpected error sending project to team:", error);
       toast({
-        title: "Could not send to team",
-        description: "Please try again in a moment.",
+        title: "Unexpected error",
+        description:
+          "Something went wrong while sending the project to the team.",
         variant: "destructive",
       });
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [project, user, toast, setClaimProject]);
 
   const handleApproveProject = async () => {
     if (!project || !claimProject) return;
