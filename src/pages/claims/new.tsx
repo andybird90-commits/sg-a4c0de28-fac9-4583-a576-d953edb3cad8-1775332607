@@ -155,7 +155,7 @@ export default function NewClaimFromProjectsPage() {
   return (
     <Layout>
       <SEO title="Start New Claim - RD Companion" />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50">
+      <div className="min-h-screen bg-slate-950 text-slate-100">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
             <div className="flex items-center gap-3">
@@ -178,7 +178,7 @@ export default function NewClaimFromProjectsPage() {
             </div>
           </div>
 
-          <Card className="mb-6 border-0 shadow-professional-md">
+          <Card className="mb-6 border border-slate-800 bg-slate-950/80 shadow-professional-md">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
@@ -201,7 +201,7 @@ export default function NewClaimFromProjectsPage() {
                     max={2100}
                     value={claimYear}
                     onChange={(e) => setClaimYear(Number(e.target.value) || claimYear)}
-                    className="w-32 border rounded-md px-3 py-2 text-sm bg-background"
+                    className="w-32 border border-slate-700 rounded-md px-3 py-2 text-sm bg-slate-950/60 text-slate-100 placeholder:text-slate-500"
                   />
                   <p className="mt-1 text-xs text-muted-foreground">
                     Typically this is the year end of the accounting period you are
@@ -219,7 +219,7 @@ export default function NewClaimFromProjectsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-professional-md">
+          <Card className="border border-slate-800 bg-slate-950/80 shadow-professional-md">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
@@ -255,7 +255,7 @@ export default function NewClaimFromProjectsPage() {
                       return (
                         <label
                           key={project.id}
-                          className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:p-4 cursor-pointer hover:border-primary/70 hover:shadow-professional-sm transition-professional"
+                          className="flex items-start gap-3 rounded-lg border border-slate-800 bg-slate-950/80 p-3 sm:p-4 cursor-pointer hover:border-primary/70 hover:bg-slate-900/80 hover:shadow-professional-sm transition-professional"
                         >
                           <Checkbox
                             checked={isSelected}
@@ -264,23 +264,23 @@ export default function NewClaimFromProjectsPage() {
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="font-semibold text-sm sm:text-base text-foreground line-clamp-1">
+                              <span className="font-semibold text-sm sm:text-base text-slate-100 line-clamp-1">
                                 {project.name}
                               </span>
                               <Badge
                                 variant="secondary"
-                                className="text-2xs bg-success/10 text-success border-success/20"
+                                className="text-2xs bg-emerald-500/15 text-emerald-300 border-emerald-400/40"
                               >
                                 {project.status || "draft"}
                               </Badge>
                               {project.sector && (
-                                <Badge variant="outline" className="text-2xs">
+                                <Badge variant="outline" className="text-2xs border-slate-700 text-slate-200">
                                   {project.sector}
                                 </Badge>
                               )}
                             </div>
                             {project.description && (
-                              <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-1">
+                              <p className="text-xs sm:text-sm text-slate-300 line-clamp-2 mb-1">
                                 {project.description}
                               </p>
                             )}
