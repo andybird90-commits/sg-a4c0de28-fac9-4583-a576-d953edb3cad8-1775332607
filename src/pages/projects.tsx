@@ -198,9 +198,6 @@ export default function ProjectsPage() {
                           {project.sector}
                         </span>
                       )}
-                      {project.stage && (
-                        <Badge variant="outline">{project.stage}</Badge>
-                      )}
                     </div>
                     <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
                       <Clock className="w-3 h-3" />
