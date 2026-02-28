@@ -566,7 +566,28 @@ export class ClaimService {
         source_sidekick_project_id: sp.id,
       };
 
-      return await this.createProject(projectData);
+      const project = await this.createProject(projectData);
+
+      const { error: linkError } = await supabase
+        .from("sidekick_projects")
+        .update({
+          claim_id: claimId,
+          accepted_at: new Date().toISOString(),
+        })
+        .eq("id", sidekickProjectId);
+
+      if (linkError) {
+        console.error(
+          "[claimService.importSidekickProject] Failed to link sidekick project to claim:",
+          {
+            sidekickProjectId,
+            claimId,
+            error: linkError,
+          }
+        );
+      }
+
+      return project;
     } catch (error) {
       console.error("[claimService.importSidekickProject] Error:", error);
       throw error;

@@ -132,7 +132,7 @@ export default async function handler(
         error: sidekickError,
       } = await supabaseServer
         .from("sidekick_projects")
-        .select("id, org_id, claim_id, name, description, sector")
+        .select("id, claim_id, name, description, sector")
         .eq("id", sidekickProjectId)
         .maybeSingle();
 
