@@ -288,8 +288,8 @@ export const authService = {
             console.warn("403 error from Supabase auth, clearing session");
             await this.clearInvalidSession();
             
-            if (window.location.pathname !== "/auth/login") {
-              window.location.href = "/auth/login";
+            if (window.location.pathname !== "/") {
+              window.location.href = "/";
             }
           }
           
