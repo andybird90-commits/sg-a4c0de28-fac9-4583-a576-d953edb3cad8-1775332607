@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { randomUUID } from "crypto";
 import { supabaseServer } from "@/integrations/supabase/serverClient";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -34,7 +35,12 @@ export default async function handler(
   const { orgId, claimYear, sidekickProjectIds, userId } =
     req.body as StartFromSidekickRequest;
 
-  if (!orgId || !claimYear || !Array.isArray(sidekickProjectIds) || sidekickProjectIds.length === 0) {
+  if (
+    !orgId ||
+    !claimYear ||
+    !Array.isArray(sidekickProjectIds) ||
+    sidekickProjectIds.length === 0
+  ) {
     res.status(400).json({
       error: "orgId, claimYear and at least one sidekickProjectId are required",
     });
@@ -42,16 +48,18 @@ export default async function handler(
   }
 
   try {
-    const { data: claim, error: claimError } = await supabaseServer
-      .from("claims")
-      .insert({
-        org_id: orgId,
-        claim_year: claimYear,
-      })
-      .select("*")
-      .single();
+    const nowIso = new Date().toISOString();
+    const claimId = randomUUID();
 
-    if (claimError || !claim) {
+    const { error: claimError } = await supabaseServer.from("claims").insert({
+      id: claimId,
+      org_id: orgId,
+      claim_year: claimYear,
+      created_at: nowIso,
+      updated_at: nowIso,
+    });
+
+    if (claimError) {
       console.error("[start-from-sidekick] Error creating claim:", claimError);
       res.status(500).json({
         error:
@@ -62,10 +70,11 @@ export default async function handler(
       return;
     }
 
-    const { data: sidekickProjects, error: sidekickError } = await supabaseServer
-      .from("sidekick_projects")
-      .select("*")
-      .in("id", sidekickProjectIds);
+    const { data: sidekickProjects, error: sidekickError } =
+      await supabaseServer
+        .from("sidekick_projects")
+        .select("*")
+        .in("id", sidekickProjectIds);
 
     if (sidekickError) {
       console.error(
@@ -90,10 +99,8 @@ export default async function handler(
       return;
     }
 
-    const nowIso = new Date().toISOString();
-
     const claimProjectInserts = projectsArray.map((p) => ({
-      claim_id: claim.id,
+      claim_id: claimId,
       org_id: orgId,
       name: p.name,
       description: p.description,
@@ -106,11 +113,9 @@ export default async function handler(
       updated_at: nowIso,
     }));
 
-    const { data: insertedClaimProjects, error: claimProjectsError } =
-      await supabaseServer
-        .from("claim_projects")
-        .insert(claimProjectInserts)
-        .select("*");
+    const { error: claimProjectsError } = await supabaseServer
+      .from("claim_projects")
+      .insert(claimProjectInserts);
 
     if (claimProjectsError) {
       console.error(
@@ -129,7 +134,7 @@ export default async function handler(
     const { error: updateSidekickError } = await supabaseServer
       .from("sidekick_projects")
       .update({
-        claim_id: claim.id,
+        claim_id: claimId,
         accepted_at: nowIso,
       })
       .in("id", sidekickProjectIds);
@@ -139,12 +144,18 @@ export default async function handler(
         "[start-from-sidekick] Error updating sidekick projects:",
         updateSidekickError
       );
-      // Non-fatal: we still return success for the claim creation itself
+      // Non-fatal: claim and claim projects were created successfully
     }
 
+    const claimForResponse = {
+      id: claimId,
+      org_id: orgId,
+      claim_year: claimYear,
+    } as Claim;
+
     res.status(200).json({
-      claim,
-      claimProjects: (insertedClaimProjects as ClaimProject[]) || [],
+      claim: claimForResponse,
+      claimProjects: [] as ClaimProject[],
     });
   } catch (error) {
     console.error("[start-from-sidekick] Unexpected error:", error);
