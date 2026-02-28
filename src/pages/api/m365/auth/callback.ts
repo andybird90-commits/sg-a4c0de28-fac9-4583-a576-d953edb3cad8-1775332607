@@ -69,17 +69,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { error: upsertError } = await (supabaseServer as any)
       .from("calendar_accounts")
-      .upsert(
-        {
-          user_id: decoded.userId,
-          provider: "m365",
-          azure_oid: azureOid,
-          refresh_token: tokenResponse.refresh_token || "",
-          access_token: tokenResponse.access_token,
-          access_token_expires_at: expiresAt
-        },
-        { onConflict: "user_id" }
-      );
+      .upsert({
+        user_id: decoded.userId,
+        provider: "m365",
+        azure_oid: azureOid,
+        refresh_token: tokenResponse.refresh_token || "",
+        access_token: tokenResponse.access_token,
+        access_token_expires_at: expiresAt,
+      });
 
     if (upsertError) {
       console.error("Error upserting calendar_accounts:", upsertError);
