@@ -87,6 +87,8 @@ export default function NewClaimFromProjectsPage() {
       return;
     }
 
+    const selectedProjects = projects.filter((p) => selectedIds.has(p.id));
+
     setSubmitting(true);
     try {
       const response = await fetch("/api/claims/start-from-sidekick", {
@@ -97,8 +99,15 @@ export default function NewClaimFromProjectsPage() {
         body: JSON.stringify({
           orgId: currentOrg.id,
           claimYear,
-          sidekickProjectIds: Array.from(selectedIds),
           userId: user.id,
+          projects: selectedProjects.map((p) => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            sector: p.sector,
+            start_date: p.start_date,
+            end_date: p.end_date,
+          })),
         }),
       });
 

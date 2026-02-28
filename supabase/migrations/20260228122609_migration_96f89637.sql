@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS trigger_sync_pipeline_from_claim ON public.claims;

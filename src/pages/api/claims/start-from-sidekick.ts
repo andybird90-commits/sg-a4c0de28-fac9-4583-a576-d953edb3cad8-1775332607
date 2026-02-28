@@ -6,10 +6,19 @@ import type { Database } from "@/integrations/supabase/types";
 type Claim = Database["public"]["Tables"]["claims"]["Row"];
 type ClaimProject = Database["public"]["Tables"]["claim_projects"]["Row"];
 
+type StartFromSidekickProject = {
+  id: string;
+  name: string | null;
+  description: string | null;
+  sector: string | null;
+  start_date: string | null;
+  end_date: string | null;
+};
+
 type StartFromSidekickRequest = {
   orgId?: string;
   claimYear?: number;
-  sidekickProjectIds?: string[];
+  projects?: StartFromSidekickProject[];
   userId?: string;
 };
 
@@ -32,17 +41,15 @@ export default async function handler(
     return;
   }
 
-  const { orgId, claimYear, sidekickProjectIds, userId } =
+  const { orgId, claimYear, projects, userId } =
     req.body as StartFromSidekickRequest;
 
-  if (
-    !orgId ||
-    !claimYear ||
-    !Array.isArray(sidekickProjectIds) ||
-    sidekickProjectIds.length === 0
-  ) {
+  const projectsArray = Array.isArray(projects) ? projects : [];
+
+  if (!orgId || !claimYear || projectsArray.length === 0) {
     res.status(400).json({
-      error: "orgId, claimYear and at least one sidekickProjectId are required",
+      error:
+        "orgId, claimYear and at least one project with Sidekick details are required",
     });
     return;
   }
@@ -69,36 +76,6 @@ export default async function handler(
           "Failed to create claim"
         }`,
       });
-      return;
-    }
-
-    const { data: sidekickProjects, error: sidekickError } =
-      await supabaseServer
-        .from("sidekick_projects")
-        .select("*")
-        .in("id", sidekickProjectIds);
-
-    if (sidekickError) {
-      console.error(
-        "[start-from-sidekick] Error loading sidekick projects:",
-        sidekickError
-      );
-      res.status(500).json({
-        error: `sidekick_projects select: ${
-          (sidekickError as any)?.message ||
-          (sidekickError as any)?.details ||
-          "Failed to load projects"
-        }`,
-      });
-      return;
-    }
-
-    const projectsArray = Array.isArray(sidekickProjects)
-      ? sidekickProjects
-      : [];
-
-    if (projectsArray.length === 0) {
-      res.status(400).json({ error: "No matching Sidekick projects found" });
       return;
     }
 
@@ -135,20 +112,24 @@ export default async function handler(
       return;
     }
 
-    const { error: updateSidekickError } = await supabaseServer
-      .from("sidekick_projects")
-      .update({
-        claim_id: claimId,
-        accepted_at: nowIso,
-      })
-      .in("id", sidekickProjectIds);
+    const sidekickProjectIds = projectsArray.map((p) => p.id);
 
-    if (updateSidekickError) {
-      console.error(
-        "[start-from-sidekick] Error updating sidekick projects:",
-        updateSidekickError
-      );
-      // Non-fatal: claim and claim projects were created successfully
+    if (sidekickProjectIds.length > 0) {
+      const { error: updateSidekickError } = await supabaseServer
+        .from("sidekick_projects")
+        .update({
+          claim_id: claimId,
+          accepted_at: nowIso,
+        })
+        .in("id", sidekickProjectIds);
+
+      if (updateSidekickError) {
+        console.error(
+          "[start-from-sidekick] Error updating sidekick projects:",
+          updateSidekickError
+        );
+        // Non-fatal: claim and claim projects were created successfully
+      }
     }
 
     const claimForResponse = {
