@@ -728,13 +728,17 @@ export default function ClaimDetailPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => router.push("/staff/claims")}>
+            <Button
+              variant="ghost"
+              onClick={() => router.push("/staff/claims")}
+              className="text-slate-200 hover:text-white hover:bg-slate-800/80"
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-slate-900">
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
                   {claim.organisations?.name || "Unknown Client"}
                 </h1>
                 <MessageWidget
@@ -743,7 +747,7 @@ export default function ClaimDetailPage() {
                   entityName={`${claim.organisations?.name || "Claim"} - FY ${claim.claim_year}`}
                 />
               </div>
-              <p className="text-slate-600">
+              <p className="text-sm text-slate-400">
                 FY {claim.claim_year} • {claim.organisations?.organisation_code}
               </p>
             </div>
@@ -754,58 +758,74 @@ export default function ClaimDetailPage() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <Card className="bg-slate-900/80 border-slate-800 shadow-none">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Briefcase className="h-6 w-6 text-blue-600" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-slate-700">
+                  <Briefcase className="h-5 w-5 text-sky-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Projects</p>
-                  <p className="text-2xl font-bold">{claim.projects?.length || 0}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Projects
+                  </p>
+                  <p className="text-2xl font-semibold text-slate-50">
+                    {claim.projects?.length || 0}
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-slate-900/80 border-slate-800 shadow-none">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <PoundSterling className="h-6 w-6 text-green-600" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-emerald-500/40">
+                  <PoundSterling className="h-5 w-5 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Total Costs</p>
-                  <p className="text-2xl font-bold">{formatCurrency(claim.total_costs || 0)}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Total Costs
+                  </p>
+                  <p className="text-2xl font-semibold text-slate-50">
+                    {formatCurrency(claim.total_costs || 0)}
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-slate-900/80 border-slate-800 shadow-none">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-purple-100 rounded-lg">
-                  <FileText className="h-6 w-6 text-purple-600" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-violet-500/40">
+                  <FileText className="h-5 w-5 text-violet-300" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">Documents</p>
-                  <p className="text-2xl font-bold">{claim.document_count || 0}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    Documents
+                  </p>
+                  <p className="text-2xl font-semibold text-slate-50">
+                    {claim.document_count || 0}
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-slate-900/80 border-slate-800 shadow-none">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-orange-100 rounded-lg">
-                  <RefreshCw className="h-6 w-6 text-orange-600" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-orange-500/50">
+                  <RefreshCw className="h-5 w-5 text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">AI Companion</p>
-                  <p className="text-2xl font-bold">Ready</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                    AI Companion
+                  </p>
+                  <p className="text-2xl font-semibold text-emerald-300">
+                    Ready
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -1137,13 +1157,15 @@ export default function ClaimDetailPage() {
                 <div className="mb-6 rounded-xl border border-slate-700 bg-slate-900/80 px-6 py-4 shadow-professional-md">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-300">Total Claim Value</p>
+                      <p className="text-sm font-semibold text-slate-100 tracking-tight">
+                        Total Claim Value
+                      </p>
                       <p className="mt-1 text-3xl font-bold text-emerald-300">
                         {formatCurrency(claim.total_costs || 0)}
                       </p>
                     </div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-emerald-400/60 bg-emerald-500/15">
-                      <PoundSterling className="h-6 w-6 text-emerald-300" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-emerald-400/40 bg-gradient-to-tr from-emerald-500/20 via-emerald-500/10 to-transparent shadow-lg shadow-emerald-500/20">
+                      <PoundSterling className="h-6 w-6 text-emerald-200" />
                     </div>
                   </div>
                 </div>
@@ -1211,9 +1233,11 @@ export default function ClaimDetailPage() {
                     </TableBody>
                   </Table>
                 ) : (
-                  <div className="py-12 text-center text-slate-400">
-                    <PoundSterling className="mx-auto mb-3 h-12 w-12 text-slate-500" />
-                    <p className="font-medium text-slate-200">No costs recorded yet</p>
+                  <div className="py-12 text-center">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-slate-600 bg-slate-900 shadow-inner">
+                      <PoundSterling className="h-7 w-7 text-slate-200" />
+                    </div>
+                    <p className="font-semibold text-slate-100">No costs recorded yet</p>
                     <p className="mt-1 text-sm text-slate-400">
                       Add cost entries to track R&amp;D expenditure
                     </p>

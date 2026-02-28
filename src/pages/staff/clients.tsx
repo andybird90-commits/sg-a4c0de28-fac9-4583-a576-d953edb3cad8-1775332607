@@ -545,7 +545,7 @@ export default function StaffClients() {
       if (!options?.suppressToast) {
         toast({
           title: "Valid company number required",
-          description: "The company number for this imported client appears to be invalid. Please correct it before enrichinging.",
+          description: "The company number for this imported client appears to be invalid. Please correct it before enriching.",
           variant: "destructive"
         });
       }
@@ -1007,7 +1007,7 @@ export default function StaffClients() {
                           {filteredClientsToOnboard.map((client) => (
                             <Card
                               key={client.id}
-                              className="border border-slate-200 hover:shadow-sm transition-shadow cursor-pointer hover:bg-slate-50"
+                              className="border border-slate-700 bg-slate-900/70 hover:bg-slate-800 hover:border-slate-400 hover:shadow-md transition-colors cursor-pointer"
                               onClick={() => handleOpenClientDetail(client)}
                             >
                               <CardContent className="py-3 px-4">
