@@ -39,7 +39,6 @@ export default function LoginPage() {
     }
   }, [appLoading]);
 
-  // Handle routing after user is loaded by AppContext
   useEffect(() => {
     if (!appLoading && user) {
       if (isStaff) {
@@ -55,58 +54,62 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const { user, error } = await authService.signIn(email, password);
+    const { user: signedInUser, error: signInError } = await authService.signIn(email, password);
 
-    if (error) {
-      setError(error.message);
+    if (signInError) {
+      setError(signInError.message);
       setLoading(false);
       return;
     }
 
-    // Don't manually redirect - let the useEffect above handle it
-    // after AppContext finishes loading the user profile
-    if (!user) {
+    if (!signedInUser) {
       setError("Failed to sign in. Please try again.");
       setLoading(false);
     }
-    // Keep loading state true - will redirect via useEffect
   };
 
   return (
     <Layout showNav={false}>
       <SEO title="Login - RD Companion" />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex items-center justify-center p-4">
+      <div className="min-h-screen hero-gradient flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          {/* Logo/Brand Section */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4 shadow-professional-lg">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-orange-500 mb-4 shadow-professional-lg">
+              <svg className="w-8 h-8 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">Sign in to your RD Companion account</p>
+            <h1 className="text-3xl font-bold text-slate-50 mb-2">Welcome Back</h1>
+            <p className="text-sm text-slate-400">Sign in to your RD Companion account</p>
           </div>
 
-          {/* Login Card */}
-          <Card className="border-0 shadow-professional-lg">
+          <Card className="border border-slate-800 bg-slate-900/80 shadow-professional-lg">
             <CardHeader className="space-y-1 pb-6">
-              <CardTitle className="text-2xl font-semibold">Sign In</CardTitle>
-              <CardDescription>Enter your credentials to access your account</CardDescription>
+              <CardTitle className="text-2xl font-semibold text-slate-50">Sign In</CardTitle>
+              <CardDescription className="text-slate-400">
+                Enter your credentials to access your account
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleLogin} className="space-y-5">
                 {error && (
-                  <Alert variant="destructive" className="border-error/20 bg-error/5">
+                  <Alert variant="destructive" className="border-error/20 bg-error/10 text-error-foreground">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
+                  <Label htmlFor="email" className="text-sm font-medium text-slate-200">
+                    Email Address
+                  </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                     <Input
                       id="email"
                       type="email"
@@ -114,15 +117,17 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="pl-10 h-11 border-slate-200 focus:border-primary focus:ring-primary"
+                      className="pl-10 h-11 border-slate-800 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                  <Label htmlFor="password" className="text-sm font-medium text-slate-200">
+                    Password
+                  </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                     <Input
                       id="password"
                       type="password"
@@ -130,7 +135,7 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="pl-10 h-11 border-slate-200 focus:border-primary focus:ring-primary"
+                      className="pl-10 h-11 border-slate-800 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500"
                     />
                   </div>
                 </div>
@@ -138,7 +143,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 gradient-primary text-white font-medium shadow-professional-md hover:shadow-professional-lg transition-professional"
+                  className="w-full h-11 gradient-primary text-slate-950 font-medium shadow-professional-md hover:shadow-professional-lg transition-professional"
                 >
                   {loading ? (
                     <>
@@ -155,11 +160,11 @@ export default function LoginPage() {
               </form>
 
               <div className="mt-6 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Don't have an account?{" "}
+                <p className="text-sm text-slate-400">
+                  Do not have an account?{" "}
                   <button
                     onClick={() => router.push("/auth/signup")}
-                    className="font-medium text-primary hover:text-primary/80 transition-colors"
+                    className="font-medium text-orange-400 hover:text-orange-300 transition-colors"
                   >
                     Sign up
                   </button>
@@ -168,8 +173,7 @@ export default function LoginPage() {
             </CardContent>
           </Card>
 
-          {/* Footer */}
-          <p className="text-center text-xs text-muted-foreground mt-6">
+          <p className="text-center text-xs text-slate-500 mt-6">
             © {new Date().getFullYear()} RD Companion. All rights reserved.
           </p>
         </div>
