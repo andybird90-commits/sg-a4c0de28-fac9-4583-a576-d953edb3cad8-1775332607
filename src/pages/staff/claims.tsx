@@ -146,8 +146,10 @@ export default function ClaimsPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Claims</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-100">
+              Claims
+            </h2>
+            <p className="text-slate-300">
               Manage R&D tax claims, track progress, and coordinate delivery.
             </p>
           </div>
@@ -158,7 +160,7 @@ export default function ClaimsPage() {
         </div>
 
         {/* Filters */}
-        <Card>
+        <Card className="bg-slate-900/70 border border-slate-800">
           <CardContent className="p-4">
             <div className="flex gap-4">
               <div className="relative flex-1">
@@ -201,7 +203,7 @@ export default function ClaimsPage() {
         </Card>
 
         {/* Claims List */}
-        <Card>
+        <Card className="bg-slate-900/80 border border-slate-800 shadow-professional-md">
           <CardHeader>
             <CardTitle className="text-slate-100">Active Claims</CardTitle>
             <CardDescription className="text-slate-300">
@@ -219,28 +221,28 @@ export default function ClaimsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-200">
+                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
                       Client
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-200">
+                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
                       Year
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-200">
+                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
                       Status
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-200">
+                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
                       Projects
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-200">
+                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
                       Documents
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-200">
+                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
                       Total Cost
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-200">
+                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
                       Team
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-200 text-right">
+                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100 text-right">
                       Actions
                     </TableHead>
                   </TableRow>

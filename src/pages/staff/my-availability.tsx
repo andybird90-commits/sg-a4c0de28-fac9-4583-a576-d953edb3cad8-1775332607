@@ -195,20 +195,22 @@ export default function MyAvailability() {
       <StaffLayout>
         <div className="container mx-auto py-8 px-4 max-w-5xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">My Availability</h1>
-            <p className="text-muted-foreground">
-              Manage your availability for feasibility call bookings
+            <h1 className="mb-2 text-3xl font-bold text-slate-100">
+              My Availability
+            </h1>
+            <p className="text-slate-300">
+              Manage your availability for feasibility call bookings.
             </p>
           </div>
 
           {/* Weekly Pattern Generator */}
-          <Card className="mb-8">
+          <Card className="mb-8 bg-slate-900/80 border border-slate-800 shadow-professional-md">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-slate-100">
                 <Plus className="h-5 w-5" />
                 Generate Availability Slots
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-slate-300">
                 Create 30-minute slots for selected weekdays from 10:00 AM to 4:00 PM
               </CardDescription>
             </CardHeader>
@@ -242,7 +244,7 @@ export default function MyAvailability() {
                   id="weeks-ahead"
                   value={weeksAhead}
                   onChange={(e) => setWeeksAhead(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full rounded-md border border-slate-800 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                 >
                   <option value={2}>2 weeks</option>
                   <option value={4}>4 weeks</option>
@@ -276,13 +278,13 @@ export default function MyAvailability() {
           </Card>
 
           {/* Current Availability Display */}
-          <Card>
+          <Card className="bg-slate-900/80 border border-slate-800 shadow-professional-md">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-slate-100">
                 <Calendar className="h-5 w-5" />
                 Current Availability ({availabilitySlots.length} slots)
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-slate-300">
                 Booked slots are shown in a different style
               </CardDescription>
             </CardHeader>
@@ -300,23 +302,27 @@ export default function MyAvailability() {
                   {Object.entries(groupedSlots).map(([date, slots]: [string, any]) => (
                     <div key={date}>
                       <h3 className="font-semibold mb-3 text-lg">{date}</h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                         {slots.map((slot: any) => (
                           <div
                             key={slot.id}
-                            className={`px-3 py-2 rounded-md text-sm ${
+                            className={`flex items-center justify-between rounded-md px-3 py-2 text-sm transition-professional ${
                               slot.is_booked
-                                ? "bg-green-100 border border-green-300 text-green-900"
-                                : "bg-muted border border-border"
+                                ? "bg-emerald-500/10 border border-emerald-500/60 text-emerald-100"
+                                : "bg-slate-900/80 border border-slate-700 text-slate-100 hover:border-primary/60"
                             }`}
                           >
-                            <Clock className="h-3 w-3 inline mr-1" />
-                            {new Date(slot.start_time).toLocaleTimeString("en-GB", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            <div>
+                              <Clock className="mr-1 inline h-3 w-3 text-slate-300" />
+                              {new Date(slot.start_time).toLocaleTimeString("en-GB", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </div>
                             {slot.is_booked && (
-                              <span className="ml-2 text-xs font-medium">(Booked)</span>
+                              <span className="ml-2 text-xs font-semibold uppercase tracking-wide text-emerald-300">
+                                Booked
+                              </span>
                             )}
                           </div>
                         ))}
