@@ -301,10 +301,10 @@ export default function StaffHomePage() {
 
         {/* Revenue Summary Cards (Next 12 Months) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
+          <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUp className="h-5 w-5" />
+                <TrendingUp className="h-5 w-5 text-orange-400" />
                 Total Forecasted Revenue
               </CardTitle>
             </CardHeader>
@@ -312,31 +312,31 @@ export default function StaffHomePage() {
               <p className="text-3xl font-bold">
                 {formatCurrency(totalForecastedRevenue)}
               </p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-slate-400 mt-1">
                 Next 24 months
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Calendar className="h-5 w-5" />
+                <Calendar className="h-5 w-5 text-orange-400" />
                 Active Pipeline Items
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold">{activeItems}</p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-slate-400 mt-1">
                 Clients in pipeline
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Briefcase className="h-5 w-5" />
+                <Briefcase className="h-5 w-5 text-orange-400" />
                 This Month
               </CardTitle>
             </CardHeader>
@@ -344,7 +344,7 @@ export default function StaffHomePage() {
               <p className="text-3xl font-bold">
                 {formatCurrency(thisMonthRevenue)}
               </p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-slate-400 mt-1">
                 Expected revenue
               </p>
             </CardContent>
@@ -352,14 +352,14 @@ export default function StaffHomePage() {
         </div>
 
         {/* 12-Month Pipeline Chart */}
-        <Card>
+        <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
           <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+                <Calendar className="h-5 w-5 text-orange-400" />
                 12-Month Pipeline
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-slate-400">
                 Revenue forecast and budget analysis (onboarded vs not yet
                 onboarded)
               </CardDescription>
@@ -369,6 +369,7 @@ export default function StaffHomePage() {
                 variant={securedOnly ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSecuredOnly((prev) => !prev)}
+                className={securedOnly ? "bg-orange-500 text-slate-950 hover:bg-orange-400" : "border-slate-700 text-slate-100 hover:bg-slate-900"}
               >
                 Secured Only
               </Button>
@@ -376,6 +377,7 @@ export default function StaffHomePage() {
                 variant="outline"
                 size="sm"
                 onClick={() => router.push("/staff/pipeline")}
+                className="border-slate-700 text-slate-100 hover:bg-slate-900"
               >
                 View Gantt
               </Button>
@@ -383,21 +385,21 @@ export default function StaffHomePage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 Loading pipeline data...
               </div>
             ) : monthlyBuckets.every(
                 (bucket) =>
                   bucket.onboarded === 0 && bucket.notOnboarded === 0
               ) ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 No pipeline entries in the next 12 months. Enable claims or
                 import clients to build your pipeline forecast.
               </div>
             ) : (
               <>
                 <div className="flex gap-4 h-72 pb-6">
-                  <div className="flex flex-col justify-between h-48 text-xs text-muted-foreground pr-2">
+                  <div className="flex flex-col justify-between h-48 text-xs text-slate-500 pr-2">
                     {yAxisTicks
                       .slice()
                       .reverse()
@@ -405,7 +407,7 @@ export default function StaffHomePage() {
                         <span key={value}>{formatCurrency(value)}</span>
                       ))}
                   </div>
-                  <div className="flex items-end gap-3 h-72 flex-1 border-l border-b border-border pl-4 pb-6 overflow-x-auto">
+                  <div className="flex items-end gap-3 h-72 flex-1 border-l border-b border-slate-800 pl-4 pb-6 overflow-x-auto">
                     {monthlyBuckets.map((bucket, idx) => {
                       const total =
                         bucket.onboarded + bucket.notOnboarded;
@@ -433,7 +435,7 @@ export default function StaffHomePage() {
                           className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
                         >
                           <div
-                            className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-muted"
+                            className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-slate-900"
                             title={hoverTitle}
                           >
                             {total > 0 && (
@@ -451,7 +453,7 @@ export default function StaffHomePage() {
                                 )}
                                 {bucket.notOnboarded > 0 && (
                                   <div
-                                    className="bg-amber-400"
+                                    className="bg-orange-400"
                                     style={{
                                       height: `${notOnboardedHeight}%`,
                                     }}
@@ -463,7 +465,7 @@ export default function StaffHomePage() {
                               </>
                             )}
                           </div>
-                          <span className="mt-2 text-xs text-muted-foreground rotate-[-30deg] origin-top">
+                          <span className="mt-2 text-xs text-slate-500 rotate-[-30deg] origin-top">
                             {formatMonthYear(bucket.date)}
                           </span>
                         </div>
@@ -471,17 +473,17 @@ export default function StaffHomePage() {
                     })}
                   </div>
                 </div>
-                <div className="mt-4 flex flex-wrap items-center gap-4 text-xs">
+                <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
                   <div className="flex items-center gap-1">
                     <span className="w-3 h-3 rounded-sm bg-emerald-500" />
                     <span>Onboarded clients (has claim)</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-amber-400" />
+                    <span className="w-3 h-3 rounded-sm bg-orange-400" />
                     <span>Not yet onboarded</span>
                   </div>
                   {securedOnly && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-slate-500">
                       Showing secured (onboarded) revenue only.
                     </span>
                   )}
@@ -492,19 +494,19 @@ export default function StaffHomePage() {
         </Card>
 
         {/* Monthly Predicted Submissions Chart */}
-        <Card>
+        <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+              <Calendar className="h-5 w-5 text-orange-400" />
               Monthly Predicted Submissions
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-slate-400">
               Number of clients expected to submit in each month
             </CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 Loading submission data...
               </div>
             ) : monthlyClientsBuckets.every(
@@ -512,13 +514,13 @@ export default function StaffHomePage() {
                   bucket.onboardedCount === 0 &&
                   bucket.notOnboardedCount === 0
               ) ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-slate-400">
                 No predicted submissions in the next 24 months.
               </div>
             ) : (
               <>
                 <div className="flex gap-4 h-64 pb-6">
-                  <div className="flex flex-col justify-between h-40 text-xs text-muted-foreground pr-2">
+                  <div className="flex flex-col justify-between h-40 text-xs text-slate-500 pr-2">
                     {clientYAxisTicks
                       .slice()
                       .reverse()
@@ -526,7 +528,7 @@ export default function StaffHomePage() {
                         <span key={value}>{value}</span>
                       ))}
                   </div>
-                  <div className="flex items-end gap-3 h-64 flex-1 border-l border-b border-border pl-4 pb-6 overflow-x-auto">
+                  <div className="flex items-end gap-3 h-64 flex-1 border-l border-b border-slate-800 pl-4 pb-6 overflow-x-auto">
                     {monthlyClientsBuckets.map((bucket, idx) => {
                       const totalCount =
                         bucket.onboardedCount + bucket.notOnboardedCount;
@@ -552,7 +554,7 @@ export default function StaffHomePage() {
                           className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
                         >
                           <div
-                            className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-muted"
+                            className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-slate-900"
                             title={hoverTitle}
                           >
                             {totalCount > 0 && (
@@ -568,7 +570,7 @@ export default function StaffHomePage() {
                                 )}
                                 {bucket.notOnboardedCount > 0 && (
                                   <div
-                                    className="bg-amber-400"
+                                    className="bg-orange-400"
                                     style={{
                                       height: `${notOnboardedHeight}%`,
                                     }}
@@ -578,7 +580,7 @@ export default function StaffHomePage() {
                               </>
                             )}
                           </div>
-                          <span className="mt-2 text-xs text-muted-foreground rotate-[-30deg] origin-top">
+                          <span className="mt-2 text-xs text-slate-500 rotate-[-30deg] origin-top">
                             {formatMonthYear(bucket.date)}
                           </span>
                         </div>
@@ -586,13 +588,13 @@ export default function StaffHomePage() {
                     })}
                   </div>
                 </div>
-                <div className="mt-4 flex flex-wrap items-center gap-4 text-xs">
+                <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
                   <div className="flex items-center gap-1">
                     <span className="w-3 h-3 rounded-sm bg-emerald-500" />
                     <span>Onboarded clients (has claim)</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-amber-400" />
+                    <span className="w-3 h-3 rounded-sm bg-orange-400" />
                     <span>Not yet onboarded</span>
                   </div>
                 </div>
@@ -604,54 +606,62 @@ export default function StaffHomePage() {
         {/* Quick Access Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card
-            className="hover:shadow-lg transition-shadow cursor-pointer"
+            className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
             onClick={() => router.push("/staff/claims")}
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+                <FileText className="h-5 w-5 text-orange-400" />
                 Claims
               </CardTitle>
-              <CardDescription>Manage R&amp;D tax credit claims</CardDescription>
+              <CardDescription className="text-slate-400">
+                Manage R&amp;D tax credit claims
+              </CardDescription>
             </CardHeader>
           </Card>
 
           <Card
-            className="hover:shadow-lg transition-shadow cursor-pointer"
+            className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
             onClick={() => router.push("/staff/cif")}
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Briefcase className="h-5 w-5" />
+                <Briefcase className="h-5 w-5 text-orange-400" />
                 Onboarding
               </CardTitle>
-              <CardDescription>Client Information Forms</CardDescription>
+              <CardDescription className="text-slate-400">
+                Client Information Forms
+              </CardDescription>
             </CardHeader>
           </Card>
 
           <Card
-            className="hover:shadow-lg transition-shadow cursor-pointer"
+            className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
             onClick={() => router.push("/staff/clients")}
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
+                <Users className="h-5 w-5 text-orange-400" />
                 Clients
               </CardTitle>
-              <CardDescription>Client management</CardDescription>
+              <CardDescription className="text-slate-400">
+                Client management
+              </CardDescription>
             </CardHeader>
           </Card>
 
           <Card
-            className="hover:shadow-lg transition-shadow cursor-pointer"
+            className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
             onClick={() => router.push("/staff/admin")}
           >
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
+                <Shield className="h-5 w-5 text-orange-400" />
                 Admin
               </CardTitle>
-              <CardDescription>Administrative functions</CardDescription>
+              <CardDescription className="text-slate-400">
+                Administrative functions
+              </CardDescription>
             </CardHeader>
           </Card>
         </div>
