@@ -187,12 +187,12 @@ export default function ProjectsPage() {
                         />
                       </div>
                     </div>
-                    <CardDescription className="line-clamp-2 text-sm text-slate-300">
+                    <CardDescription className="line-clamp-2 text-sm text-slate-200">
                       {project.description || "No description"}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="relative z-10 pointer-events-none">
-                    <div className="flex items-center gap-4 text-sm text-slate-300 flex-wrap">
+                    <div className="flex items-center gap-4 text-sm text-slate-200 flex-wrap">
                       <Badge
                         variant="outline"
                         className="bg-slate-900 text-slate-100 border-slate-700/80 text-[11px] px-2 py-0.5 rounded-full"
@@ -205,7 +205,7 @@ export default function ProjectsPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-3 text-xs text-slate-400">
+                    <div className="flex items-center gap-2 mt-3 text-xs text-slate-300">
                       <Clock className="w-3 h-3" />
                       {new Date(project.created_at).toLocaleDateString()}
                     </div>
