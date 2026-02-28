@@ -151,7 +151,7 @@ export default function NewClaimFromProjectsPage() {
     return (
       <Layout>
         <SEO title="Start New Claim - RD Companion" />
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
+        <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-100">
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </Layout>
@@ -162,22 +162,22 @@ export default function NewClaimFromProjectsPage() {
     <Layout>
       <SEO title="Start New Claim - RD Companion" />
       <div className="min-h-screen bg-slate-950 text-slate-100">
-        <div className="mx-auto flex max-w-5xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-          <div className="mb-6 flex items-center justify-between gap-4 sm:mb-8">
+        <div className="mx-auto flex max-w-5xl flex-col px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mb-8 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"
-                className="hidden sm:inline-flex text-slate-300 hover:text-slate-50 hover:bg-slate-800/70"
+                className="hidden sm:inline-flex text-slate-300 hover:bg-slate-800/70 hover:text-slate-50"
                 onClick={() => router.back()}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-50 sm:text-3xl">
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
                   Start New Claim
                 </h1>
-                <p className="text-sm text-slate-400 sm:text-base">
+                <p className="text-sm text-slate-400">
                   Select existing projects to include in a new R&amp;D claim.
                 </p>
               </div>
@@ -248,7 +248,7 @@ export default function NewClaimFromProjectsPage() {
                   </p>
                   <Button
                     onClick={() => router.push("/projects/new")}
-                    className="gradient-primary"
+                    className="bg-orange-500 text-slate-950 hover:bg-orange-400"
                   >
                     <FolderOpen className="mr-2 h-4 w-4" />
                     Create your first project
@@ -265,7 +265,7 @@ export default function NewClaimFromProjectsPage() {
                           className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 sm:px-4 sm:py-4 transition-colors ${
                             isSelected
                               ? "border-orange-500/90 bg-slate-900"
-                              : "border-slate-700/80 bg-slate-900/60 hover:border-slate-500/90 hover:bg-slate-900"
+                              : "border-slate-700/80 bg-slate-950/70 hover:border-slate-500/90 hover:bg-slate-900"
                           }`}
                         >
                           <Checkbox
@@ -336,7 +336,7 @@ export default function NewClaimFromProjectsPage() {
                         Cancel
                       </Button>
                       <Button
-                        className="gradient-primary"
+                        className="bg-orange-500 text-slate-950 hover:bg-orange-400 disabled:bg-orange-500/40 disabled:text-slate-300"
                         onClick={handleCreateClaim}
                         disabled={submitting || selectedIds.size === 0}
                       >
