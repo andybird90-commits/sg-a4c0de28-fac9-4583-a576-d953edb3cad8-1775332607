@@ -120,21 +120,160 @@ export default async function handler(
       }
     }
 
+    // If we still do not have a claim project, try to create one automatically
     if (!claimProject) {
       console.warn(
-        "[api/projects/send-to-team] No claim project found for Sidekick project id:",
+        "[api/projects/send-to-team] No claim project found, attempting to create from sidekick project:",
         sidekickProjectId
       );
-      res.status(404).json({
-        error:
-          "No linked claim project found for this Sidekick project. Please ask your R&D team to attach it to a claim.",
-        debug: {
+
+      const {
+        data: sidekickProject,
+        error: sidekickError,
+      } = await supabaseServer
+        .from("sidekick_projects")
+        .select("id, org_id, claim_id, name, description, sector")
+        .eq("id", sidekickProjectId)
+        .maybeSingle();
+
+      if (sidekickError) {
+        console.error(
+          "[api/projects/send-to-team] Error loading sidekick project:",
+          sidekickError
+        );
+        res.status(500).json({
+          error: "Failed to load Sidekick project for linking",
+          debug: {
+            stage: "load_sidekick",
+            sidekickProjectId,
+            sidekickError,
+          },
+        });
+        return;
+      }
+
+      if (!sidekickProject) {
+        console.warn(
+          "[api/projects/send-to-team] Sidekick project not found when trying to create claim project:",
+          sidekickProjectId
+        );
+        res.status(404).json({
+          error: "Sidekick project not found.",
+          debug: {
+            sidekickProjectId,
+            bySourceCount,
+            byIdCount,
+          },
+        });
+        return;
+      }
+
+      if (!sidekickProject.claim_id) {
+        console.warn(
+          "[api/projects/send-to-team] Sidekick project has no claim_id; cannot auto-create claim project:",
+          sidekickProjectId
+        );
+        res.status(404).json({
+          error:
+            "No linked claim project found for this Sidekick project. Please start a claim including this project before sending it to the team.",
+          debug: {
+            sidekickProjectId,
+            bySourceCount,
+            byIdCount,
+            hasClaimId: false,
+          },
+        });
+        return;
+      }
+
+      const {
+        data: claimRow,
+        error: claimLoadError,
+      } = await supabaseServer
+        .from("claims")
+        .select("org_id")
+        .eq("id", sidekickProject.claim_id)
+        .maybeSingle();
+
+      if (claimLoadError) {
+        console.error(
+          "[api/projects/send-to-team] Error loading claim while creating claim project:",
+          claimLoadError
+        );
+        res.status(500).json({
+          error: "Failed to load claim for Sidekick project",
+          debug: {
+            stage: "load_claim",
+            sidekickProjectId,
+            claimId: sidekickProject.claim_id,
+            claimLoadError,
+          },
+        });
+        return;
+      }
+
+      if (!claimRow) {
+        console.warn(
+          "[api/projects/send-to-team] Claim not found while creating claim project:",
+          sidekickProject.claim_id
+        );
+        res.status(404).json({
+          error:
+            "The claim linked to this Sidekick project could not be found. Please recreate the claim and try again.",
+          debug: {
+            sidekickProjectId,
+            claimId: sidekickProject.claim_id,
+          },
+        });
+        return;
+      }
+
+      const nowIso = new Date().toISOString();
+
+      const {
+        data: createdProject,
+        error: createError,
+      } = await supabaseServer
+        .from("claim_projects")
+        .insert({
+          claim_id: sidekickProject.claim_id,
+          org_id: claimRow.org_id,
+          name: sidekickProject.name,
+          description: sidekickProject.description,
+          rd_theme: sidekickProject.sector,
+          source_sidekick_project_id: sidekickProject.id,
+          workflow_status: "draft",
+          created_at: nowIso,
+          updated_at: nowIso,
+        })
+        .select()
+        .single();
+
+      if (createError || !createdProject) {
+        console.error(
+          "[api/projects/send-to-team] Error creating claim project from Sidekick project:",
+          createError
+        );
+        res.status(500).json({
+          error: "Failed to create claim project from Sidekick project",
+          debug: {
+            sidekickProjectId,
+            claimId: sidekickProject.claim_id,
+            createError,
+          },
+        });
+        return;
+      }
+
+      console.log(
+        "[api/projects/send-to-team] Successfully created claim project from Sidekick project:",
+        {
           sidekickProjectId,
-          bySourceCount,
-          byIdCount,
-        },
-      });
-      return;
+          claimProjectId: createdProject.id,
+        }
+      );
+
+      claimProject = createdProject as ClaimProject;
     }
 
     const previousStatus = (claimProject.workflow_status || "draft") as string;
