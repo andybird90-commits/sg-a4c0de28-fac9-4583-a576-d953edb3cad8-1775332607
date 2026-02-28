@@ -5,7 +5,13 @@ import { SEO } from "@/components/SEO";
 import { useApp } from "@/contexts/AppContext";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { sidekickProjectService } from "@/services/sidekickProjectService";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -145,7 +151,7 @@ export default function NewClaimFromProjectsPage() {
     return (
       <Layout>
         <SEO title="Start New Claim - RD Companion" />
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </Layout>
@@ -156,43 +162,43 @@ export default function NewClaimFromProjectsPage() {
     <Layout>
       <SEO title="Start New Claim - RD Companion" />
       <div className="min-h-screen bg-slate-950 text-slate-100">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="flex items-center justify-between gap-4 mb-6 sm:mb-8">
+        <div className="mx-auto flex max-w-5xl flex-col px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+          <div className="mb-6 flex items-center justify-between gap-4 sm:mb-8">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"
-                className="hidden sm:inline-flex"
+                className="hidden sm:inline-flex text-slate-300 hover:text-slate-50 hover:bg-slate-800/70"
                 onClick={() => router.back()}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                <h1 className="text-2xl font-bold tracking-tight text-slate-50 sm:text-3xl">
                   Start New Claim
                 </h1>
-                <p className="text-sm sm:text-base text-muted-foreground">
+                <p className="text-sm text-slate-400 sm:text-base">
                   Select existing projects to include in a new R&amp;D claim.
                 </p>
               </div>
             </div>
           </div>
 
-          <Card className="mb-6 border border-slate-800 bg-slate-950/80 shadow-professional-md">
+          <Card className="mb-6 border border-slate-800 bg-slate-900/90 shadow-professional-md">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              <CardTitle className="flex items-center gap-2 text-base text-slate-50 sm:text-lg">
+                <FileText className="h-4 w-4 text-orange-500 sm:h-5 sm:w-5" />
                 Claim details
               </CardTitle>
-              <CardDescription>
-                Choose the accounting year and which projects should be part of
-                this claim.
+              <CardDescription className="text-slate-300">
+                Choose the accounting year and which projects should be part of this
+                claim.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-foreground mb-1">
+                  <label className="mb-1 block text-sm font-medium text-slate-100">
                     Claim year
                   </label>
                   <input
@@ -200,43 +206,44 @@ export default function NewClaimFromProjectsPage() {
                     min={2000}
                     max={2100}
                     value={claimYear}
-                    onChange={(e) => setClaimYear(Number(e.target.value) || claimYear)}
-                    className="w-32 border border-slate-700 rounded-md px-3 py-2 text-sm bg-slate-950/60 text-slate-100 placeholder:text-slate-500"
+                    onChange={(e) =>
+                      setClaimYear(Number(e.target.value) || claimYear)
+                    }
+                    className="w-32 rounded-md border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 shadow-sm outline-none ring-0 placeholder:text-slate-500 focus-visible:border-orange-500 focus-visible:ring-2 focus-visible:ring-orange-500/80"
                   />
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="mt-1 text-xs text-slate-400">
                     Typically this is the year end of the accounting period you are
                     claiming for.
                   </p>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-slate-300">
                     You can reuse projects across multiple years if they remain
-                    relevant. Your R&amp;D team will handle the detailed
-                    allocation.
+                    relevant. Your R&amp;D team will handle the detailed allocation.
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-slate-800 bg-slate-950/80 shadow-professional-md">
+          <Card className="border border-slate-800 bg-slate-900/90 shadow-professional-md">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              <CardTitle className="flex items-center gap-2 text-base text-slate-50 sm:text-lg">
+                <FolderOpen className="h-4 w-4 text-orange-500 sm:h-5 sm:w-5" />
                 Select projects
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-slate-300">
                 Choose which Sidekick projects should be included in this claim.
               </CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                  <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-orange-500" />
                 </div>
               ) : projects.length === 0 ? (
-                <div className="text-center py-10">
-                  <p className="text-sm text-muted-foreground mb-3">
+                <div className="py-10 text-center">
+                  <p className="mb-3 text-sm text-slate-300">
                     You don&apos;t have any projects yet.
                   </p>
                   <Button
@@ -249,47 +256,56 @@ export default function NewClaimFromProjectsPage() {
                 </div>
               ) : (
                 <>
-                  <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                  <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
                     {projects.map((project) => {
                       const isSelected = selectedIds.has(project.id);
                       return (
                         <label
                           key={project.id}
-                          className="flex items-start gap-3 rounded-lg border border-slate-800 bg-slate-950/80 p-3 sm:p-4 cursor-pointer hover:border-primary/70 hover:bg-slate-900/80 hover:shadow-professional-sm transition-professional"
+                          className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 sm:px-4 sm:py-4 transition-colors ${
+                            isSelected
+                              ? "border-orange-500/90 bg-slate-900"
+                              : "border-slate-700/80 bg-slate-900/60 hover:border-slate-500/90 hover:bg-slate-900"
+                          }`}
                         >
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={() => toggleProject(project.id)}
-                            className="mt-1 flex-shrink-0"
+                            className="mt-1 flex-shrink-0 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
                           />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className="font-semibold text-sm sm:text-base text-slate-100 line-clamp-1">
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-1 flex flex-wrap items-center gap-2">
+                              <span className="line-clamp-1 text-sm font-semibold text-slate-50 sm:text-base">
                                 {project.name}
                               </span>
                               <Badge
                                 variant="secondary"
-                                className="text-2xs bg-emerald-500/15 text-emerald-300 border-emerald-400/40"
+                                className="border-emerald-400/40 bg-emerald-500/15 text-[10px] font-medium uppercase tracking-wide text-emerald-300"
                               >
                                 {project.status || "draft"}
                               </Badge>
                               {project.sector && (
-                                <Badge variant="outline" className="text-2xs border-slate-700 text-slate-200">
+                                <Badge
+                                  variant="outline"
+                                  className="border-slate-600 bg-slate-900/80 text-[10px] text-slate-200"
+                                >
                                   {project.sector}
                                 </Badge>
                               )}
                             </div>
                             {project.description && (
-                              <p className="text-xs sm:text-sm text-slate-300 line-clamp-2 mb-1">
+                              <p className="mb-1 line-clamp-2 text-xs text-slate-300 sm:text-sm">
                                 {project.description}
                               </p>
                             )}
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
                               {project.start_date && (
                                 <span className="inline-flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />
                                   <span>
-                                    {new Date(project.start_date).toLocaleDateString()}
+                                    {new Date(
+                                      project.start_date
+                                    ).toLocaleDateString()}
                                   </span>
                                 </span>
                               )}
@@ -304,15 +320,18 @@ export default function NewClaimFromProjectsPage() {
                       );
                     })}
                   </div>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mt-6">
-                    <p className="text-xs sm:text-sm text-muted-foreground">
+                  <div className="mt-6 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+                    <p className="text-xs text-slate-400 sm:text-sm">
                       Selected projects:{" "}
-                      <span className="font-medium">{selectedIds.size}</span>
+                      <span className="font-medium text-slate-100">
+                        {selectedIds.size}
+                      </span>
                     </p>
-                    <div className="flex gap-2 justify-end">
+                    <div className="flex justify-end gap-2">
                       <Button
                         variant="outline"
                         onClick={() => router.push("/projects")}
+                        className="border-slate-600 bg-slate-900/80 text-slate-100 hover:bg-slate-800 hover:text-slate-50"
                       >
                         Cancel
                       </Button>
