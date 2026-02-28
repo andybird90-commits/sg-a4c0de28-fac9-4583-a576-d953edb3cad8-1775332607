@@ -31,8 +31,6 @@ export interface ClaimWithDetails extends Claim {
   cost_lead?: Profile | null;
   total_costs?: number;
   document_count?: number;
-  deleted_at?: string | null;
-  deleted_by?: string | null;
 }
 
 export class ClaimService {
