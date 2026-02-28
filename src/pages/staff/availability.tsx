@@ -258,9 +258,9 @@ export default function AvailabilityPage() {
             </CardHeader>
             <CardContent>
               {slots.length === 0 ? (
-                <div className="text-center py-12 border-2 border-dashed rounded-lg bg-gray-50">
-                  <Clock className="h-10 w-10 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500">No availability slots created yet</p>
+                <div className="text-center py-12 border-2 border-dashed rounded-lg border-slate-700 bg-slate-900/60">
+                  <Clock className="h-10 w-10 mx-auto mb-2 text-slate-500" />
+                  <p className="text-slate-300">No availability slots created yet</p>
                 </div>
               ) : (
                 <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
@@ -268,31 +268,34 @@ export default function AvailabilityPage() {
                     .sort()
                     .map((date) => (
                       <div key={date} className="space-y-2">
-                        <h3 className="font-semibold text-sm text-gray-700 sticky top-0 bg-white py-2">
+                        <h3 className="sticky top-0 py-2 text-sm font-semibold bg-slate-900/90 text-slate-100">
                           {format(new Date(date), "EEEE, d MMMM yyyy")}
                         </h3>
                         <div className="space-y-2">
                           {slotsByDate[date]
-                            .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+                            .sort(
+                              (a, b) =>
+                                new Date(a.start_time).getTime() -
+                                new Date(b.start_time).getTime()
+                            )
                             .map((slot) => (
                               <div
                                 key={slot.id}
-                                className={`
-                                  flex items-center justify-between p-3 rounded-lg border
-                                  ${slot.is_booked 
-                                    ? "bg-blue-50 border-blue-200" 
-                                    : "bg-white border-gray-200"
-                                  }
-                                `}
+                                className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${
+                                  slot.is_booked
+                                    ? "bg-emerald-500/10 border-emerald-500/60"
+                                    : "bg-slate-900/80 border-slate-700 hover:border-primary/60"
+                                }`}
                               >
                                 <div className="flex items-center gap-3">
-                                  <Clock className="h-4 w-4 text-gray-400" />
+                                  <Clock className="h-4 w-4 text-slate-400" />
                                   <div>
-                                    <div className="font-medium text-sm">
-                                      {format(new Date(slot.start_time), "h:mm a")} - {format(new Date(slot.end_time), "h:mm a")}
+                                    <div className="text-sm font-medium text-slate-100">
+                                      {format(new Date(slot.start_time), "h:mm a")} -{" "}
+                                      {format(new Date(slot.end_time), "h:mm a")}
                                     </div>
                                     {slot.is_booked && (
-                                      <div className="text-xs text-blue-600 mt-1">
+                                      <div className="mt-1 text-xs text-emerald-300">
                                         Booked
                                       </div>
                                     )}
