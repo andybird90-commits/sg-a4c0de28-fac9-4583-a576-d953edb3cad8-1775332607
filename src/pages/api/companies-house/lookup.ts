@@ -1,9 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
 import { supabaseServer } from "@/integrations/supabase/serverClient";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 /**
  * Companies House API Lookup with Enhanced Business Intelligence
@@ -27,18 +23,19 @@ export default async function handler(
 
   try {
     const apiKey = process.env.COMPANIES_HOUSE_API_KEY;
-    
+
     console.log("API Key configured:", !!apiKey);
-    
+
     if (!apiKey) {
       console.error("COMPANIES_HOUSE_API_KEY not configured");
-      return res.status(500).json({ 
-        message: "Companies House API not configured. Please add API key to environment variables." 
+      return res.status(500).json({
+        message:
+          "Companies House API not configured. Please add API key to environment variables.",
       });
     }
 
     const auth = Buffer.from(`${apiKey}:`).toString("base64");
-    
+
     // Fetch company info
     const companyResponse = await fetch(
       `https://api.company-information.service.gov.uk/company/${number}`,
@@ -52,7 +49,7 @@ export default async function handler(
     console.log("Companies House API response:", {
       status: companyResponse.status,
       statusText: companyResponse.statusText,
-      company: number
+      company: number,
     });
 
     if (!companyResponse.ok) {
@@ -63,7 +60,7 @@ export default async function handler(
       const errorText = await companyResponse.text();
       console.error("Companies House API error:", {
         status: companyResponse.status,
-        error: errorText
+        error: errorText,
       });
       throw new Error(`Companies House API error: ${companyResponse.status}`);
     }
@@ -73,7 +70,8 @@ export default async function handler(
     // Calculate company age
     const dateOfCreation = new Date(companyData.date_of_creation);
     const companyAgeYears = Math.floor(
-      (Date.now() - dateOfCreation.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+      (Date.now() - dateOfCreation.getTime()) /
+        (1000 * 60 * 60 * 24 * 365.25)
     );
 
     // Base response with enhanced data
@@ -92,7 +90,8 @@ export default async function handler(
       date_of_creation: companyData.date_of_creation,
       company_age_years: companyAgeYears,
       type: companyData.type,
-      last_accounts_date: companyData.accounts?.last_accounts?.made_up_to || null,
+      last_accounts_date:
+        companyData.accounts?.last_accounts?.made_up_to || null,
       has_been_liquidated: companyData.has_been_liquidated || false,
       has_insolvency_history: companyData.has_insolvency_history || false,
       jurisdiction: companyData.jurisdiction,
@@ -111,7 +110,7 @@ export default async function handler(
 
       if (officersResponse.ok) {
         const officersData = await officersResponse.json();
-        
+
         // Extract active officers
         const activeOfficers = (officersData.items || [])
           .filter((officer: any) => !officer.resigned_on)
@@ -149,28 +148,29 @@ export default async function handler(
 
         if (filingResponse.ok) {
           const filingData = await filingResponse.json();
-          
+
           // Filter for accounts filings only
           const accountsFilings = (filingData.items || [])
-            .filter((item: any) => 
-              item.category === "accounts" && 
-              item.type?.includes("accounts")
+            .filter(
+              (item: any) =>
+                item.category === "accounts" &&
+                item.type?.includes("accounts")
             )
             .slice(0, 5); // Last 5 filings
 
           const filingHistory = accountsFilings.map((filing: any) => {
-            const periodStart =
-              filing.date_of_period_start_on || null;
+            const periodStart = filing.date_of_period_start_on || null;
             const periodEnd =
               filing.date_of_period_end_on || filing.made_up_date;
             const filingDate = filing.action_date || filing.date;
-            
-            let lagDays = null;
+
+            let lagDays: number | null = null;
             if (periodEnd && filingDate) {
               const periodEndDate = new Date(periodEnd);
               const filingDateObj = new Date(filingDate);
               lagDays = Math.floor(
-                (filingDateObj.getTime() - periodEndDate.getTime()) / (1000 * 60 * 60 * 24)
+                (filingDateObj.getTime() - periodEndDate.getTime()) /
+                  (1000 * 60 * 60 * 24)
               );
             }
 
@@ -187,31 +187,35 @@ export default async function handler(
           const validLags = filingHistory
             .map((f: any) => f.filing_lag_days)
             .filter((lag: any) => lag !== null && lag > 0);
-          
-          const averageLag = validLags.length > 0
-            ? Math.round(validLags.reduce((a: number, b: number) => a + b, 0) / validLags.length)
-            : 60; // Default 60 days
+
+          const averageLag =
+            validLags.length > 0
+              ? Math.round(
+                  validLags.reduce((a: number, b: number) => a + b, 0) /
+                    validLags.length
+                )
+              : 60; // Default 60 days
 
           // Detect filing pattern (consistent vs erratic)
-          const filingPattern = validLags.length >= 3
-            ? Math.max(...validLags) - Math.min(...validLags) < 60
-              ? "consistent"
-              : "variable"
-            : "limited_history";
+          const filingPattern =
+            validLags.length >= 3
+              ? Math.max(...validLags) - Math.min(...validLags) < 60
+                ? "consistent"
+                : "variable"
+              : "limited_history";
 
           // Store filing history in database
-          if (supabaseServiceKey && filingHistory.length > 0) {
-            const supabase = createClient(supabaseUrl, supabaseServiceKey);
-            
+          if (filingHistory.length > 0) {
             for (const filing of filingHistory) {
               if (filing.period_end_date && filing.filing_date) {
-                const { error: filingUpsertError } = await supabase
+                const { error: filingUpsertError } = await supabaseServer
                   .from("companies_house_filings")
                   .upsert(
                     {
                       org_id: number,
                       company_number: number,
-                      period_start_date: filing.period_start_date || filing.period_end_date,
+                      period_start_date:
+                        filing.period_start_date || filing.period_end_date,
                       period_end_date: filing.period_end_date,
                       accounts_filing_date: filing.filing_date,
                       filing_lag_days: filing.filing_lag_days,
@@ -225,7 +229,10 @@ export default async function handler(
                   );
 
                 if (filingUpsertError) {
-                  console.error("[companies-house/lookup] Error upserting filings:", filingUpsertError);
+                  console.error(
+                    "[companies-house/lookup] Error upserting filings:",
+                    filingUpsertError
+                  );
                 }
               }
             }
@@ -248,8 +255,9 @@ export default async function handler(
     return res.status(200).json(response);
   } catch (error) {
     console.error("Companies House lookup error:", error);
-    return res.status(500).json({ 
-      message: "Failed to lookup company. Please check the company number and try again." 
+    return res.status(500).json({
+      message:
+        "Failed to lookup company. Please check the company number and try again.",
     });
   }
 }

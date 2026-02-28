@@ -1,16 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseServer } from "@/integrations/supabase/serverClient";
 
 /**
  * SIDEKICK TRANSFER TO CONEXA
- * 
+ *
  * This is the integration hook for transferring Sidekick projects to Conexa RD Pro.
- * 
+ *
  * FUTURE INTEGRATION TODO:
  * 1. Create a new project in Conexa RD Pro via API
  * 2. Transfer feasibility analysis results
@@ -28,16 +23,20 @@ export default async function handler(
   }
 
   try {
-    const { project_id, staff_user_id } = req.body;
+    const { project_id, staff_user_id } = req.body as {
+      project_id?: string;
+      staff_user_id?: string;
+    };
 
     if (!project_id || !staff_user_id) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
     // Get project with company details
-    const { data: project, error: projectError } = await supabase
+    const { data: project, error: projectError } = await supabaseServer
       .from("sidekick_projects")
-      .select(`
+      .select(
+        `
         *,
         organisations!inner(
           id,
@@ -45,7 +44,8 @@ export default async function handler(
           linked_conexa_company_id,
           linked_conexa_company_name
         )
-      `)
+      `
+      )
       .eq("id", project_id)
       .single();
 
@@ -74,10 +74,11 @@ export default async function handler(
     // });
 
     // For now, use the linked company ID as placeholder
-    const placeholderConexaProjectId = project.organisations.linked_conexa_company_id;
+    const placeholderConexaProjectId =
+      project.organisations.linked_conexa_company_id;
 
     // Mark project as transferred
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseServer
       .from("sidekick_projects")
       .update({
         status: "transferred",
@@ -90,7 +91,7 @@ export default async function handler(
     if (updateError) throw updateError;
 
     // Add system comment about transfer
-    await supabase.from("sidekick_project_comments").insert({
+    await supabaseServer.from("sidekick_project_comments").insert({
       project_id,
       author_id: staff_user_id,
       author_role: "rd_staff",
@@ -104,6 +105,8 @@ export default async function handler(
     });
   } catch (error: any) {
     console.error("Error transferring project:", error);
-    return res.status(500).json({ error: error.message || "Internal server error" });
+    return res
+      .status(500)
+      .json({ error: error?.message || "Internal server error" });
   }
 }
