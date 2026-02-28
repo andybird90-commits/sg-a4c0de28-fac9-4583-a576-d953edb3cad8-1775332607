@@ -5,7 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 type ClaimProject = Database["public"]["Tables"]["claim_projects"]["Row"];
 
 type SuccessResponse = {
-  project: ClaimProject | null;
+  claimProject: ClaimProject | null;
 };
 
 type ErrorResponse = {
@@ -22,10 +22,13 @@ export default async function handler(
     return;
   }
 
-  const { id } = req.query;
-  const sidekickProjectId = Array.isArray(id) ? id[0] : id;
+  // Accept both ?sidekickProjectId= and ?id= for robustness
+  const { id, sidekickProjectId } = req.query;
 
-  if (!sidekickProjectId) {
+  const rawId: string | string[] | undefined = sidekickProjectId ?? id;
+  const effectiveId = Array.isArray(rawId) ? rawId[0] : rawId;
+
+  if (!effectiveId) {
     res.status(400).json({ error: "Missing sidekick project id" });
     return;
   }
@@ -34,7 +37,7 @@ export default async function handler(
     const { data, error } = await supabaseServer
       .from("claim_projects")
       .select("*")
-      .eq("source_sidekick_project_id", sidekickProjectId)
+      .eq("source_sidekick_project_id", effectiveId)
       .order("created_at", { ascending: false })
       .limit(1);
 
@@ -44,8 +47,10 @@ export default async function handler(
       return;
     }
 
-    const project = (data && data.length > 0 ? data[0] : null) as ClaimProject | null;
-    res.status(200).json({ project });
+    const claimProject =
+      data && data.length > 0 ? (data[0] as ClaimProject) : null;
+
+    res.status(200).json({ claimProject });
   } catch (err) {
     console.error("[api/projects/by-sidekick] Unexpected error:", err);
     res.status(500).json({ error: "Internal server error" });
