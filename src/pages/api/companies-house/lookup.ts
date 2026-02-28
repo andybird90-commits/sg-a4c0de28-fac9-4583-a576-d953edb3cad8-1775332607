@@ -158,7 +158,6 @@ export default async function handler(
             )
             .slice(0, 5); // Last 5 filings
 
-          // When building filingHistory:
           const filingHistory = accountsFilings.map((filing: any) => {
             const periodStart =
               filing.date_of_period_start_on || null;
@@ -180,7 +179,6 @@ export default async function handler(
               period_end_date: periodEnd,
               filing_date: filingDate,
               filing_lag_days: lagDays,
-              description: filing.description,
               type: filing.type,
             };
           });
@@ -207,7 +205,7 @@ export default async function handler(
             
             for (const filing of filingHistory) {
               if (filing.period_end_date && filing.filing_date) {
-                const { data: filingUpsertData, error: filingUpsertError } = await supabaseServer
+                const { error: filingUpsertError } = await supabase
                   .from("companies_house_filings")
                   .upsert(
                     {
