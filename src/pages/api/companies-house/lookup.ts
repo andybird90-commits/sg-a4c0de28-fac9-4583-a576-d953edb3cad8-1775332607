@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
+import { supabaseServer } from "@/integrations/supabase/serverClient";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -202,18 +203,27 @@ export default async function handler(
             
             for (const filing of filingHistory) {
               if (filing.period_end_date && filing.filing_date) {
-                await supabase
+                const { data: filingUpsertData, error: filingUpsertError } = await supabaseServer
                   .from("companies_house_filings")
-                  .upsert({
-                    company_number: number,
-                    period_end_date: filing.period_end_date,
-                    accounts_filing_date: filing.filing_date,
-                    filing_lag_days: filing.filing_lag_days,
-                    filing_type: filing.type,
-                    description: filing.description,
-                  }, {
-                    onConflict: "company_number,period_end_date",
-                  });
+                  .upsert(
+                    {
+                      org_id: number,
+                      company_number: number,
+                      period_end_date: filing.period_end_date,
+                      accounts_filing_date: filing.filing_date,
+                      filing_lag_days: filing.filing_lag_days,
+                      filing_type: filing.type,
+                      fetched_at: new Date().toISOString(),
+                      created_at: new Date().toISOString(),
+                    },
+                    {
+                      onConflict: "org_id,period_end_date",
+                    }
+                  );
+
+                if (filingUpsertError) {
+                  console.error("[companies-house/lookup] Error upserting filings:", filingUpsertError);
+                }
               }
             }
           }
