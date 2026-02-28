@@ -1134,14 +1134,16 @@ export default function ClaimDetailPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                <div className="mb-6 rounded-xl border border-slate-700 bg-slate-900/80 px-6 py-4 shadow-professional-md">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-green-700 font-medium">Total Claim Value</p>
-                      <p className="text-3xl font-bold text-green-900">{formatCurrency(claim.total_costs || 0)}</p>
+                      <p className="text-sm font-medium text-slate-300">Total Claim Value</p>
+                      <p className="mt-1 text-3xl font-bold text-emerald-300">
+                        {formatCurrency(claim.total_costs || 0)}
+                      </p>
                     </div>
-                    <div className="p-4 bg-white rounded-full">
-                      <PoundSterling className="h-8 w-8 text-green-600" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-emerald-400/60 bg-emerald-500/15">
+                      <PoundSterling className="h-6 w-6 text-emerald-300" />
                     </div>
                   </div>
                 </div>
@@ -1209,10 +1211,12 @@ export default function ClaimDetailPage() {
                     </TableBody>
                   </Table>
                 ) : (
-                  <div className="text-center py-12 text-slate-500">
-                    <PoundSterling className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-                    <p>No costs recorded yet</p>
-                    <p className="text-sm">Add cost entries to track R&D expenditure</p>
+                  <div className="py-12 text-center text-slate-400">
+                    <PoundSterling className="mx-auto mb-3 h-12 w-12 text-slate-500" />
+                    <p className="font-medium text-slate-200">No costs recorded yet</p>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Add cost entries to track R&amp;D expenditure
+                    </p>
                   </div>
                 )}
               </CardContent>
