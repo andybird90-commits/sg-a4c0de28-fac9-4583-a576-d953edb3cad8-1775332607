@@ -268,7 +268,7 @@ export default function AvailabilityPage() {
                     .sort()
                     .map((date) => (
                       <div key={date} className="space-y-2">
-                        <h3 className="sticky top-0 py-2 text-sm font-semibold bg-slate-900/90 text-slate-100">
+                        <h3 className="sticky top-0 py-2 text-sm font-semibold bg-slate-950/80 text-slate-100">
                           {format(new Date(date), "EEEE, d MMMM yyyy")}
                         </h3>
                         <div className="space-y-2">
@@ -281,16 +281,16 @@ export default function AvailabilityPage() {
                             .map((slot) => (
                               <div
                                 key={slot.id}
-                                className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${
+                                className={`flex items-center justify-between rounded-lg border px-4 py-3 text-sm transition-colors ${
                                   slot.is_booked
-                                    ? "bg-emerald-500/10 border-emerald-500/60"
-                                    : "bg-slate-900/80 border-slate-700 hover:border-primary/60"
+                                    ? "bg-emerald-500/15 border-emerald-400/70"
+                                    : "bg-slate-950/70 border-slate-700/80 hover:border-primary/70 hover:bg-slate-900/80"
                                 }`}
                               >
                                 <div className="flex items-center gap-3">
-                                  <Clock className="h-4 w-4 text-slate-400" />
+                                  <Clock className="h-4 w-4 text-slate-300" />
                                   <div>
-                                    <div className="text-sm font-medium text-slate-100">
+                                    <div className="font-medium text-slate-100">
                                       {format(new Date(slot.start_time), "h:mm a")} -{" "}
                                       {format(new Date(slot.end_time), "h:mm a")}
                                     </div>
@@ -307,8 +307,9 @@ export default function AvailabilityPage() {
                                     size="sm"
                                     onClick={() => handleDeleteSlot(slot.id)}
                                     disabled={saving}
+                                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                                   >
-                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                    <Trash2 className="h-4 w-4" />
                                   </Button>
                                 )}
                               </div>

@@ -278,7 +278,7 @@ export default function MyAvailability() {
           </Card>
 
           {/* Current Availability Display */}
-          <Card className="bg-slate-900/80 border border-slate-800 shadow-professional-md">
+          <Card className="bg-slate-950/80 border border-slate-800 shadow-professional-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-slate-100">
                 <Calendar className="h-5 w-5" />
@@ -301,15 +301,17 @@ export default function MyAvailability() {
                 <div className="space-y-6">
                   {Object.entries(groupedSlots).map(([date, slots]: [string, any]) => (
                     <div key={date}>
-                      <h3 className="font-semibold mb-3 text-lg">{date}</h3>
+                      <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-slate-300">
+                        {date}
+                      </h3>
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                         {slots.map((slot: any) => (
                           <div
                             key={slot.id}
-                            className={`flex items-center justify-between rounded-md px-3 py-2 text-sm transition-professional ${
+                            className={`flex items-center justify-between rounded-md border px-3 py-2 text-xs sm:text-sm transition-colors ${
                               slot.is_booked
-                                ? "bg-emerald-500/10 border border-emerald-500/60 text-emerald-100"
-                                : "bg-slate-900/80 border border-slate-700 text-slate-100 hover:border-primary/60"
+                                ? "bg-emerald-500/15 border-emerald-400/70 text-emerald-100"
+                                : "bg-slate-950/70 border-slate-700/80 text-slate-100 hover:border-primary/70 hover:bg-slate-900/80"
                             }`}
                           >
                             <div>
