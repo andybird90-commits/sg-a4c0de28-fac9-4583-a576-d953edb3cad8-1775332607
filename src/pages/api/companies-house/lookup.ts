@@ -158,9 +158,12 @@ export default async function handler(
             )
             .slice(0, 5); // Last 5 filings
 
-          // Calculate filing lag for each
+          // When building filingHistory:
           const filingHistory = accountsFilings.map((filing: any) => {
-            const periodEnd = filing.date_of_period_end_on || filing.made_up_date;
+            const periodStart =
+              filing.date_of_period_start_on || null;
+            const periodEnd =
+              filing.date_of_period_end_on || filing.made_up_date;
             const filingDate = filing.action_date || filing.date;
             
             let lagDays = null;
@@ -173,6 +176,7 @@ export default async function handler(
             }
 
             return {
+              period_start_date: periodStart,
               period_end_date: periodEnd,
               filing_date: filingDate,
               filing_lag_days: lagDays,
@@ -209,6 +213,7 @@ export default async function handler(
                     {
                       org_id: number,
                       company_number: number,
+                      period_start_date: filing.period_start_date || filing.period_end_date,
                       period_end_date: filing.period_end_date,
                       accounts_filing_date: filing.filing_date,
                       filing_lag_days: filing.filing_lag_days,
