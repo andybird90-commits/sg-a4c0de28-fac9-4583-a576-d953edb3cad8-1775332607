@@ -27,6 +27,8 @@ export default async function handler(
     userId?: string;
   };
 
+  console.log("[api/projects/send-to-team] Incoming body:", req.body);
+
   if (!sidekickProjectId || !userId) {
     res.status(400).json({ error: "Missing sidekickProjectId or userId" });
     return;
@@ -35,7 +37,6 @@ export default async function handler(
   try {
     let claimProject: ClaimProject | null = null;
 
-    // First, try to resolve using the Sidekick project linkage
     const {
       data: projectsBySource,
       error: fetchErrorBySource,
@@ -45,6 +46,12 @@ export default async function handler(
       .eq("source_sidekick_project_id", sidekickProjectId)
       .order("created_at", { ascending: false })
       .limit(1);
+
+    console.log("[api/projects/send-to-team] Query by source_sidekick_project_id:", {
+      sidekickProjectId,
+      count: projectsBySource?.length ?? 0,
+      error: fetchErrorBySource,
+    });
 
     if (fetchErrorBySource) {
       console.error(
@@ -59,7 +66,6 @@ export default async function handler(
       claimProject = projectsBySource[0] as ClaimProject;
     }
 
-    // Fallback: treat the provided id as a direct claim project id
     if (!claimProject) {
       const {
         data: projectsById,
@@ -70,6 +76,12 @@ export default async function handler(
         .eq("id", sidekickProjectId)
         .order("created_at", { ascending: false })
         .limit(1);
+
+      console.log("[api/projects/send-to-team] Query by id (fallback):", {
+        sidekickProjectId,
+        count: projectsById?.length ?? 0,
+        error: fetchErrorById,
+      });
 
       if (fetchErrorById) {
         console.error(
@@ -86,6 +98,10 @@ export default async function handler(
     }
 
     if (!claimProject) {
+      console.warn(
+        "[api/projects/send-to-team] No claim project found for Sidekick project id:",
+        sidekickProjectId
+      );
       res.status(404).json({
         error:
           "No linked claim project found for this Sidekick project. Please ask your R&D team to attach it to a claim.",
@@ -100,6 +116,13 @@ export default async function handler(
       claimProject.workflow_status !== "draft" &&
       claimProject.workflow_status !== "revision_requested"
     ) {
+      console.warn(
+        "[api/projects/send-to-team] Project already sent or not in draft:",
+        {
+          id: claimProject.id,
+          workflow_status: claimProject.workflow_status,
+        }
+      );
       res.status(400).json({
         error:
           "This project has already been sent to the R&D team or is no longer in draft.",
@@ -119,6 +142,12 @@ export default async function handler(
       .eq("id", claimProject.id)
       .select()
       .single();
+
+    console.log("[api/projects/send-to-team] Update result:", {
+      id: claimProject.id,
+      error: updateError,
+      updated,
+    });
 
     if (updateError || !updated) {
       console.error(
@@ -145,6 +174,11 @@ export default async function handler(
       console.error(
         "[api/projects/send-to-team] Failed to log status history:",
         historyError
+      );
+    } else {
+      console.log(
+        "[api/projects/send-to-team] Status history logged successfully for project:",
+        claimProject.id
       );
     }
 
