@@ -10,6 +10,7 @@ type SuccessResponse = {
 
 type ErrorResponse = {
   error: string;
+  debug?: Record<string, unknown>;
 };
 
 export default async function handler(
@@ -47,9 +48,11 @@ export default async function handler(
       .order("created_at", { ascending: false })
       .limit(1);
 
+    const bySourceCount = projectsBySource?.length ?? 0;
+
     console.log("[api/projects/send-to-team] Query by source_sidekick_project_id:", {
       sidekickProjectId,
-      count: projectsBySource?.length ?? 0,
+      count: bySourceCount,
       error: fetchErrorBySource,
     });
 
@@ -58,7 +61,14 @@ export default async function handler(
         "[api/projects/send-to-team] Error fetching claim project by source_sidekick_project_id:",
         fetchErrorBySource
       );
-      res.status(500).json({ error: "Failed to load linked claim project" });
+      res.status(500).json({
+        error: "Failed to load linked claim project",
+        debug: {
+          stage: "by_source",
+          sidekickProjectId,
+          fetchErrorBySource,
+        },
+      });
       return;
     }
 
@@ -66,10 +76,13 @@ export default async function handler(
       claimProject = projectsBySource[0] as ClaimProject;
     }
 
+    let byIdCount = 0;
+    let fetchErrorById: unknown = null;
+
     if (!claimProject) {
       const {
         data: projectsById,
-        error: fetchErrorById,
+        error,
       } = await supabaseServer
         .from("claim_projects")
         .select("*")
@@ -77,9 +90,12 @@ export default async function handler(
         .order("created_at", { ascending: false })
         .limit(1);
 
+      fetchErrorById = error;
+      byIdCount = projectsById?.length ?? 0;
+
       console.log("[api/projects/send-to-team] Query by id (fallback):", {
         sidekickProjectId,
-        count: projectsById?.length ?? 0,
+        count: byIdCount,
         error: fetchErrorById,
       });
 
@@ -88,7 +104,14 @@ export default async function handler(
           "[api/projects/send-to-team] Error fetching claim project by id:",
           fetchErrorById
         );
-        res.status(500).json({ error: "Failed to load linked claim project" });
+        res.status(500).json({
+          error: "Failed to load linked claim project",
+          debug: {
+            stage: "by_id",
+            sidekickProjectId,
+            fetchErrorById,
+          },
+        });
         return;
       }
 
@@ -105,6 +128,11 @@ export default async function handler(
       res.status(404).json({
         error:
           "No linked claim project found for this Sidekick project. Please ask your R&D team to attach it to a claim.",
+        debug: {
+          sidekickProjectId,
+          bySourceCount,
+          byIdCount,
+        },
       });
       return;
     }
