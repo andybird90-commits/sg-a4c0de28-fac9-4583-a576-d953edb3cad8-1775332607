@@ -33,32 +33,67 @@ export default async function handler(
   }
 
   try {
-    const { data: projects, error: fetchError } = await supabaseServer
+    let claimProject: ClaimProject | null = null;
+
+    // First, try to resolve using the Sidekick project linkage
+    const {
+      data: projectsBySource,
+      error: fetchErrorBySource,
+    } = await supabaseServer
       .from("claim_projects")
       .select("*")
       .eq("source_sidekick_project_id", sidekickProjectId)
       .order("created_at", { ascending: false })
       .limit(1);
 
-    if (fetchError) {
-      console.error("[api/projects/send-to-team] Error fetching claim project:", fetchError);
+    if (fetchErrorBySource) {
+      console.error(
+        "[api/projects/send-to-team] Error fetching claim project by source_sidekick_project_id:",
+        fetchErrorBySource
+      );
       res.status(500).json({ error: "Failed to load linked claim project" });
       return;
     }
 
-    const claimProject = (projects && projects.length > 0
-      ? projects[0]
-      : null) as ClaimProject | null;
+    if (projectsBySource && projectsBySource.length > 0) {
+      claimProject = projectsBySource[0] as ClaimProject;
+    }
+
+    // Fallback: treat the provided id as a direct claim project id
+    if (!claimProject) {
+      const {
+        data: projectsById,
+        error: fetchErrorById,
+      } = await supabaseServer
+        .from("claim_projects")
+        .select("*")
+        .eq("id", sidekickProjectId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (fetchErrorById) {
+        console.error(
+          "[api/projects/send-to-team] Error fetching claim project by id:",
+          fetchErrorById
+        );
+        res.status(500).json({ error: "Failed to load linked claim project" });
+        return;
+      }
+
+      if (projectsById && projectsById.length > 0) {
+        claimProject = projectsById[0] as ClaimProject;
+      }
+    }
 
     if (!claimProject) {
       res.status(404).json({
-        error: "No linked claim project found for this Sidekick project. Please ask your R&D team to attach it to a claim.",
+        error:
+          "No linked claim project found for this Sidekick project. Please ask your R&D team to attach it to a claim.",
       });
       return;
     }
 
-    const previousStatus = (claimProject.workflow_status ||
-      "draft") as string;
+    const previousStatus = (claimProject.workflow_status || "draft") as string;
 
     if (
       claimProject.workflow_status &&
@@ -66,7 +101,8 @@ export default async function handler(
       claimProject.workflow_status !== "revision_requested"
     ) {
       res.status(400).json({
-        error: "This project has already been sent to the R&D team or is no longer in draft.",
+        error:
+          "This project has already been sent to the R&D team or is no longer in draft.",
       });
       return;
     }
@@ -85,8 +121,13 @@ export default async function handler(
       .single();
 
     if (updateError || !updated) {
-      console.error("[api/projects/send-to-team] Error updating claim project:", updateError);
-      res.status(500).json({ error: "Failed to update project workflow status" });
+      console.error(
+        "[api/projects/send-to-team] Error updating claim project:",
+        updateError
+      );
+      res
+        .status(500)
+        .json({ error: "Failed to update project workflow status" });
       return;
     }
 
