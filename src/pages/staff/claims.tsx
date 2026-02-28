@@ -28,7 +28,8 @@ import {
   Building2,
   Calendar,
   ChevronRight,
-  PoundSterling
+  PoundSterling,
+  Trash2
 } from "lucide-react";
 import { useRouter } from "next/router";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +37,17 @@ import { claimService, ClaimWithDetails } from "@/services/claimService";
 import { MessageWidget } from "@/components/MessageWidget";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-GB', {
@@ -53,6 +65,7 @@ export default function ClaimsPage() {
   const [claims, setClaims] = useState<ClaimWithDetails[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadClaims();
@@ -84,6 +97,27 @@ export default function ClaimsPage() {
 
     return matchesSearch && matchesStatus;
   });
+
+  const handleDeleteClaim = async (claimId: string) => {
+    try {
+      setDeletingId(claimId);
+      await claimService.deleteClaim(claimId);
+      setClaims((prev) => prev.filter((c) => c.id !== claimId));
+      toast({
+        title: "Claim deleted",
+        description: "The claim has been permanently removed.",
+      });
+    } catch (error) {
+      console.error("Error deleting claim:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete claim.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -240,7 +274,43 @@ export default function ClaimsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div
+                          className="flex items-center justify-end gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive"
+                                onClick={(e) => e.stopPropagation()}
+                                disabled={deletingId === claim.id}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete claim?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete this claim and its associated data. This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={async () => {
+                                    await handleDeleteClaim(claim.id);
+                                  }}
+                                  disabled={deletingId === claim.id}
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                           <MessageWidget
                             entityType="claim"
                             entityId={claim.id}
