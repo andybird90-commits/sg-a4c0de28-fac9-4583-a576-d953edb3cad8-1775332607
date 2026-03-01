@@ -47,9 +47,10 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({ items }) => {
     totalsByType[key] = (totalsByType[key] || 0) + safeAmount;
   });
 
-  const entries = Object.entries(totalsByType).sort(
-    (a, b) => b[1] - a[1]
-  );
+  const entries = Object.entries(totalsByType).sort((a, b) => b[1] - a[1]);
+
+  const indicativeLow = total * 0.15;
+  const indicativeHigh = total * 0.3;
 
   return (
     <Card className="bg-slate-950/60 border-slate-800">
@@ -100,6 +101,28 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({ items }) => {
             );
           })}
         </div>
+        {total > 0 && (
+          <div className="pt-1 border-t border-slate-800/60 mt-2 pt-2 space-y-1">
+            <div className="text-[11px] text-slate-400">
+              Rough indication of potential R&amp;D tax benefit
+            </div>
+            <div className="text-sm font-medium text-slate-50">
+              £
+              {indicativeLow.toLocaleString("en-GB", {
+                maximumFractionDigits: 0,
+              })}{" "}
+              – £
+              {indicativeHigh.toLocaleString("en-GB", {
+                maximumFractionDigits: 0,
+              })}
+            </div>
+            <p className="text-[10px] text-slate-500">
+              This is a broad range based on typical relief levels. Your actual
+              benefit will depend on your specific circumstances and tax
+              position.
+            </p>
+          </div>
+        )}
         <p className="pt-1 text-[11px] text-slate-400">
           These figures are for guidance only and will be refined by your RDtax
           team as part of the claim preparation.

@@ -46,6 +46,84 @@ type ApprovalSections = {
   qualifying_activities: ApprovalSectionStatus;
 };
 
+const getTechnicalPlaceholders = (sector?: string | null) => {
+  const normalised = (sector || "").toLowerCase();
+
+  if (normalised.includes("software") || normalised.includes("saas")) {
+    return {
+      baseline:
+        "E.g. Existing web app with monolith backend and basic reporting; users manage data manually in spreadsheets alongside the system...",
+      change:
+        "E.g. Introducing event-driven architecture, new analytics service, or real-time collaboration features...",
+      innovation:
+        "E.g. Solving scaling / performance constraints, complex multi-tenant rules, or novel data processing that goes beyond standard libraries...",
+    };
+  }
+
+  if (
+    normalised.includes("manufacturing") ||
+    normalised.includes("engineering") ||
+    normalised.includes("mechanical")
+  ) {
+    return {
+      baseline:
+        "E.g. Current machine line uses standard components and manual settings to achieve throughput X with known tolerances...",
+      change:
+        "E.g. Redesigning tooling, integrating new sensors, or updating control logic to reach new performance or quality targets...",
+      innovation:
+        "E.g. New combination of materials, control strategies or process parameters that are not standard in your industry...",
+    };
+  }
+
+  return {
+    baseline:
+      "Describe how things worked before this project started. Mention key components, technologies, or processes.",
+    change:
+      "Explain what you are changing or creating in this project – the new design, feature, or approach.",
+    innovation:
+      "Explain what makes this technically difficult or different from standard practice in your field.",
+  };
+};
+
+const getChallengePlaceholders = (sector?: string | null) => {
+  const normalised = (sector || "").toLowerCase();
+
+  if (normalised.includes("software") || normalised.includes("saas")) {
+    return {
+      uncertainties:
+        "E.g. Unsure whether the new architecture would meet latency targets under peak load, or how a new algorithm would behave with edge cases...",
+      knowledge:
+        "E.g. Reviewed framework docs, performance benchmarks, prior internal projects, and third‑party blog posts / research...",
+      workDone:
+        "E.g. Built load‑test harnesses, ran A/B tests, created prototypes to validate algorithms, iterated on schema designs...",
+    };
+  }
+
+  if (
+    normalised.includes("manufacturing") ||
+    normalised.includes("engineering") ||
+    normalised.includes("mechanical")
+  ) {
+    return {
+      uncertainties:
+        "E.g. Unsure whether a new material or geometry would handle stresses, or how equipment would perform at new operating points...",
+      knowledge:
+        "E.g. Checked supplier datasheets, design codes, prior builds, and spoke with specialists before committing to the new route...",
+      workDone:
+        "E.g. Built and tested prototypes, ran simulations, carried out trial runs at different settings, inspected failures and iterated...",
+    };
+  }
+
+  return {
+    uncertainties:
+      "What did you not know at the outset? Think performance limits, behaviour under certain conditions, or integration issues.",
+    knowledge:
+      "What guidance, standards, previous projects, or supplier information did you look at before starting?",
+    workDone:
+      "Describe the main tests, trials, modelling, or prototyping you carried out and what you were trying to learn from each.",
+  };
+};
+
 export default function ProjectDetailPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -964,6 +1042,21 @@ export default function ProjectDetailPage() {
   const isApproved = claimProject && claimProject.workflow_status === "approved";
   const slaStatus = getSLAStatus();
 
+  const sector = project.sector ?? null;
+  const technicalPlaceholders = getTechnicalPlaceholders(sector);
+  const challengePlaceholders = getChallengePlaceholders(sector);
+
+  const latestStaffComment =
+    comments && comments.length > 0
+      ? comments
+          .filter((comment) => comment.author_role === "rd_staff")
+          .sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
+          )[0] ?? null
+      : null;
+
   const statusColors: Record<string, string> = {
     draft: "bg-gray-500",
     submitted_to_team: "bg-blue-600",
@@ -1078,7 +1171,7 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
-          <div className="mt-4 sm:mt-6 grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)]">
+          <div className="mt-4 sm:mt-6 grid gap-4 lg:gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)]">
             <ProjectPhaseTimeline
               workflowStatus={workflowStatus}
               hasFeasibility={Boolean(feasibilityAnalysis)}
@@ -1120,7 +1213,7 @@ export default function ProjectDetailPage() {
             />
           </div>
 
-          <div className="mt-4 sm:mt-6 grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)]">
+          <div className="mt-4 sm:mt-6 grid gap-4 lg:gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)]">
             <ProjectCostSummary items={costAdvice} />
             <ProjectHistoryPanel
               projectCreatedAt={project.created_at}
@@ -1274,11 +1367,11 @@ export default function ProjectDetailPage() {
                       <div>
                         <h3 className="text-sm font-semibold text-slate-100">1. Baseline / current system</h3>
                         <p className="mt-1 text-xs text-slate-400">
-                          Describe how things worked before this project started. Mention key components, technologies, or processes.
+                          {technicalPlaceholders.baseline}
                         </p>
                         <Textarea
                           className="mt-2 min-h-[120px]"
-                          placeholder="E.g. Existing jet ski uses a standard marine engine with fixed intake; control system is mechanical only..."
+                          placeholder="E.g. Existing setup, current tools or systems in use, and any limitations you are aware of."
                           value={technicalBaseline}
                           onChange={(e) => setTechnicalBaseline(e.target.value)}
                         />
@@ -1287,11 +1380,11 @@ export default function ProjectDetailPage() {
                       <div>
                         <h3 className="text-sm font-semibold text-slate-100">2. Change or new development</h3>
                         <p className="mt-1 text-xs text-slate-400">
-                          What are you changing or creating? Summarise the new design, feature, or approach you&apos;re working on.
+                          {technicalPlaceholders.change}
                         </p>
                         <Textarea
                           className="mt-2 min-h-[120px]"
-                          placeholder="E.g. Replacing the marine engine with an adapted jet engine, redesigning intake and cooling, adding electronic control..."
+                          placeholder="E.g. New feature, architecture, component, control logic, or process you are introducing."
                           value={technicalChange}
                           onChange={(e) => setTechnicalChange(e.target.value)}
                         />
@@ -1300,11 +1393,11 @@ export default function ProjectDetailPage() {
                       <div>
                         <h3 className="text-sm font-semibold text-slate-100">3. Innovation / why this is different</h3>
                         <p className="mt-1 text-xs text-slate-400">
-                          Explain what makes this technically difficult or different from standard practice. This helps us evidence the R&amp;D.
+                          {technicalPlaceholders.innovation}
                         </p>
                         <Textarea
                           className="mt-2 min-h-[120px]"
-                          placeholder="E.g. Jet engines are not normally used in this context; we had to solve for cooling, thrust control at low speeds, safety..."
+                          placeholder="E.g. Why this goes beyond routine work or standard configurations in your field."
                           value={technicalInnovation}
                           onChange={(e) => setTechnicalInnovation(e.target.value)}
                         />
@@ -1315,11 +1408,11 @@ export default function ProjectDetailPage() {
                       <div>
                         <h3 className="text-sm font-semibold text-slate-100">1. Uncertainties at the start</h3>
                         <p className="mt-1 text-xs text-slate-400">
-                          What didn&apos;t you know at the outset? Think performance limits, behaviour under certain conditions, or integration issues.
+                          {challengePlaceholders.uncertainties}
                         </p>
                         <Textarea
                           className="mt-2 min-h-[120px]"
-                          placeholder="E.g. Unsure whether the jet engine could deliver controllable thrust at low speed without stalling..."
+                          placeholder="E.g. Key technical questions you were unsure about before starting."
                           value={challengeUncertainties}
                           onChange={(e) => setChallengeUncertainties(e.target.value)}
                         />
@@ -1328,11 +1421,11 @@ export default function ProjectDetailPage() {
                       <div>
                         <h3 className="text-sm font-semibold text-slate-100">2. Existing knowledge and information</h3>
                         <p className="mt-1 text-xs text-slate-400">
-                          What guidance, standards, previous projects, or supplier information did you look at before starting?
+                          {challengePlaceholders.knowledge}
                         </p>
                         <Textarea
                           className="mt-2 min-h-[120px]"
-                          placeholder="E.g. Reviewed manufacturer datasheets, spoke with engine supplier, checked marine safety guidelines..."
+                          placeholder="E.g. Design codes, datasheets, internal knowledge, previous projects, or external research you drew on."
                           value={challengeKnowledge}
                           onChange={(e) => setChallengeKnowledge(e.target.value)}
                         />
@@ -1343,11 +1436,11 @@ export default function ProjectDetailPage() {
                           3. Work done to resolve the uncertainties (tests, experiments, iterations)
                         </h3>
                         <p className="mt-1 text-xs text-slate-400">
-                          Describe the main tests, trials, modelling, or prototyping you carried out and what you were trying to learn from each.
+                          {challengePlaceholders.workDone}
                         </p>
                         <Textarea
                           className="mt-2 min-h-[120px]"
-                          placeholder="E.g. Ran CFD simulations, built two intake prototypes, carried out lake trials at three power settings..."
+                          placeholder="E.g. Prototypes built, simulations run, trial runs, or iterations you used to answer the uncertainties."
                           value={challengeWorkDone}
                           onChange={(e) => setChallengeWorkDone(e.target.value)}
                         />
@@ -1605,6 +1698,27 @@ export default function ProjectDetailPage() {
 
             <TabsContent value="comments" className="mt-6 space-y-6">
               <div className="space-y-4 sm:space-y-6">
+                {latestStaffComment && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                        <Lightbulb className="h-4 w-4 text-[#ff6b35]" />
+                        From your RDtax team
+                      </CardTitle>
+                      <CardDescription className="text-sm">
+                        Latest summary or feedback shared by your R&amp;D specialists.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(latestStaffComment.created_at).toLocaleDateString("en-GB")}
+                      </p>
+                      <p className="text-sm break-words whitespace-pre-wrap">
+                        {latestStaffComment.body}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg sm:text-xl">Add Comment</CardTitle>

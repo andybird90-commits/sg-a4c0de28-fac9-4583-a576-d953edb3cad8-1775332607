@@ -142,9 +142,8 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <ol className="flex flex-col gap-3 md:flex-row md:gap-4">
-          {phases.map((phase, index) => {
-            const isLast = index === phases.length - 1;
+        <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {phases.map((phase) => {
             const icon =
               phase.status === "complete" ? (
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
@@ -158,7 +157,7 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
               <li
                 key={phase.key}
                 className={cn(
-                  "relative flex-1 rounded-lg border px-3 py-2",
+                  "rounded-lg border px-3 py-2 h-full",
                   phase.status === "complete" &&
                     "border-emerald-500/50 bg-emerald-950/40",
                   phase.status === "current" &&
@@ -197,9 +196,6 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
                     </p>
                   </div>
                 </div>
-                {!isLast && (
-                  <div className="hidden md:block absolute right-[-10px] top-1/2 h-px w-5 -translate-y-1/2 bg-gradient-to-r from-slate-700/40 to-slate-800/10" />
-                )}
               </li>
             );
           })}
