@@ -214,15 +214,47 @@ export default async function handler(
 
       if (!claimRow) {
         console.warn(
-          "[api/projects/send-to-team] Claim not found while creating claim project:",
-          sidekickProject.claim_id
+          "[api/projects/send-to-team] Claim not found while creating claim project. Clearing stale claim_id reference on sidekick_projects row:",
+          {
+            sidekickProjectId,
+            missingClaimId: sidekickProject.claim_id,
+          }
         );
+
+        try {
+          const { error: clearError } = await supabaseServer
+            .from("sidekick_projects")
+            .update({ claim_id: null })
+            .eq("id", sidekickProject.id);
+
+          if (clearError) {
+            console.error(
+              "[api/projects/send-to-team] Failed to clear stale claim_id on sidekick_projects:",
+              {
+                sidekickProjectId,
+                clearError,
+              }
+            );
+          }
+        } catch (clearErr) {
+          console.error(
+            "[api/projects/send-to-team] Unexpected error while clearing stale claim_id on sidekick_projects:",
+            {
+              sidekickProjectId,
+              clearErr,
+            }
+          );
+        }
+
         res.status(404).json({
           error:
-            "The claim linked to this Sidekick project could not be found. Please recreate the claim and try again.",
+            "No linked claim project found for this Sidekick project. Please start a claim including this project before sending it to the team.",
           debug: {
             sidekickProjectId,
-            claimId: sidekickProject.claim_id,
+            bySourceCount,
+            byIdCount,
+            hadClaimId: true,
+            missingClaimId: sidekickProject.claim_id,
           },
         });
         return;
