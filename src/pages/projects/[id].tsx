@@ -90,7 +90,12 @@ export default function ProjectDetailPage() {
   });
   const [revisionFeedback, setRevisionFeedback] = useState("");
 
-  // Cost advice state (client suggestions for this Sidekick project)
+  const [rdTechnicalUnderstanding, setRdTechnicalUnderstanding] = useState<string>("");
+  const [rdChallenges, setRdChallenges] = useState<string>("");
+  const [rdActivities, setRdActivities] = useState<string[]>([]);
+  const [newActivity, setNewActivity] = useState<string>("");
+  const [savingRdDetails, setSavingRdDetails] = useState<boolean>(false);
+
   const [costAdvice, setCostAdvice] = useState<SidekickCostAdvice[]>([]);
   const [isLoadingCostAdvice, setIsLoadingCostAdvice] = useState(false);
   const [isSubmittingCostAdvice, setIsSubmittingCostAdvice] = useState(false);
@@ -170,6 +175,24 @@ export default function ProjectDetailPage() {
 
         setClaimProject(data.claimProject ?? null);
 
+        if (data.claimProject) {
+          setRdTechnicalUnderstanding(
+            data.claimProject.technical_understanding ?? ""
+          );
+          setRdChallenges(
+            data.claimProject.challenges_uncertainties ?? ""
+          );
+          setRdActivities(
+            Array.isArray(data.claimProject.qualifying_activities)
+              ? data.claimProject.qualifying_activities
+              : []
+          );
+        } else {
+          setRdTechnicalUnderstanding("");
+          setRdChallenges("");
+          setRdActivities([]);
+        }
+
         if (data.approvalSections) {
           setApprovalSections((prev) => ({
             ...prev,
@@ -188,6 +211,106 @@ export default function ProjectDetailPage() {
     },
     [setClaimProject, setApprovalSections, toast]
   );
+
+  const handleAddActivity = (): void => {
+    const value = newActivity.trim();
+    if (!value) return;
+    if (rdActivities.includes(value)) {
+      setNewActivity("");
+      return;
+    }
+    setRdActivities((prev) => [...prev, value]);
+    setNewActivity("");
+  };
+
+  const handleRemoveActivity = (index: number): void => {
+    setRdActivities((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveRdDetails = async (): Promise<void> => {
+    if (!project) return;
+
+    setSavingRdDetails(true);
+    try {
+      const response = await fetch("/api/projects/update-rd-details", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sidekickProjectId: project.id,
+          technical_understanding: rdTechnicalUnderstanding || null,
+          challenges_uncertainties: rdChallenges || null,
+          qualifying_activities:
+            rdActivities && rdActivities.length > 0 ? rdActivities : null,
+        }),
+      });
+
+      const contentType = response.headers.get("content-type") ?? "";
+      const isJson = contentType.toLowerCase().includes("application/json");
+
+      if (!response.ok) {
+        let errorMessage = "Failed to save R&D details.";
+
+        if (isJson) {
+          try {
+            const errorBody = (await response.json()) as { error?: string };
+            if (errorBody?.error) {
+              errorMessage = errorBody.error;
+            }
+          } catch (parseError) {
+            console.error("Error parsing error JSON from update-rd-details:", parseError);
+          }
+        } else {
+          try {
+            const text = await response.text();
+            if (text) {
+              errorMessage = text.slice(0, 500);
+            }
+          } catch (parseError) {
+            console.error("Error reading error text from update-rd-details:", parseError);
+          }
+        }
+
+        toast({
+          title: "Could not save R&D details",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      let updatedClaim: ClaimProject | null = null;
+      if (isJson) {
+        try {
+          const data = (await response.json()) as { claimProject?: ClaimProject };
+          if (data?.claimProject) {
+            updatedClaim = data.claimProject;
+          }
+        } catch (parseError) {
+          console.error("Error parsing success JSON from update-rd-details:", parseError);
+        }
+      }
+
+      if (updatedClaim) {
+        setClaimProject(updatedClaim);
+      }
+
+      toast({
+        title: "R&D details saved",
+        description: "Your R&D story has been saved for the R&D team.",
+      });
+    } catch (error) {
+      console.error("Unexpected error saving R&D details:", error);
+      toast({
+        title: "Could not save R&D details",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingRdDetails(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -920,8 +1043,9 @@ export default function ProjectDetailPage() {
           </div>
 
           <Tabs defaultValue="feasibility" className="mt-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="feasibility">Feasibility</TabsTrigger>
+              <TabsTrigger value="rd">R&amp;D Details</TabsTrigger>
               <TabsTrigger value="evidence">Evidence</TabsTrigger>
               <TabsTrigger value="comments">Comments</TabsTrigger>
               <TabsTrigger value="costs">
@@ -1038,7 +1162,131 @@ export default function ProjectDetailPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="evidence">
+            <TabsContent value="rd" className="mt-6 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg sm:text-xl">R&amp;D Details</CardTitle>
+                  <CardDescription className="text-sm">
+                    Capture the technical story, challenges, and activities that make this project R&amp;D.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {!claimProject ? (
+                    <p className="text-sm text-muted-foreground">
+                      R&amp;D details will be available once this project is with your R&amp;D team.
+                      Send the project to the team first, then you can complete this section together.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <Label htmlFor="rd-technical" className="text-sm font-medium">
+                            Technical Understanding
+                          </Label>
+                          <span className="text-xs text-muted-foreground">
+                            Explain what you are trying to achieve and how the technology works today.
+                          </span>
+                        </div>
+                        <Textarea
+                          id="rd-technical"
+                          value={rdTechnicalUnderstanding}
+                          onChange={(e) => setRdTechnicalUnderstanding(e.target.value)}
+                          rows={6}
+                          className="text-sm resize-none"
+                          placeholder="Describe the system, process, or product; what makes it technically interesting; and how it behaves today."
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <Label htmlFor="rd-challenges" className="text-sm font-medium">
+                            Challenges &amp; Uncertainties
+                          </Label>
+                          <span className="text-xs text-muted-foreground">
+                            Focus on the unknowns, technical risks, and things you had to experiment with.
+                          </span>
+                        </div>
+                        <Textarea
+                          id="rd-challenges"
+                          value={rdChallenges}
+                          onChange={(e) => setRdChallenges(e.target.value)}
+                          rows={6}
+                          className="text-sm resize-none"
+                          placeholder="Where were you unsure if something would work? What tests or investigations did you have to run? What could have failed?"
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <Label className="text-sm font-medium">
+                            Qualifying Activities
+                          </Label>
+                          <span className="text-xs text-muted-foreground">
+                            Add specific tasks or work packages that involved resolving technical uncertainty.
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {rdActivities.length === 0 ? (
+                            <p className="text-xs text-muted-foreground">
+                              No activities added yet. Use the box below to add activities such as
+                              experiments, design iterations, or investigations.
+                            </p>
+                          ) : (
+                            rdActivities.map((activity, index) => (
+                              <span
+                                key={`${activity}-${index}`}
+                                className="inline-flex items-center rounded-full border px-3 py-1 text-xs bg-background/40"
+                              >
+                                <span className="mr-2">{activity}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveActivity(index)}
+                                  className="text-muted-foreground hover:text-destructive transition-colors"
+                                  aria-label="Remove activity"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))
+                          )}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Input
+                            value={newActivity}
+                            onChange={(e) => setNewActivity(e.target.value)}
+                            placeholder="e.g. Prototype engine mounting tests, CFD simulations, control algorithm tuning"
+                            className="text-sm"
+                          />
+                          <Button
+                            type="button"
+                            onClick={handleAddActivity}
+                            disabled={!newActivity.trim()}
+                            size="sm"
+                          >
+                            Add activity
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
+                        <Button
+                          type="button"
+                          onClick={handleSaveRdDetails}
+                          disabled={savingRdDetails}
+                          size="sm"
+                        >
+                          {savingRdDetails ? "Saving..." : "Save R&D details"}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="evidence" className="mt-6 space-y-6">
               <div className="space-y-4 sm:space-y-6">
                 {canEdit && (
                   <Card>
