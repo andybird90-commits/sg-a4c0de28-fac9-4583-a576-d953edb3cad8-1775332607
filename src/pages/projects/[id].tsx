@@ -1171,7 +1171,7 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
-          <div className="mt-4 sm:mt-6 grid gap-4 lg:gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)]">
+          <div className="mt-6 grid gap-4 lg:gap-6 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1.3fr)]">
             <ProjectPhaseTimeline
               workflowStatus={workflowStatus}
               hasFeasibility={Boolean(feasibilityAnalysis)}

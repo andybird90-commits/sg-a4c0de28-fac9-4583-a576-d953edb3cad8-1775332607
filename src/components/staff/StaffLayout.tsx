@@ -150,7 +150,10 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
   };
 
   const renderNavItem = (path: string, label: string, Icon: React.ComponentType<{ className?: string }>) => {
-    const isActive = router.pathname === path || router.pathname.startsWith(`${path}/`);
+    const isRootStaff = path === "/staff";
+    const isActive = isRootStaff
+      ? router.pathname === "/staff"
+      : router.pathname === path || router.pathname.startsWith(`${path}/`);
 
     return (
       <button

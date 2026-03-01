@@ -137,7 +137,7 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
         </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {scores.map((score) => (
             <div
               key={score.label}
