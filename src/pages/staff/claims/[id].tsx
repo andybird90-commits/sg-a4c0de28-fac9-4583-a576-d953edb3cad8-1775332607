@@ -87,12 +87,12 @@ type ClaimProject = Database["public"]["Tables"]["claim_projects"]["Row"];
 type ClaimDocument = Database["public"]["Tables"]["claim_documents"]["Row"];
 
 // Helper component for project cards with workflow actions
-function ProjectCard({ 
-  project, 
-  showClaimButton, 
-  showSendToClient 
-}: { 
-  project: ClaimProject; 
+function ProjectCard({
+  project,
+  showClaimButton,
+  showSendToClient,
+}: {
+  project: ClaimProject;
   showClaimButton?: boolean;
   showSendToClient?: boolean;
 }) {
@@ -129,28 +129,76 @@ function ProjectCard({
   };
 
   const getSLABadge = () => {
-    if (!project.due_date) return null;
     const now = new Date();
-    const dueDate = new Date(project.due_date);
-    const hoursLeft = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-    
+    let target: Date | null = null;
+
+    if (project.due_date) {
+      target = new Date(project.due_date);
+    } else if (project.submitted_to_team_at) {
+      const slaHours = 48;
+      target = new Date(project.submitted_to_team_at);
+      target.setHours(target.getHours() + slaHours);
+    }
+
+    if (!target) return null;
+    const hoursLeft =
+      (target.getTime() - now.getTime()) / (1000 * 60 * 60);
+
     if (hoursLeft < 0) {
       return <Badge variant="destructive">Overdue</Badge>;
     } else if (hoursLeft < 24) {
-      return <Badge className="bg-orange-500">{Math.floor(hoursLeft)}h left</Badge>;
+      return (
+        <Badge className="bg-orange-500 text-slate-950">
+          {Math.floor(hoursLeft)}h left
+        </Badge>
+      );
     } else {
-      return <Badge className="bg-green-500">{Math.floor(hoursLeft / 24)}d left</Badge>;
+      return (
+        <Badge className="bg-green-500 text-slate-950">
+          {Math.floor(hoursLeft / 24)}d left
+        </Badge>
+      );
+    }
+  };
+
+  const getWorkflowLabel = (status?: string | null) => {
+    switch (status) {
+      case "submitted_to_team":
+        return "Pending review";
+      case "team_in_progress":
+        return "In progress";
+      case "awaiting_client_review":
+        return "Awaiting client";
+      case "revision_requested":
+        return "Revisions requested";
+      case "approved":
+        return "Approved";
+      default:
+        return status || "draft";
     }
   };
 
   return (
-    <div className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+    <div
+      className={`p-4 border rounded-lg transition-colors ${
+        project.workflow_status === "submitted_to_team"
+          ? "border-orange-500/80 bg-orange-500/5"
+          : "hover:bg-accent/50"
+      }`}
+    >
       <Link href={`/staff/claims/projects/${project.id}`} className="block">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <h4 className="font-medium break-words">{project.name}</h4>
-              <Badge variant="outline">{project.workflow_status || "draft"}</Badge>
+              <Badge variant="outline">
+                {getWorkflowLabel(project.workflow_status)}
+              </Badge>
+              {project.workflow_status === "submitted_to_team" && (
+                <Badge className="bg-orange-500 text-slate-950">
+                  Pending from client
+                </Badge>
+              )}
               {getSLABadge()}
             </div>
             {project.description && (
@@ -172,11 +220,17 @@ function ProjectCard({
         </div>
       </Link>
       <div className="flex gap-2 flex-shrink-0 mt-2">
-        {showClaimButton && !project.assigned_to_user_id && (
-          <Button onClick={handleClaimProject} disabled={claiming} size="sm">
-            {claiming ? "Claiming..." : "Claim Project"}
-          </Button>
-        )}
+        {showClaimButton &&
+          !project.assigned_to_user_id &&
+          false && (
+            <Button
+              onClick={handleClaimProject}
+              disabled={claiming}
+              size="sm"
+            >
+              {claiming ? "Claiming..." : "Claim Project"}
+            </Button>
+          )}
         {showSendToClient && (
           <Button onClick={handleSendToClient} disabled={sending} size="sm">
             {sending ? "Sending..." : "Send to Client"}
@@ -985,9 +1039,16 @@ export default function ClaimDetailPage() {
                       <p className="text-muted-foreground text-center py-8">No projects pending review</p>
                     ) : (
                       <div className="space-y-3">
-                        {projects.filter(p => p.workflow_status === "submitted_to_team").map((project) => (
-                          <ProjectCard key={project.id} project={project} showClaimButton />
-                        ))}
+                        {projects
+                          .filter(
+                            (p) => p.workflow_status === "submitted_to_team"
+                          )
+                          .map((project) => (
+                            <ProjectCard
+                              key={project.id}
+                              project={project}
+                            />
+                          ))}
                       </div>
                     )}
                   </TabsContent>

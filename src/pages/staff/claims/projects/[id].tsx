@@ -549,7 +549,7 @@ export default function ProjectDetailPage() {
                 <p className="font-medium">Current Status</p>
                 <p className="text-sm text-muted-foreground">
                   {project.workflow_status === "submitted_to_team" &&
-                    "Waiting for team to claim"}
+                    "Pending team review"}
                   {project.workflow_status === "team_in_progress" &&
                     "Being reviewed by team"}
                   {project.workflow_status === "awaiting_client_review" &&

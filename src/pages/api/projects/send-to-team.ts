@@ -330,6 +330,14 @@ export default async function handler(
     }
 
     const now = new Date().toISOString();
+    const slaHours = 48;
+
+    let dueDateForUpdate = claimProject.due_date;
+    if (!dueDateForUpdate) {
+      const target = new Date(now);
+      target.setHours(target.getHours() + slaHours);
+      dueDateForUpdate = target.toISOString();
+    }
 
     const { data: updated, error: updateError } = await supabaseServer
       .from("claim_projects")
@@ -338,6 +346,7 @@ export default async function handler(
         submitted_to_team_at: now,
         updated_at: now,
         updated_by: userId,
+        due_date: dueDateForUpdate,
       })
       .eq("id", claimProject.id)
       .select()
