@@ -25,6 +25,10 @@ import { MessageWidget } from "@/components/MessageWidget";
 import { sidekickCostAdviceService, type SidekickCostAdvice } from "@/services/sidekickCostAdviceService";
 import { toast } from "@/hooks/use-toast";
 import { useCallback } from "react";
+import { ProjectPhaseTimeline } from "@/components/projects/ProjectPhaseTimeline";
+import { ProjectReadinessPanel } from "@/components/projects/ProjectReadinessPanel";
+import { ProjectCostSummary } from "@/components/projects/ProjectCostSummary";
+import { ProjectHistoryPanel } from "@/components/projects/ProjectHistoryPanel";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
 type SidekickEvidenceItem = Database["public"]["Tables"]["sidekick_evidence_items"]["Row"];
@@ -104,6 +108,14 @@ export default function ProjectDetailPage() {
   const [costDescription, setCostDescription] = useState<string>("");
   const [costNotes, setCostNotes] = useState<string>("");
   const [editingCostId, setEditingCostId] = useState<string | null>(null);
+
+  const [technicalBaseline, setTechnicalBaseline] = useState<string>("");
+  const [technicalChange, setTechnicalChange] = useState<string>("");
+  const [technicalInnovation, setTechnicalInnovation] = useState<string>("");
+
+  const [challengeUncertainties, setChallengeUncertainties] = useState<string>("");
+  const [challengeKnowledge, setChallengeKnowledge] = useState<string>("");
+  const [challengeWorkDone, setChallengeWorkDone] = useState<string>("");
 
   const loadCostAdvice = useCallback(
     async (projectId: string) => {
@@ -199,6 +211,17 @@ export default function ProjectDetailPage() {
             ...data.approvalSections,
           }));
         }
+
+        // Initialise guided fields from existing combined text (if present)
+        const tech = data.claimProject?.technical_understanding ?? "";
+        if (tech && !technicalBaseline && !technicalChange && !technicalInnovation) {
+          setTechnicalBaseline(tech);
+        }
+
+        const chall = data.claimProject?.challenges_uncertainties ?? "";
+        if (chall && !challengeUncertainties && !challengeKnowledge && !challengeWorkDone) {
+          setChallengeUncertainties(chall);
+        }
       } catch (error) {
         console.error("Unexpected error refreshing claim project:", error);
         toast({
@@ -232,17 +255,30 @@ export default function ProjectDetailPage() {
 
     setSavingRdDetails(true);
     try {
+      // Compose structured text for staff-side fields
+      const technical_understanding =
+        `Baseline / current system:\n${technicalBaseline.trim() || "Not provided."}\n\n` +
+        `Change or new development:\n${technicalChange.trim() || "Not provided."}\n\n` +
+        `Innovation / why this is different:\n${technicalInnovation.trim() || "Not provided."}`;
+
+      const challenges_uncertainties =
+        `Uncertainties at the start:\n${challengeUncertainties.trim() || "Not provided."}\n\n` +
+        `Existing knowledge and information considered:\n${challengeKnowledge.trim() || "Not provided."}\n\n` +
+        `Work done to resolve the uncertainties (tests, experiments, iterations):\n${challengeWorkDone.trim() || "Not provided."}`;
+
+      const qualifyingActivities =
+        rdActivities && rdActivities.length > 0 ? rdActivities : null;
+
       const response = await fetch("/api/projects/update-rd-details", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          sidekickProjectId: project.id,
-          technical_understanding: rdTechnicalUnderstanding || null,
-          challenges_uncertainties: rdChallenges || null,
-          qualifying_activities:
-            rdActivities && rdActivities.length > 0 ? rdActivities : null,
+          projectId: project.id,
+          technical_understanding,
+          challenges_uncertainties,
+          qualifying_activities: qualifyingActivities,
         }),
       });
 
@@ -1042,6 +1078,59 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
+          <div className="mt-4 sm:mt-6 grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)]">
+            <ProjectPhaseTimeline
+              workflowStatus={workflowStatus}
+              hasFeasibility={Boolean(feasibilityAnalysis)}
+              hasTechnical={Boolean(
+                technicalBaseline ||
+                  technicalChange ||
+                  technicalInnovation ||
+                  rdTechnicalUnderstanding
+              )}
+              hasChallenges={Boolean(
+                challengeUncertainties ||
+                  challengeKnowledge ||
+                  challengeWorkDone ||
+                  rdChallenges
+              )}
+              hasActivities={rdActivities.length > 0}
+              hasEvidence={evidence.length > 0}
+              hasCosts={costAdvice.length > 0}
+              createdAt={project.created_at}
+              dueDate={claimProject?.due_date ?? null}
+            />
+            <ProjectReadinessPanel
+              hasTechnical={Boolean(
+                technicalBaseline ||
+                  technicalChange ||
+                  technicalInnovation ||
+                  rdTechnicalUnderstanding
+              )}
+              hasChallenges={Boolean(
+                challengeUncertainties ||
+                  challengeKnowledge ||
+                  challengeWorkDone ||
+                  rdChallenges
+              )}
+              activityCount={rdActivities.length}
+              evidenceCount={evidence.length}
+              costCount={costAdvice.length}
+              workflowStatus={workflowStatus}
+            />
+          </div>
+
+          <div className="mt-4 sm:mt-6 grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)]">
+            <ProjectCostSummary items={costAdvice} />
+            <ProjectHistoryPanel
+              projectCreatedAt={project.created_at}
+              feasibilityCreatedAt={feasibilityAnalysis?.created_at ?? null}
+              claimWorkflowStatus={claimProject?.workflow_status ?? null}
+              evidence={evidence}
+              costs={costAdvice}
+            />
+          </div>
+
           <Tabs defaultValue="feasibility" className="mt-6">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="feasibility">Feasibility</TabsTrigger>
@@ -1166,153 +1255,164 @@ export default function ProjectDetailPage() {
 
             <TabsContent value="rd" className="mt-6 space-y-6">
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg sm:text-xl">R&amp;D Details</CardTitle>
-                  <CardDescription className="text-sm">
-                    Capture the technical story, challenges, and activities that make this project R&amp;D.
+                <CardHeader className="pb-3">
+                  <CardTitle>R&amp;D Details</CardTitle>
+                  <CardDescription>
+                    Capture the core information our team needs to assess this work for R&amp;D relief.
+                    Work through each section; you don&apos;t need perfect wording, just describe things in your own words.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {!claimProject ? (
-                    <p className="text-sm text-muted-foreground">
-                      R&amp;D details will be available once this project is with your R&amp;D team.
-                      Send the project to the team first, then you can complete this section together.
-                    </p>
-                  ) : (
-                    <>
-                      <Tabs defaultValue="technical" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
-                          <TabsTrigger value="technical">Technical Details</TabsTrigger>
-                          <TabsTrigger value="challenges">Challenges</TabsTrigger>
-                          <TabsTrigger value="activities">Qualifying Activities</TabsTrigger>
-                        </TabsList>
+                <CardContent className="pt-0">
+                  <Tabs defaultValue="technical" className="space-y-6">
+                    <TabsList className="bg-slate-900">
+                      <TabsTrigger value="technical">Technical Details</TabsTrigger>
+                      <TabsTrigger value="challenges">Challenges</TabsTrigger>
+                      <TabsTrigger value="activities">Qualifying Activities</TabsTrigger>
+                    </TabsList>
 
-                        <TabsContent value="technical" className="pt-4 space-y-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <Label htmlFor="rd-technical" className="text-sm font-medium">
-                                Technical Understanding
-                              </Label>
-                              <span className="text-xs text-muted-foreground text-right">
-                                Describe the system, process, or product and what makes it technically
-                                interesting. Focus on how it works today and where you want it to get to.
-                              </span>
-                            </div>
-                            <Textarea
-                              id="rd-technical"
-                              value={rdTechnicalUnderstanding}
-                              onChange={(e) => setRdTechnicalUnderstanding(e.target.value)}
-                              rows={8}
-                              className="text-sm resize-none"
-                              placeholder="For example:
-- What are you building or changing?
-- How does it work today (architecture, components, control logic)?
-- What are the technical targets or performance goals?"
-                            />
-                          </div>
-                        </TabsContent>
-
-                        <TabsContent value="challenges" className="pt-4 space-y-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between gap-2">
-                              <Label htmlFor="rd-challenges" className="text-sm font-medium">
-                                Challenges &amp; Uncertainties
-                              </Label>
-                              <span className="text-xs text-muted-foreground text-right">
-                                Focus on the unknowns, technical risks, and experiments. This is where
-                                we show why the work qualifies as R&amp;D.
-                              </span>
-                            </div>
-                            <Textarea
-                              id="rd-challenges"
-                              value={rdChallenges}
-                              onChange={(e) => setRdChallenges(e.target.value)}
-                              rows={8}
-                              className="text-sm resize-none"
-                              placeholder="For example:
-- Where were you unsure something would work?
-- What tests or investigations did you need to run?
-- What could have failed or behaved differently than expected?"
-                            />
-                          </div>
-                        </TabsContent>
-
-                        <TabsContent value="activities" className="pt-4 space-y-4">
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <Label className="text-sm font-medium">
-                                Qualifying Activities
-                              </Label>
-                              <span className="text-xs text-muted-foreground text-right">
-                                Add specific tasks or work packages that involved resolving technical
-                                uncertainty. Think experiments, design iterations, simulations, or
-                                investigations.
-                              </span>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2">
-                              {rdActivities.length === 0 ? (
-                                <p className="text-xs text-muted-foreground">
-                                  No activities added yet. Use the box below to add activities such as
-                                  experiments, design iterations, or investigations.
-                                </p>
-                              ) : (
-                                rdActivities.map((activity, index) => (
-                                  <span
-                                    key={`${activity}-${index}`}
-                                    className="inline-flex items-center rounded-full border px-3 py-1 text-xs bg-background/40"
-                                  >
-                                    <span className="mr-2">{activity}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoveActivity(index)}
-                                      className="text-muted-foreground hover:text-destructive transition-colors"
-                                      aria-label="Remove activity"
-                                    >
-                                      ×
-                                    </button>
-                                  </span>
-                                ))
-                              )}
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-2">
-                              <Input
-                                value={newActivity}
-                                onChange={(e) => setNewActivity(e.target.value)}
-                                placeholder="e.g. Prototype engine mounting tests, CFD simulations, control algorithm tuning"
-                                className="text-sm"
-                              />
-                              <Button
-                                type="button"
-                                onClick={handleAddActivity}
-                                disabled={!newActivity.trim()}
-                                size="sm"
-                              >
-                                Add activity
-                              </Button>
-                            </div>
-                          </div>
-                        </TabsContent>
-                      </Tabs>
-
-                      <div className="pt-4 mt-4 border-t flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <p className="text-xs text-muted-foreground max-w-xl">
-                          Your answers here are what the R&amp;D team will rely on to write the
-                          technical case for this project. You can come back and refine them any time
-                          while the claim is in progress.
+                    <TabsContent value="technical" className="pt-4 space-y-6">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-100">1. Baseline / current system</h3>
+                        <p className="mt-1 text-xs text-slate-400">
+                          Describe how things worked before this project started. Mention key components, technologies, or processes.
                         </p>
+                        <Textarea
+                          className="mt-2 min-h-[120px]"
+                          placeholder="E.g. Existing jet ski uses a standard marine engine with fixed intake; control system is mechanical only..."
+                          value={technicalBaseline}
+                          onChange={(e) => setTechnicalBaseline(e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-100">2. Change or new development</h3>
+                        <p className="mt-1 text-xs text-slate-400">
+                          What are you changing or creating? Summarise the new design, feature, or approach you&apos;re working on.
+                        </p>
+                        <Textarea
+                          className="mt-2 min-h-[120px]"
+                          placeholder="E.g. Replacing the marine engine with an adapted jet engine, redesigning intake and cooling, adding electronic control..."
+                          value={technicalChange}
+                          onChange={(e) => setTechnicalChange(e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-100">3. Innovation / why this is different</h3>
+                        <p className="mt-1 text-xs text-slate-400">
+                          Explain what makes this technically difficult or different from standard practice. This helps us evidence the R&amp;D.
+                        </p>
+                        <Textarea
+                          className="mt-2 min-h-[120px]"
+                          placeholder="E.g. Jet engines are not normally used in this context; we had to solve for cooling, thrust control at low speeds, safety..."
+                          value={technicalInnovation}
+                          onChange={(e) => setTechnicalInnovation(e.target.value)}
+                        />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="challenges" className="pt-4 space-y-6">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-100">1. Uncertainties at the start</h3>
+                        <p className="mt-1 text-xs text-slate-400">
+                          What didn&apos;t you know at the outset? Think performance limits, behaviour under certain conditions, or integration issues.
+                        </p>
+                        <Textarea
+                          className="mt-2 min-h-[120px]"
+                          placeholder="E.g. Unsure whether the jet engine could deliver controllable thrust at low speed without stalling..."
+                          value={challengeUncertainties}
+                          onChange={(e) => setChallengeUncertainties(e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-100">2. Existing knowledge and information</h3>
+                        <p className="mt-1 text-xs text-slate-400">
+                          What guidance, standards, previous projects, or supplier information did you look at before starting?
+                        </p>
+                        <Textarea
+                          className="mt-2 min-h-[120px]"
+                          placeholder="E.g. Reviewed manufacturer datasheets, spoke with engine supplier, checked marine safety guidelines..."
+                          value={challengeKnowledge}
+                          onChange={(e) => setChallengeKnowledge(e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-100">
+                          3. Work done to resolve the uncertainties (tests, experiments, iterations)
+                        </h3>
+                        <p className="mt-1 text-xs text-slate-400">
+                          Describe the main tests, trials, modelling, or prototyping you carried out and what you were trying to learn from each.
+                        </p>
+                        <Textarea
+                          className="mt-2 min-h-[120px]"
+                          placeholder="E.g. Ran CFD simulations, built two intake prototypes, carried out lake trials at three power settings..."
+                          value={challengeWorkDone}
+                          onChange={(e) => setChallengeWorkDone(e.target.value)}
+                        />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="activities" className="pt-4 space-y-4">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-100">Qualifying R&amp;D activities</h3>
+                        <p className="mt-1 text-xs text-slate-400">
+                          List the main pieces of work that involved overcoming technical uncertainty. Each item should be a distinct activity
+                          (e.g. &quot;Prototype intake design and testing&quot;, &quot;Control algorithm modelling&quot;).
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {rdActivities.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">
+                            No activities added yet. Use the box below to add activities such as
+                            experiments, design iterations, or investigations.
+                          </p>
+                        ) : (
+                          rdActivities.map((activity, index) => (
+                            <span
+                              key={`${activity}-${index}`}
+                              className="inline-flex items-center rounded-full border px-3 py-1 text-xs bg-background/40"
+                            >
+                              <span className="mr-2">{activity}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveActivity(index)}
+                                className="text-muted-foreground hover:text-destructive transition-colors"
+                                aria-label="Remove activity"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))
+                        )}
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Input
+                          value={newActivity}
+                          onChange={(e) => setNewActivity(e.target.value)}
+                          placeholder="e.g. Prototype engine mounting tests, CFD simulations, control algorithm tuning"
+                          className="text-sm"
+                        />
                         <Button
                           type="button"
-                          onClick={handleSaveRdDetails}
-                          disabled={savingRdDetails}
+                          onClick={handleAddActivity}
+                          disabled={!newActivity.trim()}
                           size="sm"
                         >
-                          {savingRdDetails ? "Saving..." : "Save R&D details"}
+                          Add activity
                         </Button>
                       </div>
-                    </>
-                  )}
+                    </TabsContent>
+                  </Tabs>
+
+                  <div className="mt-6 flex justify-end">
+                    <Button onClick={handleSaveRdDetails} disabled={savingRdDetails}>
+                      {savingRdDetails ? "Saving..." : "Save R&D details"}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
