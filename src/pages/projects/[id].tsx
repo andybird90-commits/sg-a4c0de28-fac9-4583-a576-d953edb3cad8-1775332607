@@ -1142,7 +1142,9 @@ export default function ProjectDetailPage() {
                     </div>
                   ) : (
                     <div className="text-center py-8 space-y-4">
-                      <p className="text-sm text-muted-foreground">No feasibility analysis yet</p>
+                      <p className="text-sm text-muted-foreground">
+                        No feasibility analysis yet
+                      </p>
                       <Button onClick={handleRunFeasibility} disabled={runningFeasibility} size="sm">
                         {runningFeasibility ? (
                           <>
@@ -1178,99 +1180,128 @@ export default function ProjectDetailPage() {
                     </p>
                   ) : (
                     <>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <Label htmlFor="rd-technical" className="text-sm font-medium">
-                            Technical Understanding
-                          </Label>
-                          <span className="text-xs text-muted-foreground">
-                            Explain what you are trying to achieve and how the technology works today.
-                          </span>
-                        </div>
-                        <Textarea
-                          id="rd-technical"
-                          value={rdTechnicalUnderstanding}
-                          onChange={(e) => setRdTechnicalUnderstanding(e.target.value)}
-                          rows={6}
-                          className="text-sm resize-none"
-                          placeholder="Describe the system, process, or product; what makes it technically interesting; and how it behaves today."
-                        />
-                      </div>
+                      <Tabs defaultValue="technical" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                          <TabsTrigger value="technical">Technical Details</TabsTrigger>
+                          <TabsTrigger value="challenges">Challenges</TabsTrigger>
+                          <TabsTrigger value="activities">Qualifying Activities</TabsTrigger>
+                        </TabsList>
 
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <Label htmlFor="rd-challenges" className="text-sm font-medium">
-                            Challenges &amp; Uncertainties
-                          </Label>
-                          <span className="text-xs text-muted-foreground">
-                            Focus on the unknowns, technical risks, and things you had to experiment with.
-                          </span>
-                        </div>
-                        <Textarea
-                          id="rd-challenges"
-                          value={rdChallenges}
-                          onChange={(e) => setRdChallenges(e.target.value)}
-                          rows={6}
-                          className="text-sm resize-none"
-                          placeholder="Where were you unsure if something would work? What tests or investigations did you have to run? What could have failed?"
-                        />
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <Label className="text-sm font-medium">
-                            Qualifying Activities
-                          </Label>
-                          <span className="text-xs text-muted-foreground">
-                            Add specific tasks or work packages that involved resolving technical uncertainty.
-                          </span>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          {rdActivities.length === 0 ? (
-                            <p className="text-xs text-muted-foreground">
-                              No activities added yet. Use the box below to add activities such as
-                              experiments, design iterations, or investigations.
-                            </p>
-                          ) : (
-                            rdActivities.map((activity, index) => (
-                              <span
-                                key={`${activity}-${index}`}
-                                className="inline-flex items-center rounded-full border px-3 py-1 text-xs bg-background/40"
-                              >
-                                <span className="mr-2">{activity}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveActivity(index)}
-                                  className="text-muted-foreground hover:text-destructive transition-colors"
-                                  aria-label="Remove activity"
-                                >
-                                  ×
-                                </button>
+                        <TabsContent value="technical" className="pt-4 space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <Label htmlFor="rd-technical" className="text-sm font-medium">
+                                Technical Understanding
+                              </Label>
+                              <span className="text-xs text-muted-foreground text-right">
+                                Describe the system, process, or product and what makes it technically
+                                interesting. Focus on how it works today and where you want it to get to.
                               </span>
-                            ))
-                          )}
-                        </div>
+                            </div>
+                            <Textarea
+                              id="rd-technical"
+                              value={rdTechnicalUnderstanding}
+                              onChange={(e) => setRdTechnicalUnderstanding(e.target.value)}
+                              rows={8}
+                              className="text-sm resize-none"
+                              placeholder="For example:
+- What are you building or changing?
+- How does it work today (architecture, components, control logic)?
+- What are the technical targets or performance goals?"
+                            />
+                          </div>
+                        </TabsContent>
 
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <Input
-                            value={newActivity}
-                            onChange={(e) => setNewActivity(e.target.value)}
-                            placeholder="e.g. Prototype engine mounting tests, CFD simulations, control algorithm tuning"
-                            className="text-sm"
-                          />
-                          <Button
-                            type="button"
-                            onClick={handleAddActivity}
-                            disabled={!newActivity.trim()}
-                            size="sm"
-                          >
-                            Add activity
-                          </Button>
-                        </div>
-                      </div>
+                        <TabsContent value="challenges" className="pt-4 space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <Label htmlFor="rd-challenges" className="text-sm font-medium">
+                                Challenges &amp; Uncertainties
+                              </Label>
+                              <span className="text-xs text-muted-foreground text-right">
+                                Focus on the unknowns, technical risks, and experiments. This is where
+                                we show why the work qualifies as R&amp;D.
+                              </span>
+                            </div>
+                            <Textarea
+                              id="rd-challenges"
+                              value={rdChallenges}
+                              onChange={(e) => setRdChallenges(e.target.value)}
+                              rows={8}
+                              className="text-sm resize-none"
+                              placeholder="For example:
+- Where were you unsure something would work?
+- What tests or investigations did you need to run?
+- What could have failed or behaved differently than expected?"
+                            />
+                          </div>
+                        </TabsContent>
 
-                      <div className="pt-2">
+                        <TabsContent value="activities" className="pt-4 space-y-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <Label className="text-sm font-medium">
+                                Qualifying Activities
+                              </Label>
+                              <span className="text-xs text-muted-foreground text-right">
+                                Add specific tasks or work packages that involved resolving technical
+                                uncertainty. Think experiments, design iterations, simulations, or
+                                investigations.
+                              </span>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              {rdActivities.length === 0 ? (
+                                <p className="text-xs text-muted-foreground">
+                                  No activities added yet. Use the box below to add activities such as
+                                  experiments, design iterations, or investigations.
+                                </p>
+                              ) : (
+                                rdActivities.map((activity, index) => (
+                                  <span
+                                    key={`${activity}-${index}`}
+                                    className="inline-flex items-center rounded-full border px-3 py-1 text-xs bg-background/40"
+                                  >
+                                    <span className="mr-2">{activity}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveActivity(index)}
+                                      className="text-muted-foreground hover:text-destructive transition-colors"
+                                      aria-label="Remove activity"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))
+                              )}
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <Input
+                                value={newActivity}
+                                onChange={(e) => setNewActivity(e.target.value)}
+                                placeholder="e.g. Prototype engine mounting tests, CFD simulations, control algorithm tuning"
+                                className="text-sm"
+                              />
+                              <Button
+                                type="button"
+                                onClick={handleAddActivity}
+                                disabled={!newActivity.trim()}
+                                size="sm"
+                              >
+                                Add activity
+                              </Button>
+                            </div>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+
+                      <div className="pt-4 mt-4 border-t flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <p className="text-xs text-muted-foreground max-w-xl">
+                          Your answers here are what the R&amp;D team will rely on to write the
+                          technical case for this project. You can come back and refine them any time
+                          while the claim is in progress.
+                        </p>
                         <Button
                           type="button"
                           onClick={handleSaveRdDetails}
