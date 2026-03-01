@@ -353,9 +353,15 @@ export default async function handler(
         "[api/projects/send-to-team] Error updating claim project:",
         updateError
       );
-      res
-        .status(500)
-        .json({ error: "Failed to update project workflow status" });
+      res.status(500).json({
+        error: "Failed to update project workflow status",
+        debug: {
+          stage: "update_claim_project_status",
+          claimProjectId: claimProject.id,
+          previousStatus,
+          updateError,
+        },
+      });
       return;
     }
 
