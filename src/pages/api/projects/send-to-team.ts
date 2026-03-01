@@ -337,6 +337,7 @@ export default async function handler(
         workflow_status: "submitted_to_team",
         submitted_to_team_at: now,
         updated_at: now,
+        updated_by: userId,
       })
       .eq("id", claimProject.id)
       .select()

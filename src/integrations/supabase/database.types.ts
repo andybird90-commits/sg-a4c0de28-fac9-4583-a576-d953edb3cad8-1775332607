@@ -843,6 +843,7 @@ export type Database = {
           technical_understanding: string | null
           total_qualifying_cost: number | null
           updated_at: string
+          updated_by: string | null
           workflow_status: string | null
         }
         Insert: {
@@ -885,6 +886,7 @@ export type Database = {
           technical_understanding?: string | null
           total_qualifying_cost?: number | null
           updated_at?: string
+          updated_by?: string | null
           workflow_status?: string | null
         }
         Update: {
@@ -927,6 +929,7 @@ export type Database = {
           technical_understanding?: string | null
           total_qualifying_cost?: number | null
           updated_at?: string
+          updated_by?: string | null
           workflow_status?: string | null
         }
         Relationships: [
@@ -975,6 +978,13 @@ export type Database = {
           {
             foreignKeyName: "claim_projects_technical_reviewer_fkey"
             columns: ["technical_reviewer"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_projects_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
