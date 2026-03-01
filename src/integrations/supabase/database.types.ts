@@ -834,6 +834,7 @@ export type Database = {
           source_project_id: string | null
           source_sidekick_project_id: string | null
           staff_cost: number | null
+          staff_return_notes: string | null
           start_date: string | null
           status: string
           subcontractor_cost: number | null
@@ -877,6 +878,7 @@ export type Database = {
           source_project_id?: string | null
           source_sidekick_project_id?: string | null
           staff_cost?: number | null
+          staff_return_notes?: string | null
           start_date?: string | null
           status?: string
           subcontractor_cost?: number | null
@@ -920,6 +922,7 @@ export type Database = {
           source_project_id?: string | null
           source_sidekick_project_id?: string | null
           staff_cost?: number | null
+          staff_return_notes?: string | null
           start_date?: string | null
           status?: string
           subcontractor_cost?: number | null

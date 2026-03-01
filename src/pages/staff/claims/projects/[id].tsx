@@ -66,29 +66,29 @@ export default function ProjectDetailPage() {
   const [sidekickComments, setSidekickComments] = useState<SidekickProjectComment[]>([]);
   const [feasibilityAnalysis, setFeasibilityAnalysis] = useState<FeasibilityAnalysis | null>(null);
   const [costAdvice, setCostAdvice] = useState<SidekickCostAdviceRow[]>([]);
+  const [staffReturnNotes, setStaffReturnNotes] = useState<string>("");
 
-  // Evidence form state (staff adding evidence into shared Sidekick pool)
   const [evidenceType, setEvidenceType] = useState<"note" | "file" | "link">("note");
-  const [evidenceTitle, setEvidenceTitle] = useState("");
-  const [evidenceBody, setEvidenceBody] = useState("");
-  const [evidenceUrl, setEvidenceUrl] = useState("");
+  const [evidenceTitle, setEvidenceTitle] = useState<string>("");
+  const [evidenceBody, setEvidenceBody] = useState<string>("");
+  const [evidenceUrl, setEvidenceUrl] = useState<string>("");
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
-  const [evidenceSubmitting, setEvidenceSubmitting] = useState(false);
+  const [evidenceSubmitting, setEvidenceSubmitting] = useState<boolean>(false);
 
-  // Comment form state for "Staff says"
-  const [commentBody, setCommentBody] = useState("");
-  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentBody, setCommentBody] = useState<string>("");
+  const [commentSubmitting, setCommentSubmitting] = useState<boolean>(false);
 
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [sendBackDialogOpen, setSendBackDialogOpen] = useState(false);
-  const [sendBackMode, setSendBackMode] = useState<"awaiting_client_review" | "revision_requested">("awaiting_client_review");
-  const [sendBackMessage, setSendBackMessage] = useState("");
+  const [updatingStatus, setUpdatingStatus] = useState<boolean>(false);
+
+  const [sendBackDialogOpen, setSendBackDialogOpen] = useState<boolean>(false);
+  const [sendBackMode, setSendBackMode] =
+    useState<ClaimProject["workflow_status"]>("awaiting_client_review");
+  const [sendBackMessage, setSendBackMessage] = useState<string>("");
 
   useEffect(() => {
     if (id && typeof id === "string") {
       loadProject(id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadProject = async (projectId: string) => {
@@ -113,6 +113,7 @@ export default function ProjectDetailPage() {
       }
 
       setProject(projectData);
+      setStaffReturnNotes(projectData.staff_return_notes ?? "");
 
       const claimData = await claimService.getClaimById(projectData.claim_id);
       setClaim(claimData);
@@ -356,6 +357,47 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const saveStaffReturnNotes = async () => {
+    if (!project) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast({
+        title: "Not signed in",
+        description: "You need to be signed in to update notes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("claim_projects")
+      .update({
+        staff_return_notes: staffReturnNotes,
+        updated_at: new Date().toISOString(),
+        updated_by: user.id,
+      })
+      .eq("id", project.id);
+
+    if (error) {
+      console.error("Error saving staff return notes:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save notes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Notes saved",
+      description: "Return notes have been updated.",
+    });
+  };
+
   const updateWorkflowStatus = async (
     newStatus: ClaimProject["workflow_status"],
     options?: { message?: string }
@@ -383,6 +425,10 @@ export default function ProjectDetailPage() {
         updated_at: new Date().toISOString(),
         updated_by: user.id,
       };
+
+      if (typeof options?.message === "string") {
+        (updates as any).staff_return_notes = options.message;
+      }
 
       if (newStatus === "team_in_progress" && !project.assigned_to_user_id) {
         (updates as any).assigned_to_user_id = user.id;
@@ -433,10 +479,22 @@ export default function ProjectDetailPage() {
     await updateWorkflowStatus("team_in_progress");
   };
 
+  const handleMoveBackToPending = async () => {
+    await updateWorkflowStatus("submitted_to_team");
+  };
+
+  const handleMarkApproved = async () => {
+    await updateWorkflowStatus("approved");
+  };
+
   const handleSendBackToClient = async () => {
+    const messageToSend = sendBackMessage.trim() || staffReturnNotes.trim() || undefined;
     await updateWorkflowStatus(sendBackMode, {
-      message: sendBackMessage.trim() || undefined,
+      message: messageToSend,
     });
+    if (messageToSend) {
+      setStaffReturnNotes(messageToSend);
+    }
     setSendBackDialogOpen(false);
     setSendBackMessage("");
   };
@@ -703,19 +761,73 @@ export default function ProjectDetailPage() {
             )}
 
             {project.workflow_status === "team_in_progress" && (
-              <div className="flex items-center justify-between gap-3 pt-4 border-t flex-wrap">
-                <p className="text-sm text-muted-foreground">
-                  When you are ready, send this project back to the client for approval or request changes.
-                </p>
-                <Button
-                  size="sm"
-                  onClick={() => setSendBackDialogOpen(true)}
-                  disabled={updatingStatus}
-                >
-                  Send to client
-                </Button>
+              <div className="flex flex-col gap-3 pt-4 border-t">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <p className="text-sm text-muted-foreground">
+                    When you are ready, send this project back to the client for approval or request changes. You can also move it back to Pending if you want to re-queue it.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleMoveBackToPending}
+                      disabled={updatingStatus}
+                    >
+                      {updatingStatus ? "Moving..." : "Move back to Pending"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setSendBackMessage(staffReturnNotes);
+                        setSendBackDialogOpen(true);
+                      }}
+                      disabled={updatingStatus}
+                    >
+                      Send to client
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
+
+            {project.workflow_status === "awaiting_client_review" && (
+              <div className="flex flex-col gap-3 pt-4 border-t">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <p className="text-sm text-muted-foreground">
+                    This project has been sent to the client. You can mark it as approved once you are satisfied.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={handleMarkApproved}
+                    disabled={updatingStatus}
+                  >
+                    {updatingStatus ? "Approving..." : "Mark approved"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-4 border-t space-y-2">
+              <Label htmlFor="staffReturnNotes">Return notes to client (optional)</Label>
+              <Textarea
+                id="staffReturnNotes"
+                rows={3}
+                value={staffReturnNotes}
+                onChange={(e) => setStaffReturnNotes(e.target.value)}
+                placeholder="Draft the notes you plan to send back to the client. These will pre-fill the message when you send the project."
+              />
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={saveStaffReturnNotes}
+                  disabled={updatingStatus}
+                >
+                  Save notes
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -1038,93 +1150,199 @@ export default function ProjectDetailPage() {
                 <div className="space-y-3">
                   <h3 className="font-semibold flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-primary" />
-                    AI Feasibility Snapshot
+                    AI Feasibility Analysis
                   </h3>
                   {feasibilityAnalysis ? (
-                    <div className="grid gap-3 md:grid-cols-3">
-                      <div className="border rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-1">
-                          Summary
-                        </p>
-                        <p className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-4">
-                          {feasibilityAnalysis.summary ??
-                            "No summary available"}
-                        </p>
-                      </div>
-                      <div className="border rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-1">
-                          Technical Feasibility
-                        </p>
-                        <p className="font-semibold text-sm">
-                          {feasibilityAnalysis.technical_rating ??
-                            "N/A"}
-                        </p>
-                        {feasibilityAnalysis.technical_reasoning && (
-                          <p className="text-[11px] text-muted-foreground mt-1 line-clamp-4">
-                            {feasibilityAnalysis.technical_reasoning}
+                    <div className="space-y-4">
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <div className="border rounded-lg p-3">
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Overall Summary
                           </p>
-                        )}
-                      </div>
-                      <div className="border rounded-lg p-3">
-                        <p className="text-xs text-muted-foreground mb-1">
-                          R&D Tax Eligibility
-                        </p>
-                        <p className="font-semibold text-sm">
-                          {feasibilityAnalysis.rd_tax_flag ?? "N/A"}
-                        </p>
-                        {feasibilityAnalysis.rd_tax_reasoning && (
-                          <p className="text-[11px] text-muted-foreground mt-1 line-clamp-4">
-                            {feasibilityAnalysis.rd_tax_reasoning}
+                          <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                            {feasibilityAnalysis.summary ?? "No summary available"}
                           </p>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      No feasibility analysis has been run for this
-                      Sidekick project yet. When the client runs an
-                      analysis, the latest result will show here.
-                    </p>
-                  )}
-                </div>
-
-                {/* Client cost advice (for staff calculator) */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary" />
-                    Client Cost Advice
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    These are cost suggestions provided by the client in their Companion. Use them to inform your calculator entries.
-                  </p>
-
-                  {costAdvice.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      No cost advice has been provided for this project yet.
-                    </p>
-                  ) : (
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {costAdvice.map((item) => (
-                        <div key={item.id} className="border rounded-lg p-3">
-                          <div className="flex items-center justify-between gap-2 mb-1">
-                            <Badge variant="secondary" className="text-xs capitalize">
-                              {item.cost_type}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground flex-shrink-0">
-                              {item.created_at ? new Date(item.created_at).toLocaleDateString() : ""}
-                            </span>
-                          </div>
-                          <div className="font-semibold text-sm">
-                            £{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </div>
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap break-words">
-                              {item.description}
+                        </div>
+                        <div className="border rounded-lg p-3">
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Technical Feasibility
+                          </p>
+                          <p className="font-semibold text-sm">
+                            {feasibilityAnalysis.technical_rating ?? "N/A"}
+                          </p>
+                          {feasibilityAnalysis.technical_reasoning && (
+                            <p className="text-[11px] text-muted-foreground mt-1 whitespace-pre-wrap">
+                              {feasibilityAnalysis.technical_reasoning}
+                            </p>
+                          )}
+                          {Array.isArray(feasibilityAnalysis.technical_constraints) &&
+                            feasibilityAnalysis.technical_constraints.length > 0 && (
+                              <div className="mt-2">
+                                <p className="text-[11px] text-muted-foreground mb-1">
+                                  Key Constraints
+                                </p>
+                                <ul className="text-[11px] text-muted-foreground space-y-1">
+                                  {feasibilityAnalysis.technical_constraints.map((item, index) => (
+                                    <li key={index} className="flex gap-2">
+                                      <span>•</span>
+                                      <span>{item}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                        </div>
+                        <div className="border rounded-lg p-3">
+                          <p className="text-xs text-muted-foreground mb-1">
+                            R&amp;D Tax Eligibility
+                          </p>
+                          <p className="font-semibold text-sm">
+                            {feasibilityAnalysis.rd_tax_flag ?? "N/A"}
+                          </p>
+                          {feasibilityAnalysis.rd_tax_reasoning && (
+                            <p className="text-[11px] text-muted-foreground mt-1 whitespace-pre-wrap">
+                              {feasibilityAnalysis.rd_tax_reasoning}
                             </p>
                           )}
                         </div>
-                      ))}
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="border rounded-lg p-3">
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Commercial Outlook
+                          </p>
+                          <p className="font-semibold text-sm mb-1">
+                            {feasibilityAnalysis.commercial_rating ?? "N/A"}
+                          </p>
+                          {feasibilityAnalysis.commercial_reasoning && (
+                            <p className="text-[11px] text-muted-foreground whitespace-pre-wrap mb-2">
+                              {feasibilityAnalysis.commercial_reasoning}
+                            </p>
+                          )}
+                          {Array.isArray(feasibilityAnalysis.target_customers) &&
+                            feasibilityAnalysis.target_customers.length > 0 && (
+                              <div className="mb-2">
+                                <p className="text-[11px] text-muted-foreground mb-1">
+                                  Target customers
+                                </p>
+                                <div className="flex flex-wrap gap-1">
+                                  {feasibilityAnalysis.target_customers.map((customer, index) => (
+                                    <span
+                                      key={index}
+                                      className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px]"
+                                    >
+                                      {customer}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          {Array.isArray(feasibilityAnalysis.revenue_ideas) &&
+                            feasibilityAnalysis.revenue_ideas.length > 0 && (
+                              <div>
+                                <p className="text-[11px] text-muted-foreground mb-1">
+                                  Revenue ideas
+                                </p>
+                                <ul className="text-[11px] text-muted-foreground space-y-1">
+                                  {feasibilityAnalysis.revenue_ideas.map((idea, index) => (
+                                    <li key={index} className="flex gap-2">
+                                      <span>•</span>
+                                      <span>{idea}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                        </div>
+
+                        <div className="border rounded-lg p-3">
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Delivery Considerations
+                          </p>
+                          <p className="font-semibold text-sm mb-1">
+                            {feasibilityAnalysis.delivery_complexity
+                              ? `${feasibilityAnalysis.delivery_complexity} complexity`
+                              : "Complexity not assessed"}
+                          </p>
+                          {typeof feasibilityAnalysis.delivery_timeframe_months === "number" && (
+                            <p className="text-[11px] text-muted-foreground mb-2">
+                              Estimated timeframe: ~{feasibilityAnalysis.delivery_timeframe_months} months
+                            </p>
+                          )}
+                          {Array.isArray(feasibilityAnalysis.delivery_dependencies) &&
+                            feasibilityAnalysis.delivery_dependencies.length > 0 && (
+                              <>
+                                <p className="text-[11px] text-muted-foreground mb-1">
+                                  Key dependencies
+                                </p>
+                                <ul className="text-[11px] text-muted-foreground space-y-1">
+                                  {feasibilityAnalysis.delivery_dependencies.map(
+                                    (dep, index) => (
+                                      <li key={index} className="flex gap-2">
+                                        <span>•</span>
+                                        <span>{dep}</span>
+                                      </li>
+                                    )
+                                  )}
+                                </ul>
+                              </>
+                            )}
+                        </div>
+                      </div>
+
+                      {Array.isArray(feasibilityAnalysis.notable_risks) &&
+                        feasibilityAnalysis.notable_risks.length > 0 && (
+                          <div className="border rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                              Notable risks
+                            </p>
+                            <ul className="text-xs text-muted-foreground space-y-1">
+                              {feasibilityAnalysis.notable_risks.map((risk, index) => (
+                                <li key={index} className="flex gap-2">
+                                  <span>•</span>
+                                  <span>{risk}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                      {Array.isArray(feasibilityAnalysis.regulatory_issues) &&
+                        feasibilityAnalysis.regulatory_issues.length > 0 && (
+                          <div className="border rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                              Regulatory considerations
+                            </p>
+                            <ul className="text-xs text-muted-foreground space-y-1">
+                              {feasibilityAnalysis.regulatory_issues.map((issue, index) => (
+                                <li key={index} className="flex gap-2">
+                                  <span>•</span>
+                                  <span>{issue}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                      {Array.isArray(feasibilityAnalysis.next_actions) &&
+                        feasibilityAnalysis.next_actions.length > 0 && (
+                          <div className="border rounded-lg p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                              Recommended next actions
+                            </p>
+                            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                              {feasibilityAnalysis.next_actions.map((action, index) => (
+                                <li key={index}>{action}</li>
+                              ))}
+                            </ol>
+                          </div>
+                        )}
                     </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      No feasibility analysis has been run for this Sidekick project yet. When the client runs an analysis, the latest result will show here in full.
+                    </p>
                   )}
                 </div>
               </>
