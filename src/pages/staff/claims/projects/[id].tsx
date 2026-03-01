@@ -35,6 +35,14 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type ClaimProject = Database["public"]["Tables"]["claim_projects"]["Row"];
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
@@ -70,6 +78,11 @@ export default function ProjectDetailPage() {
   // Comment form state for "Staff says"
   const [commentBody, setCommentBody] = useState("");
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [sendBackDialogOpen, setSendBackDialogOpen] = useState(false);
+  const [sendBackMode, setSendBackMode] = useState<"awaiting_client_review" | "revision_requested">("awaiting_client_review");
+  const [sendBackMessage, setSendBackMessage] = useState("");
 
   useEffect(() => {
     if (id && typeof id === "string") {
@@ -343,6 +356,91 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const updateWorkflowStatus = async (
+    newStatus: ClaimProject["workflow_status"],
+    options?: { message?: string }
+  ) => {
+    if (!project) return;
+
+    try {
+      setUpdatingStatus(true);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        toast({
+          title: "Not signed in",
+          description: "You need to be signed in to update the workflow status.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const updates: Partial<ClaimProject> = {
+        workflow_status: newStatus,
+        updated_at: new Date().toISOString(),
+        updated_by: user.id,
+      };
+
+      if (newStatus === "team_in_progress" && !project.assigned_to_user_id) {
+        (updates as any).assigned_to_user_id = user.id;
+      }
+
+      const { error } = await supabase
+        .from("claim_projects")
+        .update(updates)
+        .eq("id", project.id);
+
+      if (error) {
+        throw error;
+      }
+
+      await loadProject(project.id);
+
+      if (options?.message && sidekickProject) {
+        await sidekickCommentService.createComment({
+          project_id: sidekickProject.id,
+          author_id: user.id,
+          author_role: "rd_staff",
+          body: options.message,
+        });
+
+        const updatedComments = await sidekickCommentService.getCommentsByProject(
+          sidekickProject.id
+        );
+        setSidekickComments(updatedComments);
+      }
+
+      toast({
+        title: "Workflow updated",
+        description: "Project status has been updated.",
+      });
+    } catch (error) {
+      console.error("Error updating workflow status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update workflow status.",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const handleStartReview = async () => {
+    await updateWorkflowStatus("team_in_progress");
+  };
+
+  const handleSendBackToClient = async () => {
+    await updateWorkflowStatus(sendBackMode, {
+      message: sendBackMessage.trim() || undefined,
+    });
+    setSendBackDialogOpen(false);
+    setSendBackMessage("");
+  };
+
   if (loading) {
     return (
       <StaffLayout>
@@ -586,6 +684,36 @@ export default function ProjectDetailPage() {
                 <p className="text-sm">
                   This project is currently assigned to a team member
                 </p>
+              </div>
+            )}
+
+            {project.workflow_status === "submitted_to_team" && (
+              <div className="flex items-center justify-between gap-3 pt-4 border-t flex-wrap">
+                <p className="text-sm text-muted-foreground">
+                  Client has submitted this project for review. Start your review to take ownership and work on it.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={handleStartReview}
+                  disabled={updatingStatus}
+                >
+                  {updatingStatus ? "Starting..." : "Start review"}
+                </Button>
+              </div>
+            )}
+
+            {project.workflow_status === "team_in_progress" && (
+              <div className="flex items-center justify-between gap-3 pt-4 border-t flex-wrap">
+                <p className="text-sm text-muted-foreground">
+                  When you are ready, send this project back to the client for approval or request changes.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => setSendBackDialogOpen(true)}
+                  disabled={updatingStatus}
+                >
+                  Send to client
+                </Button>
               </div>
             )}
           </CardContent>
@@ -1004,6 +1132,70 @@ export default function ProjectDetailPage() {
           </CardContent>
         </Card>
       </div>
+      <Dialog open={sendBackDialogOpen} onOpenChange={setSendBackDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send project to client</DialogTitle>
+            <DialogDescription>
+              Choose how to update the project and optionally include a message for the client.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm">Action</Label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={
+                    sendBackMode === "awaiting_client_review"
+                      ? "default"
+                      : "outline"
+                  }
+                  onClick={() => setSendBackMode("awaiting_client_review")}
+                >
+                  Send for review
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={
+                    sendBackMode === "revision_requested"
+                      ? "default"
+                      : "outline"
+                  }
+                  onClick={() => setSendBackMode("revision_requested")}
+                >
+                  Request changes
+                </Button>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="sendBackMessage">
+                Message to client (optional)
+              </Label>
+              <Textarea
+                id="sendBackMessage"
+                rows={4}
+                value={sendBackMessage}
+                onChange={(e) => setSendBackMessage(e.target.value)}
+                placeholder="Add context or guidance for the client..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSendBackDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSendBackToClient} disabled={updatingStatus}>
+              {updatingStatus ? "Sending..." : "Send"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </StaffLayout>
   );
 }
