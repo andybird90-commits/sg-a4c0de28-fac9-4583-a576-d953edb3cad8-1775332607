@@ -60,8 +60,8 @@ export default function LandingPage() {
     },
     {
       icon: Zap,
-      title: "Offline Ready",
-      description: "Capture evidence offline and sync automatically when back online.",
+      title: "Rapid Rollout",
+      description: "Get your team capturing R&D evidence in days, not months, with intuitive workflows.",
       color: "from-yellow-500 to-amber-400",
     },
     {
