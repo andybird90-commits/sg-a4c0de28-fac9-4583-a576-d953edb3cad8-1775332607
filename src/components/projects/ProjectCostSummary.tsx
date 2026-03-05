@@ -11,9 +11,13 @@ interface CostItem {
 
 interface ProjectCostSummaryProps {
   items: CostItem[];
+  schemeLabel?: string | null;
 }
 
-export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({ items }) => {
+export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
+  items,
+  schemeLabel,
+}) => {
   if (!items || items.length === 0) {
     return (
       <Card className="bg-slate-950/60 border-slate-800">
@@ -27,6 +31,11 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({ items }) => {
           <p className="text-xs text-slate-400">
             Share your best-view costs for this project. Even rough estimates
             help us size the claim and follow up with the right questions.
+          </p>
+          <p className="mt-2 text-[11px] text-slate-500">
+            {schemeLabel
+              ? `This project is currently tagged under the ${schemeLabel} scheme. The RDtax team will refine these figures as part of claim preparation.`
+              : "Once the scheme (e.g. SME, RDEC) is confirmed, the RDtax team will refine these figures as part of claim preparation."}
           </p>
         </CardContent>
       </Card>
@@ -68,6 +77,11 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({ items }) => {
                 maximumFractionDigits: 0,
               })}
             </div>
+            {schemeLabel && (
+              <div className="mt-0.5 text-[11px] text-slate-400">
+                Scheme: {schemeLabel}
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -84,7 +98,10 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({ items }) => {
                       {label}
                     </Badge>
                     <span className="text-slate-300">
-                      £{value.toLocaleString("en-GB", { maximumFractionDigits: 0 })}
+                      £
+                      {value.toLocaleString("en-GB", {
+                        maximumFractionDigits: 0,
+                      })}
                     </span>
                   </div>
                   <span className="text-slate-400">
@@ -105,6 +122,7 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({ items }) => {
           <div className="pt-1 border-t border-slate-800/60 mt-2 pt-2 space-y-1">
             <div className="text-[11px] text-slate-400">
               Rough indication of potential R&amp;D tax benefit
+              {schemeLabel ? ` (${schemeLabel} scheme)` : ""}
             </div>
             <div className="text-sm font-medium text-slate-50">
               £
@@ -117,7 +135,8 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({ items }) => {
               })}
             </div>
             <p className="text-[10px] text-slate-500">
-              This is a broad range based on typical relief levels. Your actual
+              This is a broad range based on typical relief levels
+              {schemeLabel ? ` for the ${schemeLabel} scheme` : ""}. Your actual
               benefit will depend on your specific circumstances and tax
               position.
             </p>
