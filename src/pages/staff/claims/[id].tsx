@@ -2028,6 +2028,7 @@ export default function ClaimDetailPage() {
                       )}
                     </div>
                   )}
+                </div>
 
                 {/* Step 1 – Internal QA signoff */}
                 <div className="space-y-3">
@@ -2085,7 +2086,6 @@ export default function ClaimDetailPage() {
                     </p>
                   </div>
 
-                  {/* Issue to client button (after internal QA) */}
                   {claim.status === "final_signoff" && (
                     <Button
                       variant="secondary"
@@ -2098,7 +2098,6 @@ export default function ClaimDetailPage() {
                     </Button>
                   )}
 
-                  {/* Client outcome controls when in client review */}
                   {claim.status === "client_review" && (
                     <div className="flex flex-col gap-3 md:w-56">
                       <Button
@@ -2604,7 +2603,7 @@ export default function ClaimDetailPage() {
                       )}
                     </div>
 
-                    <div className="mt-2 space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
+                    <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
                       <p className="text-xs font-medium text-muted-foreground">
                         Totals by project
                       </p>
@@ -2695,7 +2694,7 @@ export default function ClaimDetailPage() {
                       )}
                     </div>
 
-                    <div className="mt-2 space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
+                    <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
                       <p className="text-xs font-medium text-muted-foreground">
                         Indicative R&amp;D benefit for this claim
                       </p>
@@ -2723,7 +2722,7 @@ export default function ClaimDetailPage() {
                       )}
                     </div>
 
-                    <div className="mt-4 space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
+                    <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
                       <p className="text-xs font-medium text-muted-foreground">
                         Update scheme type
                       </p>
