@@ -828,6 +828,273 @@ export default function ClaimDetailPage() {
     }
   };
 
+  const handleQaApprove = async (): Promise<void> => {
+    if (!claim || !profile) return;
+
+    try {
+      setQaActionLoading(true);
+
+      await claimService.updateClaim(claim.id, {
+        status: "final_signoff" as any,
+        qa_completed_at: new Date().toISOString(),
+      });
+
+      const recipients = [
+        claim.bd_owner_id,
+        claim.technical_lead_id,
+        claim.cost_lead_id,
+      ].filter(Boolean) as string[];
+
+      if (recipients.length > 0) {
+        await messageService.sendMessage(
+          claim.org_id,
+          recipients,
+          `Claim QA approved: ${claim.organisations?.name || ""} - FY ${
+            claim.claim_year
+          }`,
+          `QA reviewer has approved this claim for client review.${
+            qaFeedback ? `\n\nQA notes:\n${qaFeedback}` : ""
+          }`,
+          undefined,
+          { entity_type: "claim", entity_id: claim.id }
+        );
+      }
+
+      toast({
+        title: "QA approved",
+        description: "Claim is now ready to be issued to the client for comment.",
+      });
+
+      setQaFeedback("");
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error) {
+      console.error("Error approving QA:", error);
+      toast({
+        title: "Error",
+        description: "Failed to record QA approval",
+        variant: "destructive",
+      });
+    } finally {
+      setQaActionLoading(false);
+    }
+  };
+
+  const handleQaReturnWithComments = async (): Promise<void> => {
+    if (!claim || !profile) return;
+
+    if (!qaFeedback.trim()) {
+      toast({
+        title: "Add feedback",
+        description: "Please add comments before returning the claim.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setQaActionLoading(true);
+
+      await claimService.updateClaim(claim.id, {
+        status: "in_progress" as any,
+        qa_completed_at: new Date().toISOString(),
+      });
+
+      const recipients = [
+        claim.bd_owner_id,
+        claim.technical_lead_id,
+        claim.cost_lead_id,
+      ].filter(Boolean) as string[];
+
+      if (recipients.length > 0) {
+        await messageService.sendMessage(
+          claim.org_id,
+          recipients,
+          `Claim returned with QA comments: ${claim.organisations?.name || ""} - FY ${
+            claim.claim_year
+          }`,
+          qaFeedback,
+          undefined,
+          { entity_type: "claim", entity_id: claim.id }
+        );
+      }
+
+      toast({
+        title: "Returned with comments",
+        description: "QA feedback has been sent to the delivery team.",
+      });
+
+      setQaFeedback("");
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error) {
+      console.error("Error returning claim with QA comments:", error);
+      toast({
+        title: "Error",
+        description: "Failed to return claim with comments",
+        variant: "destructive",
+      });
+    } finally {
+      setQaActionLoading(false);
+    }
+  };
+
+  const handleIssueToClient = async (): Promise<void> => {
+    if (!claim || !profile) return;
+
+    try {
+      setClientActionLoading(true);
+
+      await claimService.updateClaim(claim.id, {
+        status: "client_review" as any,
+        client_review_requested_at: new Date().toISOString(),
+      });
+
+      toast({
+        title: "Issued to client",
+        description: "Claim has been issued to the client for comment.",
+      });
+
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error) {
+      console.error("Error issuing claim to client:", error);
+      toast({
+        title: "Error",
+        description: "Failed to issue claim to client",
+        variant: "destructive",
+      });
+    } finally {
+      setClientActionLoading(false);
+    }
+  };
+
+  const handleClientApprove = async (): Promise<void> => {
+    if (!claim || !profile) return;
+
+    try {
+      setClientActionLoading(true);
+
+      await claimService.updateClaim(claim.id, {
+        status: "ready_to_file" as any,
+        client_review_completed_at: new Date().toISOString(),
+      });
+
+      toast({
+        title: "Client approved",
+        description: "Client approval recorded. Claim is ready to file with HMRC.",
+      });
+
+      setClientFeedback("");
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error) {
+      console.error("Error recording client approval:", error);
+      toast({
+        title: "Error",
+        description: "Failed to record client approval",
+        variant: "destructive",
+      });
+    } finally {
+      setClientActionLoading(false);
+    }
+  };
+
+  const handleClientComments = async (): Promise<void> => {
+    if (!claim || !profile) return;
+
+    if (!clientFeedback.trim()) {
+      toast({
+        title: "Add client comments",
+        description: "Please add the client feedback before recording.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setClientActionLoading(true);
+
+      await claimService.updateClaim(claim.id, {
+        status: "in_progress" as any,
+        client_review_completed_at: new Date().toISOString(),
+      });
+
+      const recipients = [
+        claim.bd_owner_id,
+        claim.technical_lead_id,
+        claim.cost_lead_id,
+      ].filter(Boolean) as string[];
+
+      if (recipients.length > 0) {
+        await messageService.sendMessage(
+          claim.org_id,
+          recipients,
+          `Client comments on claim: ${claim.organisations?.name || ""} - FY ${
+            claim.claim_year
+          }`,
+          clientFeedback,
+          undefined,
+          { entity_type: "claim", entity_id: claim.id }
+        );
+      }
+
+      toast({
+        title: "Client comments recorded",
+        description: "Client feedback has been logged. Claim moved back to draft.",
+      });
+
+      setClientFeedback("");
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error) {
+      console.error("Error recording client comments:", error);
+      toast({
+        title: "Error",
+        description: "Failed to record client comments",
+        variant: "destructive",
+      });
+    } finally {
+      setClientActionLoading(false);
+    }
+  };
+
+  const handleIssueToHmrc = async (): Promise<void> => {
+    if (!claim || !profile) return;
+
+    try {
+      setHmrcActionLoading(true);
+
+      await claimService.updateClaim(claim.id, {
+        status: "submitted_hmrc" as any,
+        actual_submission_date: new Date().toISOString().slice(0, 10),
+      });
+
+      toast({
+        title: "Issued to HMRC",
+        description: "Claim has been marked as submitted to HMRC.",
+      });
+
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error) {
+      console.error("Error issuing claim to HMRC:", error);
+      toast({
+        title: "Error",
+        description: "Failed to mark claim as submitted to HMRC",
+        variant: "destructive",
+      });
+    } finally {
+      setHmrcActionLoading(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
       intake: { label: "Intake", className: "bg-blue-100 text-blue-800" },
@@ -1172,7 +1439,7 @@ export default function ClaimDetailPage() {
                     </p>
                     {claim.status === "final_signoff" &&
                       claim.qa_completed_at &&
-                      (!claim.client_review_requested_at || claim.status === "final_signoff") && (
+                      !claim.client_review_requested_at && (
                         <Button
                           size="sm"
                           onClick={handleIssueToClient}
@@ -1393,209 +1660,6 @@ export default function ClaimDetailPage() {
                   </div>
                   <Dialog open={showCostDialog} onOpenChange={setShowCostDialog}>
                     <DialogTrigger asChild>
-                      <Button onClick={() => {
-                        setEditingCost(null);
-                        setCostForm({ cost_type: "staff", description: "", amount: "", cost_date: "", project_id: "" });
-                      }}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Cost
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>{editingCost ? "Edit Cost Entry" : "Add Cost Entry"}</DialogTitle>
-                        <DialogDescription>Record an R&D cost entry</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="cost-type">Cost Type *</Label>
-                          <Select value={costForm.cost_type} onValueChange={(val) => setCostForm({ ...costForm, cost_type: val })}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="staff">Staff Costs</SelectItem>
-                              <SelectItem value="subcontractor">Subcontractor</SelectItem>
-                              <SelectItem value="materials">Materials/Consumables</SelectItem>
-                              <SelectItem value="software">Software</SelectItem>
-                              <SelectItem value="equipment">Equipment</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="cost-project">Related Project (Optional)</Label>
-                          <Select value={costForm.project_id} onValueChange={(val) => setCostForm({ ...costForm, project_id: val })}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select project..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No project (general cost)</SelectItem>
-                              {claim.projects?.map((proj) => (
-                                <SelectItem key={proj.id} value={proj.id}>
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span>{proj.name}</span>
-                                    {clientCostAdviceCounts[proj.id] ? (
-                                      <Badge variant="secondary" className="ml-2 text-[10px] uppercase">
-                                        {clientCostAdviceCounts[proj.id]} client cost
-                                        {clientCostAdviceCounts[proj.id] > 1 ? "s" : ""}
-                                      </Badge>
-                                    ) : null}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="cost-description">Description *</Label>
-                          <Textarea
-                            id="cost-description"
-                            value={costForm.description}
-                            onChange={(e) => setCostForm({ ...costForm, description: e.target.value })}
-                            placeholder="Describe the cost..."
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="cost-amount">Amount (£) *</Label>
-                            <Input
-                              id="cost-amount"
-                              type="number"
-                              step="0.01"
-                              value={costForm.amount}
-                              onChange={(e) => setCostForm({ ...costForm, amount: e.target.value })}
-                              placeholder="0.00"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="cost-date">Date</Label>
-                            <Input
-                              id="cost-date"
-                              type="date"
-                              value={costForm.cost_date}
-                              onChange={(e) => setCostForm({ ...costForm, cost_date: e.target.value })}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowCostDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={editingCost ? handleUpdateCost : handleCreateCost}>
-                          {editingCost ? "Update Cost" : "Add Cost"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-6 rounded-xl border border-slate-700 bg-slate-900/80 px-6 py-4 shadow-professional-md">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-100 tracking-tight">
-                        Total Claim Value
-                      </p>
-                      <p className="mt-1 text-3xl font-bold text-emerald-300">
-                        {formatCurrency(claim.total_costs || 0)}
-                      </p>
-                    </div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-emerald-400/40 bg-gradient-to-tr from-emerald-500/20 via-emerald-500/10 to-transparent shadow-lg shadow-emerald-500/20">
-                      <PoundSterling className="h-6 w-6 text-emerald-200" />
-                    </div>
-                  </div>
-                </div>
-
-                {claim.costs && claim.costs.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Project</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                        <TableHead className="w-[100px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {claim.costs.map((cost) => (
-                        <TableRow key={cost.id}>
-                          <TableCell>{cost.cost_date ? format(new Date(cost.cost_date), "dd/MM/yyyy") : "N/A"}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{cost.cost_type}</Badge>
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">{cost.description}</TableCell>
-                          <TableCell>
-                            {cost.project_id ? (
-                              <span className="text-sm text-slate-600">
-                                {claim.projects?.find(p => p.id === cost.project_id)?.name || "Unknown"}
-                              </span>
-                            ) : (
-                              <span className="text-sm text-slate-400">General</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">{formatCurrency(cost.amount)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setEditingCost(cost);
-                                  setCostForm({
-                                    cost_type: cost.cost_type,
-                                    description: cost.description || "",
-                                    amount: cost.amount.toString(),
-                                    cost_date: cost.cost_date || "",
-                                    project_id: cost.project_id || "",
-                                  });
-                                  setShowCostDialog(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteCost(cost.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-600" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="py-12 text-center">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-slate-600 bg-slate-900 shadow-inner">
-                      <PoundSterling className="h-7 w-7 text-slate-200" />
-                    </div>
-                    <p className="font-semibold text-slate-100">No costs recorded yet</p>
-                    <p className="mt-1 text-sm text-slate-400">
-                      Add cost entries to track R&amp;D expenditure
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Evidence Tab */}
-          <TabsContent value="evidence" className="mt-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Evidence & Documentation</CardTitle>
-                    <CardDescription>Upload and manage supporting documents</CardDescription>
-                  </div>
-                  <Dialog open={showDocumentDialog} onOpenChange={setShowDocumentDialog}>
-                    <DialogTrigger asChild>
                       <Button>
                         <Upload className="mr-2 h-4 w-4" />
                         Upload Document
@@ -1670,22 +1734,32 @@ export default function ClaimDetailPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Title</TableHead>
+                        <TableHead>Date</TableHead>
                         <TableHead>Type</TableHead>
-                        <TableHead>Size</TableHead>
-                        <TableHead>Uploaded</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Project</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
                         <TableHead className="w-[100px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {claim.documents.map((doc) => (
                         <TableRow key={doc.id}>
-                          <TableCell className="font-medium">{doc.title}</TableCell>
+                          <TableCell>{doc.created_at ? format(new Date(doc.created_at), "dd/MM/yyyy") : "N/A"}</TableCell>
                           <TableCell>
                             <Badge variant="outline">{doc.doc_type}</Badge>
                           </TableCell>
-                          <TableCell>{((doc.file_size || 0) / 1024).toFixed(2)} KB</TableCell>
-                          <TableCell>{doc.created_at ? format(new Date(doc.created_at), "dd/MM/yyyy") : "N/A"}</TableCell>
+                          <TableCell className="max-w-xs truncate">{doc.title}</TableCell>
+                          <TableCell>
+                            {doc.project_id ? (
+                              <span className="text-sm text-slate-600">
+                                {claim.projects?.find(p => p.id === doc.project_id)?.name || "Unknown"}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-slate-400">General</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">{formatCurrency(doc.file_size || 0)}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
                               <Button variant="ghost" size="sm" onClick={() => handleDownloadDocument(doc)}>
