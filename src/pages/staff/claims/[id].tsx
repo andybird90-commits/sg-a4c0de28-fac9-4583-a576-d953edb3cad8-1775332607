@@ -300,6 +300,11 @@ export default function ClaimDetailPage() {
   const [selectedQaAdmin, setSelectedQaAdmin] = useState("");
   const [loadingQaAdmins, setLoadingQaAdmins] = useState(false);
   const [submittingQa, setSubmittingQa] = useState(false);
+  const [qaActionLoading, setQaActionLoading] = useState(false);
+  const [qaFeedback, setQaFeedback] = useState("");
+  const [clientActionLoading, setClientActionLoading] = useState(false);
+  const [clientFeedback, setClientFeedback] = useState("");
+  const [hmrcActionLoading, setHmrcActionLoading] = useState(false);
 
   // Derived state for projects to match the new UI code
   const projects = claim?.projects || [];
@@ -1129,7 +1134,125 @@ export default function ClaimDetailPage() {
                     </p>
                   </div>
 
-                  {/* Later steps: client review & HMRC submission will build on this state */}
+                  {claim.status === "final_signoff" &&
+                    claim.qa_reviewer_id &&
+                    profile?.id === claim.qa_reviewer_id && (
+                      <div className="mt-4 space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-sm font-medium text-slate-800">
+                          QA reviewer actions
+                        </p>
+                        <Textarea
+                          placeholder="Add QA comments or notes for the team..."
+                          value={qaFeedback}
+                          onChange={(e) => setQaFeedback(e.target.value)}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            onClick={handleQaApprove}
+                            disabled={qaActionLoading}
+                          >
+                            {qaActionLoading ? "Saving..." : "Approve for client review"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleQaReturnWithComments}
+                            disabled={qaActionLoading}
+                          >
+                            Return with comments
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                  <div className="space-y-2 border-t border-slate-200 pt-4">
+                    <p className="text-sm font-medium text-slate-700">
+                      Step 2 – Client review and comments
+                    </p>
+                    {claim.status === "final_signoff" &&
+                      claim.qa_completed_at &&
+                      (!claim.client_review_requested_at || claim.status === "final_signoff") && (
+                        <Button
+                          size="sm"
+                          onClick={handleIssueToClient}
+                          disabled={clientActionLoading}
+                        >
+                          {clientActionLoading
+                            ? "Issuing to client..."
+                            : "Issue to client for comment"}
+                        </Button>
+                      )}
+
+                    {["client_review", "ready_to_file", "submitted_hmrc", "hmrc_feedback", "completed"].includes(
+                      claim.status || ""
+                    ) && (
+                      <p className="text-xs text-slate-600">
+                        Client review requested{" "}
+                        {claim.client_review_requested_at
+                          ? format(new Date(claim.client_review_requested_at), "PPP")
+                          : "recently"}
+                        .
+                      </p>
+                    )}
+
+                    {claim.status === "client_review" && (
+                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-sm font-medium text-slate-800">
+                          Record client outcome
+                        </p>
+                        <Textarea
+                          placeholder="Optional: paste client comments or notes for the file..."
+                          value={clientFeedback}
+                          onChange={(e) => setClientFeedback(e.target.value)}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            onClick={handleClientApprove}
+                            disabled={clientActionLoading}
+                          >
+                            {clientActionLoading
+                              ? "Saving..."
+                              : "Client approved – ready to file"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleClientComments}
+                            disabled={clientActionLoading}
+                          >
+                            Client comments – back to draft
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-2 border-t border-slate-200 pt-4">
+                      <p className="text-sm font-medium text-slate-700">
+                        Step 3 – HMRC submission and completion
+                      </p>
+                      {claim.status === "ready_to_file" && (
+                        <Button
+                          size="sm"
+                          onClick={handleIssueToHmrc}
+                          disabled={hmrcActionLoading}
+                        >
+                          {hmrcActionLoading ? "Submitting..." : "Issue to HMRC"}
+                        </Button>
+                      )}
+                      {["submitted_hmrc", "hmrc_feedback", "completed"].includes(
+                        claim.status || ""
+                      ) && (
+                        <p className="text-xs text-slate-600">
+                          Submitted to HMRC{" "}
+                          {claim.actual_submission_date
+                            ? format(new Date(claim.actual_submission_date), "PPP")
+                            : "recently"}
+                          .
+                        </p>
+                      )}
+                    </div>
                 </CardContent>
               </Card>
             </div>
