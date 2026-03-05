@@ -670,6 +670,13 @@ export class ClaimService {
   }
 
   /**
+   * Backwards-compatible helper used by some pages to add a cost to a claim
+   */
+  async addCostToClaim(costData: ClaimCostInsert): Promise<ClaimCost> {
+    return this.createCost(costData);
+  }
+
+  /**
    * Update cost entry
    */
   async updateCost(

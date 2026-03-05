@@ -309,6 +309,7 @@ export default function ClaimDetailPage() {
       }
     >
   >({});
+  const [saving, setSaving] = useState(false);
 
   // Document management state
   const [showDocumentDialog, setShowDocumentDialog] = useState(false);
@@ -348,22 +349,49 @@ export default function ClaimDetailPage() {
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [showAddProject, setShowAddProject] = useState(false);
 
-  // Helper to reload the claim after mutations
   const loadClaim = async (claimId: string): Promise<void> => {
-    if (!claimId) return;
-
     try {
       setLoading(true);
       setLoadingProjects(true);
 
-      // For now, simply refresh the current route so the latest data is shown
-      await router.replace(router.asPath);
+      const loaded = await claimService.getClaimById(claimId);
+      if (!loaded) {
+        setClaim(null);
+        return;
+      }
+
+      setClaim(loaded);
+
+      const existingHmrc =
+        (loaded.hmrc_responses as HmrcResponseItem[] | null) ?? [];
+      setHmrcResponses(existingHmrc);
+
+      setOutcomeSubmittedValue(
+        loaded.submitted_claim_value != null
+          ? String(loaded.submitted_claim_value)
+          : ""
+      );
+      setOutcomeReceivedValue(
+        loaded.received_claim_value != null
+          ? String(loaded.received_claim_value)
+          : ""
+      );
+
+      const existingScheme =
+        ((loaded as any).scheme_type as string | null) ??
+        ((loaded as any).scheme as string | null) ??
+        "";
+      setSchemeDraft(existingScheme || "");
+
+      const claimProjects =
+        (loaded.projects as ClaimProject[] | null) ?? [];
+      setProjects(claimProjects);
     } catch (error) {
-      console.error("Error reloading claim:", error);
+      console.error("Error loading claim:", error);
       toast({
-        title: "Error reloading claim",
+        title: "Error loading claim",
         description:
-          "The claim was updated but the latest details could not be loaded automatically.",
+          "We could not load the latest details for this claim. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -371,6 +399,12 @@ export default function ClaimDetailPage() {
       setLoadingProjects(false);
     }
   };
+
+  // Load claim details when id is available
+  useEffect(() => {
+    if (!id || typeof id !== "string") return;
+    void loadClaim(id);
+  }, [id, toast]);
 
   // Placeholder QA submission handler so the button works without breaking the build
   const handleSubmitForQa = async (): Promise<void> => {
@@ -1536,16 +1570,69 @@ export default function ClaimDetailPage() {
     }
   };
 
-  const getSchemeMultipliers = (scheme: string | null | undefined) => {
-    const key = (scheme || "").toUpperCase();
+  const handleSaveCost = async (): Promise<void> => {
+    if (!claim || !id || typeof id !== "string") {
+      setShowCostDialog(false);
+      return;
+    }
 
-    switch (key) {
+    try {
+      setSaving(true);
+
+      const payload = {
+        claim_id: claim.id,
+        cost_type: costForm.cost_type,
+        description: costForm.description?.trim() || null,
+        amount: Number(costForm.amount || 0),
+        cost_date: costForm.cost_date || null,
+        project_id: costForm.project_id || null,
+      };
+
+      if (editingCost) {
+        await claimService.updateCost(editingCost.id, payload);
+      } else {
+        await claimService.addCostToClaim(payload);
+      }
+
+      await loadClaim(id);
+
+      toast({
+        title: editingCost ? "Cost updated" : "Cost added",
+        description: "The cost entry has been saved for this claim.",
+      });
+
+      setShowCostDialog(false);
+      setEditingCost(null);
+      setCostForm({
+        cost_type: "staff",
+        description: "",
+        amount: "",
+        cost_date: "",
+        project_id: "",
+      });
+    } catch (error) {
+      console.error("Error saving cost:", error);
+      toast({
+        title: "Error saving cost",
+        description:
+          "We could not save this cost entry. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getSchemeMultipliers = (
+    scheme: string
+  ): { lowMultiplier: number; highMultiplier: number } => {
+    switch (scheme) {
       case "SME":
-        return { lowMultiplier: 0.2, highMultiplier: 0.33 };
+        return { lowMultiplier: 0.18, highMultiplier: 0.26 };
       case "RDEC":
-        return { lowMultiplier: 0.1, highMultiplier: 0.2 };
-      case "HYBRID":
-        return { lowMultiplier: 0.15, highMultiplier: 0.3 };
+        return { lowMultiplier: 0.08, highMultiplier: 0.16 };
+      case "Hybrid":
+        return { lowMultiplier: 0.12, highMultiplier: 0.22 };
       default:
         return { lowMultiplier: 0.15, highMultiplier: 0.3 };
     }
@@ -2255,8 +2342,15 @@ export default function ClaimDetailPage() {
             )}
           </TabsContent>
 
-          {/* COSTS – placeholder (existing costs UI can be reintroduced here) */}
+          {/* COSTS – editable with summary */}
           <TabsContent value="costs" className="mt-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Costs</h2>
+              <Button size="sm" onClick={() => { setEditingCost(null); setCostForm({ cost_type: "staff", description: "", amount: "", cost_date: "", project_id: "" }); setShowCostDialog(true); }}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add cost
+              </Button>
+            </div>
             {(() => {
               const costs = claim?.costs || [];
               const hasClaimCosts = costs.length > 0;
@@ -2381,273 +2475,603 @@ export default function ClaimDetailPage() {
                 Object.keys(projectSummaries).length > 0;
 
               return (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Costs</CardTitle>
-                    <CardDescription>
-                      Scheme type and aggregated qualifying costs for this
-                      claim.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div>
+                <>
+                  {/* Existing summary card */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Costs</CardTitle>
+                      <CardDescription>
+                        Scheme type and aggregated qualifying costs for this
+                        claim.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">
+                            Scheme type
+                          </p>
+                          <p className="mt-1 text-sm font-semibold">
+                            {schemeType || "Not set"}
+                          </p>
+                          {!schemeType && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Once scheme type is recorded on the claim it will
+                              show here.
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">
+                            Total qualifying costs
+                          </p>
+                          <p className="mt-1 text-2xl font-semibold">
+                            {formatCurrency(effectiveTotalClaimCost)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">
+                            Number of cost entries
+                          </p>
+                          <p className="mt-1 text-2xl font-semibold">
+                            {effectiveCostEntryCount}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
                         <p className="text-xs font-medium text-muted-foreground">
-                          Scheme type
+                          Totals by cost heading
                         </p>
-                        <p className="mt-1 text-sm font-semibold">
-                          {schemeType || "Not set"}
+                        {effectiveCostEntryCount === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            No cost entries have been recorded for this claim
+                            yet.
+                          </p>
+                        ) : (
+                          <div className="overflow-hidden rounded-md border bg-background/40">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Heading</TableHead>
+                                  <TableHead className="text-right">
+                                    Entries
+                                  </TableHead>
+                                  <TableHead className="text-right">
+                                    Total cost
+                                  </TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {orderedCostTypes.map((type) => {
+                                  const entry = effectiveCostTotalsByType[type];
+                                  if (!entry) return null;
+                                  return (
+                                    <TableRow key={type}>
+                                      <TableCell className="font-medium">
+                                        {costTypeLabels[type] || type}
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {entry.count}
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {formatCurrency(entry.total)}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Totals by project
                         </p>
-                        {!schemeType && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Once scheme type is recorded on the claim it will
-                            show here.
+                        {!hasProjectLevelCosts ? (
+                          <p className="text-sm text-muted-foreground">
+                            No project-level costs have been recorded for this
+                            claim yet.
+                          </p>
+                        ) : (
+                          <div className="overflow-hidden rounded-md border bg-background/40">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Project</TableHead>
+                                  <TableHead className="text-right">
+                                    Staff
+                                  </TableHead>
+                                  <TableHead className="text-right">
+                                    Subcontractors
+                                  </TableHead>
+                                  <TableHead className="text-right">
+                                    Consumables
+                                  </TableHead>
+                                  <TableHead className="text-right">
+                                    Total cost
+                                  </TableHead>
+                                  <TableHead className="text-right">
+                                    Estimated benefit
+                                  </TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {projects.map((project) => {
+                                  const summary = projectSummaries[project.id];
+                                  if (!summary) return null;
+
+                                  const staffTotal =
+                                    summary.byType["staff"]?.total ?? 0;
+                                  const subcontractorTotal =
+                                    summary.byType["subcontractor"]?.total ?? 0;
+                                  const consumablesTotal =
+                                    summary.byType["consumables"]?.total ?? 0;
+
+                                  const projectLow =
+                                    summary.total * lowMultiplier;
+                                  const projectHigh =
+                                    summary.total * highMultiplier;
+
+                                  return (
+                                    <TableRow key={project.id}>
+                                      <TableCell className="font-medium">
+                                        {project.name}
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {staffTotal > 0
+                                          ? formatCurrency(staffTotal)
+                                          : "—"}
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {subcontractorTotal > 0
+                                          ? formatCurrency(subcontractorTotal)
+                                          : "—"}
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {consumablesTotal > 0
+                                          ? formatCurrency(consumablesTotal)
+                                          : "—"}
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {formatCurrency(summary.total)}
+                                      </TableCell>
+                                      <TableCell className="text-right text-xs">
+                                        {summary.total > 0 ? (
+                                          <>
+                                            {formatCurrency(projectLow)} –{" "}
+                                            {formatCurrency(projectHigh)}
+                                          </>
+                                        ) : (
+                                          "—"
+                                        )}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Indicative R&amp;D benefit for this claim
+                        </p>
+                        {effectiveTotalClaimCost > 0 ? (
+                          <>
+                            <p className="text-sm font-semibold">
+                              {formatCurrency(indicativeLow)} –{" "}
+                              {formatCurrency(indicativeHigh)}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Based on typical relief levels
+                              {schemeForCalc
+                                ? ` for the ${schemeForCalc} scheme`
+                                : ""}{" "}
+                              applied to the total qualifying costs recorded on
+                              this tab. Actual benefit will depend on the
+                              company&apos;s detailed tax position.
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground">
+                            Add costs to this claim to see an indicative R&amp;D
+                            benefit range based on the selected scheme.
                           </p>
                         )}
                       </div>
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Total qualifying costs
-                        </p>
-                        <p className="mt-1 text-2xl font-semibold">
-                          {formatCurrency(effectiveTotalClaimCost)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Number of cost entries
-                        </p>
-                        <p className="mt-1 text-2xl font-semibold">
-                          {effectiveCostEntryCount}
-                        </p>
-                      </div>
-                    </div>
 
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Totals by cost heading
-                      </p>
-                      {effectiveCostEntryCount === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          No cost entries have been recorded for this claim yet.
+                      <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Update scheme type
                         </p>
-                      ) : (
-                        <div className="overflow-hidden rounded-md border bg-background/40">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Heading</TableHead>
-                                <TableHead className="text-right">
-                                  Entries
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  Total cost
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {orderedCostTypes.map((type) => {
-                                const entry = effectiveCostTotalsByType[type];
-                                if (!entry) return null;
-                                return (
-                                  <TableRow key={type}>
-                                    <TableCell className="font-medium">
-                                      {costTypeLabels[type] || type}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {entry.count}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {formatCurrency(entry.total)}
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
+                        <div className="flex flex-col gap-2 md:flex-row md:items-end">
+                          <div className="flex-1">
+                            <Label htmlFor="scheme-type-select">
+                              Scheme
+                            </Label>
+                            <Select
+                              value={schemeDraft}
+                              onValueChange={setSchemeDraft}
+                            >
+                              <SelectTrigger id="scheme-type-select">
+                                <SelectValue placeholder="Select scheme type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="SME">SME</SelectItem>
+                                <SelectItem value="RDEC">RDEC</SelectItem>
+                                <SelectItem value="Hybrid">
+                                  Hybrid / mixed
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button
+                            variant="secondary"
+                            className="md:self-end"
+                            disabled={savingScheme || !schemeDraft}
+                            onClick={handleSaveScheme}
+                          >
+                            {savingScheme ? "Saving..." : "Save scheme"}
+                          </Button>
                         </div>
-                      )}
-                    </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          This scheme label is shown on project cost advice and
+                          used when interpreting typical relief levels.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                    <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Totals by project
-                      </p>
-                      {!hasProjectLevelCosts ? (
+                  {/* Detailed cost list */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Individual cost entries</CardTitle>
+                      <CardDescription>
+                        View and manage each cost item contributing to this
+                        claim.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {costs.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
-                          No project-level costs have been recorded for this
-                          claim yet.
+                          No costs recorded yet. Use &quot;Add cost&quot; to
+                          start capturing qualifying expenditure.
                         </p>
                       ) : (
                         <div className="overflow-hidden rounded-md border bg-background/40">
                           <Table>
                             <TableHeader>
                               <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Description</TableHead>
+                                <TableHead>Type</TableHead>
                                 <TableHead>Project</TableHead>
                                 <TableHead className="text-right">
-                                  Staff
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  Subcontractors
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  Consumables
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  Total cost
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  Estimated benefit
+                                  Amount
                                 </TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {projects.map((project) => {
-                                const summary = projectSummaries[project.id];
-                                if (!summary) return null;
-
-                                const staffTotal =
-                                  summary.byType["staff"]?.total ?? 0;
-                                const subcontractorTotal =
-                                  summary.byType["subcontractor"]?.total ?? 0;
-                                const consumablesTotal =
-                                  summary.byType["consumables"]?.total ?? 0;
-
-                                const projectLow =
-                                  summary.total * lowMultiplier;
-                                const projectHigh =
-                                  summary.total * highMultiplier;
-
-                                return (
-                                  <TableRow key={project.id}>
-                                    <TableCell className="font-medium">
-                                      {project.name}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {staffTotal > 0
-                                        ? formatCurrency(staffTotal)
-                                        : "—"}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {subcontractorTotal > 0
-                                        ? formatCurrency(subcontractorTotal)
-                                        : "—"}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {consumablesTotal > 0
-                                        ? formatCurrency(consumablesTotal)
-                                        : "—"}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      {formatCurrency(summary.total)}
-                                    </TableCell>
-                                    <TableCell className="text-right text-xs">
-                                      {summary.total > 0 ? (
-                                        <>
-                                          {formatCurrency(projectLow)} –{" "}
-                                          {formatCurrency(projectHigh)}
-                                        </>
-                                      ) : (
-                                        "—"
-                                      )}
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
+                              {costs.map((cost: any) => (
+                                <TableRow key={cost.id}>
+                                  <TableCell>
+                                    {cost.cost_date
+                                      ? format(
+                                          new Date(cost.cost_date),
+                                          "dd MMM yyyy"
+                                        )
+                                      : "—"}
+                                  </TableCell>
+                                  <TableCell className="max-w-xs truncate">
+                                    {cost.description || "—"}
+                                  </TableCell>
+                                  <TableCell>
+                                    {costTypeLabels[
+                                      (cost.cost_type as string) || "other"
+                                    ] || cost.cost_type || "Other"}
+                                  </TableCell>
+                                  <TableCell>
+                                    {projects.find(
+                                      (p) => p.id === cost.project_id
+                                    )?.name || "—"}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {formatCurrency(
+                                      Number(cost.amount || 0)
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
                             </TableBody>
                           </Table>
                         </div>
                       )}
-                    </div>
+                    </CardContent>
+                  </Card>
 
-                    <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Indicative R&amp;D benefit for this claim
-                      </p>
-                      {effectiveTotalClaimCost > 0 ? (
-                        <>
-                          <p className="text-sm font-semibold">
-                            {formatCurrency(indicativeLow)} –{" "}
-                            {formatCurrency(indicativeHigh)}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            Based on typical relief levels
-                            {schemeForCalc
-                              ? ` for the ${schemeForCalc} scheme`
-                              : ""}{" "}
-                            applied to the total qualifying costs recorded on
-                            this tab. Actual benefit will depend on the
-                            company&apos;s detailed tax position.
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-[11px] text-muted-foreground">
-                          Add costs to this claim to see an indicative R&amp;D
-                          benefit range based on the selected scheme.
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Update scheme type
-                      </p>
-                      <div className="flex flex-col gap-2 md:flex-row md:items-end">
-                        <div className="flex-1">
-                          <Label htmlFor="scheme-type-select">Scheme</Label>
+                  {/* Add/Edit cost dialog */}
+                  <Dialog open={showCostDialog} onOpenChange={setShowCostDialog}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingCost ? "Edit cost" : "Add cost"}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Capture qualifying R&amp;D expenditure for this claim.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label>Type</Label>
                           <Select
-                            value={schemeDraft}
-                            onValueChange={setSchemeDraft}
+                            value={costForm.cost_type}
+                            onValueChange={(value) =>
+                              setCostForm((prev) => ({
+                                ...prev,
+                                cost_type: value,
+                              }))
+                            }
                           >
-                            <SelectTrigger id="scheme-type-select">
-                              <SelectValue placeholder="Select scheme type" />
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select type" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="SME">SME</SelectItem>
-                              <SelectItem value="RDEC">RDEC</SelectItem>
-                              <SelectItem value="Hybrid">
-                                Hybrid / mixed
+                              <SelectItem value="staff">Staff</SelectItem>
+                              <SelectItem value="subcontractor">
+                                Subcontractor
                               </SelectItem>
+                              <SelectItem value="consumables">
+                                Consumables
+                              </SelectItem>
+                              <SelectItem value="software">Software</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
-                        <Button
-                          variant="secondary"
-                          className="md:self-end"
-                          disabled={savingScheme || !schemeDraft}
-                          onClick={handleSaveScheme}
-                        >
-                          {savingScheme ? "Saving..." : "Save scheme"}
-                        </Button>
+                        <div>
+                          <Label>Description</Label>
+                          <Input
+                            value={costForm.description}
+                            onChange={(e) =>
+                              setCostForm((prev) => ({
+                                ...prev,
+                                description: e.target.value,
+                              }))
+                            }
+                            placeholder="Short description of the cost"
+                          />
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div>
+                            <Label>Amount (£)</Label>
+                            <Input
+                              type="number"
+                              value={costForm.amount}
+                              onChange={(e) =>
+                                setCostForm((prev) => ({
+                                  ...prev,
+                                  amount: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                          <div>
+                            <Label>Date</Label>
+                            <Input
+                              type="date"
+                              value={costForm.cost_date}
+                              onChange={(e) =>
+                                setCostForm((prev) => ({
+                                  ...prev,
+                                  cost_date: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label>Project</Label>
+                          <Select
+                            value={costForm.project_id}
+                            onValueChange={(value) =>
+                              setCostForm((prev) => ({
+                                ...prev,
+                                project_id: value,
+                              }))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select project" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">
+                                Not linked to a specific project
+                              </SelectItem>
+                              {projects.map((project) => (
+                                <SelectItem key={project.id} value={project.id}>
+                                  {project.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-muted-foreground">
-                        This scheme label is shown on project cost advice and
-                        used when interpreting typical relief levels.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowCostDialog(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button onClick={handleSaveCost}>
+                          Save
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </>
               );
             })()}
           </TabsContent>
 
-          {/* EVIDENCE – placeholder for now */}
+          {/* EVIDENCE – document list and upload */}
           <TabsContent value="evidence" className="mt-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Evidence</h2>
+              <Button size="sm" onClick={() => setShowDocumentDialog(true)}>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload document
+              </Button>
+            </div>
             <Card>
               <CardHeader>
-                <CardTitle>Evidence</CardTitle>
+                <CardTitle>Claim documents</CardTitle>
                 <CardDescription>
-                  Evidence management for this claim will be available here.
+                  Supporting evidence and working papers linked to this claim.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Evidence management for claims is handled from the main
-                  Evidence area. This tab can be extended to show linked
-                  evidence items in a future iteration.
-                </p>
+                {!claim.documents || claim.documents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No documents uploaded for this claim yet.
+                  </p>
+                ) : (
+                  <div className="overflow-hidden rounded-md border bg-background/40">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Project</TableHead>
+                          <TableHead className="text-right">
+                            Actions
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {claim.documents.map((doc: any) => (
+                          <TableRow key={doc.id}>
+                            <TableCell className="max-w-xs truncate">
+                              {doc.title || doc.file_name || "Untitled"}
+                            </TableCell>
+                            <TableCell className="capitalize">
+                              {doc.doc_type || "supporting_evidence"}
+                            </TableCell>
+                            <TableCell>
+                              {projects.find(
+                                (p) => p.id === doc.project_id
+                              )?.name || "—"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() =>
+                                  handleDownloadDocument(doc as any)
+                                }
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
+
+            {/* Upload document dialog */}
+            <Dialog
+              open={showDocumentDialog}
+              onOpenChange={setShowDocumentDialog}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Upload document</DialogTitle>
+                  <DialogDescription>
+                    Add supporting evidence against this claim or a specific
+                    project.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label>File</Label>
+                    <Input
+                      type="file"
+                      onChange={(e) =>
+                        setSelectedFile(e.target.files?.[0] || null)
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Document type</Label>
+                    <Select
+                      value={documentType}
+                      onValueChange={setDocumentType}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="supporting_evidence">
+                          Supporting evidence
+                        </SelectItem>
+                        <SelectItem value="working_paper">
+                          Working paper
+                        </SelectItem>
+                        <SelectItem value="submission_pack">
+                          Submission pack
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Project (optional)</Label>
+                    <Select
+                      value={documentProjectId}
+                      onValueChange={setDocumentProjectId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Link to a project (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          Not linked to a specific project
+                        </SelectItem>
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDocumentDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={uploadingDocument || !selectedFile}
+                    onClick={() => {
+                      void handleDocumentUpload();
+                    }}
+                  >
+                    {uploadingDocument ? "Uploading..." : "Upload"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* COMPANION – AI analysis */}
