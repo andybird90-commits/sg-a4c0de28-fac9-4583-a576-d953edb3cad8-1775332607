@@ -2107,8 +2107,8 @@ export default function ClaimDetailPage() {
                         onClick={handleClientApprove}
                       >
                         {clientActionLoading
-                            ? "Saving..."
-                            : "Client approved – ready to file"}
+                          ? "Saving..."
+                          : "Client approved – ready to file"}
                       </Button>
                       <Button
                         variant="outline"
@@ -2604,7 +2604,7 @@ export default function ClaimDetailPage() {
                       )}
                     </div>
 
-                    <div className="space-y-2 border-t border-border/60 pt-4">
+                    <div className="mt-2 space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
                       <p className="text-xs font-medium text-muted-foreground">
                         Totals by project
                       </p>
