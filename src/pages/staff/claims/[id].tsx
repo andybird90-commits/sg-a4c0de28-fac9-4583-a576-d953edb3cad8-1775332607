@@ -70,6 +70,7 @@ import {
   AlertCircle,
   RefreshCw,
   Lock,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
@@ -1687,15 +1688,30 @@ export default function ClaimDetailPage() {
 
                   {/* HMRC responses section */}
                   <div className="mt-6 space-y-3">
-                    <div>
-                      <p className="text-sm font-semibold">
-                        HMRC responses &amp; queries
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Log questions from HMRC and your team&apos;s responses.
-                        Use the Companion tab on this claim to help draft
-                        responses.
-                      </p>
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">
+                          HMRC responses &amp; queries
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Log questions from HMRC and your team&apos;s responses.
+                          Use the Companion tab or the Companion button to help
+                          draft responses.
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0"
+                        disabled={loadingAnalysis}
+                        onClick={() => {
+                          setActiveTab("companion");
+                          void handleGenerateAnalysis();
+                        }}
+                      >
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Ask Companion
+                      </Button>
                     </div>
 
                     <div className="space-y-3">
@@ -1749,7 +1765,7 @@ export default function ClaimDetailPage() {
                       ))}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap gap-3">
                       <Button
                         variant="outline"
                         size="sm"
