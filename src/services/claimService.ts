@@ -1112,6 +1112,54 @@ export class ClaimService {
   }
 
   /**
+   * Client recalls project from team back to draft so they can edit
+   */
+  async recallProjectToClient(
+    projectId: string,
+    userId: string
+  ): Promise<ClaimProject> {
+    try {
+      const { data: project, error: projectError } = await supabase
+        .from("claim_projects")
+        .select("workflow_status")
+        .eq("id", projectId)
+        .single();
+
+      if (projectError) throw projectError;
+
+      const previousStatus =
+        (project as { workflow_status?: string } | null)?.workflow_status ||
+        "draft";
+
+      const { data, error } = await supabase
+        .from("claim_projects")
+        .update({
+          workflow_status: "draft",
+          assigned_to_user_id: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", projectId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await this.logStatusChange(
+        projectId,
+        previousStatus,
+        "draft",
+        userId,
+        "Client recalled project from R&D team for further edits"
+      );
+
+      return data;
+    } catch (error) {
+      console.error("[claimService.recallProjectToClient] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Simple workflow status updater for client-side flows
    */
   async updateProjectWorkflowStatus(

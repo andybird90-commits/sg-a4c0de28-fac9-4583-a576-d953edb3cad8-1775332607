@@ -141,6 +141,7 @@ export default function ProjectDetailPage() {
   // Dialog and workflow state
   const [sendToTeamDialog, setSendToTeamDialog] = useState(false);
   const [reviewDialog, setReviewDialog] = useState(false);
+  const [recallDialog, setRecallDialog] = useState(false);
   const [cancelDialog, setCancelDialog] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [editingProject, setEditingProject] = useState(false);
@@ -676,6 +677,36 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const handleRecallFromTeam = async () => {
+    if (!claimProject || !user || !project) return;
+
+    setSubmitting(true);
+    try {
+      const updated = await claimService.recallProjectToClient(
+        claimProject.id,
+        user.id
+      );
+
+      setClaimProject(updated);
+      setRecallDialog(false);
+
+      toast({
+        title: "Project brought back to you",
+        description:
+          "You can now make changes before sending it to the R&D team again.",
+      });
+    } catch (error) {
+      console.error("Error recalling project from team:", error);
+      toast({
+        title: "Could not bring project back",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleAddEvidence = async () => {
     if (!project || !user) return;
 
@@ -1040,6 +1071,9 @@ export default function ProjectDetailPage() {
   const needsClientReview =
     claimProject && claimProject.workflow_status === "awaiting_client_review";
   const isApproved = claimProject && claimProject.workflow_status === "approved";
+  const canRecallFromTeam =
+    claimProject?.workflow_status === "submitted_to_team" ||
+    claimProject?.workflow_status === "team_in_progress";
   const slaStatus = getSLAStatus();
 
   const sector = project.sector ?? null;
@@ -1155,6 +1189,18 @@ export default function ProjectDetailPage() {
                   <CheckCircle className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Review Team's Work</span>
                   <span className="sm:hidden">Review</span>
+                </Button>
+              )}
+              {canRecallFromTeam && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRecallDialog(true)}
+                  className="flex-1 sm:flex-none"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Bring back to edit</span>
+                  <span className="sm:hidden">Take back</span>
                 </Button>
               )}
               {claimProject && claimProject.workflow_status !== "cancelled" && (
@@ -2081,6 +2127,29 @@ export default function ProjectDetailPage() {
                   disabled={submitting || (Object.values(approvalSections).some(s => s === "needs_revision") && !revisionFeedback.trim())}
                 >
                   {submitting ? "Submitting..." : Object.values(approvalSections).every(s => s === "approved") ? "Approve All" : "Submit Feedback"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Recall From Team Dialog */}
+          <Dialog open={recallDialog} onOpenChange={setRecallDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Bring project back to you?</DialogTitle>
+                <DialogDescription>
+                  This will pause work by the R&amp;D team and move the project back to your draft list so you can make further changes.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 text-sm text-muted-foreground">
+                You can send the project back to the team again whenever you are ready.
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setRecallDialog(false)}>
+                  Keep with team
+                </Button>
+                <Button onClick={handleRecallFromTeam} disabled={submitting}>
+                  {submitting ? "Bringing back..." : "Bring back to edit"}
                 </Button>
               </DialogFooter>
             </DialogContent>
