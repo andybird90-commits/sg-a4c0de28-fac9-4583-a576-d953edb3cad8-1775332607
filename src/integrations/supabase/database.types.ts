@@ -1010,6 +1010,7 @@ export type Database = {
           expected_submission_date: string | null
           hmrc_reference: string | null
           hmrc_response_pdf_paths: string[] | null
+          hmrc_responses: Json | null
           hmrc_submission_pdf_path: string | null
           id: string
           notes: string | null
@@ -1041,6 +1042,7 @@ export type Database = {
           expected_submission_date?: string | null
           hmrc_reference?: string | null
           hmrc_response_pdf_paths?: string[] | null
+          hmrc_responses?: Json | null
           hmrc_submission_pdf_path?: string | null
           id?: string
           notes?: string | null
@@ -1072,6 +1074,7 @@ export type Database = {
           expected_submission_date?: string | null
           hmrc_reference?: string | null
           hmrc_response_pdf_paths?: string[] | null
+          hmrc_responses?: Json | null
           hmrc_submission_pdf_path?: string | null
           id?: string
           notes?: string | null

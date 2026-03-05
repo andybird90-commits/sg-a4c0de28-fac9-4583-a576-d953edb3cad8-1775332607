@@ -86,6 +86,11 @@ const formatCurrency = (amount: number) => {
 type ClaimProject = Database["public"]["Tables"]["claim_projects"]["Row"];
 type ClaimDocument = Database["public"]["Tables"]["claim_documents"]["Row"];
 
+type HmrcResponseItem = {
+  question: string;
+  team_response: string;
+};
+
 // Helper component for project cards with workflow actions
 function ProjectCard({
   project,
@@ -306,6 +311,10 @@ export default function ClaimDetailPage() {
   const [clientFeedback, setClientFeedback] = useState("");
   const [hmrcActionLoading, setHmrcActionLoading] = useState(false);
 
+  const [hmrcResponses, setHmrcResponses] = useState<HmrcResponseItem[]>([]);
+  const [outcomeSubmittedValue, setOutcomeSubmittedValue] = useState("");
+  const [outcomeReceivedValue, setOutcomeReceivedValue] = useState("");
+
   // Derived state for projects to match the new UI code
   const projects = claim?.projects || [];
   const loadingProjects = loading;
@@ -359,6 +368,33 @@ export default function ClaimDetailPage() {
       setLoading(true);
       const data = await claimService.getClaimById(claimId);
       setClaim(data);
+
+      const existingHmrcResponses =
+        ((data as any)?.hmrc_responses as HmrcResponseItem[] | null) || [];
+
+      if (existingHmrcResponses.length > 0) {
+        setHmrcResponses(existingHmrcResponses);
+      } else {
+        setHmrcResponses([
+          { question: "", team_response: "" },
+          { question: "", team_response: "" },
+          { question: "", team_response: "" },
+        ]);
+      }
+
+      const submittedValue =
+        data?.submitted_claim_value !== null &&
+        data?.submitted_claim_value !== undefined
+          ? String(data.submitted_claim_value)
+          : "";
+      const receivedValue =
+        data?.received_claim_value !== null &&
+        data?.received_claim_value !== undefined
+          ? String(data.received_claim_value)
+          : "";
+
+      setOutcomeSubmittedValue(submittedValue);
+      setOutcomeReceivedValue(receivedValue);
 
       if (data?.projects && data.projects.length > 0) {
         await loadClientCostAdviceCounts(data.projects as ClaimProject[]);
@@ -1095,6 +1131,123 @@ export default function ClaimDetailPage() {
     }
   };
 
+  const handleAddHmrcResponseRow = () => {
+    setHmrcResponses((prev) => [
+      ...prev,
+      { question: "", team_response: "" },
+    ]);
+  };
+
+  const handleHmrcResponseChange = (
+    index: number,
+    field: "question" | "team_response",
+    value: string
+  ) => {
+    setHmrcResponses((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const handleSaveHmrcResponses = async (): Promise<void> => {
+    if (!claim) return;
+
+    try {
+      const cleaned = hmrcResponses.filter(
+        (item) =>
+          item.question.trim() !== "" || item.team_response.trim() !== ""
+      );
+
+      await claimService.updateClaim(claim.id, {
+        hmrc_responses: cleaned as any,
+        status:
+          claim.status === "submitted_hmrc"
+            ? ("hmrc_feedback" as any)
+            : ((claim.status || "hmrc_feedback") as any),
+      });
+
+      toast({
+        title: "HMRC responses saved",
+        description: "Responses have been saved to this claim.",
+      });
+
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error) {
+      console.error("Error saving HMRC responses:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save HMRC responses",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSaveOutcome = async (): Promise<void> => {
+    if (!claim) return;
+
+    try {
+      const submitted =
+        outcomeSubmittedValue.trim() === ""
+          ? null
+          : Number.parseFloat(outcomeSubmittedValue);
+      const received =
+        outcomeReceivedValue.trim() === ""
+          ? null
+          : Number.parseFloat(outcomeReceivedValue);
+
+      await claimService.updateClaim(claim.id, {
+        submitted_claim_value: submitted as any,
+        received_claim_value: received as any,
+      });
+
+      toast({
+        title: "Outcome saved",
+        description: "Submitted and received values have been updated.",
+      });
+
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error) {
+      console.error("Error saving claim outcome:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save outcome values",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMarkClaimCompleted = async (): Promise<void> => {
+    if (!claim) return;
+
+    try {
+      await claimService.updateClaim(claim.id, {
+        status: "completed" as any,
+      });
+
+      toast({
+        title: "Claim completed",
+        description:
+          "Claim has been marked as completed and archived in the system.",
+      });
+
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error) {
+      console.error("Error marking claim completed:", error);
+      toast({
+        title: "Error",
+        description: "Failed to mark claim as completed",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
       intake: { label: "Intake", className: "bg-blue-100 text-blue-800" },
@@ -1174,73 +1327,129 @@ export default function ClaimDetailPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <Card className="bg-slate-900/80 border-slate-800 shadow-none">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-slate-700">
-                  <Briefcase className="h-5 w-5 text-sky-400" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Projects
-                  </p>
-                  <p className="text-2xl font-semibold text-slate-50">
-                    {claim.projects?.length || 0}
-                  </p>
-                </div>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <h4 className="font-medium break-words">{claim.name}</h4>
+                <Badge variant="outline">
+                  {getWorkflowLabel(claim.workflow_status)}
+                </Badge>
+                {claim.workflow_status === "submitted_to_team" && (
+                  <Badge className="bg-orange-500 text-slate-950">
+                    Pending from client
+                  </Badge>
+                )}
+                {getSLABadge()}
               </div>
+              {claim.description && (
+                <p className="text-sm text-muted-foreground break-words mb-2">
+                  {claim.description}
+                </p>
+              )}
+              {claim.rd_theme && (
+                <Badge variant="secondary" className="text-xs">
+                  {claim.rd_theme}
+                </Badge>
+              )}
+              {claim.assigned_to_user_id && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Assigned to team member
+                </p>
+              )}
             </CardContent>
           </Card>
 
           <Card className="bg-slate-900/80 border-slate-800 shadow-none">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-emerald-500/40">
-                  <PoundSterling className="h-5 w-5 text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Total Costs
-                  </p>
-                  <p className="text-2xl font-semibold text-slate-50">
-                    {formatCurrency(claim.total_costs || 0)}
-                  </p>
-                </div>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <h4 className="font-medium break-words">{claim.name}</h4>
+                <Badge variant="outline">
+                  {getWorkflowLabel(claim.workflow_status)}
+                </Badge>
+                {claim.workflow_status === "submitted_to_team" && (
+                  <Badge className="bg-orange-500 text-slate-950">
+                    Pending from client
+                  </Badge>
+                )}
+                {getSLABadge()}
               </div>
+              {claim.description && (
+                <p className="text-sm text-muted-foreground break-words mb-2">
+                  {claim.description}
+                </p>
+              )}
+              {claim.rd_theme && (
+                <Badge variant="secondary" className="text-xs">
+                  {claim.rd_theme}
+                </Badge>
+              )}
+              {claim.assigned_to_user_id && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Assigned to team member
+                </p>
+              )}
             </CardContent>
           </Card>
 
           <Card className="bg-slate-900/80 border-slate-800 shadow-none">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-violet-500/40">
-                  <FileText className="h-5 w-5 text-violet-300" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                    Documents
-                  </p>
-                  <p className="text-2xl font-semibold text-slate-50">
-                    {claim.document_count || 0}
-                  </p>
-                </div>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <h4 className="font-medium break-words">{claim.name}</h4>
+                <Badge variant="outline">
+                  {getWorkflowLabel(claim.workflow_status)}
+                </Badge>
+                {claim.workflow_status === "submitted_to_team" && (
+                  <Badge className="bg-orange-500 text-slate-950">
+                    Pending from client
+                  </Badge>
+                )}
+                {getSLABadge()}
               </div>
+              {claim.description && (
+                <p className="text-sm text-muted-foreground break-words mb-2">
+                  {claim.description}
+                </p>
+              )}
+              {claim.rd_theme && (
+                <Badge variant="secondary" className="text-xs">
+                  {claim.rd_theme}
+                </Badge>
+              )}
+              {claim.assigned_to_user_id && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Assigned to team member
+                </p>
+              )}
             </CardContent>
           </Card>
 
           <Card className="bg-slate-900/80 border-slate-800 shadow-none">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-800 border border-orange-500/50">
-                  <RefreshCw className="h-5 w-5 text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                    AI Companion
-                  </p>
-                  <p className="text-2xl font-semibold text-emerald-300">
-                    Ready
-                  </p>
-                </div>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <h4 className="font-medium break-words">{claim.name}</h4>
+                <Badge variant="outline">
+                  {getWorkflowLabel(claim.workflow_status)}
+                </Badge>
+                {claim.workflow_status === "submitted_to_team" && (
+                  <Badge className="bg-orange-500 text-slate-950">
+                    Pending from client
+                  </Badge>
+                )}
+                {getSLABadge()}
               </div>
+              {claim.description && (
+                <p className="text-sm text-muted-foreground break-words mb-2">
+                  {claim.description}
+                </p>
+              )}
+              {claim.rd_theme && (
+                <Badge variant="secondary" className="text-xs">
+                  {claim.rd_theme}
+                </Badge>
+              )}
+              {claim.assigned_to_user_id && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Assigned to team member
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1256,693 +1465,847 @@ export default function ClaimDetailPage() {
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="mt-6">
-            <div className="grid gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Claim Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm text-slate-600">Claim Year</Label>
-                      <p className="font-medium">{claim.claim_year}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm text-slate-600">Status</Label>
-                      <div className="mt-1">{getStatusBadge(claim.status || "draft")}</div>
-                    </div>
-                    <div>
-                      <Label className="text-sm text-slate-600">Created</Label>
-                      <p className="font-medium">
-                        {claim.created_at ? format(new Date(claim.created_at), "PPP") : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-sm text-slate-600">Last Updated</Label>
-                      <p className="font-medium">
-                        {claim.updated_at ? format(new Date(claim.updated_at), "PPP") : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {claim.notes && (
-                    <div>
-                      <Label className="text-sm text-slate-600">Notes</Label>
-                      <p className="mt-1 text-slate-700 whitespace-pre-wrap">{claim.notes}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Team Assignment</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {claim.bd_owner && (
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
-                        {claim.bd_owner.full_name?.charAt(0)}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Claim Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-slate-600">Claim Year</Label>
+                        <p className="font-medium">{claim.claim_year}</p>
                       </div>
                       <div>
-                        <p className="font-medium">{claim.bd_owner.full_name}</p>
-                        <p className="text-sm text-slate-600">BD Owner</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {claim.technical_lead && (
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold">
-                        {claim.technical_lead.full_name?.charAt(0)}
+                        <Label className="text-sm text-slate-600">Status</Label>
+                        <div className="mt-1">{getStatusBadge(claim.status || "draft")}</div>
                       </div>
                       <div>
-                        <p className="font-medium">{claim.technical_lead.full_name}</p>
-                        <p className="text-sm text-slate-600">Technical Lead</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {claim.cost_lead && (
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold">
-                        {claim.cost_lead.full_name?.charAt(0)}
+                        <Label className="text-sm text-slate-600">Created</Label>
+                        <p className="font-medium">
+                          {claim.created_at ? format(new Date(claim.created_at), "PPP") : "N/A"}
+                        </p>
                       </div>
                       <div>
-                        <p className="font-medium">{claim.cost_lead.full_name}</p>
-                        <p className="text-sm text-slate-600">Cost Lead</p>
+                        <Label className="text-sm text-slate-600">Last Updated</Label>
+                        <p className="font-medium">
+                          {claim.updated_at ? format(new Date(claim.updated_at), "PPP") : "N/A"}
+                        </p>
                       </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Filing &amp; Approval Workflow</CardTitle>
-                  <CardDescription>
-                    Manage internal QA signoff before client review and HMRC submission.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-700">
-                      Step 1 – Internal QA signoff
-                    </p>
-                    {claim.status === "final_signoff" && claim.qa_reviewer_id ? (
-                      <p className="text-sm text-slate-600">
-                        Awaiting QA review from{" "}
-                        <span className="font-medium">
-                          {claim.qa_reviewer?.full_name || "assigned admin"}
-                        </span>
-                        .
-                      </p>
-                    ) : (
-                      <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                        <div className="flex-1">
-                          <Label className="text-sm text-slate-600">
-                            Assign QA reviewer (admin)
-                          </Label>
-                          <Select
-                            value={selectedQaAdmin}
-                            onValueChange={setSelectedQaAdmin}
-                            disabled={loadingQaAdmins || submittingQa}
-                          >
-                            <SelectTrigger>
-                              <SelectValue
-                                placeholder={
-                                  loadingQaAdmins
-                                    ? "Loading admins..."
-                                    : "Select admin reviewer"
-                                }
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {qaAdmins.map((admin) => (
-                                <SelectItem key={admin.id} value={admin.id}>
-                                  {admin.full_name || admin.email || "Admin"}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Button
-                          onClick={handleSubmitForQa}
-                          disabled={!selectedQaAdmin || submittingQa}
-                        >
-                          {submittingQa ? "Submitting..." : "Submit for QA signoff"}
-                        </Button>
+                    {claim.notes && (
+                      <div>
+                        <Label className="text-sm text-slate-600">Notes</Label>
+                        <p className="mt-1 text-slate-700 whitespace-pre-wrap">{claim.notes}</p>
                       </div>
                     )}
-                    <p className="text-xs text-slate-500">
-                      The selected admin will receive a message with a link to this
-                      claim to review and approve.
-                    </p>
-                  </div>
+                  </CardContent>
+                </Card>
 
-                  {claim.status === "final_signoff" &&
-                    claim.qa_reviewer_id &&
-                    profile?.id === claim.qa_reviewer_id && (
-                      <div className="mt-4 space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
-                        <p className="text-sm font-medium text-slate-800">
-                          QA reviewer actions
-                        </p>
-                        <Textarea
-                          placeholder="Add QA comments or notes for the team..."
-                          value={qaFeedback}
-                          onChange={(e) => setQaFeedback(e.target.value)}
-                        />
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            size="sm"
-                            onClick={handleQaApprove}
-                            disabled={qaActionLoading}
-                          >
-                            {qaActionLoading ? "Saving..." : "Approve for client review"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleQaReturnWithComments}
-                            disabled={qaActionLoading}
-                          >
-                            Return with comments
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                  <div className="space-y-2 border-t border-slate-200 pt-4">
-                    <p className="text-sm font-medium text-slate-700">
-                      Step 2 – Client review and comments
-                    </p>
-                    {claim.status === "final_signoff" &&
-                      claim.qa_completed_at &&
-                      !claim.client_review_requested_at && (
-                        <Button
-                          size="sm"
-                          onClick={handleIssueToClient}
-                          disabled={clientActionLoading}
-                        >
-                          {clientActionLoading
-                            ? "Issuing to client..."
-                            : "Issue to client for comment"}
-                        </Button>
-                      )}
-
-                    {["client_review", "ready_to_file", "submitted_hmrc", "hmrc_feedback", "completed"].includes(
-                      claim.status || ""
-                    ) && (
-                      <p className="text-xs text-slate-600">
-                        Client review requested{" "}
-                        {claim.client_review_requested_at
-                          ? format(new Date(claim.client_review_requested_at), "PPP")
-                          : "recently"}
-                        .
-                      </p>
-                    )}
-
-                    {claim.status === "client_review" && (
-                      <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
-                        <p className="text-sm font-medium text-slate-800">
-                          Record client outcome
-                        </p>
-                        <Textarea
-                          placeholder="Optional: paste client comments or notes for the file..."
-                          value={clientFeedback}
-                          onChange={(e) => setClientFeedback(e.target.value)}
-                        />
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            size="sm"
-                            onClick={handleClientApprove}
-                            disabled={clientActionLoading}
-                          >
-                            {clientActionLoading
-                              ? "Saving..."
-                              : "Client approved – ready to file"}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleClientComments}
-                            disabled={clientActionLoading}
-                          >
-                            Client comments – back to draft
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="space-y-2 border-t border-slate-200 pt-4">
-                      <p className="text-sm font-medium text-slate-700">
-                        Step 3 – HMRC submission and completion
-                      </p>
-                      {claim.status === "ready_to_file" && (
-                        <Button
-                          size="sm"
-                          onClick={handleIssueToHmrc}
-                          disabled={hmrcActionLoading}
-                        >
-                          {hmrcActionLoading ? "Submitting..." : "Issue to HMRC"}
-                        </Button>
-                      )}
-                      {["submitted_hmrc", "hmrc_feedback", "completed"].includes(
-                        claim.status || ""
-                      ) && (
-                        <p className="text-xs text-slate-600">
-                          Submitted to HMRC{" "}
-                          {claim.actual_submission_date
-                            ? format(new Date(claim.actual_submission_date), "PPP")
-                            : "recently"}
-                          .
-                        </p>
-                      )}
-                    </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Projects Tab */}
-          <TabsContent value="projects" className="space-y-6">
-            {/* Workflow Status Filter Tabs */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Workflow</CardTitle>
-                <CardDescription>Manage projects through the review workflow</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="all" className="space-y-4">
-                  <TabsList className="grid grid-cols-5 w-full">
-                    <TabsTrigger value="all">All</TabsTrigger>
-                    <TabsTrigger value="pending">
-                      Pending Review
-                      {projects.filter(p => p.workflow_status === "submitted_to_team").length > 0 && (
-                        <Badge variant="destructive" className="ml-2">
-                          {projects.filter(p => p.workflow_status === "submitted_to_team").length}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                    <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-                    <TabsTrigger value="awaiting_client">Awaiting Client</TabsTrigger>
-                    <TabsTrigger value="approved">Approved</TabsTrigger>
-                  </TabsList>
-
-                  {/* All Projects */}
-                  <TabsContent value="all" className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-semibold">All Projects ({projects.length})</h3>
-                      <Button onClick={() => setShowAddProject(true)} size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Project
-                      </Button>
-                    </div>
-                    {loadingProjects ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                      </div>
-                    ) : projects.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-8">No projects yet</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {projects.map((project) => (
-                          <ProjectCard key={project.id} project={project} />
-                        ))}
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  {/* Pending Review */}
-                  <TabsContent value="pending" className="space-y-4">
-                    <h3 className="text-lg font-semibold">
-                      Pending Review ({projects.filter(p => p.workflow_status === "submitted_to_team").length})
-                    </h3>
-                    {projects.filter(p => p.workflow_status === "submitted_to_team").length === 0 ? (
-                      <p className="text-muted-foreground text-center py-8">No projects pending review</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {projects
-                          .filter(
-                            (p) => p.workflow_status === "submitted_to_team"
-                          )
-                          .map((project) => (
-                            <ProjectCard
-                              key={project.id}
-                              project={project}
-                            />
-                          ))}
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  {/* In Progress */}
-                  <TabsContent value="in_progress" className="space-y-4">
-                    <h3 className="text-lg font-semibold">
-                      In Progress ({projects.filter(p => p.workflow_status === "team_in_progress").length})
-                    </h3>
-                    {projects.filter(p => p.workflow_status === "team_in_progress").length === 0 ? (
-                      <p className="text-muted-foreground text-center py-8">No projects in progress</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {projects.filter(p => p.workflow_status === "team_in_progress").map((project) => (
-                          <ProjectCard key={project.id} project={project} showSendToClient />
-                        ))}
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  {/* Awaiting Client */}
-                  <TabsContent value="awaiting_client" className="space-y-4">
-                    <h3 className="text-lg font-semibold">
-                      Awaiting Client ({projects.filter(p => ["awaiting_client_review", "revision_requested"].includes(p.workflow_status || "")).length})
-                    </h3>
-                    {projects.filter(p => ["awaiting_client_review", "revision_requested"].includes(p.workflow_status || "")).length === 0 ? (
-                      <p className="text-muted-foreground text-center py-8">No projects awaiting client review</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {projects.filter(p => ["awaiting_client_review", "revision_requested"].includes(p.workflow_status || "")).map((project) => (
-                          <ProjectCard key={project.id} project={project} />
-                        ))}
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  {/* Approved */}
-                  <TabsContent value="approved" className="space-y-4">
-                    <h3 className="text-lg font-semibold">
-                      Approved ({projects.filter(p => p.workflow_status === "approved").length})
-                    </h3>
-                    {projects.filter(p => p.workflow_status === "approved").length === 0 ? (
-                      <p className="text-muted-foreground text-center py-8">No approved projects yet</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {projects.filter(p => p.workflow_status === "approved").map((project) => (
-                          <ProjectCard key={project.id} project={project} />
-                        ))}
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Costs Tab */}
-          <TabsContent value="costs" className="mt-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Cost Tracking</CardTitle>
-                    <CardDescription>Track all R&D-related costs for this claim</CardDescription>
-                  </div>
-                  <Dialog open={showCostDialog} onOpenChange={setShowCostDialog}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload Document
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Upload Evidence</DialogTitle>
-                        <DialogDescription>Upload supporting documentation for this claim</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="doc-type">Document Type *</Label>
-                          <Select value={documentType} onValueChange={setDocumentType}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="supporting_evidence">Supporting Evidence</SelectItem>
-                              <SelectItem value="financial_records">Financial Records</SelectItem>
-                              <SelectItem value="technical_documentation">Technical Documentation</SelectItem>
-                              <SelectItem value="correspondence">Correspondence</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Team Assignment</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {claim.bd_owner && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
+                          {claim.bd_owner.full_name?.charAt(0)}
                         </div>
                         <div>
-                          <Label htmlFor="doc-project">Assign to Project (Optional)</Label>
-                          <Select value={documentProjectId} onValueChange={setDocumentProjectId}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select project..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">General (not project-specific)</SelectItem>
-                              {claim.projects?.map((proj) => (
-                                <SelectItem key={proj.id} value={proj.id}>
-                                  {proj.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <p className="font-medium">{claim.bd_owner.full_name}</p>
+                          <p className="text-sm text-slate-600">BD Owner</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {claim.technical_lead && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold">
+                          {claim.technical_lead.full_name?.charAt(0)}
                         </div>
                         <div>
-                          <Label htmlFor="file-upload">Select File *</Label>
-                          <Input
-                            id="file-upload"
-                            type="file"
-                            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                            className="cursor-pointer"
-                          />
-                          {selectedFile && (
-                            <p className="text-sm text-slate-600 mt-2">
-                              Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                          <p className="font-medium">{claim.technical_lead.full_name}</p>
+                          <p className="text-sm text-slate-600">Technical Lead</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {claim.cost_lead && (
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold">
+                          {claim.cost_lead.full_name?.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{claim.cost_lead.full_name}</p>
+                          <p className="text-sm text-slate-600">Cost Lead</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Filing & Approval Workflow</CardTitle>
+                      <CardDescription>
+                        Manage internal QA, client review and HMRC submission steps.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* Step 1 – Internal QA */}
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-slate-700">
+                          Step 1 – Internal QA signoff
+                        </p>
+                        {claim.status === "final_signoff" && claim.qa_reviewer_id ? (
+                          <p className="text-sm text-slate-600">
+                            Awaiting QA review from{" "}
+                            <span className="font-medium">
+                              {claim.qa_reviewer?.full_name || "assigned admin"}
+                            </span>
+                            .
+                          </p>
+                        ) : (
+                          <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                            <div className="flex-1">
+                              <Label className="text-sm text-slate-600">
+                                Assign QA reviewer (admin)
+                              </Label>
+                              <Select
+                                value={selectedQaAdmin}
+                                onValueChange={setSelectedQaAdmin}
+                                disabled={loadingQaAdmins || submittingQa}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue
+                                    placeholder={
+                                      loadingQaAdmins
+                                        ? "Loading admins..."
+                                        : "Select admin reviewer"
+                                    }
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {qaAdmins.map((admin) => (
+                                    <SelectItem key={admin.id} value={admin.id}>
+                                      {admin.full_name || admin.email || "Admin"}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <Button
+                              onClick={handleSubmitForQa}
+                              disabled={!selectedQaAdmin || submittingQa}
+                            >
+                              {submittingQa ? "Submitting..." : "Submit for QA signoff"}
+                            </Button>
+                          </div>
+                        )}
+                        <p className="text-xs text-slate-500">
+                          The selected admin will receive a message with a link to this
+                          claim to review and approve.
+                        </p>
+                      </div>
+
+                      {claim.status === "final_signoff" &&
+                        claim.qa_reviewer_id &&
+                        profile?.id === claim.qa_reviewer_id && (
+                          <div className="mt-4 space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+                            <p className="text-sm font-medium text-slate-800">
+                              QA reviewer actions
                             </p>
-                          )}
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowDocumentDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button onClick={handleDocumentUpload} disabled={!selectedFile || uploadingDocument}>
-                          {uploadingDocument ? "Uploading..." : "Upload"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {claim.documents && claim.documents.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Project</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                        <TableHead className="w-[100px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {claim.documents.map((doc) => (
-                        <TableRow key={doc.id}>
-                          <TableCell>{doc.created_at ? format(new Date(doc.created_at), "dd/MM/yyyy") : "N/A"}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{doc.doc_type}</Badge>
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">{doc.title}</TableCell>
-                          <TableCell>
-                            {doc.project_id ? (
-                              <span className="text-sm text-slate-600">
-                                {claim.projects?.find(p => p.id === doc.project_id)?.name || "Unknown"}
-                              </span>
-                            ) : (
-                              <span className="text-sm text-slate-400">General</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">{formatCurrency(doc.file_size || 0)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="sm" onClick={() => handleDownloadDocument(doc)}>
-                                <Download className="h-4 w-4" />
+                            <Textarea
+                              placeholder="Add QA comments or notes for the team..."
+                              value={qaFeedback}
+                              onChange={(e) => setQaFeedback(e.target.value)}
+                            />
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                onClick={handleQaApprove}
+                                disabled={qaActionLoading}
+                              >
+                                {qaActionLoading ? "Saving..." : "Approve for client review"}
                               </Button>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="h-4 w-4 text-red-600" />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleQaReturnWithComments}
+                                disabled={qaActionLoading}
+                              >
+                                Return with comments
                               </Button>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-12 text-slate-500">
-                    <FileText className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-                    <p>No documents uploaded yet</p>
-                    <p className="text-sm">Upload supporting evidence for your R&D claim</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                          </div>
+                        )}
 
-          {/* Companion Tab (internal value still 'sidekick') */}
-          <TabsContent value="sidekick" className="mt-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <RefreshCw className="h-5 w-5 text-orange-600" />
-                      AI Companion Analysis
-                    </CardTitle>
-                    <CardDescription>
-                      Get AI-powered insights and recommendations for this claim
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    {aiAnalysis && (
-                      <Dialog open={showSendAnalysisDialog} onOpenChange={setShowSendAnalysisDialog}>
+                      {/* Step 2 – Client review */}
+                      <div className="space-y-2 border-t border-slate-200 pt-4">
+                        <p className="text-sm font-medium text-slate-700">
+                          Step 2 – Client review and comments
+                        </p>
+                        {claim.status === "final_signoff" &&
+                          claim.qa_completed_at &&
+                          !claim.client_review_requested_at && (
+                            <Button
+                              size="sm"
+                              onClick={handleIssueToClient}
+                              disabled={clientActionLoading}
+                            >
+                              {clientActionLoading
+                                ? "Issuing to client..."
+                                : "Issue to client for comment"}
+                            </Button>
+                          )}
+
+                        {["client_review", "ready_to_file", "submitted_hmrc", "hmrc_feedback", "completed"].includes(
+                          claim.status || ""
+                        ) && (
+                          <p className="text-xs text-slate-600">
+                            Client review requested{" "}
+                            {claim.client_review_requested_at
+                              ? format(new Date(claim.client_review_requested_at), "PPP")
+                              : "recently"}
+                            .
+                          </p>
+                        )}
+
+                        {claim.status === "client_review" && (
+                          <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+                            <p className="text-sm font-medium text-slate-800">
+                              Record client outcome
+                            </p>
+                            <Textarea
+                              placeholder="Optional: paste client comments or notes for the file..."
+                              value={clientFeedback}
+                              onChange={(e) => setClientFeedback(e.target.value)}
+                            />
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                onClick={handleClientApprove}
+                                disabled={clientActionLoading}
+                              >
+                                {clientActionLoading
+                                  ? "Saving..."
+                                  : "Client approved – ready to file"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handleClientComments}
+                                disabled={clientActionLoading}
+                              >
+                                Client comments – back to draft
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Step 3 – HMRC submission */}
+                      <div className="space-y-2 border-t border-slate-200 pt-4">
+                        <p className="text-sm font-medium text-slate-700">
+                          Step 3 – HMRC submission
+                        </p>
+                        {claim.status === "ready_to_file" && (
+                          <Button
+                            size="sm"
+                            onClick={handleIssueToHmrc}
+                            disabled={hmrcActionLoading}
+                          >
+                            {hmrcActionLoading ? "Submitting..." : "Issue to HMRC"}
+                          </Button>
+                        )}
+                        {["submitted_hmrc", "hmrc_feedback", "completed"].includes(
+                          claim.status || ""
+                        ) && (
+                          <>
+                            <p className="text-xs text-slate-600">
+                              Submitted to HMRC{" "}
+                              {claim.actual_submission_date
+                                ? format(new Date(claim.actual_submission_date), "PPP")
+                                : "recently"}
+                              .
+                            </p>
+
+                            <div className="mt-6 space-y-4 border-t border-slate-200 pt-4">
+                              <p className="text-sm font-medium text-slate-700">
+                                HMRC responses and claim outcome
+                              </p>
+                              <div className="space-y-3">
+                                {hmrcResponses.map((item, index) => (
+                                  <div
+                                    key={index}
+                                    className="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 md:grid-cols-2"
+                                  >
+                                    <div>
+                                      <Label className="text-xs text-slate-600">
+                                        HMRC question / point {index + 1}
+                                      </Label>
+                                      <Textarea
+                                        className="mt-1 h-20"
+                                        value={item.question}
+                                        onChange={(e) =>
+                                          handleHmrcResponseChange(
+                                            index,
+                                            "question",
+                                            e.target.value
+                                          )
+                                        }
+                                        placeholder="Paste the HMRC question or point here..."
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label className="text-xs text-slate-600">
+                                        Team response / counter
+                                      </Label>
+                                      <Textarea
+                                        className="mt-1 h-20"
+                                        value={item.team_response}
+                                        onChange={(e) =>
+                                          handleHmrcResponseChange(
+                                            index,
+                                            "team_response",
+                                            e.target.value
+                                          )
+                                        }
+                                        placeholder="Draft your response to HMRC..."
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                                <div className="flex flex-wrap gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleAddHmrcResponseRow}
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add another response
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={handleSaveHmrcResponses}
+                                  >
+                                    Save responses
+                                  </Button>
+                                </div>
+                                <p className="text-xs text-slate-500">
+                                  Use the Companion tab on this claim to help draft
+                                  wording for HMRC responses.
+                                </p>
+                              </div>
+
+                              <div className="mt-4 space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3">
+                                <p className="text-sm font-medium text-slate-800">
+                                  Claim outcome (for sales ratios)
+                                </p>
+                                <div className="grid gap-3 md:grid-cols-3">
+                                  <div>
+                                    <Label className="text-xs text-slate-600">
+                                      Submitted claim value (£)
+                                    </Label>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      className="mt-1"
+                                      value={outcomeSubmittedValue}
+                                      onChange={(e) =>
+                                        setOutcomeSubmittedValue(e.target.value)
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs text-slate-600">
+                                      Received value (£)
+                                    </Label>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      className="mt-1"
+                                      value={outcomeReceivedValue}
+                                      onChange={(e) =>
+                                        setOutcomeReceivedValue(e.target.value)
+                                      }
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-xs text-slate-600">
+                                      Realised vs submitted
+                                    </Label>
+                                    <p className="mt-2 text-sm font-medium text-slate-800">
+                                      {outcomeSubmittedValue &&
+                                      outcomeReceivedValue
+                                        ? `${Math.round(
+                                            (Number(
+                                              outcomeReceivedValue || "0"
+                                            ) /
+                                              Math.max(
+                                                Number(
+                                                  outcomeSubmittedValue || "0"
+                                                ),
+                                                1
+                                              )) *
+                                              100
+                                          )}%`
+                                        : "—"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleSaveOutcome}
+                                  >
+                                    Save outcome
+                                  </Button>
+                                  {claim.status !== "completed" && (
+                                    <Button
+                                      size="sm"
+                                      onClick={handleMarkClaimCompleted}
+                                    >
+                                      Mark claim completed
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Projects Tab */}
+              <TabsContent value="projects" className="space-y-6">
+                {/* Workflow Status Filter Tabs */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Project Workflow</CardTitle>
+                    <CardDescription>Manage projects through the review workflow</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="all" className="space-y-4">
+                      <TabsList className="grid grid-cols-5 w-full">
+                        <TabsTrigger value="all">All</TabsTrigger>
+                        <TabsTrigger value="pending">
+                          Pending Review
+                          {projects.filter(p => p.workflow_status === "submitted_to_team").length > 0 && (
+                            <Badge variant="destructive" className="ml-2">
+                              {projects.filter(p => p.workflow_status === "submitted_to_team").length}
+                            </Badge>
+                          )}
+                        </TabsTrigger>
+                        <TabsTrigger value="in_progress">In Progress</TabsTrigger>
+                        <TabsTrigger value="awaiting_client">Awaiting Client</TabsTrigger>
+                        <TabsTrigger value="approved">Approved</TabsTrigger>
+                      </TabsList>
+
+                      {/* All Projects */}
+                      <TabsContent value="all" className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-semibold">All Projects ({projects.length})</h3>
+                          <Button onClick={() => setShowAddProject(true)} size="sm">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Project
+                          </Button>
+                        </div>
+                        {loadingProjects ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                          </div>
+                        ) : projects.length === 0 ? (
+                          <p className="text-muted-foreground text-center py-8">No projects yet</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {projects.map((project) => (
+                              <ProjectCard key={project.id} project={project} />
+                            ))}
+                          </div>
+                        )}
+                      </TabsContent>
+
+                      {/* Pending Review */}
+                      <TabsContent value="pending" className="space-y-4">
+                        <h3 className="text-lg font-semibold">
+                          Pending Review ({projects.filter(p => p.workflow_status === "submitted_to_team").length})
+                        </h3>
+                        {projects.filter(p => p.workflow_status === "submitted_to_team").length === 0 ? (
+                          <p className="text-muted-foreground text-center py-8">No projects pending review</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {projects
+                              .filter(
+                                (p) => p.workflow_status === "submitted_to_team"
+                              )
+                              .map((project) => (
+                                <ProjectCard
+                                  key={project.id}
+                                  project={project}
+                                />
+                              ))}
+                          </div>
+                        )}
+                      </TabsContent>
+
+                      {/* In Progress */}
+                      <TabsContent value="in_progress" className="space-y-4">
+                        <h3 className="text-lg font-semibold">
+                          In Progress ({projects.filter(p => p.workflow_status === "team_in_progress").length})
+                        </h3>
+                        {projects.filter(p => p.workflow_status === "team_in_progress").length === 0 ? (
+                          <p className="text-muted-foreground text-center py-8">No projects in progress</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {projects.filter(p => p.workflow_status === "team_in_progress").map((project) => (
+                              <ProjectCard key={project.id} project={project} showSendToClient />
+                            ))}
+                          </div>
+                        )}
+                      </TabsContent>
+
+                      {/* Awaiting Client */}
+                      <TabsContent value="awaiting_client" className="space-y-4">
+                        <h3 className="text-lg font-semibold">
+                          Awaiting Client ({projects.filter(p => ["awaiting_client_review", "revision_requested"].includes(p.workflow_status || "")).length})
+                        </h3>
+                        {projects.filter(p => ["awaiting_client_review", "revision_requested"].includes(p.workflow_status || "")).length === 0 ? (
+                          <p className="text-muted-foreground text-center py-8">No projects awaiting client review</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {projects.filter(p => ["awaiting_client_review", "revision_requested"].includes(p.workflow_status || "")).map((project) => (
+                              <ProjectCard key={project.id} project={project} />
+                            ))}
+                          </div>
+                        )}
+                      </TabsContent>
+
+                      {/* Approved */}
+                      <TabsContent value="approved" className="space-y-4">
+                        <h3 className="text-lg font-semibold">
+                          Approved ({projects.filter(p => p.workflow_status === "approved").length})
+                        </h3>
+                        {projects.filter(p => p.workflow_status === "approved").length === 0 ? (
+                          <p className="text-muted-foreground text-center py-8">No approved projects yet</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {projects.filter(p => p.workflow_status === "approved").map((project) => (
+                              <ProjectCard key={project.id} project={project} />
+                            ))}
+                          </div>
+                        )}
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Costs Tab */}
+              <TabsContent value="costs" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Cost Tracking</CardTitle>
+                        <CardDescription>Track all R&D-related costs for this claim</CardDescription>
+                      </div>
+                      <Dialog open={showCostDialog} onOpenChange={setShowCostDialog}>
                         <DialogTrigger asChild>
-                          <Button variant="outline">
-                            <Users className="mr-2 h-4 w-4" />
-                            Send Analysis
+                          <Button>
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload Document
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>Send AI Analysis</DialogTitle>
-                            <DialogDescription>
-                              Send this AI analysis as a message to a team member or client
-                            </DialogDescription>
+                            <DialogTitle>Upload Evidence</DialogTitle>
+                            <DialogDescription>Upload supporting documentation for this claim</DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4">
                             <div>
-                              <Label htmlFor="send-to">Send To *</Label>
-                              <Select value={sendTo} onValueChange={setSendTo}>
+                              <Label htmlFor="doc-type">Document Type *</Label>
+                              <Select value={documentType} onValueChange={setDocumentType}>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Select recipient..." />
+                                  <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {claim.bd_owner && (
-                                    <SelectItem value={claim.bd_owner.id}>
-                                      {claim.bd_owner.full_name} (BD Owner)
-                                    </SelectItem>
-                                  )}
-                                  {claim.technical_lead && (
-                                    <SelectItem value={claim.technical_lead.id}>
-                                      {claim.technical_lead.full_name} (Technical Lead)
-                                    </SelectItem>
-                                  )}
-                                  {claim.cost_lead && (
-                                    <SelectItem value={claim.cost_lead.id}>
-                                      {claim.cost_lead.full_name} (Cost Lead)
-                                    </SelectItem>
-                                  )}
+                                  <SelectItem value="supporting_evidence">Supporting Evidence</SelectItem>
+                                  <SelectItem value="financial_records">Financial Records</SelectItem>
+                                  <SelectItem value="technical_documentation">Technical Documentation</SelectItem>
+                                  <SelectItem value="correspondence">Correspondence</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
                             <div>
-                              <Label>Analysis Preview</Label>
-                              <div className="mt-2 p-4 bg-slate-50 rounded-lg max-h-64 overflow-y-auto">
-                                <p className="text-sm text-slate-600 whitespace-pre-wrap">
-                                  {aiAnalysis.substring(0, 200)}...
+                              <Label htmlFor="doc-project">Assign to Project (Optional)</Label>
+                              <Select value={documentProjectId} onValueChange={setDocumentProjectId}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select project..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">General (not project-specific)</SelectItem>
+                                  {claim.projects?.map((proj) => (
+                                    <SelectItem key={proj.id} value={proj.id}>
+                                      {proj.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label htmlFor="file-upload">Select File *</Label>
+                              <Input
+                                id="file-upload"
+                                type="file"
+                                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                                className="cursor-pointer"
+                              />
+                              {selectedFile && (
+                                <p className="text-sm text-slate-600 mt-2">
+                                  Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
                                 </p>
-                              </div>
+                              )}
                             </div>
                           </div>
                           <DialogFooter>
-                            <Button 
-                              variant="outline" 
-                              onClick={() => setShowSendAnalysisDialog(false)}
-                            >
+                            <Button variant="outline" onClick={() => setShowDocumentDialog(false)}>
                               Cancel
                             </Button>
-                            <Button 
-                              onClick={handleSendAnalysis} 
-                              disabled={!sendTo || sendingMessage}
-                            >
-                              {sendingMessage ? "Sending..." : "Send Message"}
+                            <Button onClick={handleDocumentUpload} disabled={!selectedFile || uploadingDocument}>
+                              {uploadingDocument ? "Uploading..." : "Upload"}
                             </Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {claim.documents && claim.documents.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Project</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="w-[100px]">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {claim.documents.map((doc) => (
+                            <TableRow key={doc.id}>
+                              <TableCell>{doc.created_at ? format(new Date(doc.created_at), "dd/MM/yyyy") : "N/A"}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{doc.doc_type}</Badge>
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate">{doc.title}</TableCell>
+                              <TableCell>
+                                {doc.project_id ? (
+                                  <span className="text-sm text-slate-600">
+                                    {claim.projects?.find(p => p.id === doc.project_id)?.name || "Unknown"}
+                                  </span>
+                                ) : (
+                                  <span className="text-sm text-slate-400">General</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right font-medium">{formatCurrency(doc.file_size || 0)}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <Button variant="ghost" size="sm" onClick={() => handleDownloadDocument(doc)}>
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm">
+                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="text-center py-12 text-slate-500">
+                        <FileText className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                        <p>No documents uploaded yet</p>
+                        <p className="text-sm">Upload supporting evidence for your R&D claim</p>
+                      </div>
                     )}
-                    <Button 
-                      onClick={handleGenerateAnalysis} 
-                      disabled={loadingAnalysis}
-                    >
-                      {loadingAnalysis ? (
-                        <>
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                          Analyzing...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="mr-2 h-4 w-4" />
-                          Generate Analysis
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {!aiAnalysis && !loadingAnalysis && (
-                  <div className="text-center py-12 text-slate-500">
-                    <RefreshCw className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-                    <p className="font-medium mb-2">No Analysis Generated Yet</p>
-                    <p className="text-sm mb-4">
-                      Click &quot;Generate Analysis&quot; to get AI-powered insights and recommendations
-                    </p>
-                    <div className="max-w-md mx-auto text-left space-y-2">
-                      <p className="text-sm font-medium">The AI will analyze:</p>
-                      <ul className="text-sm space-y-1 list-disc list-inside text-slate-600">
-                        <li>Technical quality and R&D qualification</li>
-                        <li>Documentation completeness</li>
-                        <li>Cost justification and categorization</li>
-                        <li>Potential HMRC audit risks</li>
-                        <li>Specific improvement recommendations</li>
-                      </ul>
-                    </div>
-                  </div>
-                )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                {loadingAnalysis && (
-                  <div className="text-center py-12">
-                    <RefreshCw className="h-12 w-12 mx-auto mb-3 text-orange-600 animate-spin" />
-                    <p className="font-medium text-slate-900 mb-2">Analyzing Claim...</p>
-                    <p className="text-sm text-slate-600">
-                      AI is reviewing your projects, costs, and documentation
-                    </p>
-                  </div>
-                )}
-
-                {aiAnalysis && !loadingAnalysis && (
-                  <div className="prose max-w-none">
-                    <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
-                      <div className="flex items-start gap-3 mb-4">
-                        <div className="p-2 bg-orange-100 rounded-lg">
+              {/* Companion Tab (internal value still 'sidekick') */}
+              <TabsContent value="sidekick" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
                           <RefreshCw className="h-5 w-5 text-orange-600" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                            AI Analysis Results
-                          </h3>
-                          <p className="text-sm text-slate-600">
-                            Generated insights and recommendations for improvement
-                          </p>
-                        </div>
+                          AI Companion Analysis
+                        </CardTitle>
+                        <CardDescription>
+                          Get AI-powered insights and recommendations for this claim
+                        </CardDescription>
                       </div>
-                      <div className="bg-white rounded-lg p-6 border border-orange-100">
-                        <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                          {aiAnalysis}
-                        </div>
+                      <div className="flex gap-2">
+                        {aiAnalysis && (
+                          <Dialog open={showSendAnalysisDialog} onOpenChange={setShowSendAnalysisDialog}>
+                            <DialogTrigger asChild>
+                              <Button variant="outline">
+                                <Users className="mr-2 h-4 w-4" />
+                                Send Analysis
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Send AI Analysis</DialogTitle>
+                                <DialogDescription>
+                                  Send this AI analysis as a message to a team member or client
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div>
+                                  <Label htmlFor="send-to">Send To *</Label>
+                                  <Select value={sendTo} onValueChange={setSendTo}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select recipient..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {claim.bd_owner && (
+                                        <SelectItem value={claim.bd_owner.id}>
+                                          {claim.bd_owner.full_name} (BD Owner)
+                                        </SelectItem>
+                                      )}
+                                      {claim.technical_lead && (
+                                        <SelectItem value={claim.technical_lead.id}>
+                                          {claim.technical_lead.full_name} (Technical Lead)
+                                        </SelectItem>
+                                      )}
+                                      {claim.cost_lead && (
+                                        <SelectItem value={claim.cost_lead.id}>
+                                          {claim.cost_lead.full_name} (Cost Lead)
+                                        </SelectItem>
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <Label>Analysis Preview</Label>
+                                  <div className="mt-2 p-4 bg-slate-50 rounded-lg max-h-64 overflow-y-auto">
+                                    <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                                      {aiAnalysis.substring(0, 200)}...
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button 
+                                  variant="outline" 
+                                  onClick={() => setShowSendAnalysisDialog(false)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button 
+                                  onClick={handleSendAnalysis} 
+                                  disabled={!sendTo || sendingMessage}
+                                >
+                                  {sendingMessage ? "Sending..." : "Send Message"}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                        <Button 
+                          onClick={handleGenerateAnalysis} 
+                          disabled={loadingAnalysis}
+                        >
+                          {loadingAnalysis ? (
+                            <>
+                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                              Analyzing...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="mr-2 h-4 w-4" />
+                              Generate Analysis
+                            </>
+                          )}
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  </CardHeader>
+                  <CardContent>
+                    {!aiAnalysis && !loadingAnalysis && (
+                      <div className="text-center py-12 text-slate-500">
+                        <RefreshCw className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                        <p className="font-medium mb-2">No Analysis Generated Yet</p>
+                        <p className="text-sm mb-4">
+                          Click &quot;Generate Analysis&quot; to get AI-powered insights and recommendations
+                        </p>
+                        <div className="max-w-md mx-auto text-left space-y-2">
+                          <p className="text-sm font-medium">The AI will analyze:</p>
+                          <ul className="text-sm space-y-1 list-disc list-inside text-slate-600">
+                            <li>Technical quality and R&D qualification</li>
+                            <li>Documentation completeness</li>
+                            <li>Cost justification and categorization</li>
+                            <li>Potential HMRC audit risks</li>
+                            <li>Specific improvement recommendations</li>
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+
+                    {loadingAnalysis && (
+                      <div className="text-center py-12">
+                        <RefreshCw className="h-12 w-12 mx-auto mb-3 text-orange-600 animate-spin" />
+                        <p className="font-medium text-slate-900 mb-2">Analyzing Claim...</p>
+                        <p className="text-sm text-slate-600">
+                          AI is reviewing your projects, costs, and documentation
+                        </p>
+                      </div>
+                    )}
+
+                    {aiAnalysis && !loadingAnalysis && (
+                      <div className="prose max-w-none">
+                        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
+                          <div className="flex items-start gap-3 mb-4">
+                            <div className="p-2 bg-orange-100 rounded-lg">
+                              <RefreshCw className="h-5 w-5 text-orange-600" />
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                                AI Analysis Results
+                              </h3>
+                              <p className="text-sm text-slate-600">
+                                Generated insights and recommendations for improvement
+                              </p>
+                            </div>
+                          </div>
+                          <div className="bg-white rounded-lg p-6 border border-orange-100">
+                            <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                              {aiAnalysis}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
