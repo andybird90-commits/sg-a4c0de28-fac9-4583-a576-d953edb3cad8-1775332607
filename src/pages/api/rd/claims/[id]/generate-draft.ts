@@ -139,6 +139,9 @@ export default async function handler(
       return;
     }
 
+    const internalRole = profile?.internal_role as string | null;
+    const isInternalStaff = internalRole !== null && internalRole !== "";
+
     const { data: membership, error: membershipError } = await supabase
       .from("organisation_users")
       .select("role")
@@ -146,20 +149,24 @@ export default async function handler(
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (membershipError || !membership) {
-      res.status(403).json({
+    if (membershipError) {
+      console.error(
+        "Error checking organisation membership in generate-draft:",
+        membershipError
+      );
+      res.status(500).json({
         ok: false,
-        error: "Forbidden: user is not a member of this organisation",
+        error: "Failed to verify organisation membership",
       });
       return;
     }
 
-    const internalRole = profile?.internal_role as string | null;
-    const isInternalStaff = internalRole !== null && internalRole !== "";
+    const membershipRole = (membership?.role as string | null) ?? null;
+
     const isOrgClientOrEmployee =
-      membership.role === "client" ||
-      membership.role === "employee" ||
-      membership.role === "admin";
+      membershipRole === "client" ||
+      membershipRole === "employee" ||
+      membershipRole === "admin";
 
     if (!isInternalStaff && !isOrgClientOrEmployee) {
       res.status(403).json({
