@@ -354,7 +354,7 @@ export default function ProjectDetailPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          projectId: project.id,
+          sidekickProjectId: project.id,
           technical_understanding,
           challenges_uncertainties,
           qualifying_activities: qualifyingActivities,
