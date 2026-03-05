@@ -102,14 +102,17 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
   }
 
   const phases: Phase[] = PHASES.map((phase, index) => {
+    const isComplete = completionFlags[phase.key];
     let status: StepStatus;
-    if (index < firstIncompleteIndex) {
+
+    if (isComplete) {
       status = "complete";
     } else if (index === firstIncompleteIndex) {
       status = "current";
     } else {
       status = "upcoming";
     }
+
     return { ...phase, status };
   });
 
