@@ -267,6 +267,8 @@ export default function ClaimDetailPage() {
   const [showSendAnalysisDialog, setShowSendAnalysisDialog] = useState(false);
   const [sendTo, setSendTo] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [hmrcAnalysis, setHmrcAnalysis] = useState<string>("");
+  const [loadingHmrcAnalysis, setLoadingHmrcAnalysis] = useState(false);
 
   // Project management state
   const [showProjectDialog, setShowProjectDialog] = useState(false);
@@ -315,6 +317,8 @@ export default function ClaimDetailPage() {
   const [hmrcResponses, setHmrcResponses] = useState<HmrcResponseItem[]>([]);
   const [outcomeSubmittedValue, setOutcomeSubmittedValue] = useState("");
   const [outcomeReceivedValue, setOutcomeReceivedValue] = useState("");
+  const [schemeDraft, setSchemeDraft] = useState("");
+  const [savingScheme, setSavingScheme] = useState(false);
 
   // Derived state for projects to match the new UI code
   const projects = claim?.projects || [];
@@ -369,6 +373,12 @@ export default function ClaimDetailPage() {
       setLoading(true);
       const data = await claimService.getClaimById(claimId);
       setClaim(data);
+
+      const scheme =
+        ((data as any)?.scheme_type as string | null | undefined) ??
+        ((data as any)?.scheme as string | null | undefined) ??
+        null;
+      setSchemeDraft(scheme || "");
 
       const existingHmrcResponses =
         ((data as any)?.hmrc_responses as HmrcResponseItem[] | null) || [];
@@ -1387,6 +1397,40 @@ export default function ClaimDetailPage() {
     }
   };
 
+  const handleSaveScheme = async (): Promise<void> => {
+    if (!claim) return;
+
+    try {
+      setSavingScheme(true);
+
+      await claimService.updateClaim(
+        claim.id,
+        {
+          scheme_type: schemeDraft || null,
+          scheme: schemeDraft || null,
+        } as any
+      );
+
+      toast({
+        title: "Scheme updated",
+        description: "R&D scheme type has been updated for this claim.",
+      });
+
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error) {
+      console.error("Error saving scheme type:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update scheme type",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingScheme(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
       intake: { label: "Intake", className: "bg-blue-100 text-blue-800" },
@@ -2108,6 +2152,44 @@ export default function ClaimDetailPage() {
                           </Table>
                         </div>
                       )}
+                    </div>
+
+                    <div className="mt-4 space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Update scheme type
+                      </p>
+                      <div className="flex flex-col gap-2 md:flex-row md:items-end">
+                        <div className="flex-1">
+                          <Label htmlFor="scheme-type-select">Scheme</Label>
+                          <Select
+                            value={schemeDraft}
+                            onValueChange={setSchemeDraft}
+                          >
+                            <SelectTrigger id="scheme-type-select">
+                              <SelectValue placeholder="Select scheme type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="SME">SME</SelectItem>
+                              <SelectItem value="RDEC">RDEC</SelectItem>
+                              <SelectItem value="Hybrid">
+                                Hybrid / mixed
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          variant="secondary"
+                          className="md:self-end"
+                          disabled={savingScheme || !schemeDraft}
+                          onClick={handleSaveScheme}
+                        >
+                          {savingScheme ? "Saving..." : "Save scheme"}
+                        </Button>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        This scheme label is shown on project cost advice and
+                        used when interpreting typical relief levels.
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
