@@ -262,26 +262,11 @@ export default async function handler(
 
     const perProjectResults: GenerateDraftPerProjectResult[] = [];
     let generatedCount = 0;
-    let skippedCount = 0;
+    const skippedCount = 0;
     let errorCount = 0;
 
     for (const project of projects) {
       const projectId = project.id;
-      const state = stateByProjectId.get(projectId);
-
-      if (state?.current_narrative_id) {
-        const currentNarrative = narrativesById.get(state.current_narrative_id);
-        if (currentNarrative && currentNarrative.status === "draft") {
-          perProjectResults.push({
-            project_id: projectId,
-            result: "skipped_existing_draft",
-            narrative_id: currentNarrative.id,
-            message: "Existing draft narrative found; leaving unchanged",
-          });
-          skippedCount += 1;
-          continue;
-        }
-      }
 
       try {
         const periodTextParts: string[] = [];

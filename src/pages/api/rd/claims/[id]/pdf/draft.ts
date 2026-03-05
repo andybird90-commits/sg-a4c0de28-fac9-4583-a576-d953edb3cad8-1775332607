@@ -323,7 +323,7 @@ export default async function handler(
     const generatedAt = new Date().toISOString();
     const pageCount = pdfDoc.getPageCount();
 
-    const { data: auditError } = await supabaseServer
+    const { error: auditError } = await supabaseServer
       .from("rd_audit_log")
       .insert({
         claim_id: claim.id,

@@ -74,6 +74,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
+import { sidekickCostAdviceService } from "@/services/sidekickCostAdviceService";
+import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-GB", {
@@ -309,6 +311,20 @@ export default function ClaimDetailPage() {
       }
     >
   >({});
+  const [clientEvidenceByProject, setClientEvidenceByProject] = useState<
+    Record<
+      string,
+      Array<{
+        id: string;
+        projectId: string;
+        title: string | null;
+        type: string;
+        createdAt: string;
+        externalUrl?: string | null;
+        body?: string | null;
+      }>
+    >
+  >({});
   const [saving, setSaving] = useState(false);
 
   // Document management state
@@ -386,6 +402,168 @@ export default function ClaimDetailPage() {
       const claimProjects =
         (loaded.projects as ClaimProject[] | null) ?? [];
       setProjects(claimProjects);
+
+      // Reset client-side aggregated cost state
+      setClientCostTotalsByType({});
+      setClientTotalCost(0);
+      setClientCostEntryCount(0);
+      setClientProjectCostSummary({});
+      setClientEvidenceByProject({});
+
+      // Load client-side cost advice from linked sidekick projects
+      const sidekickIds = claimProjects
+        .map((p) => p.source_sidekick_project_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0);
+
+      if (sidekickIds.length > 0) {
+        try {
+          const [adviceResults, evidenceResults] = await Promise.all([
+            Promise.all(
+              sidekickIds.map(async (sidekickId) => {
+                const advice =
+                  (await sidekickCostAdviceService.getByProject(sidekickId)) ??
+                  [];
+                return { sidekickId, advice };
+              })
+            ),
+            Promise.all(
+              sidekickIds.map(async (sidekickId) => {
+                try {
+                  const evidenceItems =
+                    (await sidekickEvidenceService.getEvidenceByProject(
+                      sidekickId
+                    )) ?? [];
+                  return { sidekickId, evidenceItems };
+                } catch (e) {
+                  console.error(
+                    "[ClaimDetailPage.loadClaim] Error loading client evidence for sidekick project",
+                    { sidekickId, error: e }
+                  );
+                  return { sidekickId, evidenceItems: [] };
+                }
+              })
+            ),
+          ]);
+
+          const adviceMap = new Map<string, any[]>();
+          adviceResults.forEach(({ sidekickId, advice }) => {
+            adviceMap.set(sidekickId, advice);
+          });
+
+          const evidenceMap = new Map<string, any[]>();
+          evidenceResults.forEach(({ sidekickId, evidenceItems }) => {
+            evidenceMap.set(sidekickId, evidenceItems);
+          });
+
+          const totalsByType: Record<
+            string,
+            { total: number; count: number }
+          > = {};
+          let overallTotal = 0;
+          let overallCount = 0;
+
+          const projectSummaries: {
+            [projectId: string]: {
+              total: number;
+              count: number;
+              byType: Record<string, { total: number; count: number }>;
+            };
+          } = {};
+
+          const projectEvidence: Record<
+            string,
+            Array<{
+              id: string;
+              projectId: string;
+              title: string | null;
+              type: string;
+              createdAt: string;
+              externalUrl?: string | null;
+              body?: string | null;
+            }>
+          > = {};
+
+          claimProjects.forEach((project) => {
+            const sidekickId = project.source_sidekick_project_id;
+            if (!sidekickId) return;
+
+            const adviceItems = adviceMap.get(sidekickId) ?? [];
+            const evidenceItems = evidenceMap.get(sidekickId) ?? [];
+
+            if (adviceItems.length) {
+              let projectTotal = 0;
+              let projectCount = 0;
+              const projectByType: Record<
+                string,
+                { total: number; count: number }
+              > = {};
+
+              adviceItems.forEach((item: any) => {
+                const type =
+                  (item.cost_type as string | null | undefined) || "other";
+                const amount = Number(item.amount || 0);
+                if (!Number.isFinite(amount) || amount <= 0) {
+                  return;
+                }
+
+                // Global totals by type
+                if (!totalsByType[type]) {
+                  totalsByType[type] = { total: 0, count: 0 };
+                }
+                totalsByType[type].total += amount;
+                totalsByType[type].count += 1;
+
+                // Per-project totals
+                if (!projectByType[type]) {
+                  projectByType[type] = { total: 0, count: 0 };
+                }
+                projectByType[type].total += amount;
+                projectByType[type].count += 1;
+
+                projectTotal += amount;
+                projectCount += 1;
+                overallTotal += amount;
+                overallCount += 1;
+              });
+
+              if (projectCount > 0) {
+                projectSummaries[project.id] = {
+                  total: projectTotal,
+                  count: projectCount,
+                  byType: projectByType,
+                };
+              }
+            }
+
+            if (evidenceItems.length) {
+              projectEvidence[project.id] = evidenceItems.map((item: any) => ({
+                id: item.id as string,
+                projectId: project.id,
+                title: (item.title as string | null | undefined) ?? null,
+                type: (item.type as string) || "note",
+                createdAt: item.created_at as string,
+                externalUrl:
+                  (item.external_url as string | null | undefined) ?? null,
+                body: (item.body as string | null | undefined) ?? null,
+              }));
+            }
+          });
+
+          if (overallCount > 0) {
+            setClientCostTotalsByType(totalsByType);
+            setClientTotalCost(overallTotal);
+            setClientCostEntryCount(overallCount);
+            setClientProjectCostSummary(projectSummaries);
+          }
+
+          setClientEvidenceByProject(projectEvidence);
+        } catch (clientSideError) {
+          console.error(
+            "[ClaimDetailPage.loadClaim] Error loading client cost advice / evidence:",
+            clientSideError
+          );
+        }
+      }
     } catch (error) {
       console.error("Error loading claim:", error);
       toast({
@@ -2984,6 +3162,83 @@ export default function ClaimDetailPage() {
                     </Table>
                   </div>
                 )}
+                <div className="mt-6 space-y-3">
+                  <h3 className="text-sm font-semibold">
+                    Client evidence from Sidekick
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Evidence items the client has shared against linked Sidekick
+                    projects. These are read-only here; update them from the
+                    client project workspace.
+                  </p>
+                  {Object.keys(clientEvidenceByProject).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No client-side evidence has been recorded for the linked
+                      projects yet.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {projects.map((project) => {
+                        const items = clientEvidenceByProject[project.id];
+                        if (!items || items.length === 0) return null;
+                        return (
+                          <div
+                            key={project.id}
+                            className="rounded-md border border-border/60 bg-background/40 p-3"
+                          >
+                            <p className="text-xs font-semibold mb-2">
+                              {project.name}
+                            </p>
+                            <div className="space-y-2">
+                              {items.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="rounded border border-border/40 bg-background/60 p-2 text-xs"
+                                >
+                                  <div className="flex items-center justify-between gap-2 mb-1">
+                                    <div className="flex items-center gap-2">
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-[10px] capitalize"
+                                      >
+                                        {item.type}
+                                      </Badge>
+                                      {item.title && (
+                                        <span className="font-medium truncate max-w-[220px]">
+                                          {item.title}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {new Date(item.createdAt).toLocaleDateString(
+                                        "en-GB"
+                                      )}
+                                    </span>
+                                  </div>
+                                  {item.body && (
+                                    <p className="text-[11px] text-muted-foreground whitespace-pre-wrap">
+                                      {item.body}
+                                    </p>
+                                  )}
+                                  {item.externalUrl && (
+                                    <a
+                                      href={item.externalUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="mt-1 inline-block text-[11px] text-blue-500 hover:underline break-all"
+                                    >
+                                      {item.externalUrl}
+                                    </a>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 

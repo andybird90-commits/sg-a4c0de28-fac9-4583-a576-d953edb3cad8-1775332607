@@ -14,6 +14,10 @@ type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 type ClaimCost = Database["public"]["Tables"]["claim_costs"]["Row"];
 type ClaimCostInsert = Database["public"]["Tables"]["claim_costs"]["Insert"];
 
+type NewClaimCost = Omit<ClaimCostInsert, "org_id"> & {
+  org_id?: string | null;
+};
+
 type ClaimDocument = Database["public"]["Tables"]["claim_documents"]["Row"];
 type ClaimDocumentInsert = Database["public"]["Tables"]["claim_documents"]["Insert"];
 
@@ -639,9 +643,9 @@ export class ClaimService {
   /**
    * Create new cost entry
    */
-  async createCost(costData: ClaimCostInsert): Promise<ClaimCost> {
+  async createCost(costData: NewClaimCost): Promise<ClaimCost> {
     try {
-      const dataToInsert = { ...costData };
+      const dataToInsert: ClaimCostInsert = { ...(costData as ClaimCostInsert) };
 
       if (!dataToInsert.org_id) {
         const { data: claim } = await supabase
@@ -672,7 +676,7 @@ export class ClaimService {
   /**
    * Backwards-compatible helper used by some pages to add a cost to a claim
    */
-  async addCostToClaim(costData: ClaimCostInsert): Promise<ClaimCost> {
+  async addCostToClaim(costData: NewClaimCost): Promise<ClaimCost> {
     return this.createCost(costData);
   }
 
