@@ -305,6 +305,7 @@ export default function ClaimDetailPage() {
       {
         total: number;
         count: number;
+        byType: Record<string, { total: number; count: number }>;
       }
     >
   >({});
@@ -534,6 +535,7 @@ export default function ClaimDetailPage() {
       {
         total: number;
         count: number;
+        byType: Record<string, { total: number; count: number }>;
       }
     > = {};
 
@@ -562,11 +564,25 @@ export default function ClaimDetailPage() {
       if (!claimProjectId) return;
 
       if (!projectTotals[claimProjectId]) {
-        projectTotals[claimProjectId] = { total: 0, count: 0 };
+        projectTotals[claimProjectId] = {
+          total: 0,
+          count: 0,
+          byType: {},
+        };
       }
 
       projectTotals[claimProjectId].total += amount;
       projectTotals[claimProjectId].count += 1;
+
+      if (!projectTotals[claimProjectId].byType[type]) {
+        projectTotals[claimProjectId].byType[type] = {
+          total: 0,
+          count: 0,
+        };
+      }
+
+      projectTotals[claimProjectId].byType[type].total += amount;
+      projectTotals[claimProjectId].byType[type].count += 1;
     });
 
     setClientCostTotalsByType(totalsByType);
@@ -2213,6 +2229,7 @@ export default function ClaimDetailPage() {
                 {
                   total: number;
                   count: number;
+                  byType: Record<string, { total: number; count: number }>;
                 }
               > = {};
 
@@ -2223,13 +2240,30 @@ export default function ClaimDetailPage() {
                   if (!projectId) return;
 
                   const amount = Number(cost.amount || 0);
+                  const type =
+                    ((cost.cost_type as string | null | undefined) ||
+                      "other") as string;
 
                   if (!projectSummaries[projectId]) {
-                    projectSummaries[projectId] = { total: 0, count: 0 };
+                    projectSummaries[projectId] = {
+                      total: 0,
+                      count: 0,
+                      byType: {},
+                    };
                   }
 
                   projectSummaries[projectId].total += amount;
                   projectSummaries[projectId].count += 1;
+
+                  if (!projectSummaries[projectId].byType[type]) {
+                    projectSummaries[projectId].byType[type] = {
+                      total: 0,
+                      count: 0,
+                    };
+                  }
+
+                  projectSummaries[projectId].byType[type].total += amount;
+                  projectSummaries[projectId].byType[type].count += 1;
                 });
               } else {
                 Object.entries(clientProjectCostSummary).forEach(
@@ -2237,6 +2271,7 @@ export default function ClaimDetailPage() {
                     projectSummaries[projectId] = {
                       total: summary.total,
                       count: summary.count,
+                      byType: summary.byType || {},
                     };
                   }
                 );
@@ -2350,21 +2385,33 @@ export default function ClaimDetailPage() {
                               <TableRow>
                                 <TableHead>Project</TableHead>
                                 <TableHead className="text-right">
-                                  Entries
+                                  Staff
+                                </TableHead>
+                                <TableHead className="text-right">
+                                  Subcontractors
+                                </TableHead>
+                                <TableHead className="text-right">
+                                  Consumables
                                 </TableHead>
                                 <TableHead className="text-right">
                                   Total cost
                                 </TableHead>
                                 <TableHead className="text-right">
-                                  Indicative benefit
+                                  Estimated benefit
                                 </TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {projects.map((project) => {
-                                const summary =
-                                  projectSummaries[project.id];
+                                const summary = projectSummaries[project.id];
                                 if (!summary) return null;
+
+                                const staffTotal =
+                                  summary.byType["staff"]?.total ?? 0;
+                                const subcontractorTotal =
+                                  summary.byType["subcontractor"]?.total ?? 0;
+                                const consumablesTotal =
+                                  summary.byType["consumables"]?.total ?? 0;
 
                                 const projectLow =
                                   summary.total * lowMultiplier;
@@ -2377,7 +2424,19 @@ export default function ClaimDetailPage() {
                                       {project.name}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                      {summary.count}
+                                      {staffTotal > 0
+                                        ? formatCurrency(staffTotal)
+                                        : "—"}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      {subcontractorTotal > 0
+                                        ? formatCurrency(subcontractorTotal)
+                                        : "—"}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      {consumablesTotal > 0
+                                        ? formatCurrency(consumablesTotal)
+                                        : "—"}
                                     </TableCell>
                                     <TableCell className="text-right">
                                       {formatCurrency(summary.total)}
