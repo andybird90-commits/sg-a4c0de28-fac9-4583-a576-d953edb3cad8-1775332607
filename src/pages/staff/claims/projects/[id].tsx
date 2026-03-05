@@ -527,7 +527,6 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const slaStatus = getSLAStatus();
   const schemeLabel =
     ((claim as any)?.scheme_type as string | null | undefined) ??
     ((claim as any)?.scheme as string | null | undefined) ??

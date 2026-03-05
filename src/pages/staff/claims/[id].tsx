@@ -752,6 +752,61 @@ export default function ClaimDetailPage() {
     }
   };
 
+  const handleHmrcCompanion = async (): Promise<void> => {
+    if (!claim) return;
+
+    try {
+      setLoadingHmrcAnalysis(true);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        toast({
+          title: "Not authenticated",
+          description: "You need to be logged in to use Companion on HMRC responses.",
+          variant: "destructive",
+        });
+        setLoadingHmrcAnalysis(false);
+        return;
+      }
+
+      const response = await fetch("/api/claims/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          claimId: claim.id,
+          hmrcResponses,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate HMRC response analysis");
+      }
+
+      const data = await response.json();
+      setHmrcAnalysis(data.analysis);
+
+      toast({
+        title: "Companion ready",
+        description: "HMRC responses have been reviewed. See suggestions below.",
+      });
+    } catch (error) {
+      console.error("Error generating HMRC response analysis:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate Companion suggestions for HMRC responses",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingHmrcAnalysis(false);
+    }
+  };
+
   const handleSendAnalysis = async () => {
     if (!claim || !profile || !aiAnalysis || !sendTo) return;
 
@@ -1703,16 +1758,32 @@ export default function ClaimDetailPage() {
                         variant="outline"
                         size="sm"
                         className="shrink-0"
-                        disabled={loadingAnalysis}
+                        disabled={loadingHmrcAnalysis}
                         onClick={() => {
-                          setActiveTab("companion");
-                          void handleGenerateAnalysis();
+                          void handleHmrcCompanion();
                         }}
                       >
                         <Sparkles className="mr-2 h-4 w-4" />
-                        Ask Companion
+                        {loadingHmrcAnalysis ? "Reviewing..." : "Ask Companion"}
                       </Button>
                     </div>
+
+                    {hmrcAnalysis && (
+                      <div className="rounded-lg border border-border/60 bg-background/40 p-3 text-sm">
+                        <p className="mb-1 text-xs font-semibold text-muted-foreground">
+                          Companion suggestions on HMRC responses
+                        </p>
+                        <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                          {hmrcAnalysis}
+                        </p>
+                      </div>
+                    )}
+
+                    {loadingHmrcAnalysis && !hmrcAnalysis && (
+                      <p className="text-xs text-muted-foreground">
+                        Reviewing HMRC responses...
+                      </p>
+                    )}
 
                     <div className="space-y-3">
                       {hmrcResponses.map((item, index) => (

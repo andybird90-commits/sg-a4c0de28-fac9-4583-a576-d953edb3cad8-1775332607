@@ -62,7 +62,7 @@ export default async function handler(
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { claimId } = req.body;
+    const { claimId, hmrcResponses } = req.body;
 
     if (!claimId) {
       return res.status(400).json({ error: "Claim ID is required" });
@@ -137,6 +137,82 @@ export default async function handler(
       ],
     };
 
+    const hasHmrc =
+      Array.isArray(hmrcResponses) && hmrcResponses.length > 0;
+
+    const hmrcSection = hasHmrc
+      ? (hmrcResponses as any[])
+          .map(
+            (item, index) => `Exchange ${index + 1}:
+HMRC question / point: ${item.question || "(not provided)"}
+Team response / counter: ${item.team_response || "(no response yet)"}`
+          )
+          .join("\n\n")
+      : "";
+
+    const baseClaimText = `Company: ${claimSummary.company}
+Claim Year: ${claimSummary.claimYear}
+Status: ${claimSummary.status}
+Total Costs: £${claimSummary.totalCosts.toLocaleString()}
+Number of Projects: ${claimSummary.projectCount}
+Documents Uploaded: ${claimSummary.documentCount}`;
+
+    const fullProjectsText =
+      claimSummary.projects
+        .map(
+          (p: any, i: number) => `
+${i + 1}. ${p.name}
+   - Description: ${p.description || "Not provided"}
+   - R&D Theme: ${p.rdTheme || "Not specified"}
+   - Technical Understanding: ${
+     p.technicalUnderstanding || "Not documented"
+   }
+   - Challenges & Uncertainties: ${p.challenges || "Not documented"}
+   - Date Range: ${p.dateRange}
+`
+        )
+        .join("\n") || "No projects recorded";
+
+    const costBreakdownText =
+      Object.entries(claimSummary.costBreakdown)
+        .map(
+          ([type, amount]) =>
+            `- ${type}: £${(amount as number).toLocaleString()}`
+        )
+        .join("\n") || "No costs recorded";
+
+    const documentTypesText =
+      claimSummary.documentTypes.join(", ") || "None uploaded";
+
+    const userContent = hasHmrc
+      ? `You are helping refine responses to HMRC questions on a UK R&D tax claim.
+
+${baseClaimText}
+
+HMRC exchanges:
+${hmrcSection}
+
+Please:
+1. Critique the draft team responses.
+2. Suggest improved responses HMRC is likely to accept (rewrite them where helpful).
+3. Flag any risks, gaps, or extra points to add.
+4. Keep the tone professional, clear and evidence-based.
+
+Format your answer in clear sections with bullet points and, where useful, provide improved draft responses labeled clearly.`
+      : `Analyze this R&D claim:
+
+${baseClaimText}
+
+Projects:
+${fullProjectsText}
+
+Cost Breakdown:
+${costBreakdownText}
+
+Document Types: ${documentTypesText}
+
+Please provide a comprehensive analysis with specific recommendations for improvement.`;
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -154,45 +230,7 @@ Be professional, concise, and focus on value-adding insights. Format your respon
         },
         {
           role: "user",
-          content: `Analyze this R&D claim:
-
-Company: ${claimSummary.company}
-Claim Year: ${claimSummary.claimYear}
-Status: ${claimSummary.status}
-Total Costs: £${claimSummary.totalCosts.toLocaleString()}
-Number of Projects: ${claimSummary.projectCount}
-Documents Uploaded: ${claimSummary.documentCount}
-
-Projects:
-${
-  claimSummary.projects
-    .map(
-      (p: any, i: number) => `
-${i + 1}. ${p.name}
-   - Description: ${p.description || "Not provided"}
-   - R&D Theme: ${p.rdTheme || "Not specified"}
-   - Technical Understanding: ${p.technicalUnderstanding || "Not documented"}
-   - Challenges & Uncertainties: ${p.challenges || "Not documented"}
-   - Date Range: ${p.dateRange}
-`
-    )
-    .join("\n")
-}
-
-Cost Breakdown:
-${
-  Object.entries(claimSummary.costBreakdown)
-    .map(
-      ([type, amount]) => `- ${type}: £${(amount as number).toLocaleString()}`
-    )
-    .join("\n") || "No costs recorded"
-}
-
-Document Types: ${
-            claimSummary.documentTypes.join(", ") || "None uploaded"
-          }
-
-Please provide a comprehensive analysis with specific recommendations for improvement.`,
+          content: userContent,
         },
       ],
       temperature: 0.7,
