@@ -28,6 +28,7 @@ export interface ClaimWithDetails extends Claim {
   bd_owner?: Profile | null;
   technical_lead?: Profile | null;
   cost_lead?: Profile | null;
+  qa_reviewer?: Profile | null;
   total_costs?: number;
   document_count?: number;
 }
@@ -226,7 +227,8 @@ export class ClaimService {
           technical_lead:technical_lead_id (id, full_name, email, avatar_url),
           cost_lead:cost_lead_id (id, full_name, email, avatar_url),
           ops_owner:ops_owner_id (id, full_name, email, avatar_url),
-          director:director_id (id, full_name, email, avatar_url)
+          director:director_id (id, full_name, email, avatar_url),
+          qa_reviewer:qa_reviewer_id (id, full_name, email, avatar_url)
         `
         )
         .eq("id", claimId)

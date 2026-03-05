@@ -294,6 +294,13 @@ export default function ClaimDetailPage() {
   const [documentType, setDocumentType] = useState("supporting_evidence");
   const [documentProjectId, setDocumentProjectId] = useState("");
 
+  const [qaAdmins, setQaAdmins] = useState<
+    { id: string; full_name: string | null; email: string | null }[]
+  >([]);
+  const [selectedQaAdmin, setSelectedQaAdmin] = useState("");
+  const [loadingQaAdmins, setLoadingQaAdmins] = useState(false);
+  const [submittingQa, setSubmittingQa] = useState(false);
+
   // Derived state for projects to match the new UI code
   const projects = claim?.projects || [];
   const loadingProjects = loading;
@@ -311,6 +318,36 @@ export default function ClaimDetailPage() {
       loadSidekickProjects(claim.org_id);
     }
   }, [claim?.org_id]);
+
+  useEffect(() => {
+    const loadAdminsForQa = async (): Promise<void> => {
+      if (!profile?.internal_role) return;
+
+      try {
+        setLoadingQaAdmins(true);
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, internal_role")
+          .eq("internal_role", "admin");
+
+        if (error) {
+          console.error("Error loading admins for QA:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load admin reviewers",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setQaAdmins(data || []);
+      } finally {
+        setLoadingQaAdmins(false);
+      }
+    };
+
+    loadAdminsForQa();
+  }, [profile?.internal_role, toast]);
 
   const loadClaim = async (claimId: string) => {
     try {
@@ -976,6 +1013,73 @@ export default function ClaimDetailPage() {
                       </div>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Filing &amp; Approval Workflow</CardTitle>
+                  <CardDescription>
+                    Manage internal QA signoff before client review and HMRC submission.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-700">
+                      Step 1 – Internal QA signoff
+                    </p>
+                    {claim.status === "final_signoff" && claim.qa_reviewer_id ? (
+                      <p className="text-sm text-slate-600">
+                        Awaiting QA review from{" "}
+                        <span className="font-medium">
+                          {claim.qa_reviewer?.full_name || "assigned admin"}
+                        </span>
+                        .
+                      </p>
+                    ) : (
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                        <div className="flex-1">
+                          <Label className="text-sm text-slate-600">
+                            Assign QA reviewer (admin)
+                          </Label>
+                          <Select
+                            value={selectedQaAdmin}
+                            onValueChange={setSelectedQaAdmin}
+                            disabled={loadingQaAdmins || submittingQa}
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  loadingQaAdmins
+                                    ? "Loading admins..."
+                                    : "Select admin reviewer"
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {qaAdmins.map((admin) => (
+                                <SelectItem key={admin.id} value={admin.id}>
+                                  {admin.full_name || admin.email || "Admin"}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Button
+                          onClick={handleSubmitForQa}
+                          disabled={!selectedQaAdmin || submittingQa}
+                        >
+                          {submittingQa ? "Submitting..." : "Submit for QA signoff"}
+                        </Button>
+                      </div>
+                    )}
+                    <p className="text-xs text-slate-500">
+                      The selected admin will receive a message with a link to this
+                      claim to review and approve.
+                    </p>
+                  </div>
+
+                  {/* Later steps: client review & HMRC submission will build on this state */}
                 </CardContent>
               </Card>
             </div>

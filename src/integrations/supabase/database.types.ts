@@ -999,6 +999,8 @@ export type Database = {
           actual_submission_date: string | null
           bd_owner_id: string | null
           claim_year: number
+          client_review_completed_at: string | null
+          client_review_requested_at: string | null
           cost_lead_id: string | null
           created_at: string
           deleted_at: string | null
@@ -1007,13 +1009,20 @@ export type Database = {
           engagement_id: string | null
           expected_submission_date: string | null
           hmrc_reference: string | null
+          hmrc_response_pdf_paths: string[] | null
+          hmrc_submission_pdf_path: string | null
           id: string
           notes: string | null
           ops_owner_id: string | null
           org_id: string
           period_end: string | null
           period_start: string | null
+          qa_completed_at: string | null
+          qa_requested_at: string | null
+          qa_reviewer_id: string | null
+          received_claim_value: number | null
           status: string
+          submitted_claim_value: number | null
           technical_lead_id: string | null
           updated_at: string
         }
@@ -1021,6 +1030,8 @@ export type Database = {
           actual_submission_date?: string | null
           bd_owner_id?: string | null
           claim_year: number
+          client_review_completed_at?: string | null
+          client_review_requested_at?: string | null
           cost_lead_id?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -1029,13 +1040,20 @@ export type Database = {
           engagement_id?: string | null
           expected_submission_date?: string | null
           hmrc_reference?: string | null
+          hmrc_response_pdf_paths?: string[] | null
+          hmrc_submission_pdf_path?: string | null
           id?: string
           notes?: string | null
           ops_owner_id?: string | null
           org_id: string
           period_end?: string | null
           period_start?: string | null
+          qa_completed_at?: string | null
+          qa_requested_at?: string | null
+          qa_reviewer_id?: string | null
+          received_claim_value?: number | null
           status?: string
+          submitted_claim_value?: number | null
           technical_lead_id?: string | null
           updated_at?: string
         }
@@ -1043,6 +1061,8 @@ export type Database = {
           actual_submission_date?: string | null
           bd_owner_id?: string | null
           claim_year?: number
+          client_review_completed_at?: string | null
+          client_review_requested_at?: string | null
           cost_lead_id?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -1051,13 +1071,20 @@ export type Database = {
           engagement_id?: string | null
           expected_submission_date?: string | null
           hmrc_reference?: string | null
+          hmrc_response_pdf_paths?: string[] | null
+          hmrc_submission_pdf_path?: string | null
           id?: string
           notes?: string | null
           ops_owner_id?: string | null
           org_id?: string
           period_end?: string | null
           period_start?: string | null
+          qa_completed_at?: string | null
+          qa_requested_at?: string | null
+          qa_reviewer_id?: string | null
+          received_claim_value?: number | null
           status?: string
+          submitted_claim_value?: number | null
           technical_lead_id?: string | null
           updated_at?: string
         }
@@ -1109,6 +1136,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claims_qa_reviewer_id_fkey"
+            columns: ["qa_reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
