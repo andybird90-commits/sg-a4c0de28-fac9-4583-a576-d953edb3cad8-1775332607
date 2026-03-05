@@ -1605,13 +1605,25 @@ export default function ClaimDetailPage() {
         }
       );
 
-      const data = await response.json();
+      const rawBody = await response.text();
+      let data: any = null;
 
-      if (!response.ok) {
+      if (rawBody) {
+        try {
+          data = JSON.parse(rawBody);
+        } catch (parseError) {
+          console.error(
+            "Non-JSON response from generate-draft:",
+            rawBody.slice(0, 500)
+          );
+        }
+      }
+
+      if (!response.ok || !data || data.ok === false) {
         const message =
           data?.error ||
           data?.message ||
-          "Failed to generate draft narratives";
+          (rawBody ? rawBody.slice(0, 200) : "Failed to generate draft narratives");
         throw new Error(message);
       }
 
@@ -1619,7 +1631,9 @@ export default function ClaimDetailPage() {
 
       toast({
         title: "Draft claim generated",
-        description: `Generated ${data.generated_count ?? 0} draft narratives out of ${data.total_projects ?? 0} projects.`,
+        description: `Generated ${data.generated_count ?? 0} draft narratives out of ${
+          data.total_projects ?? 0
+        } projects.`,
       });
 
       if (id && typeof id === "string") {
@@ -1668,13 +1682,25 @@ export default function ClaimDetailPage() {
         }
       );
 
-      const data = await response.json();
+      const rawBody = await response.text();
+      let data: any = null;
 
-      if (!response.ok) {
+      if (rawBody) {
+        try {
+          data = JSON.parse(rawBody);
+        } catch (parseError) {
+          console.error(
+            "Non-JSON response from finalise-pack:",
+            rawBody.slice(0, 500)
+          );
+        }
+      }
+
+      if (!response.ok || !data || data.ok === false) {
         const message =
           data?.error ||
           data?.message ||
-          "Failed to finalise the claim pack";
+          (rawBody ? rawBody.slice(0, 200) : "Failed to finalise the claim pack");
         throw new Error(message);
       }
 
@@ -1686,7 +1712,9 @@ export default function ClaimDetailPage() {
         title: "Claim pack finalised",
         description:
           missingCount > 0
-            ? `Locked ${data.locked_projects_count ?? 0} projects, but ${missingCount} project(s) are missing narratives.`
+            ? `Locked ${data.locked_projects_count ?? 0} projects, but ${
+                missingCount
+              } project(s) are missing narratives.`
             : `Locked ${data.locked_projects_count ?? 0} projects. Claim is ready to file.`,
       });
 
