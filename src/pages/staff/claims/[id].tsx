@@ -1111,10 +1111,45 @@ export default function ClaimDetailPage() {
         actual_submission_date: new Date().toISOString().slice(0, 10),
       });
 
-      toast({
-        title: "Issued to HMRC",
-        description: "Claim has been marked as submitted to HMRC.",
-      });
+      try {
+        const response = await fetch(
+          `/api/claims/${claim.id}/export-submission`,
+          {
+            method: "POST",
+          }
+        );
+
+        if (!response.ok) {
+          const text = await response.text();
+          console.error(
+            "Failed to export submission PDF:",
+            response.status,
+            text
+          );
+          toast({
+            title: "Submission exported with warning",
+            description:
+              "Claim was marked as submitted to HMRC, but the submission PDF could not be generated.",
+            variant: "destructive",
+          });
+        } else {
+          const data = await response.json();
+          console.log("Submission PDF exported:", data);
+          toast({
+            title: "Issued to HMRC",
+            description:
+              "Claim has been marked as submitted to HMRC and a submission PDF has been generated.",
+          });
+        }
+      } catch (exportError) {
+        console.error("Error exporting submission PDF:", exportError);
+        toast({
+          title: "Submission exported with warning",
+          description:
+            "Claim was marked as submitted to HMRC, but the submission PDF could not be generated.",
+          variant: "destructive",
+        });
+      }
 
       if (id && typeof id === "string") {
         await loadClaim(id);
@@ -1128,6 +1163,54 @@ export default function ClaimDetailPage() {
       });
     } finally {
       setHmrcActionLoading(false);
+    }
+  };
+
+  const handleExportHmrcResponsePdf = async (): Promise<void> => {
+    if (!claim) return;
+
+    try {
+      const response = await fetch(
+        `/api/claims/${claim.id}/export-response`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error(
+          "Failed to export HMRC response PDF:",
+          response.status,
+          text
+        );
+        toast({
+          title: "Error",
+          description: "Failed to export HMRC response PDF",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const data = await response.json();
+      console.log("HMRC response PDF exported:", data);
+
+      toast({
+        title: "Response PDF exported",
+        description:
+          "HMRC response pack has been generated and stored in submitted claims.",
+      });
+
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error) {
+      console.error("Error exporting HMRC response PDF:", error);
+      toast({
+        title: "Error",
+        description: "Unexpected error generating HMRC response PDF",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1325,131 +1408,65 @@ export default function ClaimDetailPage() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          {/* Claim summary */}
           <Card className="bg-slate-900/80 border-slate-800 shadow-none">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <h4 className="font-medium break-words">{claim.name}</h4>
-                <Badge variant="outline">
-                  {getWorkflowLabel(claim.workflow_status)}
-                </Badge>
-                {claim.workflow_status === "submitted_to_team" && (
-                  <Badge className="bg-orange-500 text-slate-950">
-                    Pending from client
-                  </Badge>
-                )}
-                {getSLABadge()}
-              </div>
-              {claim.description && (
-                <p className="text-sm text-muted-foreground break-words mb-2">
-                  {claim.description}
-                </p>
-              )}
-              {claim.rd_theme && (
-                <Badge variant="secondary" className="text-xs">
-                  {claim.rd_theme}
-                </Badge>
-              )}
-              {claim.assigned_to_user_id && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Assigned to team member
-                </p>
-              )}
+            <CardContent className="pt-6 space-y-2">
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                Claim summary
+              </p>
+              <p className="text-sm text-slate-300">
+                FY {claim.claim_year}
+              </p>
+              <div>{getStatusBadge(claim.status || "draft")}</div>
             </CardContent>
           </Card>
 
+          {/* Dates */}
           <Card className="bg-slate-900/80 border-slate-800 shadow-none">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <h4 className="font-medium break-words">{claim.name}</h4>
-                <Badge variant="outline">
-                  {getWorkflowLabel(claim.workflow_status)}
-                </Badge>
-                {claim.workflow_status === "submitted_to_team" && (
-                  <Badge className="bg-orange-500 text-slate-950">
-                    Pending from client
-                  </Badge>
-                )}
-                {getSLABadge()}
-              </div>
-              {claim.description && (
-                <p className="text-sm text-muted-foreground break-words mb-2">
-                  {claim.description}
-                </p>
-              )}
-              {claim.rd_theme && (
-                <Badge variant="secondary" className="text-xs">
-                  {claim.rd_theme}
-                </Badge>
-              )}
-              {claim.assigned_to_user_id && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Assigned to team member
-                </p>
-              )}
+            <CardContent className="pt-6 space-y-2">
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                Dates
+              </p>
+              <p className="text-xs text-slate-500">Created</p>
+              <p className="text-sm text-slate-300">
+                {claim.created_at ? format(new Date(claim.created_at), "PPP") : "N/A"}
+              </p>
+              <p className="text-xs text-slate-500">
+                Last updated
+              </p>
+              <p className="text-sm text-slate-300">
+                {claim.updated_at ? format(new Date(claim.updated_at), "PPP") : "N/A"}
+              </p>
             </CardContent>
           </Card>
 
+          {/* Projects */}
           <Card className="bg-slate-900/80 border-slate-800 shadow-none">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <h4 className="font-medium break-words">{claim.name}</h4>
-                <Badge variant="outline">
-                  {getWorkflowLabel(claim.workflow_status)}
-                </Badge>
-                {claim.workflow_status === "submitted_to_team" && (
-                  <Badge className="bg-orange-500 text-slate-950">
-                    Pending from client
-                  </Badge>
-                )}
-                {getSLABadge()}
-              </div>
-              {claim.description && (
-                <p className="text-sm text-muted-foreground break-words mb-2">
-                  {claim.description}
-                </p>
-              )}
-              {claim.rd_theme && (
-                <Badge variant="secondary" className="text-xs">
-                  {claim.rd_theme}
-                </Badge>
-              )}
-              {claim.assigned_to_user_id && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Assigned to team member
-                </p>
-              )}
+            <CardContent className="pt-6 space-y-2">
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                Projects
+              </p>
+              <p className="text-2xl font-semibold text-slate-50">
+                {claim.projects ? claim.projects.length : 0}
+              </p>
+              <p className="text-xs text-slate-500">
+                linked to this claim
+              </p>
             </CardContent>
           </Card>
 
+          {/* Documents */}
           <Card className="bg-slate-900/80 border-slate-800 shadow-none">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <h4 className="font-medium break-words">{claim.name}</h4>
-                <Badge variant="outline">
-                  {getWorkflowLabel(claim.workflow_status)}
-                </Badge>
-                {claim.workflow_status === "submitted_to_team" && (
-                  <Badge className="bg-orange-500 text-slate-950">
-                    Pending from client
-                  </Badge>
-                )}
-                {getSLABadge()}
-              </div>
-              {claim.description && (
-                <p className="text-sm text-muted-foreground break-words mb-2">
-                  {claim.description}
-                </p>
-              )}
-              {claim.rd_theme && (
-                <Badge variant="secondary" className="text-xs">
-                  {claim.rd_theme}
-                </Badge>
-              )}
-              {claim.assigned_to_user_id && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Assigned to team member
-                </p>
-              )}
+            <CardContent className="pt-6 space-y-2">
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                Documents
+              </p>
+              <p className="text-2xl font-semibold text-slate-50">
+                {claim.documents ? claim.documents.length : 0}
+              </p>
+              <p className="text-xs text-slate-500">
+                uploaded against this claim
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -1563,7 +1580,7 @@ export default function ClaimDetailPage() {
                           Step 1 – Internal QA signoff
                         </p>
                         {claim.status === "final_signoff" && claim.qa_reviewer_id ? (
-                          <p className="text-sm text-slate-600">
+                          <p className="text-xs text-slate-600">
                             Awaiting QA review from{" "}
                             <span className="font-medium">
                               {claim.qa_reviewer?.full_name || "assigned admin"}
@@ -1795,6 +1812,13 @@ export default function ClaimDetailPage() {
                                     onClick={handleSaveHmrcResponses}
                                   >
                                     Save responses
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleExportHmrcResponsePdf}
+                                  >
+                                    Export response PDF
                                   </Button>
                                 </div>
                                 <p className="text-xs text-slate-500">
