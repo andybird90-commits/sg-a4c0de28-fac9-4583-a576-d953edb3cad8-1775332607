@@ -299,6 +299,15 @@ export default function ClaimDetailPage() {
   >({});
   const [clientTotalCost, setClientTotalCost] = useState(0);
   const [clientCostEntryCount, setClientCostEntryCount] = useState(0);
+  const [clientProjectCostSummary, setClientProjectCostSummary] = useState<
+    Record<
+      string,
+      {
+        total: number;
+        count: number;
+      }
+    >
+  >({});
 
   // Document management state
   const [showDocumentDialog, setShowDocumentDialog] = useState(false);
@@ -491,11 +500,13 @@ export default function ClaimDetailPage() {
 
   const loadClientCostsSummary = async (projects: ClaimProject[]) => {
     const sidekickIds: string[] = [];
+    const sidekickToClaimProject = new Map<string, string>();
 
     projects.forEach((project) => {
       const sourceId = project.source_sidekick_project_id as string | null;
       if (sourceId) {
         sidekickIds.push(sourceId);
+        sidekickToClaimProject.set(sourceId, project.id);
       }
     });
 
@@ -503,6 +514,7 @@ export default function ClaimDetailPage() {
       setClientCostTotalsByType({});
       setClientTotalCost(0);
       setClientCostEntryCount(0);
+      setClientProjectCostSummary({});
       return;
     }
 
@@ -516,7 +528,15 @@ export default function ClaimDetailPage() {
       return;
     }
 
-    const totals: Record<string, { total: number; count: number }> = {};
+    const totalsByType: Record<string, { total: number; count: number }> = {};
+    const projectTotals: Record<
+      string,
+      {
+        total: number;
+        count: number;
+      }
+    > = {};
+
     let total = 0;
     let count = 0;
 
@@ -524,20 +544,35 @@ export default function ClaimDetailPage() {
       const type = (row.cost_type as string) || "other";
       const amount = Number(row.amount || 0);
 
-      if (!totals[type]) {
-        totals[type] = { total: 0, count: 0 };
+      if (!totalsByType[type]) {
+        totalsByType[type] = { total: 0, count: 0 };
       }
 
-      totals[type].total += amount;
-      totals[type].count += 1;
+      totalsByType[type].total += amount;
+      totalsByType[type].count += 1;
 
       total += amount;
       count += 1;
+
+      const sidekickProjectId =
+        typeof row.project_id === "string" ? row.project_id : null;
+      if (!sidekickProjectId) return;
+
+      const claimProjectId = sidekickToClaimProject.get(sidekickProjectId);
+      if (!claimProjectId) return;
+
+      if (!projectTotals[claimProjectId]) {
+        projectTotals[claimProjectId] = { total: 0, count: 0 };
+      }
+
+      projectTotals[claimProjectId].total += amount;
+      projectTotals[claimProjectId].count += 1;
     });
 
-    setClientCostTotalsByType(totals);
+    setClientCostTotalsByType(totalsByType);
     setClientTotalCost(total);
     setClientCostEntryCount(count);
+    setClientProjectCostSummary(projectTotals);
   };
 
   const handleSubmitForQa = async (): Promise<void> => {
@@ -1262,6 +1297,7 @@ export default function ClaimDetailPage() {
         } else {
           const data = await response.json();
           console.log("Submission PDF exported:", data);
+
           toast({
             title: "Issued to HMRC",
             description:
@@ -1472,6 +1508,16 @@ export default function ClaimDetailPage() {
         } as any
       );
 
+      setClaim((previous) =>
+        previous
+          ? ({
+              ...previous,
+              scheme_type: schemeDraft || null,
+              scheme: schemeDraft || null,
+            } as ClaimWithDetails)
+          : previous
+      );
+
       toast({
         title: "Scheme updated",
         description: "R&D scheme type has been updated for this claim.",
@@ -1489,6 +1535,21 @@ export default function ClaimDetailPage() {
       });
     } finally {
       setSavingScheme(false);
+    }
+  };
+
+  const getSchemeMultipliers = (scheme: string | null | undefined) => {
+    const key = (scheme || "").toUpperCase();
+
+    switch (key) {
+      case "SME":
+        return { lowMultiplier: 0.2, highMultiplier: 0.33 };
+      case "RDEC":
+        return { lowMultiplier: 0.1, highMultiplier: 0.2 };
+      case "HYBRID":
+        return { lowMultiplier: 0.15, highMultiplier: 0.3 };
+      default:
+        return { lowMultiplier: 0.15, highMultiplier: 0.3 };
     }
   };
 
@@ -2139,6 +2200,51 @@ export default function ClaimDetailPage() {
                 ((claim as any)?.scheme as string | null | undefined) ??
                 null;
 
+              const schemeForCalc = schemeType || schemeDraft || "";
+
+              const { lowMultiplier, highMultiplier } =
+                getSchemeMultipliers(schemeForCalc);
+
+              const indicativeLow = effectiveTotalClaimCost * lowMultiplier;
+              const indicativeHigh = effectiveTotalClaimCost * highMultiplier;
+
+              const projectSummaries: Record<
+                string,
+                {
+                  total: number;
+                  count: number;
+                }
+              > = {};
+
+              if (hasClaimCosts) {
+                (costs as any[]).forEach((cost) => {
+                  const projectId =
+                    (cost.project_id as string | null | undefined) || null;
+                  if (!projectId) return;
+
+                  const amount = Number(cost.amount || 0);
+
+                  if (!projectSummaries[projectId]) {
+                    projectSummaries[projectId] = { total: 0, count: 0 };
+                  }
+
+                  projectSummaries[projectId].total += amount;
+                  projectSummaries[projectId].count += 1;
+                });
+              } else {
+                Object.entries(clientProjectCostSummary).forEach(
+                  ([projectId, summary]) => {
+                    projectSummaries[projectId] = {
+                      total: summary.total,
+                      count: summary.count,
+                    };
+                  }
+                );
+              }
+
+              const hasProjectLevelCosts =
+                Object.keys(projectSummaries).length > 0;
+
               return (
                 <Card>
                   <CardHeader>
@@ -2225,6 +2331,101 @@ export default function ClaimDetailPage() {
                             </TableBody>
                           </Table>
                         </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 border-t border-border/60 pt-4">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Totals by project
+                      </p>
+                      {!hasProjectLevelCosts ? (
+                        <p className="text-sm text-muted-foreground">
+                          No project-level costs have been recorded for this
+                          claim yet.
+                        </p>
+                      ) : (
+                        <div className="overflow-hidden rounded-md border bg-background/40">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Project</TableHead>
+                                <TableHead className="text-right">
+                                  Entries
+                                </TableHead>
+                                <TableHead className="text-right">
+                                  Total cost
+                                </TableHead>
+                                <TableHead className="text-right">
+                                  Indicative benefit
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {projects.map((project) => {
+                                const summary =
+                                  projectSummaries[project.id];
+                                if (!summary) return null;
+
+                                const projectLow =
+                                  summary.total * lowMultiplier;
+                                const projectHigh =
+                                  summary.total * highMultiplier;
+
+                                return (
+                                  <TableRow key={project.id}>
+                                    <TableCell className="font-medium">
+                                      {project.name}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      {summary.count}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      {formatCurrency(summary.total)}
+                                    </TableCell>
+                                    <TableCell className="text-right text-xs">
+                                      {summary.total > 0 ? (
+                                        <>
+                                          {formatCurrency(projectLow)} –{" "}
+                                          {formatCurrency(projectHigh)}
+                                        </>
+                                      ) : (
+                                        "—"
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-2 space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Indicative R&amp;D benefit for this claim
+                      </p>
+                      {effectiveTotalClaimCost > 0 ? (
+                        <>
+                          <p className="text-sm font-semibold">
+                            {formatCurrency(indicativeLow)} –{" "}
+                            {formatCurrency(indicativeHigh)}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            Based on typical relief levels
+                            {schemeForCalc
+                              ? ` for the ${schemeForCalc} scheme`
+                              : ""}{" "}
+                            applied to the total qualifying costs recorded on
+                            this tab. Actual benefit will depend on the
+                            company&apos;s detailed tax position.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground">
+                          Add costs to this claim to see an indicative R&amp;D
+                          benefit range based on the selected scheme.
+                        </p>
                       )}
                     </div>
 
