@@ -294,6 +294,11 @@ export default function ClaimDetailPage() {
     cost_date: "",
     project_id: "",
   });
+  const [clientCostTotalsByType, setClientCostTotalsByType] = useState<
+    Record<string, { total: number; count: number }>
+  >({});
+  const [clientTotalCost, setClientTotalCost] = useState(0);
+  const [clientCostEntryCount, setClientCostEntryCount] = useState(0);
 
   // Document management state
   const [showDocumentDialog, setShowDocumentDialog] = useState(false);
@@ -408,9 +413,14 @@ export default function ClaimDetailPage() {
       setOutcomeReceivedValue(receivedValue);
 
       if (data?.projects && data.projects.length > 0) {
-        await loadClientCostAdviceCounts(data.projects as ClaimProject[]);
+        const projects = data.projects as ClaimProject[];
+        await loadClientCostAdviceCounts(projects);
+        await loadClientCostsSummary(projects);
       } else {
         setClientCostAdviceCounts({});
+        setClientCostTotalsByType({});
+        setClientTotalCost(0);
+        setClientCostEntryCount(0);
       }
     } catch (error) {
       console.error("Error loading claim:", error);
@@ -477,6 +487,57 @@ export default function ClaimDetailPage() {
     });
 
     setClientCostAdviceCounts(counts);
+  };
+
+  const loadClientCostsSummary = async (projects: ClaimProject[]) => {
+    const sidekickIds: string[] = [];
+
+    projects.forEach((project) => {
+      const sourceId = project.source_sidekick_project_id as string | null;
+      if (sourceId) {
+        sidekickIds.push(sourceId);
+      }
+    });
+
+    if (sidekickIds.length === 0) {
+      setClientCostTotalsByType({});
+      setClientTotalCost(0);
+      setClientCostEntryCount(0);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("sidekick_project_cost_advice")
+      .select("project_id, cost_type, amount")
+      .in("project_id", sidekickIds);
+
+    if (error) {
+      console.error("Error loading client cost summary:", error);
+      return;
+    }
+
+    const totals: Record<string, { total: number; count: number }> = {};
+    let total = 0;
+    let count = 0;
+
+    (data || []).forEach((row: any) => {
+      const type = (row.cost_type as string) || "other";
+      const amount = Number(row.amount || 0);
+
+      if (!totals[type]) {
+        totals[type] = { total: 0, count: 0 };
+      }
+
+      totals[type].total += amount;
+      totals[type].count += 1;
+
+      total += amount;
+      count += 1;
+    });
+
+    setClientCostTotalsByType(totals);
+    setClientTotalCost(total);
+    setClientCostEntryCount(count);
   };
 
   const handleSubmitForQa = async (): Promise<void> => {
@@ -2021,8 +2082,9 @@ export default function ClaimDetailPage() {
           <TabsContent value="costs" className="mt-6 space-y-4">
             {(() => {
               const costs = claim?.costs || [];
+              const hasClaimCosts = costs.length > 0;
 
-              const costTotalsByType = costs.reduce<
+              const costTotalsByTypeFromClaim = costs.reduce<
                 Record<string, { total: number; count: number }>
               >((acc, cost) => {
                 const type = (cost.cost_type as string) || "other";
@@ -2037,12 +2099,24 @@ export default function ClaimDetailPage() {
                 return acc;
               }, {});
 
-              const totalClaimCost =
+              const totalClaimCostFromClaim =
                 (claim?.total_costs as number | null | undefined) ??
-                Object.values(costTotalsByType).reduce(
+                Object.values(costTotalsByTypeFromClaim).reduce(
                   (sum, entry) => sum + entry.total,
                   0
                 );
+
+              const effectiveCostTotalsByType = hasClaimCosts
+                ? costTotalsByTypeFromClaim
+                : clientCostTotalsByType;
+
+              const effectiveTotalClaimCost = hasClaimCosts
+                ? totalClaimCostFromClaim
+                : clientTotalCost;
+
+              const effectiveCostEntryCount = hasClaimCosts
+                ? costs.length
+                : clientCostEntryCount;
 
               const costTypeLabels: Record<string, string> = {
                 staff: "Staff",
@@ -2095,7 +2169,7 @@ export default function ClaimDetailPage() {
                           Total qualifying costs
                         </p>
                         <p className="mt-1 text-2xl font-semibold">
-                          {formatCurrency(totalClaimCost)}
+                          {formatCurrency(effectiveTotalClaimCost)}
                         </p>
                       </div>
                       <div>
@@ -2103,7 +2177,7 @@ export default function ClaimDetailPage() {
                           Number of cost entries
                         </p>
                         <p className="mt-1 text-2xl font-semibold">
-                          {costs.length}
+                          {effectiveCostEntryCount}
                         </p>
                       </div>
                     </div>
@@ -2112,7 +2186,7 @@ export default function ClaimDetailPage() {
                       <p className="text-xs font-medium text-muted-foreground">
                         Totals by cost heading
                       </p>
-                      {costs.length === 0 ? (
+                      {effectiveCostEntryCount === 0 ? (
                         <p className="text-sm text-muted-foreground">
                           No cost entries have been recorded for this claim yet.
                         </p>
@@ -2132,7 +2206,7 @@ export default function ClaimDetailPage() {
                             </TableHeader>
                             <TableBody>
                               {orderedCostTypes.map((type) => {
-                                const entry = costTotalsByType[type];
+                                const entry = effectiveCostTotalsByType[type];
                                 if (!entry) return null;
                                 return (
                                   <TableRow key={type}>
