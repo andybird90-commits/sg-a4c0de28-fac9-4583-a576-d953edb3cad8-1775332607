@@ -86,6 +86,9 @@ export default function ProjectDetailPage() {
     useState<ClaimProject["workflow_status"]>("awaiting_client_review");
   const [sendBackMessage, setSendBackMessage] = useState<string>("");
 
+  const [savingNotes, setSavingNotes] = useState<boolean>(false);
+  const [lastSavedNotesAt, setLastSavedNotesAt] = useState<Date | null>(null);
+
   useEffect(() => {
     if (id && typeof id === "string") {
       loadProject(id);
@@ -361,42 +364,50 @@ export default function ProjectDetailPage() {
   const saveStaffReturnNotes = async () => {
     if (!project) return;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      setSavingNotes(true);
 
-    if (!user) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        toast({
+          title: "Not signed in",
+          description: "You need to be signed in to update notes.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from("claim_projects")
+        .update({
+          staff_return_notes: staffReturnNotes,
+          updated_at: new Date().toISOString(),
+          updated_by: user.id,
+        })
+        .eq("id", project.id);
+
+      if (error) {
+        console.error("Error saving staff return notes:", error);
+        toast({
+          title: "Error",
+          description: "Failed to save notes.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setLastSavedNotesAt(new Date());
+
       toast({
-        title: "Not signed in",
-        description: "You need to be signed in to update notes.",
-        variant: "destructive",
+        title: "Notes saved",
+        description: "Return notes have been updated.",
       });
-      return;
+    } finally {
+      setSavingNotes(false);
     }
-
-    const { error } = await supabase
-      .from("claim_projects")
-      .update({
-        staff_return_notes: staffReturnNotes,
-        updated_at: new Date().toISOString(),
-        updated_by: user.id,
-      })
-      .eq("id", project.id);
-
-    if (error) {
-      console.error("Error saving staff return notes:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save notes.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Notes saved",
-      description: "Return notes have been updated.",
-    });
   };
 
   const updateWorkflowStatus = async (
@@ -824,15 +835,20 @@ export default function ProjectDetailPage() {
                 onChange={(e) => setStaffReturnNotes(e.target.value)}
                 placeholder="Draft the notes you plan to send back to the client. These will pre-fill the message when you send the project."
               />
-              <div className="flex justify-end">
+              <div className="flex items-center justify-between">
+                {lastSavedNotesAt && (
+                  <p className="text-xs text-muted-foreground">
+                    Saved at {format(lastSavedNotesAt, "PPP p")}
+                  </p>
+                )}
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   onClick={saveStaffReturnNotes}
-                  disabled={updatingStatus}
+                  disabled={updatingStatus || savingNotes}
                 >
-                  Save notes
+                  {savingNotes ? "Saving..." : "Save notes"}
                 </Button>
               </div>
             </div>
