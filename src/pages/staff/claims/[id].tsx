@@ -1513,14 +1513,25 @@ export default function ClaimDetailPage() {
   const handleSaveScheme = async (): Promise<void> => {
     if (!claim) return;
 
+    if (!schemeDraft) {
+      toast({
+        title: "Select scheme",
+        description: "Please choose a scheme type before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setSavingScheme(true);
 
-      await claimService.updateClaim(
+      const nextScheme = schemeDraft;
+
+      const updated = await claimService.updateClaim(
         claim.id,
         {
-          scheme_type: schemeDraft || null,
-          scheme: schemeDraft || null,
+          scheme_type: nextScheme,
+          scheme: nextScheme,
         } as any
       );
 
@@ -1528,25 +1539,29 @@ export default function ClaimDetailPage() {
         previous
           ? ({
               ...previous,
-              scheme_type: schemeDraft || null,
-              scheme: schemeDraft || null,
+              scheme_type: updated.scheme_type ?? nextScheme,
+              scheme: (updated as any).scheme ?? nextScheme,
             } as ClaimWithDetails)
           : previous
       );
 
       toast({
         title: "Scheme updated",
-        description: "R&D scheme type has been updated for this claim.",
+        description: `R&D scheme type has been set to ${nextScheme}.`,
       });
 
       if (id && typeof id === "string") {
         await loadClaim(id);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving scheme type:", error);
+      const message =
+        error?.message ||
+        error?.details ||
+        "Failed to update scheme type";
       toast({
         title: "Error",
-        description: "Failed to update scheme type",
+        description: message,
         variant: "destructive",
       });
     } finally {

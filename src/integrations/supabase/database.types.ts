@@ -1022,6 +1022,8 @@ export type Database = {
           qa_requested_at: string | null
           qa_reviewer_id: string | null
           received_claim_value: number | null
+          scheme: string | null
+          scheme_type: string | null
           status: string
           submitted_claim_value: number | null
           technical_lead_id: string | null
@@ -1054,6 +1056,8 @@ export type Database = {
           qa_requested_at?: string | null
           qa_reviewer_id?: string | null
           received_claim_value?: number | null
+          scheme?: string | null
+          scheme_type?: string | null
           status?: string
           submitted_claim_value?: number | null
           technical_lead_id?: string | null
@@ -1086,6 +1090,8 @@ export type Database = {
           qa_requested_at?: string | null
           qa_reviewer_id?: string | null
           received_claim_value?: number | null
+          scheme?: string | null
+          scheme_type?: string | null
           status?: string
           submitted_claim_value?: number | null
           technical_lead_id?: string | null
