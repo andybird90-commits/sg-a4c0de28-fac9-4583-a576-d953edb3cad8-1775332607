@@ -1627,40 +1627,25 @@ export default function ClaimDetailPage() {
 
                   {/* Client outcome controls when in client review */}
                   {claim.status === "client_review" && (
-                    <div className="flex flex-col gap-3 md:flex-row md:items-end">
-                      <div className="flex-1">
-                        <Label htmlFor="client-feedback">
-                          Client comments (if returned)
-                        </Label>
-                        <Textarea
-                          id="client-feedback"
-                          placeholder="Record any comments or requested changes from the client..."
-                          value={clientFeedback}
-                          onChange={(e) =>
-                            setClientFeedback(e.target.value)
-                          }
-                        />
-                      </div>
-                      <div className="flex flex-col gap-2 md:w-56">
-                        <Button
-                          variant="secondary"
-                          disabled={clientActionLoading}
-                          onClick={handleClientApprove}
-                        >
-                          {clientActionLoading
+                    <div className="flex flex-col gap-3 md:w-56">
+                      <Button
+                        variant="secondary"
+                        disabled={clientActionLoading}
+                        onClick={handleClientApprove}
+                      >
+                        {clientActionLoading
                             ? "Saving..."
                             : "Client approved – ready to file"}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          disabled={
-                            clientActionLoading || !clientFeedback.trim()
-                          }
-                          onClick={handleClientComments}
-                        >
-                          Client comments – back to draft
-                        </Button>
-                      </div>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={
+                          clientActionLoading || !clientFeedback.trim()
+                        }
+                        onClick={handleClientComments}
+                      >
+                        Client comments – back to draft
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -1701,7 +1686,7 @@ export default function ClaimDetailPage() {
                   </div>
 
                   {/* HMRC responses section */}
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-6 space-y-3">
                     <div>
                       <p className="text-sm font-semibold">
                         HMRC responses &amp; queries
@@ -1903,21 +1888,144 @@ export default function ClaimDetailPage() {
 
           {/* COSTS – placeholder (existing costs UI can be reintroduced here) */}
           <TabsContent value="costs" className="mt-6 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Costs</CardTitle>
-                <CardDescription>
-                  Cost tracking for this claim can be managed here.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Detailed cost management will be wired into this tab in a later
-                  iteration. Existing costs and documents remain accessible via
-                  other parts of the app.
-                </p>
-              </CardContent>
-            </Card>
+            {(() => {
+              const costs = claim?.costs || [];
+
+              const costTotalsByType = costs.reduce<
+                Record<string, { total: number; count: number }>
+              >((acc, cost) => {
+                const type = (cost.cost_type as string) || "other";
+                const amount = Number(cost.amount || 0);
+
+                if (!acc[type]) {
+                  acc[type] = { total: 0, count: 0 };
+                }
+
+                acc[type].total += amount;
+                acc[type].count += 1;
+                return acc;
+              }, {});
+
+              const totalClaimCost =
+                (claim?.total_costs as number | null | undefined) ??
+                Object.values(costTotalsByType).reduce(
+                  (sum, entry) => sum + entry.total,
+                  0
+                );
+
+              const costTypeLabels: Record<string, string> = {
+                staff: "Staff",
+                subcontractor: "Subcontractors",
+                consumables: "Consumables",
+                software: "Software",
+                other: "Other",
+              };
+
+              const orderedCostTypes: string[] = [
+                "staff",
+                "subcontractor",
+                "consumables",
+                "software",
+                "other",
+              ];
+
+              const schemeType =
+                ((claim as any)?.scheme_type as string | null | undefined) ??
+                ((claim as any)?.scheme as string | null | undefined) ??
+                null;
+
+              return (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Costs</CardTitle>
+                    <CardDescription>
+                      Scheme type and aggregated qualifying costs for this
+                      claim.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Scheme type
+                        </p>
+                        <p className="mt-1 text-sm font-semibold">
+                          {schemeType || "Not set"}
+                        </p>
+                        {!schemeType && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Once scheme type is recorded on the claim it will
+                            show here.
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Total qualifying costs
+                        </p>
+                        <p className="mt-1 text-2xl font-semibold">
+                          {formatCurrency(totalClaimCost)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Number of cost entries
+                        </p>
+                        <p className="mt-1 text-2xl font-semibold">
+                          {costs.length}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Totals by cost heading
+                      </p>
+                      {costs.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          No cost entries have been recorded for this claim yet.
+                        </p>
+                      ) : (
+                        <div className="overflow-hidden rounded-md border bg-background/40">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Heading</TableHead>
+                                <TableHead className="text-right">
+                                  Entries
+                                </TableHead>
+                                <TableHead className="text-right">
+                                  Total cost
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {orderedCostTypes.map((type) => {
+                                const entry = costTotalsByType[type];
+                                if (!entry) return null;
+                                return (
+                                  <TableRow key={type}>
+                                    <TableCell className="font-medium">
+                                      {costTypeLabels[type] || type}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      {entry.count}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      {formatCurrency(entry.total)}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
           </TabsContent>
 
           {/* EVIDENCE – placeholder for now */}
