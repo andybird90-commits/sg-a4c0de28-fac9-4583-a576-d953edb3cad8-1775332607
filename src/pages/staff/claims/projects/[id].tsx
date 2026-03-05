@@ -1049,6 +1049,15 @@ export default function ProjectDetailPage() {
                                 item.created_at
                               ).toLocaleDateString()}
                             </p>
+                            <div className="mt-1">
+                              <Link
+                                href={`/evidence/sidekick/${item.id}`}
+                                target="_blank"
+                                className="text-[11px] text-blue-600 hover:underline"
+                              >
+                                View evidence
+                              </Link>
+                            </div>
                           </div>
                         ))
                       )}
