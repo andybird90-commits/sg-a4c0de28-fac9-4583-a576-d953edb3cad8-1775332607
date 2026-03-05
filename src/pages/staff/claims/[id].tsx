@@ -1568,7 +1568,7 @@ export default function ClaimDetailPage() {
                 <div className="space-y-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Filing & Approval Workflow</CardTitle>
+                      <CardTitle>Filing &amp; Approval Workflow</CardTitle>
                       <CardDescription>
                         Manage internal QA, client review and HMRC submission steps.
                       </CardDescription>
@@ -1912,7 +1912,6 @@ export default function ClaimDetailPage() {
 
               {/* Projects Tab */}
               <TabsContent value="projects" className="space-y-6">
-                {/* Workflow Status Filter Tabs */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Project Workflow</CardTitle>
