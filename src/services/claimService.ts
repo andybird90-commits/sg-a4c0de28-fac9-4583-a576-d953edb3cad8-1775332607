@@ -953,7 +953,6 @@ export class ClaimService {
           workflow_status: allApproved ? "approved" : "revision_requested",
           approval_status: approvalSections,
           approved_at: allApproved ? new Date().toISOString() : null,
-          sla_met: true,
           updated_at: new Date().toISOString(),
         })
         .eq("id", projectId)
@@ -981,35 +980,157 @@ export class ClaimService {
   }
 
   /**
-   * Client requests changes to project
+   * Simple approval updater for client-side review flows
    */
-  async requestRevisions(
+  async updateProjectApproval(
     projectId: string,
-    userId: string,
-    feedback: string,
-    sectionsNeedingRevision: string[]
+    nextStatus: string,
+    approvalSections: Record<string, string>,
+    revisionFeedback: string | null
   ): Promise<ClaimProject> {
     try {
-      const { data: project } = await supabase
-        .from("claim_projects")
-        .select("approval_status, revision_count")
-        .eq("id", projectId)
-        .single();
+      const allApproved = Object.values(approvalSections).every(
+        (status) => status === "approved"
+      );
 
-      const approvalSections =
-        (project?.approval_status as Record<string, string>) || {};
-      const currentRevisionCount = project?.revision_count || 0;
+      const update: Record<string, any> = {
+        workflow_status: nextStatus,
+        approval_status: approvalSections,
+        updated_at: new Date().toISOString(),
+      };
 
-      sectionsNeedingRevision.forEach((section) => {
-        approvalSections[section] = "needs_revision";
-      });
+      if (nextStatus === "approved" && allApproved) {
+        update.approved_at = new Date().toISOString();
+      }
 
       const { data, error } = await supabase
         .from("claim_projects")
+        .update(update)
+        .eq("id", projectId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (revisionFeedback) {
+        // Best-effort comment; do not block the update on failure
+        try {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+          if (user) {
+            await this.addProjectComment(
+              projectId,
+              user.id,
+              "client_feedback",
+              revisionFeedback
+            );
+          }
+        } catch (commentError) {
+          console.error(
+            "[claimService.updateProjectApproval] Failed to add revision feedback comment:",
+            commentError
+          );
+        }
+      }
+
+      return data;
+    } catch (error) {
+      console.error("[claimService.updateProjectApproval] Error:", error);
+      throw error;
+    }
+  }
+
+  // ============================================================================
+  // DOCUMENTS
+  // ============================================================================
+
+  /**
+   * Get all documents for a claim
+   */
+  async getClaimDocuments(claimId: string): Promise<ClaimDocument[]> {
+    try {
+      const { data, error } = await supabase
+        .from("claim_documents")
+        .select("*")
+        .eq("claim_id", claimId)
+        .order("uploaded_at", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("[claimService.getClaimDocuments] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create document record
+   */
+  async createDocument(docData: ClaimDocumentInsert): Promise<ClaimDocument> {
+    try {
+      const dataToInsert = { ...docData };
+
+      if (!dataToInsert.org_id) {
+        const { data: claim } = await supabase
+          .from("claims")
+          .select("org_id")
+          .eq("id", docData.claim_id)
+          .single();
+
+        if (claim) {
+          dataToInsert.org_id = claim.org_id;
+        }
+      }
+
+      const { data, error } = await supabase
+        .from("claim_documents")
+        .insert(dataToInsert)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error("[claimService.createDocument] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete document
+   */
+  async deleteDocument(docId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from("claim_documents")
+        .delete()
+        .eq("id", docId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("[claimService.deleteDocument] Error:", error);
+      throw error;
+    }
+  }
+
+  // ============================================================================
+  // PROJECT WORKFLOW MANAGEMENT
+  // ============================================================================
+
+  /**
+   * Client sends project to team for R&D review
+   */
+  async sendProjectToTeam(
+    projectId: string,
+    userId: string
+  ): Promise<ClaimProject> {
+    try {
+      const { data, error } = await supabase
+        .from("claim_projects")
         .update({
-          workflow_status: "revision_requested",
-          approval_status: approvalSections,
-          revision_count: currentRevisionCount + 1,
+          workflow_status: "submitted_to_team",
+          submitted_to_team_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq("id", projectId)
@@ -1018,32 +1139,65 @@ export class ClaimService {
 
       if (error) throw error;
 
-      await this.addProjectComment(
-        projectId,
-        userId,
-        "client_feedback",
-        feedback
-      );
-
       await this.logStatusChange(
         projectId,
-        "awaiting_client_review",
-        "revision_requested",
+        "draft",
+        "submitted_to_team",
         userId,
-        `Client requested revisions: ${sectionsNeedingRevision.join(", ")}`
+        "Client submitted project for team review"
       );
 
       return data;
     } catch (error) {
-      console.error("[claimService.requestRevisions] Error:", error);
+      console.error("[claimService.sendProjectToTeam] Error:", error);
       throw error;
     }
   }
 
   /**
-   * Team resubmits project after revisions
+   * Team member claims a project for review
    */
-  async resubmitProject(
+  async claimProject(
+    projectId: string,
+    userId: string
+  ): Promise<ClaimProject> {
+    try {
+      const { data, error } = await supabase
+        .from("claim_projects")
+        .update({
+          workflow_status: "team_in_progress",
+          assigned_to_user_id: userId,
+          team_started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", projectId)
+        .eq("workflow_status", "submitted_to_team")
+        .is("assigned_to_user_id", null)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!data) throw new Error("Project already claimed or not available");
+
+      await this.logStatusChange(
+        projectId,
+        "submitted_to_team",
+        "team_in_progress",
+        userId,
+        "Team member claimed project"
+      );
+
+      return data;
+    } catch (error) {
+      console.error("[claimService.claimProject] Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Team sends project to client for review
+   */
+  async sendProjectToClient(
     projectId: string,
     userId: string
   ): Promise<ClaimProject> {
@@ -1063,40 +1217,38 @@ export class ClaimService {
 
       await this.logStatusChange(
         projectId,
-        "revision_requested",
+        "team_in_progress",
         "awaiting_client_review",
         userId,
-        "Team resubmitted project after revisions"
+        "Team submitted project for client review"
       );
 
       return data;
     } catch (error) {
-      console.error("[claimService.resubmitProject] Error:", error);
+      console.error("[claimService.sendProjectToClient] Error:", error);
       throw error;
     }
   }
 
   /**
-   * Cancel/withdraw project
+   * Client approves project (full or partial)
    */
-  async cancelProject(
+  async approveProject(
     projectId: string,
-    reason: string,
-    userId?: string
+    userId: string,
+    approvalSections: Record<string, string>
   ): Promise<ClaimProject> {
     try {
-      const { data: project } = await supabase
-        .from("claim_projects")
-        .select("workflow_status")
-        .eq("id", projectId)
-        .single();
-
-      const previousStatus = project?.workflow_status || "draft";
+      const allApproved = Object.values(approvalSections).every(
+        (status) => status === "approved"
+      );
 
       const { data, error } = await supabase
         .from("claim_projects")
         .update({
-          workflow_status: "cancelled",
+          workflow_status: allApproved ? "approved" : "revision_requested",
+          approval_status: approvalSections,
+          approved_at: allApproved ? new Date().toISOString() : null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", projectId)
@@ -1105,95 +1257,20 @@ export class ClaimService {
 
       if (error) throw error;
 
-      if (userId) {
-        await this.addProjectComment(projectId, userId, "cancellation", reason);
-
-        await this.logStatusChange(
-          projectId,
-          previousStatus,
-          "cancelled",
-          userId,
-          `Project cancelled: ${reason}`
-        );
-      }
-
-      return data;
-    } catch (error) {
-      console.error("[claimService.cancelProject] Error:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Client recalls project from team back to draft so they can edit
-   */
-  async recallProjectToClient(
-    projectId: string,
-    userId: string
-  ): Promise<ClaimProject> {
-    try {
-      const { data: project, error: projectError } = await supabase
-        .from("claim_projects")
-        .select("workflow_status")
-        .eq("id", projectId)
-        .single();
-
-      if (projectError) throw projectError;
-
-      const previousStatus =
-        (project as { workflow_status?: string } | null)?.workflow_status ||
-        "draft";
-
-      const { data, error } = await supabase
-        .from("claim_projects")
-        .update({
-          workflow_status: "draft",
-          assigned_to_user_id: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", projectId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
+      const statusMessage = allApproved
+        ? "Client approved all sections"
+        : "Client requested revisions on some sections";
       await this.logStatusChange(
         projectId,
-        previousStatus,
-        "draft",
+        "awaiting_client_review",
+        allApproved ? "approved" : "revision_requested",
         userId,
-        "Client recalled project from R&D team for further edits"
+        statusMessage
       );
 
       return data;
     } catch (error) {
-      console.error("[claimService.recallProjectToClient] Error:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Simple workflow status updater for client-side flows
-   */
-  async updateProjectWorkflowStatus(
-    projectId: string,
-    workflowStatus: string
-  ): Promise<ClaimProject> {
-    try {
-      const { data, error } = await supabase
-        .from("claim_projects")
-        .update({
-          workflow_status: workflowStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", projectId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error("[claimService.updateProjectWorkflowStatus] Error:", error);
+      console.error("[claimService.approveProject] Error:", error);
       throw error;
     }
   }
@@ -1220,7 +1297,6 @@ export class ClaimService {
 
       if (nextStatus === "approved" && allApproved) {
         update.approved_at = new Date().toISOString();
-        update.sla_met = true;
       }
 
       const { data, error } = await supabase

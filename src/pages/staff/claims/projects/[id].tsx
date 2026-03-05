@@ -69,6 +69,11 @@ export default function ProjectDetailPage() {
   const [costAdvice, setCostAdvice] = useState<SidekickCostAdviceRow[]>([]);
   const [staffReturnNotes, setStaffReturnNotes] = useState<string>("");
 
+  const [evidencePreview, setEvidencePreview] = useState<SidekickEvidenceItem | null>(null);
+  const [evidencePreviewUrl, setEvidencePreviewUrl] = useState<string | null>(null);
+  const [evidenceDialogOpen, setEvidenceDialogOpen] = useState<boolean>(false);
+  const [evidencePreviewLoading, setEvidencePreviewLoading] = useState<boolean>(false);
+
   const [evidenceType, setEvidenceType] = useState<"note" | "file" | "link">("note");
   const [evidenceTitle, setEvidenceTitle] = useState<string>("");
   const [evidenceBody, setEvidenceBody] = useState<string>("");
@@ -307,6 +312,31 @@ export default function ProjectDetailPage() {
       });
     } finally {
       setEvidenceSubmitting(false);
+    }
+  };
+
+  const handleOpenEvidencePreview = async (item: SidekickEvidenceItem) => {
+    setEvidencePreview(item);
+    setEvidencePreviewUrl(null);
+    setEvidenceDialogOpen(true);
+
+    if (!item.file_path) {
+      return;
+    }
+
+    try {
+      setEvidencePreviewLoading(true);
+      const url = await sidekickEvidenceService.getSignedUrl(item.file_path);
+      setEvidencePreviewUrl(url);
+    } catch (error) {
+      console.error("Error getting evidence file URL:", error);
+      toast({
+        title: "Could not load file",
+        description: "There was a problem loading this evidence file.",
+        variant: "destructive",
+      });
+    } finally {
+      setEvidencePreviewLoading(false);
     }
   };
 
@@ -1066,13 +1096,13 @@ export default function ProjectDetailPage() {
                               ).toLocaleDateString()}
                             </p>
                             <div className="mt-1">
-                              <Link
-                                href={`/evidence/sidekick/${item.id}`}
-                                target="_blank"
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEvidencePreview(item)}
                                 className="text-[11px] text-blue-600 hover:underline"
                               >
                                 View evidence
-                              </Link>
+                              </button>
                             </div>
                           </div>
                         ))
@@ -1385,6 +1415,109 @@ export default function ProjectDetailPage() {
 
         <ProjectCostSummary items={costAdvice} schemeLabel={schemeLabel} />
       </div>
+      <Dialog
+        open={evidenceDialogOpen}
+        onOpenChange={(open) => {
+          setEvidenceDialogOpen(open);
+          if (!open) {
+            setEvidencePreview(null);
+            setEvidencePreviewUrl(null);
+            setEvidencePreviewLoading(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {evidencePreview?.title || "Evidence"}
+            </DialogTitle>
+            <DialogDescription>
+              Review the evidence item as seen by the client.
+            </DialogDescription>
+          </DialogHeader>
+          {evidencePreview ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="secondary" className="text-xs">
+                  {evidencePreview.type}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(evidencePreview.created_at).toLocaleString()}
+                </span>
+              </div>
+
+              {evidencePreview.file_path && (
+                <div className="border rounded-lg p-3">
+                  <p className="text-sm font-medium mb-2">Attached file</p>
+                  {evidencePreviewLoading && (
+                    <p className="text-xs text-muted-foreground">
+                      Loading file...
+                    </p>
+                  )}
+                  {!evidencePreviewLoading && evidencePreviewUrl && (
+                    <>
+                      {/\.(jpg|jpeg|png|gif|webp)$/i.test(
+                        evidencePreview.file_path
+                      ) ? (
+                        <div className="relative w-full aspect-video bg-muted rounded-md overflow-hidden">
+                          <img
+                            src={evidencePreviewUrl}
+                            alt={evidencePreview.title || "Evidence file"}
+                            className="object-contain w-full h-full"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              {evidencePreview.file_path.split("/").pop()}
+                            </p>
+                          </div>
+                          <a
+                            href={evidencePreviewUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            Open file
+                          </a>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {evidencePreview.external_url && (
+                <div className="border rounded-lg p-3">
+                  <p className="text-sm font-medium mb-1">External link</p>
+                  <a
+                    href={evidencePreview.external_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:underline break-all"
+                  >
+                    {evidencePreview.external_url}
+                  </a>
+                </div>
+              )}
+
+              {evidencePreview.body && (
+                <div className="border rounded-lg p-3">
+                  <p className="text-sm font-medium mb-1">Description</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {evidencePreview.body}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No evidence selected.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog open={sendBackDialogOpen} onOpenChange={setSendBackDialogOpen}>
         <DialogContent>
           <DialogHeader>
