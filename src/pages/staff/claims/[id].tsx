@@ -1578,73 +1578,62 @@ export default function ClaimDetailPage() {
   const handleGenerateDraftClaim = async (): Promise<void> => {
     if (!claim) return;
 
+    setGeneratingDraft(true);
+    setDraftSummary(null);
+
     try {
-      setGeneratingDraft(true);
+      const response = await fetch(`/api/rd/claims/${claim.id}/generate-draft`, {
+        method: "POST",
+      });
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const raw = await response.text();
+      let data: any = null;
 
-      if (!session?.access_token) {
+      if (raw) {
+        try {
+          data = JSON.parse(raw);
+        } catch (parseError) {
+          console.error("Unexpected non-JSON response from generate-draft:", {
+            raw,
+            parseError,
+          });
+        }
+      }
+
+      if (!response.ok) {
+        const message =
+          (data && (data.error || data.message)) ||
+          `Failed to generate draft claim (status ${response.status})`;
+
         toast({
-          title: "Not authenticated",
-          description:
-            "You need to be logged in to generate draft narratives.",
+          title: "Error generating draft claim",
+          description: message,
           variant: "destructive",
         });
+
         return;
       }
 
-      const response = await fetch(
-        `/api/rd/claims/${claim.id}/generate-draft`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-      const rawBody = await response.text();
-      let data: any = null;
-
-      if (rawBody) {
-        try {
-          data = JSON.parse(rawBody);
-        } catch (parseError) {
-          console.error(
-            "Non-JSON response from generate-draft:",
-            rawBody.slice(0, 500)
-          );
+      if (data && typeof data === "object") {
+        if ("summary" in data) {
+          setDraftSummary((data as any).summary);
+        } else {
+          setDraftSummary(data);
         }
       }
-
-      if (!response.ok || !data || data.ok === false) {
-        const message =
-          data?.error ||
-          data?.message ||
-          (rawBody ? rawBody.slice(0, 200) : "Failed to generate draft narratives");
-        throw new Error(message);
-      }
-
-      setDraftSummary(data);
 
       toast({
         title: "Draft claim generated",
-        description: `Generated ${data.generated_count ?? 0} draft narratives out of ${
-          data.total_projects ?? 0
-        } projects.`,
+        description:
+          (data && ((data as any).summaryText || (data as any).message)) ||
+          "Draft narratives generated for eligible projects.",
       });
-
-      if (id && typeof id === "string") {
-        await loadClaim(id);
-      }
     } catch (error: any) {
       console.error("Error generating draft claim:", error);
+
       toast({
-        title: "Error",
-        description:
-          error?.message || "Failed to generate draft narratives",
+        title: "Error generating draft claim",
+        description: error?.message || "An unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
@@ -1655,78 +1644,62 @@ export default function ClaimDetailPage() {
   const handleFinaliseClaimPack = async (): Promise<void> => {
     if (!claim) return;
 
+    setFinalisingPack(true);
+    setFinaliseSummary(null);
+
     try {
-      setFinalisingPack(true);
+      const response = await fetch(`/api/rd/claims/${claim.id}/finalise-pack`, {
+        method: "POST",
+      });
 
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const raw = await response.text();
+      let data: any = null;
 
-      if (!session?.access_token) {
+      if (raw) {
+        try {
+          data = JSON.parse(raw);
+        } catch (parseError) {
+          console.error("Unexpected non-JSON response from finalise-pack:", {
+            raw,
+            parseError,
+          });
+        }
+      }
+
+      if (!response.ok) {
+        const message =
+          (data && (data.error || data.message)) ||
+          `Failed to finalise claim pack (status ${response.status})`;
+
         toast({
-          title: "Not authenticated",
-          description:
-            "You need to be logged in to finalise the claim pack.",
+          title: "Error finalising claim pack",
+          description: message,
           variant: "destructive",
         });
+
         return;
       }
 
-      const response = await fetch(
-        `/api/rd/claims/${claim.id}/finalise-pack`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      );
-
-      const rawBody = await response.text();
-      let data: any = null;
-
-      if (rawBody) {
-        try {
-          data = JSON.parse(rawBody);
-        } catch (parseError) {
-          console.error(
-            "Non-JSON response from finalise-pack:",
-            rawBody.slice(0, 500)
-          );
+      if (data && typeof data === "object") {
+        if ("summary" in data) {
+          setFinaliseSummary((data as any).summary);
+        } else {
+          setFinaliseSummary(data);
         }
       }
-
-      if (!response.ok || !data || data.ok === false) {
-        const message =
-          data?.error ||
-          data?.message ||
-          (rawBody ? rawBody.slice(0, 200) : "Failed to finalise the claim pack");
-        throw new Error(message);
-      }
-
-      setFinaliseSummary(data);
-
-      const missingCount = data.missing_count ?? 0;
 
       toast({
         title: "Claim pack finalised",
         description:
-          missingCount > 0
-            ? `Locked ${data.locked_projects_count ?? 0} projects, but ${
-                missingCount
-              } project(s) are missing narratives.`
-            : `Locked ${data.locked_projects_count ?? 0} projects. Claim is ready to file.`,
+          (data && ((data as any).summaryText || (data as any).message)) ||
+          "Projects locked and claim pack is ready for submission.",
       });
-
-      if (id && typeof id === "string") {
-        await loadClaim(id);
-      }
     } catch (error: any) {
       console.error("Error finalising claim pack:", error);
+
       toast({
-        title: "Error",
-        description:
-          error?.message || "Failed to finalise the claim pack",
+        title: "Error finalising claim pack",
+        description: error?.message || "An unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
