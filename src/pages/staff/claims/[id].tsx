@@ -427,6 +427,56 @@ export default function ClaimDetailPage() {
     setClientCostAdviceCounts(counts);
   };
 
+  const handleSubmitForQa = async (): Promise<void> => {
+    if (!claim) return;
+
+    if (!selectedQaAdmin) {
+      toast({
+        title: "Select reviewer",
+        description: "Please choose an admin to review this claim.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSubmittingQa(true);
+
+      await claimService.updateClaim(claim.id, {
+        status: "final_signoff" as any,
+        qa_reviewer_id: selectedQaAdmin as any,
+        qa_requested_at: new Date().toISOString(),
+      });
+
+      await messageService.sendMessage(
+        claim.org_id,
+        [selectedQaAdmin],
+        `Claim QA requested: ${claim.organisations?.name || "Client"} - FY ${claim.claim_year}`,
+        "You have been assigned as QA reviewer for this claim. Please review the claim details and either sign off or return comments.",
+        undefined,
+        { entity_type: "claim", entity_id: claim.id }
+      );
+
+      toast({
+        title: "Submitted for QA",
+        description: "The selected admin has been notified to review this claim.",
+      });
+
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error) {
+      console.error("Error submitting claim for QA:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit claim for QA",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingQa(false);
+    }
+  };
+
   const handleImportSidekickProject = async (sidekickProjectId: string) => {
     if (!claim) return;
 
