@@ -1472,863 +1472,591 @@ export default function ClaimDetailPage() {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="costs">Costs</TabsTrigger>
             <TabsTrigger value="evidence">Evidence</TabsTrigger>
-            <TabsTrigger value="sidekick">Companion</TabsTrigger>
+            <TabsTrigger value="companion">Companion</TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Claim Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm text-slate-600">Claim Year</Label>
-                        <p className="font-medium">{claim.claim_year}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm text-slate-600">Status</Label>
-                        <div className="mt-1">{getStatusBadge(claim.status || "draft")}</div>
-                      </div>
-                      <div>
-                        <Label className="text-sm text-slate-600">Created</Label>
-                        <p className="font-medium">
-                          {claim.created_at ? format(new Date(claim.created_at), "PPP") : "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <Label className="text-sm text-slate-600">Last Updated</Label>
-                        <p className="font-medium">
-                          {claim.updated_at ? format(new Date(claim.updated_at), "PPP") : "N/A"}
-                        </p>
-                      </div>
-                    </div>
+          {/* OVERVIEW – full-width content */}
+          <TabsContent value="overview" className="mt-6 space-y-6">
+            {/* Claim information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Claim Information</CardTitle>
+                <CardDescription>Key details about this claim.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <dl className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                  <div>
+                    <dt className="text-xs font-medium text-muted-foreground">
+                      Claim Year
+                    </dt>
+                    <dd className="mt-1 text-sm font-semibold">
+                      {claim.claim_year}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium text-muted-foreground">
+                      Status
+                    </dt>
+                    <dd className="mt-1">
+                      {getStatusBadge(claim.status || "draft")}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium text-muted-foreground">
+                      Created
+                    </dt>
+                    <dd className="mt-1 text-sm font-semibold">
+                      {claim.created_at
+                        ? format(new Date(claim.created_at), "PPP")
+                        : "N/A"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium text-muted-foreground">
+                      Last Updated
+                    </dt>
+                    <dd className="mt-1 text-sm font-semibold">
+                      {claim.updated_at
+                        ? format(new Date(claim.updated_at), "PPP")
+                        : "N/A"}
+                    </dd>
+                  </div>
+                </dl>
+              </CardContent>
+            </Card>
 
-                    {claim.notes && (
-                      <div>
-                        <Label className="text-sm text-slate-600">Notes</Label>
-                        <p className="mt-1 text-slate-700 whitespace-pre-wrap">{claim.notes}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+            {/* Team assignment (simple for now) */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Team Assignment</CardTitle>
+                <CardDescription>
+                  Who is responsible for this claim.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Team assignment details will be expanded here in a later
+                  iteration.
+                </p>
+              </CardContent>
+            </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Team Assignment</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {claim.bd_owner && (
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
-                          {claim.bd_owner.full_name?.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-medium">{claim.bd_owner.full_name}</p>
-                          <p className="text-sm text-slate-600">BD Owner</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {claim.technical_lead && (
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold">
-                          {claim.technical_lead.full_name?.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-medium">{claim.technical_lead.full_name}</p>
-                          <p className="text-sm text-slate-600">Technical Lead</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {claim.cost_lead && (
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold">
-                          {claim.cost_lead.full_name?.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-medium">{claim.cost_lead.full_name}</p>
-                          <p className="text-sm text-slate-600">Cost Lead</p>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <div className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Filing &amp; Approval Workflow</CardTitle>
-                      <CardDescription>
-                        Manage internal QA, client review and HMRC submission steps.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {/* Step 1 – Internal QA */}
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-slate-700">
-                          Step 1 – Internal QA signoff
-                        </p>
-                        {claim.status === "final_signoff" && claim.qa_reviewer_id ? (
-                          <p className="text-xs text-slate-600">
-                            Awaiting QA review from{" "}
-                            <span className="font-medium">
-                              {claim.qa_reviewer?.full_name || "assigned admin"}
-                            </span>
-                            .
-                          </p>
-                        ) : (
-                          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                            <div className="flex-1">
-                              <Label className="text-sm text-slate-600">
-                                Assign QA reviewer (admin)
-                              </Label>
-                              <Select
-                                value={selectedQaAdmin}
-                                onValueChange={setSelectedQaAdmin}
-                                disabled={loadingQaAdmins || submittingQa}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue
-                                    placeholder={
-                                      loadingQaAdmins
-                                        ? "Loading admins..."
-                                        : "Select admin reviewer"
-                                    }
-                                  />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {qaAdmins.map((admin) => (
-                                    <SelectItem key={admin.id} value={admin.id}>
-                                      {admin.full_name || admin.email || "Admin"}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <Button
-                              onClick={handleSubmitForQa}
-                              disabled={!selectedQaAdmin || submittingQa}
-                            >
-                              {submittingQa ? "Submitting..." : "Submit for QA signoff"}
-                            </Button>
-                          </div>
-                        )}
-                        <p className="text-xs text-slate-500">
-                          The selected admin will receive a message with a link to this
-                          claim to review and approve.
-                        </p>
-                      </div>
-
-                      {claim.status === "final_signoff" &&
-                        claim.qa_reviewer_id &&
-                        profile?.id === claim.qa_reviewer_id && (
-                          <div className="mt-4 space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
-                            <p className="text-sm font-medium text-slate-800">
-                              QA reviewer actions
-                            </p>
-                            <Textarea
-                              placeholder="Add QA comments or notes for the team..."
-                              value={qaFeedback}
-                              onChange={(e) => setQaFeedback(e.target.value)}
-                            />
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                size="sm"
-                                onClick={handleQaApprove}
-                                disabled={qaActionLoading}
-                              >
-                                {qaActionLoading ? "Saving..." : "Approve for client review"}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleQaReturnWithComments}
-                                disabled={qaActionLoading}
-                              >
-                                Return with comments
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                      {/* Step 2 – Client review */}
-                      <div className="space-y-2 border-t border-slate-200 pt-4">
-                        <p className="text-sm font-medium text-slate-700">
-                          Step 2 – Client review and comments
-                        </p>
-                        {claim.status === "final_signoff" &&
-                          claim.qa_completed_at &&
-                          !claim.client_review_requested_at && (
-                            <Button
-                              size="sm"
-                              onClick={handleIssueToClient}
-                              disabled={clientActionLoading}
-                            >
-                              {clientActionLoading
-                                ? "Issuing to client..."
-                                : "Issue to client for comment"}
-                            </Button>
-                          )}
-
-                        {["client_review", "ready_to_file", "submitted_hmrc", "hmrc_feedback", "completed"].includes(
-                          claim.status || ""
-                        ) && (
-                          <p className="text-xs text-slate-600">
-                            Client review requested{" "}
-                            {claim.client_review_requested_at
-                              ? format(new Date(claim.client_review_requested_at), "PPP")
-                              : "recently"}
-                            .
-                          </p>
-                        )}
-
-                        {claim.status === "client_review" && (
-                          <div className="mt-3 space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
-                            <p className="text-sm font-medium text-slate-800">
-                              Record client outcome
-                            </p>
-                            <Textarea
-                              placeholder="Optional: paste client comments or notes for the file..."
-                              value={clientFeedback}
-                              onChange={(e) => setClientFeedback(e.target.value)}
-                            />
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                size="sm"
-                                onClick={handleClientApprove}
-                                disabled={clientActionLoading}
-                              >
-                                {clientActionLoading
-                                  ? "Saving..."
-                                  : "Client approved – ready to file"}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleClientComments}
-                                disabled={clientActionLoading}
-                              >
-                                Client comments – back to draft
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Step 3 – HMRC submission */}
-                      <div className="space-y-2 border-t border-slate-200 pt-4">
-                        <p className="text-sm font-medium text-slate-700">
-                          Step 3 – HMRC submission
-                        </p>
-                        {claim.status === "ready_to_file" && (
-                          <Button
-                            size="sm"
-                            onClick={handleIssueToHmrc}
-                            disabled={hmrcActionLoading}
-                          >
-                            {hmrcActionLoading ? "Submitting..." : "Issue to HMRC"}
-                          </Button>
-                        )}
-                        {["submitted_hmrc", "hmrc_feedback", "completed"].includes(
-                          claim.status || ""
-                        ) && (
-                          <>
-                            <p className="text-xs text-slate-600">
-                              Submitted to HMRC{" "}
-                              {claim.actual_submission_date
-                                ? format(new Date(claim.actual_submission_date), "PPP")
-                                : "recently"}
-                              .
-                            </p>
-
-                            <div className="mt-6 space-y-4 border-t border-slate-200 pt-4">
-                              <p className="text-sm font-medium text-slate-700">
-                                HMRC responses and claim outcome
-                              </p>
-                              <div className="space-y-3">
-                                {hmrcResponses.map((item, index) => (
-                                  <div
-                                    key={index}
-                                    className="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 md:grid-cols-2"
-                                  >
-                                    <div>
-                                      <Label className="text-xs text-slate-600">
-                                        HMRC question / point {index + 1}
-                                      </Label>
-                                      <Textarea
-                                        className="mt-1 h-20"
-                                        value={item.question}
-                                        onChange={(e) =>
-                                          handleHmrcResponseChange(
-                                            index,
-                                            "question",
-                                            e.target.value
-                                          )
-                                        }
-                                        placeholder="Paste the HMRC question or point here..."
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label className="text-xs text-slate-600">
-                                        Team response / counter
-                                      </Label>
-                                      <Textarea
-                                        className="mt-1 h-20"
-                                        value={item.team_response}
-                                        onChange={(e) =>
-                                          handleHmrcResponseChange(
-                                            index,
-                                            "team_response",
-                                            e.target.value
-                                          )
-                                        }
-                                        placeholder="Draft your response to HMRC..."
-                                      />
-                                    </div>
-                                  </div>
-                                ))}
-                                <div className="flex flex-wrap gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={handleAddHmrcResponseRow}
-                                  >
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add another response
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    onClick={handleSaveHmrcResponses}
-                                  >
-                                    Save responses
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={handleExportHmrcResponsePdf}
-                                  >
-                                    Export response PDF
-                                  </Button>
-                                </div>
-                                <p className="text-xs text-slate-500">
-                                  Use the Companion tab on this claim to help draft
-                                  wording for HMRC responses.
-                                </p>
-                              </div>
-
-                              <div className="mt-4 space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3">
-                                <p className="text-sm font-medium text-slate-800">
-                                  Claim outcome (for sales ratios)
-                                </p>
-                                <div className="grid gap-3 md:grid-cols-3">
-                                  <div>
-                                    <Label className="text-xs text-slate-600">
-                                      Submitted claim value (£)
-                                    </Label>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      className="mt-1"
-                                      value={outcomeSubmittedValue}
-                                      onChange={(e) =>
-                                        setOutcomeSubmittedValue(e.target.value)
-                                      }
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label className="text-xs text-slate-600">
-                                      Received value (£)
-                                    </Label>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      className="mt-1"
-                                      value={outcomeReceivedValue}
-                                      onChange={(e) =>
-                                        setOutcomeReceivedValue(e.target.value)
-                                      }
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label className="text-xs text-slate-600">
-                                      Realised vs submitted
-                                    </Label>
-                                    <p className="mt-2 text-sm font-medium text-slate-800">
-                                      {outcomeSubmittedValue &&
-                                      outcomeReceivedValue
-                                        ? `${Math.round(
-                                            (Number(
-                                              outcomeReceivedValue || "0"
-                                            ) /
-                                              Math.max(
-                                                Number(
-                                                  outcomeSubmittedValue || "0"
-                                                ),
-                                                1
-                                              )) *
-                                              100
-                                          )}%`
-                                        : "—"}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={handleSaveOutcome}
-                                  >
-                                    Save outcome
-                                  </Button>
-                                  {claim.status !== "completed" && (
-                                    <Button
-                                      size="sm"
-                                      onClick={handleMarkClaimCompleted}
-                                    >
-                                      Mark claim completed
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Projects Tab */}
-              <TabsContent value="projects" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Project Workflow</CardTitle>
-                    <CardDescription>Manage projects through the review workflow</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Tabs defaultValue="all" className="space-y-4">
-                      <TabsList className="grid grid-cols-5 w-full">
-                        <TabsTrigger value="all">All</TabsTrigger>
-                        <TabsTrigger value="pending">
-                          Pending Review
-                          {projects.filter(p => p.workflow_status === "submitted_to_team").length > 0 && (
-                            <Badge variant="destructive" className="ml-2">
-                              {projects.filter(p => p.workflow_status === "submitted_to_team").length}
-                            </Badge>
-                          )}
-                        </TabsTrigger>
-                        <TabsTrigger value="in_progress">In Progress</TabsTrigger>
-                        <TabsTrigger value="awaiting_client">Awaiting Client</TabsTrigger>
-                        <TabsTrigger value="approved">Approved</TabsTrigger>
-                      </TabsList>
-
-                      {/* All Projects */}
-                      <TabsContent value="all" className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-lg font-semibold">All Projects ({projects.length})</h3>
-                          <Button onClick={() => setShowAddProject(true)} size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Project
-                          </Button>
-                        </div>
-                        {loadingProjects ? (
-                          <div className="flex items-center justify-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                          </div>
-                        ) : projects.length === 0 ? (
-                          <p className="text-muted-foreground text-center py-8">No projects yet</p>
-                        ) : (
-                          <div className="space-y-3">
-                            {projects.map((project) => (
-                              <ProjectCard key={project.id} project={project} />
-                            ))}
-                          </div>
-                        )}
-                      </TabsContent>
-
-                      {/* Pending Review */}
-                      <TabsContent value="pending" className="space-y-4">
-                        <h3 className="text-lg font-semibold">
-                          Pending Review ({projects.filter(p => p.workflow_status === "submitted_to_team").length})
-                        </h3>
-                        {projects.filter(p => p.workflow_status === "submitted_to_team").length === 0 ? (
-                          <p className="text-muted-foreground text-center py-8">No projects pending review</p>
-                        ) : (
-                          <div className="space-y-3">
-                            {projects
-                              .filter(
-                                (p) => p.workflow_status === "submitted_to_team"
-                              )
-                              .map((project) => (
-                                <ProjectCard
-                                  key={project.id}
-                                  project={project}
-                                />
-                              ))}
-                          </div>
-                        )}
-                      </TabsContent>
-
-                      {/* In Progress */}
-                      <TabsContent value="in_progress" className="space-y-4">
-                        <h3 className="text-lg font-semibold">
-                          In Progress ({projects.filter(p => p.workflow_status === "team_in_progress").length})
-                        </h3>
-                        {projects.filter(p => p.workflow_status === "team_in_progress").length === 0 ? (
-                          <p className="text-muted-foreground text-center py-8">No projects in progress</p>
-                        ) : (
-                          <div className="space-y-3">
-                            {projects.filter(p => p.workflow_status === "team_in_progress").map((project) => (
-                              <ProjectCard key={project.id} project={project} showSendToClient />
-                            ))}
-                          </div>
-                        )}
-                      </TabsContent>
-
-                      {/* Awaiting Client */}
-                      <TabsContent value="awaiting_client" className="space-y-4">
-                        <h3 className="text-lg font-semibold">
-                          Awaiting Client ({projects.filter(p => ["awaiting_client_review", "revision_requested"].includes(p.workflow_status || "")).length})
-                        </h3>
-                        {projects.filter(p => ["awaiting_client_review", "revision_requested"].includes(p.workflow_status || "")).length === 0 ? (
-                          <p className="text-muted-foreground text-center py-8">No projects awaiting client review</p>
-                        ) : (
-                          <div className="space-y-3">
-                            {projects.filter(p => ["awaiting_client_review", "revision_requested"].includes(p.workflow_status || "")).map((project) => (
-                              <ProjectCard key={project.id} project={project} />
-                            ))}
-                          </div>
-                        )}
-                      </TabsContent>
-
-                      {/* Approved */}
-                      <TabsContent value="approved" className="space-y-4">
-                        <h3 className="text-lg font-semibold">
-                          Approved ({projects.filter(p => p.workflow_status === "approved").length})
-                        </h3>
-                        {projects.filter(p => p.workflow_status === "approved").length === 0 ? (
-                          <p className="text-muted-foreground text-center py-8">No approved projects yet</p>
-                        ) : (
-                          <div className="space-y-3">
-                            {projects.filter(p => p.workflow_status === "approved").map((project) => (
-                              <ProjectCard key={project.id} project={project} />
-                            ))}
-                          </div>
-                        )}
-                      </TabsContent>
-                    </Tabs>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Costs Tab */}
-              <TabsContent value="costs" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle>Cost Tracking</CardTitle>
-                        <CardDescription>Track all R&D-related costs for this claim</CardDescription>
-                      </div>
-                      <Dialog open={showCostDialog} onOpenChange={setShowCostDialog}>
-                        <DialogTrigger asChild>
-                          <Button>
-                            <Upload className="mr-2 h-4 w-4" />
-                            Upload Document
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Upload Evidence</DialogTitle>
-                            <DialogDescription>Upload supporting documentation for this claim</DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="doc-type">Document Type *</Label>
-                              <Select value={documentType} onValueChange={setDocumentType}>
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="supporting_evidence">Supporting Evidence</SelectItem>
-                                  <SelectItem value="financial_records">Financial Records</SelectItem>
-                                  <SelectItem value="technical_documentation">Technical Documentation</SelectItem>
-                                  <SelectItem value="correspondence">Correspondence</SelectItem>
-                                  <SelectItem value="other">Other</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label htmlFor="doc-project">Assign to Project (Optional)</Label>
-                              <Select value={documentProjectId} onValueChange={setDocumentProjectId}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select project..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">General (not project-specific)</SelectItem>
-                                  {claim.projects?.map((proj) => (
-                                    <SelectItem key={proj.id} value={proj.id}>
-                                      {proj.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label htmlFor="file-upload">Select File *</Label>
-                              <Input
-                                id="file-upload"
-                                type="file"
-                                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                                className="cursor-pointer"
-                              />
-                              {selectedFile && (
-                                <p className="text-sm text-slate-600 mt-2">
-                                  Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setShowDocumentDialog(false)}>
-                              Cancel
-                            </Button>
-                            <Button onClick={handleDocumentUpload} disabled={!selectedFile || uploadingDocument}>
-                              {uploadingDocument ? "Uploading..." : "Upload"}
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {claim.documents && claim.documents.length > 0 ? (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead>Project</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                            <TableHead className="w-[100px]">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {claim.documents.map((doc) => (
-                            <TableRow key={doc.id}>
-                              <TableCell>{doc.created_at ? format(new Date(doc.created_at), "dd/MM/yyyy") : "N/A"}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{doc.doc_type}</Badge>
-                              </TableCell>
-                              <TableCell className="max-w-xs truncate">{doc.title}</TableCell>
-                              <TableCell>
-                                {doc.project_id ? (
-                                  <span className="text-sm text-slate-600">
-                                    {claim.projects?.find(p => p.id === doc.project_id)?.name || "Unknown"}
-                                  </span>
-                                ) : (
-                                  <span className="text-sm text-slate-400">General</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right font-medium">{formatCurrency(doc.file_size || 0)}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  <Button variant="ghost" size="sm" onClick={() => handleDownloadDocument(doc)}>
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm">
-                                    <Trash2 className="h-4 w-4 text-red-600" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
+            {/* Filing & Approval Workflow – full-width card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Filing &amp; Approval Workflow</CardTitle>
+                <CardDescription>
+                  Manage internal QA, client review and HMRC submission steps.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                {/* Step 1 – Internal QA signoff */}
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold">
+                      Step 1 – Internal QA signoff
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Assign an internal admin reviewer and submit this claim for
+                      QA signoff.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3 md:flex-row md:items-end">
+                    <div className="flex-1">
+                      <Label htmlFor="qa-admin">Assign QA reviewer (admin)</Label>
+                      <Select
+                        value={selectedQaAdmin}
+                        onValueChange={setSelectedQaAdmin}
+                      >
+                        <SelectTrigger id="qa-admin">
+                          <SelectValue placeholder="Select admin reviewer" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {qaAdmins.map((admin) => (
+                            <SelectItem key={admin.id} value={admin.id}>
+                              {admin.full_name ?? admin.email ?? "Admin"}
+                            </SelectItem>
                           ))}
-                        </TableBody>
-                      </Table>
-                    ) : (
-                      <div className="text-center py-12 text-slate-500">
-                        <FileText className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-                        <p>No documents uploaded yet</p>
-                        <p className="text-sm">Upload supporting evidence for your R&D claim</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                        </SelectContent>
+                      </Select>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        The selected admin will receive a message with a link to
+                        this claim to review and approve.
+                      </p>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      disabled={submittingQa || !selectedQaAdmin}
+                      onClick={handleSubmitForQa}
+                    >
+                      {submittingQa ? "Submitting..." : "Submit for QA signoff"}
+                    </Button>
+                  </div>
+                </div>
 
-              {/* Companion Tab (internal value still 'sidekick') */}
-              <TabsContent value="sidekick" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          <RefreshCw className="h-5 w-5 text-orange-600" />
-                          AI Companion Analysis
-                        </CardTitle>
-                        <CardDescription>
-                          Get AI-powered insights and recommendations for this claim
-                        </CardDescription>
+                {/* Step 2 – Client review */}
+                <div className="space-y-3 border-t border-border pt-4">
+                  <div>
+                    <p className="text-sm font-semibold">
+                      Step 2 – Client review and comments
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Once QA is complete, issue this claim to the client for
+                      review and comments.
+                    </p>
+                  </div>
+
+                  {/* Issue to client button (after internal QA) */}
+                  {claim.status === "final_signoff" && (
+                    <Button
+                      variant="secondary"
+                      disabled={clientActionLoading}
+                      onClick={handleIssueToClient}
+                    >
+                      {clientActionLoading
+                        ? "Issuing..."
+                        : "Issue to client for comment"}
+                    </Button>
+                  )}
+
+                  {/* Client outcome controls when in client review */}
+                  {claim.status === "client_review" && (
+                    <div className="flex flex-col gap-3 md:flex-row md:items-end">
+                      <div className="flex-1">
+                        <Label htmlFor="client-feedback">
+                          Client comments (if returned)
+                        </Label>
+                        <Textarea
+                          id="client-feedback"
+                          placeholder="Record any comments or requested changes from the client..."
+                          value={clientFeedback}
+                          onChange={(e) =>
+                            setClientFeedback(e.target.value)
+                          }
+                        />
                       </div>
-                      <div className="flex gap-2">
-                        {aiAnalysis && (
-                          <Dialog open={showSendAnalysisDialog} onOpenChange={setShowSendAnalysisDialog}>
-                            <DialogTrigger asChild>
-                              <Button variant="outline">
-                                <Users className="mr-2 h-4 w-4" />
-                                Send Analysis
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Send AI Analysis</DialogTitle>
-                                <DialogDescription>
-                                  Send this AI analysis as a message to a team member or client
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div>
-                                  <Label htmlFor="send-to">Send To *</Label>
-                                  <Select value={sendTo} onValueChange={setSendTo}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select recipient..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {claim.bd_owner && (
-                                        <SelectItem value={claim.bd_owner.id}>
-                                          {claim.bd_owner.full_name} (BD Owner)
-                                        </SelectItem>
-                                      )}
-                                      {claim.technical_lead && (
-                                        <SelectItem value={claim.technical_lead.id}>
-                                          {claim.technical_lead.full_name} (Technical Lead)
-                                        </SelectItem>
-                                      )}
-                                      {claim.cost_lead && (
-                                        <SelectItem value={claim.cost_lead.id}>
-                                          {claim.cost_lead.full_name} (Cost Lead)
-                                        </SelectItem>
-                                      )}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div>
-                                  <Label>Analysis Preview</Label>
-                                  <div className="mt-2 p-4 bg-slate-50 rounded-lg max-h-64 overflow-y-auto">
-                                    <p className="text-sm text-slate-600 whitespace-pre-wrap">
-                                      {aiAnalysis.substring(0, 200)}...
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                              <DialogFooter>
-                                <Button 
-                                  variant="outline" 
-                                  onClick={() => setShowSendAnalysisDialog(false)}
-                                >
-                                  Cancel
-                                </Button>
-                                <Button 
-                                  onClick={handleSendAnalysis} 
-                                  disabled={!sendTo || sendingMessage}
-                                >
-                                  {sendingMessage ? "Sending..." : "Send Message"}
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        )}
-                        <Button 
-                          onClick={handleGenerateAnalysis} 
-                          disabled={loadingAnalysis}
+                      <div className="flex flex-col gap-2 md:w-56">
+                        <Button
+                          variant="secondary"
+                          disabled={clientActionLoading}
+                          onClick={handleClientApprove}
                         >
-                          {loadingAnalysis ? (
-                            <>
-                              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                              Analyzing...
-                            </>
-                          ) : (
-                            <>
-                              <RefreshCw className="mr-2 h-4 w-4" />
-                              Generate Analysis
-                            </>
-                          )}
+                          {clientActionLoading
+                            ? "Saving..."
+                            : "Client approved – ready to file"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          disabled={
+                            clientActionLoading || !clientFeedback.trim()
+                          }
+                          onClick={handleClientComments}
+                        >
+                          Client comments – back to draft
                         </Button>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    {!aiAnalysis && !loadingAnalysis && (
-                      <div className="text-center py-12 text-slate-500">
-                        <RefreshCw className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-                        <p className="font-medium mb-2">No Analysis Generated Yet</p>
-                        <p className="text-sm mb-4">
-                          Click &quot;Generate Analysis&quot; to get AI-powered insights and recommendations
-                        </p>
-                        <div className="max-w-md mx-auto text-left space-y-2">
-                          <p className="text-sm font-medium">The AI will analyze:</p>
-                          <ul className="text-sm space-y-1 list-disc list-inside text-slate-600">
-                            <li>Technical quality and R&D qualification</li>
-                            <li>Documentation completeness</li>
-                            <li>Cost justification and categorization</li>
-                            <li>Potential HMRC audit risks</li>
-                            <li>Specific improvement recommendations</li>
-                          </ul>
-                        </div>
-                      </div>
-                    )}
+                  )}
+                </div>
 
-                    {loadingAnalysis && (
-                      <div className="text-center py-12">
-                        <RefreshCw className="h-12 w-12 mx-auto mb-3 text-orange-600 animate-spin" />
-                        <p className="font-medium text-slate-900 mb-2">Analyzing Claim...</p>
-                        <p className="text-sm text-slate-600">
-                          AI is reviewing your projects, costs, and documentation
-                        </p>
-                      </div>
-                    )}
+                {/* Step 3 – HMRC submission */}
+                <div className="space-y-4 border-t border-border pt-4">
+                  <div>
+                    <p className="text-sm font-semibold">
+                      Step 3 – HMRC submission
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Once the client has approved, issue this claim to HMRC and
+                      track any queries and outcomes.
+                    </p>
+                  </div>
 
-                    {aiAnalysis && !loadingAnalysis && (
-                      <div className="prose max-w-none">
-                        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-lg p-6">
-                          <div className="flex items-start gap-3 mb-4">
-                            <div className="p-2 bg-orange-100 rounded-lg">
-                              <RefreshCw className="h-5 w-5 text-orange-600" />
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                    {claim.status === "ready_to_file" && (
+                      <Button
+                        variant="secondary"
+                        disabled={hmrcActionLoading}
+                        onClick={handleIssueToHmrc}
+                      >
+                        {hmrcActionLoading ? "Submitting..." : "Issue to HMRC"}
+                      </Button>
+                    )}
+                    {claim.actual_submission_date && (
+                      <p className="text-xs text-muted-foreground">
+                        Submitted to HMRC on{" "}
+                        <span className="font-semibold">
+                          {format(
+                            new Date(claim.actual_submission_date),
+                            "PPP"
+                          )}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* HMRC responses section */}
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        HMRC responses &amp; queries
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Log questions from HMRC and your team&apos;s responses.
+                        Use the Companion tab on this claim to help draft
+                        responses.
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      {hmrcResponses.map((item, index) => (
+                        <div
+                          key={index}
+                          className="space-y-2 rounded-lg border border-border/50 bg-background/40 p-3"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-muted-foreground">
+                              Exchange {index + 1}
+                            </span>
+                          </div>
+                          <div className="grid gap-2 md:grid-cols-2">
+                            <div className="space-y-1">
+                              <Label className="text-xs">
+                                HMRC question / point
+                              </Label>
+                              <Textarea
+                                rows={3}
+                                value={item.question}
+                                onChange={(e) =>
+                                  handleHmrcResponseChange(
+                                    index,
+                                    "question",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Paste the HMRC question or point here..."
+                              />
                             </div>
-                            <div>
-                              <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                                AI Analysis Results
-                              </h3>
-                              <p className="text-sm text-slate-600">
-                                Generated insights and recommendations for improvement
-                              </p>
+                            <div className="space-y-1">
+                              <Label className="text-xs">
+                                Team response / counter
+                              </Label>
+                              <Textarea
+                                rows={3}
+                                value={item.team_response}
+                                onChange={(e) =>
+                                  handleHmrcResponseChange(
+                                    index,
+                                    "team_response",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Draft your response to HMRC..."
+                              />
                             </div>
                           </div>
-                          <div className="bg-white rounded-lg p-6 border border-orange-100">
-                            <div className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddHmrcResponseRow}
+                      >
+                        Add another response
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleSaveHmrcResponses}
+                      >
+                        Save responses
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleExportHmrcResponsePdf}
+                      >
+                        Export response PDF
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Outcome section */}
+                  <div className="mt-6 space-y-3">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        Claim outcome &amp; ratios
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Record the submitted and received values to track
+                        realisation ratios for sales.
+                      </p>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div>
+                        <Label htmlFor="submitted-value">
+                          Submitted claim value (£)
+                        </Label>
+                        <Input
+                          id="submitted-value"
+                          type="number"
+                          value={outcomeSubmittedValue}
+                          onChange={(e) =>
+                            setOutcomeSubmittedValue(e.target.value)
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="received-value">
+                          Received value (£)
+                        </Label>
+                        <Input
+                          id="received-value"
+                          type="number"
+                          value={outcomeReceivedValue}
+                          onChange={(e) =>
+                            setOutcomeReceivedValue(e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col justify-end">
+                        {outcomeSubmittedValue && outcomeReceivedValue ? (
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              Realisation vs submitted
+                            </p>
+                            <p className="text-lg font-semibold">
+                              {(
+                                (Number(outcomeReceivedValue) /
+                                  Math.max(
+                                    Number(outcomeSubmittedValue),
+                                    1
+                                  )) *
+                                100
+                              ).toFixed(1)}
+                              %
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            Enter both values to see the realised percentage.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleSaveOutcome}
+                      >
+                        Save outcome
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={claim.status === "completed"}
+                        onClick={handleMarkClaimCompleted}
+                      >
+                        Mark claim completed
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* PROJECTS – simple list using ProjectCard */}
+          <TabsContent value="projects" className="mt-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Projects</h2>
+              <Button size="sm" onClick={() => setShowAddProject(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add project
+              </Button>
+            </div>
+            {loadingProjects ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
+              </div>
+            ) : projects.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No projects linked to this claim yet.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {projects.map((project) => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* COSTS – placeholder (existing costs UI can be reintroduced here) */}
+          <TabsContent value="costs" className="mt-6 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Costs</CardTitle>
+                <CardDescription>
+                  Cost tracking for this claim can be managed here.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Detailed cost management will be wired into this tab in a later
+                  iteration. Existing costs and documents remain accessible via
+                  other parts of the app.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* EVIDENCE – placeholder for now */}
+          <TabsContent value="evidence" className="mt-6 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Evidence</CardTitle>
+                <CardDescription>
+                  Evidence management for this claim will be available here.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Evidence management for claims is handled from the main
+                  Evidence area. This tab can be extended to show linked
+                  evidence items in a future iteration.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* COMPANION – AI analysis */}
+          <TabsContent value="companion" className="mt-6 space-y-4">
+            <Card>
+              <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle>AI Companion Analysis</CardTitle>
+                  <CardDescription>
+                    Generate and share AI-powered insights for this claim.
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  {aiAnalysis && (
+                    <Dialog
+                      open={showSendAnalysisDialog}
+                      onOpenChange={setShowSendAnalysisDialog}
+                    >
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Users className="mr-2 h-4 w-4" />
+                          Send analysis
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Send AI analysis</DialogTitle>
+                          <DialogDescription>
+                            Send this AI analysis as a message to a team member.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label>Recipient</Label>
+                            <Select value={sendTo} onValueChange={setSendTo}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select recipient..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {claim.bd_owner_id && (
+                                  <SelectItem value={claim.bd_owner_id}>
+                                    BD owner
+                                  </SelectItem>
+                                )}
+                                {claim.technical_lead_id && (
+                                  <SelectItem value={claim.technical_lead_id}>
+                                    Technical lead
+                                  </SelectItem>
+                                )}
+                                {claim.cost_lead_id && (
+                                  <SelectItem value={claim.cost_lead_id}>
+                                    Cost lead
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label>Preview</Label>
+                            <div className="mt-2 max-h-64 overflow-y-auto rounded-md bg-muted p-3 text-sm">
                               {aiAnalysis}
                             </div>
                           </div>
                         </div>
-                      </div>
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowSendAnalysisDialog(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handleSendAnalysis}
+                            disabled={!sendTo || sendingMessage}
+                          >
+                            {sendingMessage ? "Sending..." : "Send"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={handleGenerateAnalysis}
+                    disabled={loadingAnalysis}
+                  >
+                    {loadingAnalysis ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Generate analysis
+                      </>
                     )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </div>
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {!aiAnalysis && !loadingAnalysis && (
+                  <p className="text-sm text-muted-foreground">
+                    No analysis yet. Click &quot;Generate analysis&quot; to
+                    create an AI summary of this claim for internal or client
+                    use.
+                  </p>
+                )}
+                {loadingAnalysis && (
+                  <p className="text-sm text-muted-foreground">
+                    Generating analysis...
+                  </p>
+                )}
+                {aiAnalysis && !loadingAnalysis && (
+                  <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap">
+                    {aiAnalysis}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
