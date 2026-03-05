@@ -1825,6 +1825,42 @@ export default function ClaimDetailPage() {
                           </>
                         )}
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleDownloadDraftPdf}
+                        disabled={downloadingDraftPdf}
+                      >
+                        {downloadingDraftPdf ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            Downloading draft...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="mr-2 h-4 w-4" />
+                            Download draft pack
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleDownloadFinalPdf}
+                        disabled={downloadingFinalPdf}
+                      >
+                        {downloadingFinalPdf ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            Downloading final...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="mr-2 h-4 w-4" />
+                            Download final pack
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                   {(draftSummary || finaliseSummary) && (
