@@ -32,6 +32,8 @@ export default async function handler(
     .from("claim_projects")
     .select("*")
     .eq("source_sidekick_project_id", sidekickProjectId)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (fetchError) {
