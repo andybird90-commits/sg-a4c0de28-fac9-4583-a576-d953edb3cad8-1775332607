@@ -1006,8 +1006,10 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           director_id: string | null
+          draft_pdf_url: string | null
           engagement_id: string | null
           expected_submission_date: string | null
+          final_pdf_url: string | null
           hmrc_reference: string | null
           hmrc_response_pdf_paths: string[] | null
           hmrc_responses: Json | null
@@ -1040,8 +1042,10 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           director_id?: string | null
+          draft_pdf_url?: string | null
           engagement_id?: string | null
           expected_submission_date?: string | null
+          final_pdf_url?: string | null
           hmrc_reference?: string | null
           hmrc_response_pdf_paths?: string[] | null
           hmrc_responses?: Json | null
@@ -1074,8 +1078,10 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           director_id?: string | null
+          draft_pdf_url?: string | null
           engagement_id?: string | null
           expected_submission_date?: string | null
+          final_pdf_url?: string | null
           hmrc_reference?: string | null
           hmrc_response_pdf_paths?: string[] | null
           hmrc_responses?: Json | null
@@ -2537,6 +2543,58 @@ export type Database = {
           },
         ]
       }
+      rd_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string
+          claim_id: string | null
+          created_at: string
+          details_json: Json | null
+          id: string
+          project_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          claim_id?: string | null
+          created_at?: string
+          details_json?: Json | null
+          id?: string
+          project_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          claim_id?: string | null
+          created_at?: string
+          details_json?: Json | null
+          id?: string
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rd_audit_log_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rd_audit_log_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rd_audit_log_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "claim_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rd_claim_evidence: {
         Row: {
           attached_by: string | null
@@ -2594,6 +2652,128 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rd_project_narrative_state: {
+        Row: {
+          claim_project_id: string
+          current_narrative_id: string | null
+          final_narrative_id: string | null
+          id: string
+          last_edited_at: string | null
+          last_edited_by: string | null
+        }
+        Insert: {
+          claim_project_id: string
+          current_narrative_id?: string | null
+          final_narrative_id?: string | null
+          id?: string
+          last_edited_at?: string | null
+          last_edited_by?: string | null
+        }
+        Update: {
+          claim_project_id?: string
+          current_narrative_id?: string | null
+          final_narrative_id?: string | null
+          id?: string
+          last_edited_at?: string | null
+          last_edited_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rd_project_narrative_state_claim_project_id_fkey"
+            columns: ["claim_project_id"]
+            isOneToOne: true
+            referencedRelation: "claim_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rd_project_narrative_state_current_narrative_id_fkey"
+            columns: ["current_narrative_id"]
+            isOneToOne: false
+            referencedRelation: "rd_project_narratives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rd_project_narrative_state_final_narrative_id_fkey"
+            columns: ["final_narrative_id"]
+            isOneToOne: false
+            referencedRelation: "rd_project_narratives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rd_project_narrative_state_last_edited_by_fkey"
+            columns: ["last_edited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rd_project_narratives: {
+        Row: {
+          advance_sought: string
+          baseline_knowledge: string
+          claim_project_id: string
+          created_at: string
+          created_by: string | null
+          generated_by: string | null
+          id: string
+          outcome: string
+          quality_score: number | null
+          status: string
+          technological_uncertainty: string
+          updated_at: string
+          version_number: number
+          work_undertaken: string
+        }
+        Insert: {
+          advance_sought: string
+          baseline_knowledge: string
+          claim_project_id: string
+          created_at?: string
+          created_by?: string | null
+          generated_by?: string | null
+          id?: string
+          outcome: string
+          quality_score?: number | null
+          status?: string
+          technological_uncertainty: string
+          updated_at?: string
+          version_number?: number
+          work_undertaken: string
+        }
+        Update: {
+          advance_sought?: string
+          baseline_knowledge?: string
+          claim_project_id?: string
+          created_at?: string
+          created_by?: string | null
+          generated_by?: string | null
+          id?: string
+          outcome?: string
+          quality_score?: number | null
+          status?: string
+          technological_uncertainty?: string
+          updated_at?: string
+          version_number?: number
+          work_undertaken?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rd_project_narratives_claim_project_id_fkey"
+            columns: ["claim_project_id"]
+            isOneToOne: false
+            referencedRelation: "claim_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rd_project_narratives_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

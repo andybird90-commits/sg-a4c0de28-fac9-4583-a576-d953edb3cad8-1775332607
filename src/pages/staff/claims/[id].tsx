@@ -335,6 +335,12 @@ export default function ClaimDetailPage() {
   const [schemeDraft, setSchemeDraft] = useState("");
   const [savingScheme, setSavingScheme] = useState(false);
 
+  // New state for draft/finalise actions
+  const [generatingDraft, setGeneratingDraft] = useState(false);
+  const [finalisingPack, setFinalisingPack] = useState(false);
+  const [draftSummary, setDraftSummary] = useState<any | null>(null);
+  const [finaliseSummary, setFinaliseSummary] = useState<any | null>(null);
+
   // Derived state for projects to match the new UI code
   const projects = claim?.projects || [];
   const loadingProjects = loading;
@@ -1569,6 +1575,137 @@ export default function ClaimDetailPage() {
     }
   };
 
+  const handleGenerateDraftClaim = async (): Promise<void> => {
+    if (!claim) return;
+
+    try {
+      setGeneratingDraft(true);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        toast({
+          title: "Not authenticated",
+          description:
+            "You need to be logged in to generate draft narratives.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(
+        `/api/rd/claims/${claim.id}/generate-draft`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const message =
+          data?.error ||
+          data?.message ||
+          "Failed to generate draft narratives";
+        throw new Error(message);
+      }
+
+      setDraftSummary(data);
+
+      toast({
+        title: "Draft claim generated",
+        description: `Generated ${data.generated_count ?? 0} draft narratives out of ${data.total_projects ?? 0} projects.`,
+      });
+
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error: any) {
+      console.error("Error generating draft claim:", error);
+      toast({
+        title: "Error",
+        description:
+          error?.message || "Failed to generate draft narratives",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingDraft(false);
+    }
+  };
+
+  const handleFinaliseClaimPack = async (): Promise<void> => {
+    if (!claim) return;
+
+    try {
+      setFinalisingPack(true);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        toast({
+          title: "Not authenticated",
+          description:
+            "You need to be logged in to finalise the claim pack.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(
+        `/api/rd/claims/${claim.id}/finalise-pack`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const message =
+          data?.error ||
+          data?.message ||
+          "Failed to finalise the claim pack";
+        throw new Error(message);
+      }
+
+      setFinaliseSummary(data);
+
+      const missingCount = data.missing_count ?? 0;
+
+      toast({
+        title: "Claim pack finalised",
+        description:
+          missingCount > 0
+            ? `Locked ${data.locked_projects_count ?? 0} projects, but ${missingCount} project(s) are missing narratives.`
+            : `Locked ${data.locked_projects_count ?? 0} projects. Claim is ready to file.`,
+      });
+
+      if (id && typeof id === "string") {
+        await loadClaim(id);
+      }
+    } catch (error: any) {
+      console.error("Error finalising claim pack:", error);
+      toast({
+        title: "Error",
+        description:
+          error?.message || "Failed to finalise the claim pack",
+        variant: "destructive",
+      });
+    } finally {
+      setFinalisingPack(false);
+    }
+  };
+
   const getSchemeMultipliers = (scheme: string | null | undefined) => {
     const key = (scheme || "").toUpperCase();
 
@@ -1809,6 +1946,89 @@ export default function ClaimDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-8">
+                {/* Claim pack actions */}
+                <div className="space-y-3 rounded-md border border-border/60 bg-background/40 p-3">
+                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        Claim pack actions
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Generate draft narratives for each project, then lock
+                        them when the claim is ready to be issued.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={handleGenerateDraftClaim}
+                        disabled={generatingDraft}
+                      >
+                        {generatingDraft ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            Generating drafts...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Generate draft claim
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleFinaliseClaimPack}
+                        disabled={finalisingPack}
+                      >
+                        {finalisingPack ? (
+                          <>
+                            <Lock className="mr-2 h-4 w-4 animate-spin" />
+                            Finalising...
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="mr-2 h-4 w-4" />
+                            Finalise claim pack
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  {(draftSummary || finaliseSummary) && (
+                    <div className="mt-2 grid gap-3 text-xs text-muted-foreground md:grid-cols-2">
+                      {draftSummary && (
+                        <div>
+                          <p className="font-semibold text-foreground">
+                            Draft generation summary
+                          </p>
+                          <p>
+                            Projects: {draftSummary.total_projects ?? 0} •
+                            Generated: {draftSummary.generated_count ?? 0} •
+                            Skipped: {draftSummary.skipped_count ?? 0} •
+                            Errors: {draftSummary.error_count ?? 0}
+                          </p>
+                        </div>
+                      )}
+                      {finaliseSummary && (
+                        <div>
+                          <p className="font-semibold text-foreground">
+                            Finalisation summary
+                          </p>
+                          <p>
+                            Locked:{" "}
+                            {finaliseSummary.locked_projects_count ?? 0} •{" "}
+                            Already final:{" "}
+                            {finaliseSummary.already_final_count ?? 0} •
+                            Missing: {finaliseSummary.missing_count ?? 0}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                 {/* Step 1 – Internal QA signoff */}
                 <div className="space-y-3">
                   <div>
