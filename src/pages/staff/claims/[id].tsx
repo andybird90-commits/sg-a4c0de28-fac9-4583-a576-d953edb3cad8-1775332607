@@ -883,18 +883,44 @@ export default function ClaimDetailPage() {
         (data as { signedUrl?: string }).signedUrl;
 
       if (signedUrl) {
-        const a = document.createElement("a");
-        a.href = signedUrl;
-        a.download = `claim-${claim.id}-draft-pack.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        try {
+          const fileResponse = await fetch(signedUrl);
+          if (!fileResponse.ok) {
+            throw new Error(
+              `Failed to fetch draft PDF from signed URL (status ${fileResponse.status})`
+            );
+          }
 
-        toast({
-          title: "Draft pack downloaded",
-          description: "Draft claim PDF has been downloaded.",
-        });
-        return;
+          const blob = await fileResponse.blob();
+          const url = window.URL.createObjectURL(blob);
+
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `claim-${claim.id}-draft-pack.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+
+          toast({
+            title: "Draft pack downloaded",
+            description: "Draft claim PDF has been downloaded.",
+          });
+          return;
+        } catch (error: any) {
+          console.error(
+            "Error downloading draft PDF via signed URL:",
+            error
+          );
+          toast({
+            title: "Error downloading draft pack",
+            description:
+              error?.message ||
+              "Failed to download the draft PDF from the secure link. Trying direct download instead.",
+            variant: "destructive",
+          });
+          // Fall through to direct storage-based download below if available.
+        }
       }
 
       const pdfPath = (data as { pdf_url?: string }).pdf_url;
@@ -908,7 +934,7 @@ export default function ClaimDetailPage() {
         return;
       }
 
-      // Draft PDFs are stored in the Draft-Claims bucket (final packs use Submitted-Claims)
+      // Draft PDFs are stored in the Draft-Claims bucket
       const { data: fileData, error: downloadError } = await supabase.storage
         .from("Draft-Claims")
         .download(pdfPath);
