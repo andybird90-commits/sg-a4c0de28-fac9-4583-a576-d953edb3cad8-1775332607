@@ -17,6 +17,7 @@ import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
 import { sidekickCommentService } from "@/services/sidekickCommentService";
 import { feasibilityService, type FeasibilityAnalysis } from "@/services/feasibilityService";
 import { sidekickCostAdviceService, type SidekickCostAdvice } from "@/services/sidekickCostAdviceService";
+import { sidekickTimelineService } from "@/services/sidekickTimelineService";
 import { MessageWidget } from "@/components/MessageWidget";
 import { ProjectCostSummary } from "@/components/projects/ProjectCostSummary";
 import { ProjectGantt } from "@/components/projects/ProjectGantt";

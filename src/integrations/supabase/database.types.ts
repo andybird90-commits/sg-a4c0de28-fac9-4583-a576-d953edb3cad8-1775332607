@@ -2926,6 +2926,44 @@ export type Database = {
           },
         ]
       }
+      sidekick_project_timeline_items: {
+        Row: {
+          created_at: string
+          created_by: string
+          end_date: string
+          id: string
+          name: string
+          project_id: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          end_date: string
+          id?: string
+          name: string
+          project_id: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          end_date?: string
+          id?: string
+          name?: string
+          project_id?: string
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sidekick_project_timeline_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "sidekick_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sidekick_projects: {
         Row: {
           accepted_at: string | null

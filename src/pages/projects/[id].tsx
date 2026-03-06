@@ -1454,6 +1454,143 @@ export default function ProjectDetailPage() {
             />
           </div>
 
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg sm:text-xl">Project timeline (Gantt)</CardTitle>
+              <CardDescription className="text-sm">
+                Capture the key activities for this project with start and finish dates. This helps your R&amp;D team
+                understand how work was sequenced across the accounting period.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.6fr)] items-start">
+                <div className="space-y-4">
+                  {canEdit && (
+                    <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3 sm:p-4">
+                      <h3 className="text-sm font-semibold text-slate-100">Add timeline activity</h3>
+                      <p className="text-xs text-slate-400">
+                        Add design phases, experiments, prototyping rounds, or testing windows. You can keep it high level.
+                      </p>
+                      <div className="space-y-2">
+                        <Label htmlFor="timeline-name" className="text-xs">
+                          Activity name
+                        </Label>
+                        <Input
+                          id="timeline-name"
+                          value={newTimelineName}
+                          onChange={(e) => setNewTimelineName(e.target.value)}
+                          placeholder="e.g. Prototype rig build, control algorithm testing"
+                          className="text-xs sm:text-sm"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="timeline-start" className="text-xs">
+                            Start date
+                          </Label>
+                          <Input
+                            id="timeline-start"
+                            type="date"
+                            value={newTimelineStart}
+                            onChange={(e) => setNewTimelineStart(e.target.value)}
+                            className="text-xs sm:text-sm"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="timeline-end" className="text-xs">
+                            Finish date
+                          </Label>
+                          <Input
+                            id="timeline-end"
+                            type="date"
+                            value={newTimelineEnd}
+                            onChange={(e) => setNewTimelineEnd(e.target.value)}
+                            className="text-xs sm:text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleAddTimelineItem}
+                          disabled={isSavingTimeline}
+                        >
+                          {isSavingTimeline ? "Adding..." : "Add activity"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-slate-100">Activities</h3>
+                    {timelineItems.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No activities added yet. Use the form above to add design, build, test, or analysis phases.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {timelineItems.map((item) => (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between gap-2 rounded-md border border-slate-800 bg-slate-950/60 px-3 py-2"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-slate-100 truncate">
+                                {item.name || "Untitled activity"}
+                              </p>
+                              <p className="text-[11px] text-slate-400">
+                                {item.start_date
+                                  ? new Date(item.start_date).toLocaleDateString("en-GB", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "numeric",
+                                    })
+                                  : "No start date"}{" "}
+                                –{" "}
+                                {item.end_date
+                                  ? new Date(item.end_date).toLocaleDateString("en-GB", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "numeric",
+                                    })
+                                  : "No end date"}
+                              </p>
+                            </div>
+                            {canEdit && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="flex-shrink-0"
+                                onClick={() => handleDeleteTimelineItem(item.id)}
+                                aria-label="Delete activity"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 sm:p-4">
+                  <h3 className="mb-2 text-sm font-semibold text-slate-100">Visual timeline</h3>
+                  <ProjectGantt
+                    items={timelineItems.map((item) => ({
+                      id: item.id,
+                      name: item.name || "Untitled activity",
+                      start_date: item.start_date,
+                      end_date: item.end_date,
+                    }))}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Tabs defaultValue="feasibility" className="mt-6">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="feasibility">Feasibility</TabsTrigger>
