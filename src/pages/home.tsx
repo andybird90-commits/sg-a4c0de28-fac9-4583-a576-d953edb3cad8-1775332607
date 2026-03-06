@@ -24,11 +24,13 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
+  Mic,
 } from "lucide-react";
 import { evidenceService } from "@/services/evidenceService";
 import { organisationService, type Project } from "@/services/organisationService";
 import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { VoiceNoteModal } from "@/components/voice-notes/VoiceNoteModal";
 
 export default function HomePage() {
   const router = useRouter();
@@ -43,6 +45,7 @@ export default function HomePage() {
   });
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
+  const [isVoiceNoteOpen, setIsVoiceNoteOpen] = useState(false);
 
   useEffect(() => {
     if (authLoading) {
@@ -219,14 +222,16 @@ export default function HomePage() {
                   )}
                 </div>
               </div>
-              <Button
-                onClick={() => router.push("/projects/new")}
-                size="lg"
-                className="gradient-primary shadow-professional-md hover:shadow-professional-lg transition-professional w-full sm:w-auto text-slate-950"
-              >
-                <FolderOpen className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                New Project
-              </Button>
+              <div className="flex w-full sm:w-auto sm:justify-end">
+                <Button
+                  onClick={() => setIsVoiceNoteOpen(true)}
+                  size="lg"
+                  className="gradient-primary shadow-professional-md hover:shadow-professional-lg transition-professional w-full sm:w-auto text-slate-950"
+                >
+                  <Mic className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                  Voice Note
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -473,6 +478,11 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+      <VoiceNoteModal
+        open={isVoiceNoteOpen}
+        onClose={() => setIsVoiceNoteOpen(false)}
+        organisationId={currentOrg.id}
+      />
     </Layout>
   );
 }
