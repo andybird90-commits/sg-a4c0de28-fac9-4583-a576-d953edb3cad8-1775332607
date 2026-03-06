@@ -822,10 +822,29 @@ export default function ClaimDetailPage() {
     try {
       setDownloadingDraftPdf(true);
 
+      // Ensure we have a valid Supabase session/JWT for the API call
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        toast({
+          title: "Not authenticated",
+          description:
+            "You need to be logged in to download the draft claim pack.",
+          variant: "destructive",
+        });
+        setDownloadingDraftPdf(false);
+        return;
+      }
+
       const response = await fetch(
         `/api/rd/claims/${claim.id}/pdf/draft`,
         {
           method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         }
       );
 
@@ -870,8 +889,9 @@ export default function ClaimDetailPage() {
         return;
       }
 
+      // Draft PDFs are stored in the Draft-Claims bucket (final packs use Submitted-Claims)
       const { data: fileData, error: downloadError } = await supabase.storage
-        .from("Submitted-Claims")
+        .from("Draft-Claims")
         .download(pdfPath);
 
       if (downloadError || !fileData) {
