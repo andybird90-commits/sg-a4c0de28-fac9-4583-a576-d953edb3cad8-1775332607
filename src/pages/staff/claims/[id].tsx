@@ -697,7 +697,7 @@ export default function ClaimDetailPage() {
 
       toast({
         title: "Draft pack generated",
-        description: "The draft R&D claim pack PDF has been saved for this claim.",
+        description: "The draft R&amp;D claim pack PDF has been saved for this claim.",
       });
 
       // Optionally refetch claim or update local state if you display draft_pdf_url
@@ -1853,16 +1853,22 @@ export default function ClaimDetailPage() {
       approved: { label: "Approved", className: "bg-emerald-100 text-emerald-800" },
     };
 
-    const config = statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-800" };
-    return <Badge variant="secondary" className={config.className}>{config.label}</Badge>;
+    const config =
+      statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-800" };
+    return (
+      <Badge variant="secondary" className={config.className}>
+        {config.label}
+      </Badge>
+    );
   };
 
   const projectEvidenceCount = Object.values(clientEvidenceByProject).reduce(
-    (sum, items) => sum + items.length,
+    (total, items) => total + items.length,
     0
   );
+
   const totalDocumentsCount =
-    (claim.documents ? claim.documents.length : 0) + projectEvidenceCount;
+    (claim?.documents?.length ?? 0) + projectEvidenceCount;
 
   if (loading) {
     return (
