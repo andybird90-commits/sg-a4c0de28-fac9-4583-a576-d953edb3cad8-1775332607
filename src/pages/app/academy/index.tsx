@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import Link from "next/link";
 import { Layout } from "@/components/Layout";
 import { SEO } from "@/components/SEO";
@@ -58,6 +58,52 @@ const ACADEMY_MODULES: AcademyModule[] = [
   },
 ];
 
+interface CertificationStatus {
+  loading: boolean;
+  eligible: boolean;
+  reason?: string;
+}
+
+function useCertificationStatus(): [CertificationStatus, () => Promise<void>] {
+  const [status, setStatus] = useState<CertificationStatus>({
+    loading: true,
+    eligible: false,
+  });
+
+  const refresh = async () => {
+    setStatus((prev) => ({ ...prev, loading: true }));
+    try {
+      const response = await fetch("/api/academy/certification/status");
+      if (!response.ok) {
+        setStatus({
+          loading: false,
+          eligible: false,
+          reason: "Unable to load certification status.",
+        });
+        return;
+      }
+      const json = await response.json();
+      setStatus({
+        loading: false,
+        eligible: json.eligible,
+        reason: json.reason,
+      });
+    } catch {
+      setStatus({
+        loading: false,
+        eligible: false,
+        reason: "Unable to load certification status.",
+      });
+    }
+  };
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  return [status, refresh];
+}
+
 function getStatusLabel(status: AcademyModule["status"]): string {
   switch (status) {
     case "completed":
@@ -84,6 +130,7 @@ function getStatusChipClasses(status: AcademyModule["status"]): string {
 
 export default function RdAgentAcademyPage() {
   const { user } = useApp();
+  const [certStatus] = useCertificationStatus();
 
   const totals = useMemo(() => {
     const total = ACADEMY_MODULES.length;

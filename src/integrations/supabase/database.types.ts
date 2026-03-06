@@ -15,6 +15,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      academy_certificates: {
+        Row: {
+          certificate_id: string
+          completed_at: string
+          created_at: string
+          id: string
+          recipient_name: string
+          user_id: string
+          verification_code: string
+        }
+        Insert: {
+          certificate_id: string
+          completed_at?: string
+          created_at?: string
+          id?: string
+          recipient_name: string
+          user_id: string
+          verification_code: string
+        }
+        Update: {
+          certificate_id?: string
+          completed_at?: string
+          created_at?: string
+          id?: string
+          recipient_name?: string
+          user_id?: string
+          verification_code?: string
+        }
+        Relationships: []
+      }
+      academy_module_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          last_score: number | null
+          module_id: string
+          quiz_passed: boolean
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_score?: number | null
+          module_id: string
+          quiz_passed?: boolean
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          last_score?: number | null
+          module_id?: string
+          quiz_passed?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_accounts: {
         Row: {
           access_token: string | null
