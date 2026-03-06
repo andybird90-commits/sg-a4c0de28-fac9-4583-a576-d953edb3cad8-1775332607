@@ -685,6 +685,8 @@ export default function ProjectDetailPage() {
           </CardContent>
         </Card>
 
+        <ProjectCostSummary items={costAdvice} schemeLabel={schemeLabel} />
+
         {/* R&D Details Tabs */}
         <Tabs defaultValue="technical" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
@@ -1427,8 +1429,6 @@ export default function ProjectDetailPage() {
             )}
           </CardContent>
         </Card>
-
-        <ProjectCostSummary items={costAdvice} schemeLabel={schemeLabel} />
       </div>
       <Dialog
         open={evidenceDialogOpen}
