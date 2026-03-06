@@ -10,6 +10,7 @@ interface VoiceNoteModalProps {
   open: boolean;
   onClose: () => void;
   organisationId: string;
+  userId: string;
 }
 
 async function blobToBase64(blob: Blob): Promise<string> {
@@ -27,7 +28,7 @@ async function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-export function VoiceNoteModal({ open, onClose, organisationId }: VoiceNoteModalProps) {
+export function VoiceNoteModal({ open, onClose, organisationId, userId }: VoiceNoteModalProps) {
   const { status, isRecording, audioUrl, audioBlob, recordingSeconds, error: recordingError, startRecording, stopRecording, reset } =
     useAudioRecorder({ maxDurationSeconds: 120 });
 
@@ -68,6 +69,7 @@ export function VoiceNoteModal({ open, onClose, organisationId }: VoiceNoteModal
           audioBase64,
           mimeType: audioBlob.type || "audio/webm",
           organisationId,
+          userId,
           additionalContext: additionalContext.trim() || null,
         }),
       });

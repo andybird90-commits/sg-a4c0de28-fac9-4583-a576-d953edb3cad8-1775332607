@@ -482,6 +482,7 @@ export default function HomePage() {
         open={isVoiceNoteOpen}
         onClose={() => setIsVoiceNoteOpen(false)}
         organisationId={currentOrg.id}
+        userId={user?.id ?? ""}
       />
     </Layout>
   );

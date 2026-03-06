@@ -2398,6 +2398,69 @@ export type Database = {
           },
         ]
       }
+      project_voice_notes: {
+        Row: {
+          ai_summary: string | null
+          created_at: string
+          created_by_user_id: string | null
+          detected_project_name: string | null
+          detection_confidence: number | null
+          id: string
+          manually_confirmed: boolean | null
+          org_id: string
+          original_audio_url: string | null
+          project_id: string
+          transcript_cleaned: string | null
+          transcript_raw: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          detected_project_name?: string | null
+          detection_confidence?: number | null
+          id?: string
+          manually_confirmed?: boolean | null
+          org_id: string
+          original_audio_url?: string | null
+          project_id: string
+          transcript_cleaned?: string | null
+          transcript_raw?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          detected_project_name?: string | null
+          detection_confidence?: number | null
+          id?: string
+          manually_confirmed?: boolean | null
+          org_id?: string
+          original_audio_url?: string | null
+          project_id?: string
+          transcript_cleaned?: string | null
+          transcript_raw?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_voice_notes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_voice_notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "sidekick_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           claim_year: number | null
