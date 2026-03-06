@@ -633,9 +633,10 @@ function addProjectPages(params: {
 
       y -= SECTION_HEADER_SIZE + 4;
 
+      const { width: currentPageWidth } = page.getSize();
       page.drawLine({
         start: { x: MARGIN_LEFT, y },
-        end: { x: sizeInfo(page).width - MARGIN_RIGHT, y },
+        end: { x: currentPageWidth - MARGIN_RIGHT, y },
         thickness: 0.5,
         color: rgb(0.7, 0.7, 0.7),
       });
