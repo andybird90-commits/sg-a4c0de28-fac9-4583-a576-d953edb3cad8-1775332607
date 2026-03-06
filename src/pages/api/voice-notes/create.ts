@@ -60,40 +60,21 @@ export default async function handler(
     if (openai) {
       try {
         const buffer = Buffer.from(audioBase64, "base64");
+        const file = await OpenAI.toFile(buffer, "voice-note.webm");
 
-        // Best-effort transcription. If the runtime does not support Blob/File
-        // or if the OpenAI audio endpoint fails, we just fall back to no transcript.
-        // This avoids breaking the whole request.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let file: any | null = null;
+        const transcription = await openai.audio.transcriptions.create({
+          file,
+          model: "gpt-4o-mini-transcribe",
+        });
 
-        try {
-          // These globals may not exist in all Node runtimes; wrapped in try/catch.
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          const blob = new Blob([buffer], { type: audioMimeType });
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          file = new File([blob], "voice-note.webm", { type: audioMimeType });
-        } catch {
-          file = null;
-        }
+        const text =
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (transcription as any)?.text ||
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (transcription as any)?.results?.[0]?.alternatives?.[0]?.text ||
+          "";
 
-        if (file) {
-          const transcription = await openai.audio.transcriptions.create({
-            file,
-            model: "gpt-4o-mini-transcribe",
-          });
-
-          const text =
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (transcription as any)?.text ||
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (transcription as any)?.results?.[0]?.alternatives?.[0]?.text ||
-            "";
-
-          transcriptText = text.trim() || null;
-        }
+        transcriptText = text.trim() || null;
       } catch (err) {
         console.error("Voice note transcription failed:", err);
       }

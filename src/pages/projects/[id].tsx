@@ -130,7 +130,7 @@ const getChallengePlaceholders = (sector?: string | null) => {
 
 export default function ProjectDetailPage() {
   const router = useRouter();
-  const { id } = router.query;
+  const { id } = router.query as { id?: string };
   const { user } = useApp();
   const [project, setProject] = useState<SidekickProject | null>(null);
   const [claimProject, setClaimProject] = useState<ClaimProject | null>(null);
@@ -206,6 +206,7 @@ export default function ProjectDetailPage() {
   const [challengeKnowledge, setChallengeKnowledge] = useState<string>("");
   const [challengeWorkDone, setChallengeWorkDone] = useState<string>("");
   const [isSyncingReadiness, setIsSyncingReadiness] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>("feasibility");
 
   const loadCostAdvice = useCallback(
     async (projectId: string) => {
@@ -1592,19 +1593,45 @@ export default function ProjectDetailPage() {
             </CardContent>
           </Card>
 
-          <Tabs defaultValue="feasibility" className="mt-6">
-            <TabsList className="w-full">
-              <TabsTrigger value="feasibility" className="flex-1">Feasibility</TabsTrigger>
-              <TabsTrigger value="rd-details" className="flex-1">R&amp;D Details</TabsTrigger>
-              <TabsTrigger value="evidence" className="flex-1">Evidence</TabsTrigger>
-              <TabsTrigger value="voice-notes" className="flex-1">Voice Notes</TabsTrigger>
-              <TabsTrigger value="comments" className="flex-1">Comments</TabsTrigger>
-              <TabsTrigger value="costs">
-                <span className="flex items-center gap-2">
-                  <span>Costs</span>
-                </span>
-              </TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <div className="flex flex-col gap-3">
+              <div className="md:hidden">
+                <Select value={activeTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="w-full bg-slate-950 border-slate-800 text-slate-100">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-950 border-slate-800 text-slate-100">
+                    <SelectItem value="feasibility">Feasibility</SelectItem>
+                    <SelectItem value="rd-details">R&amp;D Details</SelectItem>
+                    <SelectItem value="evidence">Evidence</SelectItem>
+                    <SelectItem value="voice-notes">Voice Notes</SelectItem>
+                    <SelectItem value="comments">Comments</SelectItem>
+                    <SelectItem value="costs">Costs</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <TabsList className="w-full justify-start bg-slate-950/80 border border-slate-800 px-1 py-1 rounded-lg hidden md:flex">
+                <TabsTrigger value="feasibility" className="px-3 sm:px-4">
+                  Feasibility
+                </TabsTrigger>
+                <TabsTrigger value="rd-details" className="px-3 sm:px-4">
+                  R&amp;D Details
+                </TabsTrigger>
+                <TabsTrigger value="evidence" className="px-3 sm:px-4">
+                  Evidence
+                </TabsTrigger>
+                <TabsTrigger value="voice-notes" className="px-3 sm:px-4">
+                  Voice Notes
+                </TabsTrigger>
+                <TabsTrigger value="comments" className="px-3 sm:px-4">
+                  Comments
+                </TabsTrigger>
+                <TabsTrigger value="costs" className="px-3 sm:px-4">
+                  Costs
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="feasibility">
               <Card>
@@ -1715,7 +1742,7 @@ export default function ProjectDetailPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="rd-details" className="mt-6 space-y-6">
+            <TabsContent value="rd-details">
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle>R&amp;D Details</CardTitle>
@@ -1809,7 +1836,7 @@ export default function ProjectDetailPage() {
                         </p>
                         <Textarea
                           className="mt-2 min-h-[120px]"
-                          placeholder="E.g. Prototypes built, simulations run, trial runs, or iterations you used to answer the uncertainties."
+                          placeholder="E.g. Prototypes built, simulations run, trial runs at different settings, inspected failures and iterated..."
                           value={challengeWorkDone}
                           onChange={(e) => setChallengeWorkDone(e.target.value)}
                         />
@@ -1879,7 +1906,7 @@ export default function ProjectDetailPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="evidence" className="mt-6 space-y-6">
+            <TabsContent value="evidence">
               <div className="space-y-4 sm:space-y-6">
                 {canEdit && (
                   <Card>
@@ -2511,78 +2538,6 @@ export default function ProjectDetailPage() {
                   disabled={submitting || !cancelReason.trim()}
                 >
                   {submitting ? "Cancelling..." : "Cancel Project"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Edit Project Dialog */}
-          <Dialog open={editingProject} onOpenChange={setEditingProject}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Edit className="h-5 w-5 text-primary" />
-                  Edit Project
-                </DialogTitle>
-                <DialogDescription>
-                  Update your project details below
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-project-name">Project Name</Label>
-                  <Input
-                    id="edit-project-name"
-                    value={editProjectName}
-                    onChange={(e) => setEditProjectName(e.target.value)}
-                    placeholder="Enter project name"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-project-description">Description</Label>
-                  <Textarea
-                    id="edit-project-description"
-                    value={editProjectDescription}
-                    onChange={(e) => setEditProjectDescription(e.target.value)}
-                    placeholder="Enter project description"
-                    rows={4}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-project-sector">Sector</Label>
-                    <Input
-                      id="edit-project-sector"
-                      value={editProjectSector}
-                      onChange={(e) => setEditProjectSector(e.target.value)}
-                      placeholder="e.g., Energy, Healthcare"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-project-stage">Stage</Label>
-                    <Input
-                      id="edit-project-stage"
-                      value={editProjectStage}
-                      onChange={(e) => setEditProjectStage(e.target.value)}
-                      placeholder="e.g., Concept, Development"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setEditingProject(false)}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleEditProject}
-                  disabled={submitting || !editProjectName.trim()}
-                >
-                  {submitting ? "Saving..." : "Save Changes"}
                 </Button>
               </DialogFooter>
             </DialogContent>
