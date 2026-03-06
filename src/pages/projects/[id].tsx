@@ -207,6 +207,7 @@ export default function ProjectDetailPage() {
   const [challengeWorkDone, setChallengeWorkDone] = useState<string>("");
   const [isSyncingReadiness, setIsSyncingReadiness] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("feasibility");
+  const [rdDetailsTab, setRdDetailsTab] = useState<string>("technical");
 
   const loadCostAdvice = useCallback(
     async (projectId: string) => {
@@ -1752,8 +1753,20 @@ export default function ProjectDetailPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <Tabs defaultValue="technical" className="space-y-6">
-                    <TabsList className="bg-slate-900">
+                  <Tabs value={rdDetailsTab} onValueChange={setRdDetailsTab} className="space-y-6">
+                    <div className="md:hidden mb-3">
+                      <Select value={rdDetailsTab} onValueChange={setRdDetailsTab}>
+                        <SelectTrigger className="w-full bg-slate-950 border-slate-800 text-slate-100">
+                          <SelectValue placeholder="Select section" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-950 border-slate-800 text-slate-100">
+                          <SelectItem value="technical">Technical Details</SelectItem>
+                          <SelectItem value="challenges">Challenges</SelectItem>
+                          <SelectItem value="activities">Qualifying Activities</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <TabsList className="bg-slate-900 hidden md:inline-flex">
                       <TabsTrigger value="technical">Technical Details</TabsTrigger>
                       <TabsTrigger value="challenges">Challenges</TabsTrigger>
                       <TabsTrigger value="activities">Qualifying Activities</TabsTrigger>
