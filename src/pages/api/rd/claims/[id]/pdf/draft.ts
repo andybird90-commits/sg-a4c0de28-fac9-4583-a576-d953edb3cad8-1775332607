@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { supabaseServer } from "@/integrations/supabase/serverClient";
 
 type DraftPdfSuccessResponse = {
   ok: true;
@@ -25,7 +26,11 @@ function getBearerToken(req: NextApiRequest): string | null {
   return authHeader.slice("Bearer ".length);
 }
 
-function getSupabaseForRequest(req: NextApiRequest) {
+/**
+ * Per-request Supabase client used only for AUTH (getUser),
+ * not for database/storage operations (those use supabaseServer to bypass RLS).
+ */
+function getSupabaseAuthClientForRequest(req: NextApiRequest) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error(
       "Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
@@ -50,11 +55,14 @@ function getSupabaseForRequest(req: NextApiRequest) {
   return { client, token };
 }
 
-async function getAuthContext(req: NextApiRequest) {
-  const { client: supabase, token } = getSupabaseForRequest(req);
+async function getAuthContext(req: NextApiRequest): Promise<{
+  userId: string | null;
+  profile: { id: string; internal_role: string | null } | null;
+}> {
+  const { client: supabase, token } = getSupabaseAuthClientForRequest(req);
 
   if (!token) {
-    return { supabase, userId: null as string | null, profile: null as any };
+    return { userId: null, profile: null };
   }
 
   const {
@@ -63,7 +71,7 @@ async function getAuthContext(req: NextApiRequest) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return { supabase, userId: null as string | null, profile: null as any };
+    return { userId: null, profile: null };
   }
 
   const { data: profile, error: profileError } = await supabase
@@ -73,10 +81,10 @@ async function getAuthContext(req: NextApiRequest) {
     .maybeSingle();
 
   if (profileError || !profile) {
-    return { supabase, userId: user.id, profile: null as any };
+    return { userId: user.id, profile: null };
   }
 
-  return { supabase, userId: user.id, profile };
+  return { userId: user.id, profile: profile as { id: string; internal_role: string | null } };
 }
 
 export default async function handler(
@@ -96,7 +104,12 @@ export default async function handler(
   }
 
   try {
-    const { supabase, userId, profile } = await getAuthContext(req);
+    console.log("rd/pdf/draft handler env", {
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    });
+
+    const { userId, profile } = await getAuthContext(req);
 
     if (!userId) {
       res
@@ -105,24 +118,27 @@ export default async function handler(
       return;
     }
 
-    const { data: claim, error: claimError } = await supabase
+    // All DB and storage operations below use supabaseServer (service role) to bypass RLS.
+    const { data: claim, error: claimError } = await supabaseServer
       .from("claims")
       .select("id, org_id, claim_year, period_start, period_end, status")
       .eq("id", claimId)
       .maybeSingle();
 
     if (claimError || !claim) {
+      console.error("Error loading claim in draft PDF handler:", claimError);
       res.status(404).json({ ok: false, error: "Claim not found" });
       return;
     }
 
-    const { data: projects, error: projectsError } = await supabase
+    const { data: projects, error: projectsError } = await supabaseServer
       .from("claim_projects")
       .select("id, name")
       .eq("claim_id", claim.id)
       .is("deleted_at", null);
 
     if (projectsError) {
+      console.error("Error loading claim projects in draft PDF handler:", projectsError);
       res.status(500).json({
         ok: false,
         error: "Failed to load claim projects",
@@ -132,12 +148,13 @@ export default async function handler(
 
     const projectIds = (projects || []).map((p) => p.id);
 
-    const { data: narrativeStates, error: statesError } = await supabase
+    const { data: narrativeStates, error: statesError } = await supabaseServer
       .from("rd_project_narrative_state")
       .select("id, claim_project_id, current_narrative_id, final_narrative_id")
-      .in("claim_project_id", projectIds);
+      .in("claim_project_id", projectIds.length > 0 ? projectIds : ["00000000-0000-0000-0000-000000000000"]);
 
     if (statesError) {
+      console.error("Error loading narrative state in draft PDF handler:", statesError);
       res.status(500).json({
         ok: false,
         error: "Failed to load narrative state",
@@ -145,14 +162,15 @@ export default async function handler(
       return;
     }
 
-    const { data: narratives, error: narrativesError } = await supabase
+    const { data: narratives, error: narrativesError } = await supabaseServer
       .from("rd_project_narratives")
       .select(
         "id, claim_project_id, status, version_number, advance_sought, baseline_knowledge, technological_uncertainty, work_undertaken, outcome"
       )
-      .in("claim_project_id", projectIds);
+      .in("claim_project_id", projectIds.length > 0 ? projectIds : ["00000000-0000-0000-0000-000000000000"]);
 
     if (narrativesError) {
+      console.error("Error loading narratives in draft PDF handler:", narrativesError);
       res.status(500).json({
         ok: false,
         error: "Failed to load narratives",
@@ -358,7 +376,7 @@ export default async function handler(
     const filePath = `claims/${claimId}/draft-pack.pdf`;
     const bucket = "Draft-Claims";
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabaseServer.storage
       .from(bucket)
       .upload(filePath, Buffer.from(pdfBytes), {
         contentType: "application/pdf",
@@ -369,12 +387,15 @@ export default async function handler(
       console.error("Error uploading draft PDF:", uploadError);
       res.status(500).json({
         ok: false,
-        error: uploadError.message || "Failed to upload draft PDF",
+        error:
+          (uploadError as any)?.message
+            ? `storage upload: ${(uploadError as any).message}`
+            : "Failed to upload draft PDF",
       });
       return;
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseServer
       .from("claims")
       .update({
         draft_pdf_url: filePath,
@@ -385,7 +406,12 @@ export default async function handler(
       console.error("Error saving draft PDF path:", updateError);
       res
         .status(500)
-        .json({ ok: false, error: "Failed to save draft PDF path" });
+        .json({
+          ok: false,
+          error: (updateError as any)?.message
+            ? `claims update: ${(updateError as any).message}`
+            : "Failed to save draft PDF path",
+        });
       return;
     }
 
@@ -393,22 +419,30 @@ export default async function handler(
     const pageCount = pdfDoc.getPageCount();
 
     const isInternalStaff =
-      profile && typeof profile.internal_role === "string" && profile.internal_role !== "";
+      profile &&
+      typeof profile.internal_role === "string" &&
+      profile.internal_role !== "";
 
     if (isInternalStaff && userId) {
-      const { error: auditError } = await supabase.from("rd_audit_log").insert({
-        claim_id: claim.id,
-        project_id: null,
-        action: "pdf_draft",
-        actor_user_id: userId,
-        details_json: {
-          pdf_path: filePath,
-          page_count: pageCount,
-        },
-      });
+      const { error: auditError } = await supabaseServer
+        .from("rd_audit_log")
+        .insert({
+          claim_id: claim.id,
+          project_id: null,
+          action: "pdf_draft",
+          actor_user_id: userId,
+          details_json: {
+            pdf_path: filePath,
+            page_count: pageCount,
+          },
+        });
 
       if (auditError) {
-        console.error("Failed to write rd_audit_log for pdf_draft:", auditError);
+        console.error(
+          "Failed to write rd_audit_log for pdf_draft:",
+          auditError
+        );
+        // Do not fail the whole request on audit error, but log context.
       }
     } else {
       console.warn(
@@ -429,8 +463,9 @@ export default async function handler(
     console.error("Unexpected error generating draft PDF:", error);
     res.status(500).json({
       ok: false,
-      error:
-        error?.message || "Failed to generate draft R&D claim PDF pack",
+      error: error?.message
+        ? `unexpected: ${error.message}`
+        : "Failed to generate draft R&D claim PDF pack",
     });
   }
 }
