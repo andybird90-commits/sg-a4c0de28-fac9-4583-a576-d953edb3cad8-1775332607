@@ -90,6 +90,12 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+const isValidUuid = (value: string): boolean => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value
+  );
+};
+
 type ClaimProject = Database["public"]["Tables"]["claim_projects"]["Row"];
 type ClaimDocument = Database["public"]["Tables"]["claim_documents"]["Row"];
 
@@ -588,6 +594,7 @@ export default function ClaimDetailPage() {
   // Load claim details when id is available
   useEffect(() => {
     if (!id || typeof id !== "string") return;
+    if (!isValidUuid(id)) return;
     void loadClaim(id);
   }, [id, toast]);
 
