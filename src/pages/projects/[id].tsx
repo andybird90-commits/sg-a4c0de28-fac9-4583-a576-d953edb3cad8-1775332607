@@ -31,6 +31,7 @@ import { ProjectReadinessPanel } from "@/components/projects/ProjectReadinessPan
 import { ProjectCostSummary } from "@/components/projects/ProjectCostSummary";
 import { ProjectHistoryPanel } from "@/components/projects/ProjectHistoryPanel";
 import { ProjectGantt } from "@/components/projects/ProjectGantt";
+import { ProjectVoiceNotes } from "@/components/projects/ProjectVoiceNotes";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
 type SidekickEvidenceItem = Database["public"]["Tables"]["sidekick_evidence_items"]["Row"];
@@ -1592,11 +1593,12 @@ export default function ProjectDetailPage() {
           </Card>
 
           <Tabs defaultValue="feasibility" className="mt-6">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="feasibility">Feasibility</TabsTrigger>
-              <TabsTrigger value="rd">R&amp;D Details</TabsTrigger>
-              <TabsTrigger value="evidence">Evidence</TabsTrigger>
-              <TabsTrigger value="comments">Comments</TabsTrigger>
+            <TabsList className="w-full">
+              <TabsTrigger value="feasibility" className="flex-1">Feasibility</TabsTrigger>
+              <TabsTrigger value="rd-details" className="flex-1">R&amp;D Details</TabsTrigger>
+              <TabsTrigger value="evidence" className="flex-1">Evidence</TabsTrigger>
+              <TabsTrigger value="voice-notes" className="flex-1">Voice Notes</TabsTrigger>
+              <TabsTrigger value="comments" className="flex-1">Comments</TabsTrigger>
               <TabsTrigger value="costs">
                 <span className="flex items-center gap-2">
                   <span>Costs</span>
@@ -1713,7 +1715,7 @@ export default function ProjectDetailPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="rd" className="mt-6 space-y-6">
+            <TabsContent value="rd-details" className="mt-6 space-y-6">
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle>R&amp;D Details</CardTitle>
@@ -2061,6 +2063,12 @@ export default function ProjectDetailPage() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            <TabsContent value="voice-notes" className="mt-6">
+              {project && (
+                <ProjectVoiceNotes projectId={project.id} />
+              )}
             </TabsContent>
 
             <TabsContent value="comments" className="mt-6 space-y-6">
