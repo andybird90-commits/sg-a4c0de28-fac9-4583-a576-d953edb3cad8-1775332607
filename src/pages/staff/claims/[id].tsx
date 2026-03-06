@@ -878,6 +878,25 @@ export default function ClaimDetailPage() {
         return;
       }
 
+      const signedUrl =
+        (data as { signed_url?: string; signedUrl?: string }).signed_url ??
+        (data as { signedUrl?: string }).signedUrl;
+
+      if (signedUrl) {
+        const a = document.createElement("a");
+        a.href = signedUrl;
+        a.download = `claim-${claim.id}-draft-pack.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        toast({
+          title: "Draft pack downloaded",
+          description: "Draft claim PDF has been downloaded.",
+        });
+        return;
+      }
+
       const pdfPath = (data as { pdf_url?: string }).pdf_url;
 
       if (!pdfPath) {
@@ -3147,7 +3166,7 @@ export default function ClaimDetailPage() {
                     </Table>
                   </div>
                 )}
-                <div className="mt-6 space-y-3">
+                <div className="mt-6 space-y-4">
                   <h3 className="text-sm font-semibold">
                     Client evidence from Sidekick
                   </h3>

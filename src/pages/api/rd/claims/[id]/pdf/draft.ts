@@ -9,6 +9,7 @@ type DraftPdfSuccessResponse = {
   pdf_url: string;
   generated_at: string;
   page_count: number;
+  signed_url?: string;
 };
 
 type DraftPdfErrorResponse = {
@@ -415,6 +416,18 @@ export default async function handler(
       return;
     }
 
+    const { data: signedUrlData, error: signedUrlError } = await supabaseServer
+      .storage
+      .from(bucket)
+      .createSignedUrl(filePath, 60 * 10);
+
+    if (signedUrlError) {
+      console.error(
+        "Error creating signed URL for draft PDF:",
+        signedUrlError
+      );
+    }
+
     const generatedAt = new Date().toISOString();
     const pageCount = pdfDoc.getPageCount();
 
@@ -456,6 +469,7 @@ export default async function handler(
       pdf_url: filePath,
       generated_at: generatedAt,
       page_count: pageCount,
+      signed_url: signedUrlData?.signedUrl,
     };
 
     res.status(200).json(responseBody);
