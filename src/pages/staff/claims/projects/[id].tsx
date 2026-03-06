@@ -610,6 +610,30 @@ export default function ProjectDetailPage() {
           </div>
         </div>
 
+        {/* Timestamps */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+              <div>
+                <p className="font-medium text-foreground mb-1">Created</p>
+                <p>
+                  {project.created_at
+                    ? format(new Date(project.created_at), "PPP")
+                    : "N/A"}
+                </p>
+              </div>
+              <div>
+                <p className="font-medium text-foreground mb-1">Last Updated</p>
+                <p>
+                  {project.updated_at
+                    ? format(new Date(project.updated_at), "PPP")
+                    : "N/A"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Project Overview */}
         <Card>
           <CardHeader>
@@ -884,30 +908,6 @@ export default function ProjectDetailPage() {
                 >
                   {savingNotes ? "Saving..." : "Save notes"}
                 </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Timestamps */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-              <div>
-                <p className="font-medium text-foreground mb-1">Created</p>
-                <p>
-                  {project.created_at
-                    ? format(new Date(project.created_at), "PPP")
-                    : "N/A"}
-                </p>
-              </div>
-              <div>
-                <p className="font-medium text-foreground mb-1">Last Updated</p>
-                <p>
-                  {project.updated_at
-                    ? format(new Date(project.updated_at), "PPP")
-                    : "N/A"}
-                </p>
               </div>
             </div>
           </CardContent>
