@@ -1297,14 +1297,12 @@ export default function ProjectDetailPage() {
               hasTechnical={Boolean(
                 technicalBaseline ||
                   technicalChange ||
-                  technicalInnovation ||
-                  rdTechnicalUnderstanding
+                  technicalInnovation
               )}
               hasChallenges={Boolean(
                 challengeUncertainties ||
                   challengeKnowledge ||
-                  challengeWorkDone ||
-                  rdChallenges
+                  challengeWorkDone
               )}
               activityCount={rdActivities.length}
               evidenceCount={evidence.length}
