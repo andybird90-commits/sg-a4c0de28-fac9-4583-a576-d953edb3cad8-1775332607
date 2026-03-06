@@ -82,7 +82,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
       icon: Calendar,
     },
     {
-      path: "/app/academy",
+      path: "/staff/academy",
       label: "RD Agent Academy",
       icon: Book,
     },
