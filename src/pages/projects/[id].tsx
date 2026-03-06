@@ -195,6 +195,7 @@ export default function ProjectDetailPage() {
   const [challengeUncertainties, setChallengeUncertainties] = useState<string>("");
   const [challengeKnowledge, setChallengeKnowledge] = useState<string>("");
   const [challengeWorkDone, setChallengeWorkDone] = useState<string>("");
+  const [isSyncingReadiness, setIsSyncingReadiness] = useState<boolean>(false);
 
   const loadCostAdvice = useCallback(
     async (projectId: string) => {
@@ -426,6 +427,59 @@ export default function ProjectDetailPage() {
       setSavingRdDetails(false);
     }
   };
+
+  const handleSyncReadiness = useCallback(async () => {
+    if (!project) return;
+
+    setIsSyncingReadiness(true);
+    try {
+      const [projectData, evidenceData, commentsData] = await Promise.all([
+        sidekickProjectService.getProjectById(project.id),
+        sidekickEvidenceService.getEvidenceByProject(project.id),
+        sidekickCommentService.getCommentsByProject(project.id),
+      ]);
+
+      setProject(projectData);
+      setEvidence(evidenceData);
+      setComments(commentsData);
+
+      await Promise.all([
+        refreshClaimProject(project.id),
+        loadCostAdvice(project.id),
+        (async () => {
+          try {
+            const analyses = await feasibilityService.getAnalysesByProject(project.id);
+            if (analyses && analyses.length > 0) {
+              const sortedAnalyses = analyses.sort(
+                (a, b) =>
+                  new Date(b.created_at).getTime() -
+                  new Date(a.created_at).getTime()
+              );
+              setFeasibilityAnalysis(sortedAnalyses[0]);
+            } else {
+              setFeasibilityAnalysis(null);
+            }
+          } catch (feasibilityError) {
+            console.error("Error fetching feasibility analysis in sync:", feasibilityError);
+          }
+        })(),
+      ]);
+
+      toast({
+        title: "Synced with RD Companion",
+        description: "Latest project details and readiness have been updated.",
+      });
+    } catch (error) {
+      console.error("Error syncing readiness:", error);
+      toast({
+        title: "Could not sync",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingReadiness(false);
+    }
+  }, [project, refreshClaimProject, loadCostAdvice, toast]);
 
   useEffect(() => {
     if (!user) {
@@ -1256,6 +1310,9 @@ export default function ProjectDetailPage() {
               evidenceCount={evidence.length}
               costCount={costAdvice.length}
               workflowStatus={workflowStatus}
+              isLinkedToCompanion={Boolean(claimProject)}
+              onSync={handleSyncReadiness}
+              isSyncing={isSyncingReadiness}
             />
           </div>
 

@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, ClipboardList, FileText, Wallet } from "lucide-react";
+import { AlertTriangle, ClipboardList, FileText, Wallet, RefreshCw, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ProjectReadinessPanelProps {
@@ -10,6 +10,9 @@ interface ProjectReadinessPanelProps {
   evidenceCount: number;
   costCount: number;
   workflowStatus: string;
+  isLinkedToCompanion?: boolean;
+  onSync?: () => void;
+  isSyncing?: boolean;
 }
 
 interface Score {
@@ -30,6 +33,9 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
   evidenceCount,
   costCount,
   workflowStatus,
+  isLinkedToCompanion = false,
+  onSync,
+  isSyncing = false,
 }) => {
   const rdStoryScore = clamp(
     (hasTechnical ? 2 : 0) +
@@ -132,6 +138,28 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
               <span className="mt-1 rounded-full bg-purple-500/15 px-2 py-[2px] text-[10px] font-medium text-purple-200 border border-purple-500/40">
                 Ready for your review
               </span>
+            )}
+            {isLinkedToCompanion && (
+              <div className="mt-1 flex items-center gap-1 text-[10px] text-slate-400">
+                <Link2 className="h-3 w-3" />
+                <span>Linked to RD Companion</span>
+              </div>
+            )}
+            {onSync && (
+              <button
+                type="button"
+                onClick={onSync}
+                disabled={isSyncing}
+                className="mt-1 inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900 px-2 py-[2px] text-[10px] font-medium text-slate-200 hover:bg-slate-800 disabled:opacity-60"
+              >
+                <RefreshCw
+                  className={cn(
+                    "h-3 w-3",
+                    isSyncing && "animate-spin"
+                  )}
+                />
+                <span>{isSyncing ? "Syncing…" : "Sync"}</span>
+              </button>
             )}
           </div>
         </div>
