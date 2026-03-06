@@ -45,7 +45,8 @@ function drawWrappedText(params: {
   pdfDoc: PDFDocument;
 }): { page: any; y: number } {
   const { maxWidth, font, size, lineHeight, minY, pdfDoc } = params;
-  let { page, x } = params;
+  let page = params.page;
+  const x = params.x;
   let y = params.y;
 
   const paragraphs = params.text.split(/\n+/);
