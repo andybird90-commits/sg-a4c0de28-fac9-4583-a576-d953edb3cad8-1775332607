@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, Plus, Search, Calendar, Trash2, TrendingUp, AlertCircle } from "lucide-react";
+import { ArrowRight, Plus, Search, Calendar, Trash2, TrendingUp, AlertCircle, CalendarDays } from "lucide-react";
 import { useNotifications } from "@/contexts/NotificationContext";
 
 export default function FeasibilityHistoryPage() {
@@ -73,12 +73,41 @@ export default function FeasibilityHistoryPage() {
     (a.summary?.toLowerCase() || "").includes(searchTerm.toLowerCase())
   );
 
-  const getRatingColor = (rating?: string) => {
-    switch (rating?.toLowerCase()) {
-      case "high": return "bg-green-100 text-green-800 border-green-200";
-      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low": return "bg-red-100 text-red-800 border-red-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+  const getRatingClasses = (rating: string | null) => {
+    const base = "bg-slate-900/80 border border-slate-700 text-slate-100";
+
+    if (!rating) {
+      return base;
+    }
+
+    switch (rating.toLowerCase()) {
+      case "high":
+        return `${base} border-emerald-500/40`;
+      case "medium":
+        return `${base} border-amber-500/40`;
+      case "low":
+        return `${base} border-rose-500/40`;
+      default:
+        return base;
+    }
+  };
+
+  const getRdTaxClasses = (flag: string | null) => {
+    const base = "bg-slate-900/80 border border-slate-700 text-slate-100";
+
+    if (!flag) {
+      return base;
+    }
+
+    switch (flag.toLowerCase()) {
+      case "yes":
+        return `${base} border-emerald-500/40`;
+      case "maybe":
+        return `${base} border-amber-500/40`;
+      case "no":
+        return `${base} border-slate-600`;
+      default:
+        return base;
     }
   };
 
@@ -96,8 +125,8 @@ export default function FeasibilityHistoryPage() {
             <div className="mb-8">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
                 <div>
-                  <h1 className="text-4xl font-bold text-slate-50 mb-2">Feasibility Analysis History</h1>
-                  <p className="text-lg text-slate-400">
+                  <h1 className="text-3xl sm:text-4xl font-bold text-slate-50 mb-2">Feasibility Analysis History</h1>
+                  <p className="text-base sm:text-lg text-slate-400">
                     View and manage all feasibility assessments for {currentOrg?.name}
                   </p>
                 </div>
@@ -118,7 +147,7 @@ export default function FeasibilityHistoryPage() {
                   placeholder="Search analyses by title or description..." 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 h-12 text-base bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500 focus:border-[#ff6b35] focus:ring-[#ff6b35]"
+                  className="pl-12 h-11 sm:h-12 text-sm sm:text-base bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500 focus:border-[#ff6b35] focus:ring-[#ff6b35]"
                 />
               </div>
             </div>
@@ -126,29 +155,29 @@ export default function FeasibilityHistoryPage() {
             {/* Stats Bar */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <Card className="border border-slate-800 shadow-professional-md bg-[#050b16]">
-                <CardContent className="p-6">
+                <CardContent className="p-5 sm:p-6">
                   <div className="flex items-center gap-4">
-                    <div className="bg-blue-500/10 p-3 rounded-lg">
-                      <TrendingUp className="h-6 w-6 text-blue-300" />
+                    <div className="bg-slate-800/80 p-3 rounded-lg">
+                      <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-slate-100" />
                     </div>
                     <div>
-                      <p className="text-sm text-slate-400">Total Analyses</p>
-                      <p className="text-2xl font-bold text-slate-50">{analyses.length}</p>
+                      <p className="text-xs sm:text-sm text-slate-400">Total Analyses</p>
+                      <p className="text-2xl sm:text-3xl font-semibold text-slate-50">{analyses.length}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border border-slate-800 shadow-professional-md bg-[#050b16]">
-                <CardContent className="p-6">
+                <CardContent className="p-5 sm:p-6">
                   <div className="flex items-center gap-4">
                     <div className="bg-emerald-500/10 p-3 rounded-lg">
-                      <AlertCircle className="h-6 w-6 text-emerald-300" />
+                      <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-300" />
                     </div>
                     <div>
-                      <p className="text-sm text-slate-400">High Potential</p>
-                      <p className="text-2xl font-bold text-slate-50">
-                        {analyses.filter(a => a.technical_rating === 'high' || a.commercial_rating === 'high').length}
+                      <p className="text-xs sm:text-sm text-slate-400">High Potential</p>
+                      <p className="text-2xl sm:text-3xl font-semibold text-slate-50">
+                        {analyses.filter(a => a.technical_rating === "high" || a.commercial_rating === "high").length}
                       </p>
                     </div>
                   </div>
@@ -156,14 +185,14 @@ export default function FeasibilityHistoryPage() {
               </Card>
 
               <Card className="border border-slate-800 shadow-professional-md bg-[#050b16]">
-                <CardContent className="p-6">
+                <CardContent className="p-5 sm:p-6">
                   <div className="flex items-center gap-4">
                     <div className="bg-purple-500/10 p-3 rounded-lg">
-                      <Calendar className="h-6 w-6 text-purple-300" />
+                      <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-purple-300" />
                     </div>
                     <div>
-                      <p className="text-sm text-slate-400">This Month</p>
-                      <p className="text-2xl font-bold text-slate-50">
+                      <p className="text-xs sm:text-sm text-slate-400">This Month</p>
+                      <p className="text-2xl sm:text-3xl font-semibold text-slate-50">
                         {analyses.filter(a => {
                           const date = new Date(a.created_at);
                           const now = new Date();
@@ -215,66 +244,86 @@ export default function FeasibilityHistoryPage() {
                     <CardContent className="p-0">
                       <div className="flex flex-col lg:flex-row">
                         {/* Main Content */}
-                        <div className="flex-1 p-6">
+                        <div className="flex-1 p-5 sm:p-6">
                           <div className="flex items-start justify-between gap-4 mb-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                <h3 className="font-bold text-xl text-slate-50">
+                                <h3 className="font-semibold text-lg sm:text-xl text-slate-50">
                                   {analysis.idea_title || "Untitled Idea"}
                                 </h3>
                                 {analysis.sector_guess && (
-                                  <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                                  <span className="inline-flex items-center rounded-full bg-sky-500/10 px-2.5 py-0.5 text-[11px] font-medium text-sky-200 border border-sky-500/40">
                                     {analysis.sector_guess}
-                                  </Badge>
+                                  </span>
                                 )}
                               </div>
-                              <p className="text-slate-400 text-sm line-clamp-2 mb-4">
+                              <p className="text-slate-400 text-sm sm:text-[15px] leading-relaxed line-clamp-2 mb-4">
                                 {analysis.summary || analysis.idea_description}
                               </p>
                             </div>
                           </div>
 
                           {/* Ratings Grid */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-slate-400 font-medium">Technical:</span>
-                              <Badge variant="outline" className={`text-xs ${getRatingColor(analysis.technical_rating)}`}>
-                                {analysis.technical_rating?.toUpperCase() || "N/A"}
-                              </Badge>
+                          <div className="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm text-slate-300">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className="uppercase tracking-wide text-[10px] text-slate-500">
+                                  Technical
+                                </span>
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium leading-tight ${getRatingClasses(
+                                    analysis.technical_rating,
+                                  )}`}
+                                >
+                                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-90" />
+                                  {(analysis.technical_rating || "N/A").toUpperCase()}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <span className="uppercase tracking-wide text-[10px] text-slate-500">
+                                  Commercial
+                                </span>
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium leading-tight ${getRatingClasses(
+                                    analysis.commercial_rating,
+                                  )}`}
+                                >
+                                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-90" />
+                                  {(analysis.commercial_rating || "N/A").toUpperCase()}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <span className="uppercase tracking-wide text-[10px] text-slate-500">
+                                  R&amp;D Tax
+                                </span>
+                                <span
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium leading-tight ${getRdTaxClasses(
+                                    analysis.rd_tax_flag,
+                                  )}`}
+                                >
+                                  <span className="h-1.5 w-1.5 rounded-full bg-current opacity-90" />
+                                  {(analysis.rd_tax_flag || "N/A").toUpperCase()}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-slate-400 font-medium">Commercial:</span>
-                              <Badge variant="outline" className={`text-xs ${getRatingColor(analysis.commercial_rating)}`}>
-                                {analysis.commercial_rating?.toUpperCase() || "N/A"}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-slate-400 font-medium">R&D Tax:</span>
-                              <Badge variant="outline" className={`text-xs ${
-                                analysis.rd_tax_flag === 'yes' ? 'bg-green-100 text-green-800' :
-                                analysis.rd_tax_flag === 'maybe' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {analysis.rd_tax_flag?.toUpperCase() || "N/A"}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-3.5 w-3.5 text-slate-500" />
-                              <span className="text-xs text-slate-400">
-                                {new Date(analysis.created_at).toLocaleDateString()}
-                              </span>
+
+                            <div className="flex items-center gap-2 text-[11px] sm:text-xs text-slate-400">
+                              <CalendarDays className="w-3.5 h-3.5" />
+                              <span>{new Date(analysis.created_at).toLocaleDateString()}</span>
                             </div>
                           </div>
                         </div>
 
                         {/* Actions Sidebar */}
-                        <div className="lg:border-l border-t lg:border-t-0 border-slate-800 bg-slate-900 p-6 flex flex-row lg:flex-col gap-3 lg:w-48">
+                        <div className="lg:border-l border-t lg:border-t-0 border-slate-800 bg-slate-900/80 p-5 sm:p-6 flex flex-row lg:flex-col gap-3 lg:w-48">
                           <Link href={`/feasibility/${analysis.id}`} className="flex-1">
                             <Button 
                               variant="default"
-                              className="w-full bg-[#ff6b35] hover:bg-[#ff8c42] text-slate-950 h-auto py-3"
+                              className="w-full bg-[#ff6b35] hover:bg-[#ff8c42] text-slate-950 h-auto py-2.5 sm:py-3"
                             >
-                              <span className="flex items-center justify-center gap-2">
+                              <span className="flex items-center justify-center gap-2 text-sm">
                                 View Report
                                 <ArrowRight size={16} />
                               </span>
@@ -284,7 +333,7 @@ export default function FeasibilityHistoryPage() {
                             variant="outline"
                             onClick={() => handleDelete(analysis.id, analysis.idea_title || "this analysis")}
                             disabled={deletingId === analysis.id}
-                            className="flex-1 lg:flex-none border-red-500/60 text-red-400 hover:bg-red-950/40 hover:text-red-200 h-auto py-3"
+                            className="flex-1 lg:flex-none border-red-500/60 text-red-300 hover:bg-red-950/40 hover:text-red-100 h-auto py-2.5 sm:py-3 text-sm"
                           >
                             <Trash2 size={16} className="mr-2" />
                             {deletingId === analysis.id ? "Deleting..." : "Delete"}

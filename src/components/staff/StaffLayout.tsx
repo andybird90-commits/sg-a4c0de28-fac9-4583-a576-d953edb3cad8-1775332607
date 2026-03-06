@@ -16,6 +16,7 @@ import {
   LogOut,
   Menu,
   X,
+  Book,
 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const navItems = [
+  const staffNavItems = [
     {
       path: "/staff",
       label: "Dashboard",
@@ -79,6 +80,11 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
       path: "/staff/availability",
       label: "My Availability",
       icon: Calendar,
+    },
+    {
+      path: "/app/academy",
+      label: "RD Agent Academy",
+      icon: Book,
     },
     {
       path: "/staff/admin/users",
@@ -262,7 +268,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
         {/* Sidebar - desktop */}
         <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r border-slate-800 bg-[#050b16] min-h-[calc(100vh-3.5rem)]">
           <div className="px-3 py-4 space-y-1">
-            {navItems.map((item) => renderNavItem(item.path, item.label, item.icon))}
+            {staffNavItems.map((item) => renderNavItem(item.path, item.label, item.icon))}
           </div>
         </aside>
 
@@ -303,7 +309,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
             </div>
 
             <div className="px-3 py-4 space-y-1">
-              {navItems.map((item) => (
+              {staffNavItems.map((item) => (
                 <div
                   key={item.path}
                   onClick={() => {
