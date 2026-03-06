@@ -687,6 +687,19 @@ export default function ProjectDetailPage() {
 
         <ProjectCostSummary items={costAdvice} schemeLabel={schemeLabel} />
 
+        <Card>
+          <CardContent className="space-y-3">
+            <h3 className="font-semibold flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" />
+              Project Timeline
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Read-only view of the activities the client has added to their project timeline in RD Companion.
+            </p>
+            <ProjectGantt items={timelineItems} />
+          </CardContent>
+        </Card>
+
         {/* R&D Details Tabs */}
         <Tabs defaultValue="technical" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
@@ -936,17 +949,6 @@ export default function ProjectDetailPage() {
               </p>
             ) : (
               <>
-                <div className="space-y-3">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    Project Timeline
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Read-only view of the activities the client has added to their project timeline in RD Companion.
-                  </p>
-                  <ProjectGantt items={timelineItems} />
-                </div>
-
                 {/* Evidence */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
