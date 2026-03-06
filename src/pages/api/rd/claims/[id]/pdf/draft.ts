@@ -1,8 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { PDFDocument, StandardFonts } from "pdf-lib";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { supabaseServer } from "@/integrations/supabase/serverClient";
+import {
+  buildRdClaimTechnicalDossier,
+  type DossierProject,
+  type DossierProjectEvidenceItem,
+  type DossierCostSummary,
+} from "@/lib/pdf/rdClaimDossier";
 
 type DraftPdfSuccessResponse = {
   ok: true;
@@ -15,6 +20,7 @@ type DraftPdfSuccessResponse = {
 type DraftPdfErrorResponse = {
   ok: false;
   error: string;
+  missing_project_ids?: string[];
 };
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -27,10 +33,6 @@ function getBearerToken(req: NextApiRequest): string | null {
   return authHeader.slice("Bearer ".length);
 }
 
-/**
- * Per-request Supabase client used only for AUTH (getUser),
- * not for database/storage operations (those use supabaseServer to bypass RLS).
- */
 function getSupabaseAuthClientForRequest(req: NextApiRequest) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error(
@@ -119,10 +121,9 @@ export default async function handler(
       return;
     }
 
-    // All DB and storage operations below use supabaseServer (service role) to bypass RLS.
     const { data: claim, error: claimError } = await supabaseServer
       .from("claims")
-      .select("id, org_id, claim_year, period_start, period_end, status")
+      .select("id, org_id, claim_year, period_start, period_end, status, draft_pdf_url")
       .eq("id", claimId)
       .maybeSingle();
 
@@ -132,9 +133,26 @@ export default async function handler(
       return;
     }
 
-    const { data: projects, error: projectsError } = await supabaseServer
+    const { data: organisation, error: orgError } = await supabaseServer
+      .from("organisations")
+      .select("id, name, organisation_code")
+      .eq("id", claim.org_id)
+      .maybeSingle();
+
+    if (orgError || !organisation) {
+      console.error("Error loading organisation in draft PDF handler:", orgError);
+      res.status(500).json({
+        ok: false,
+        error: "Failed to load organisation for claim",
+      });
+      return;
+    }
+
+    const { data: projectsData, error: projectsError } = await supabaseServer
       .from("claim_projects")
-      .select("id, name")
+      .select(
+        "id, name, rd_theme, start_date, end_date, technical_reviewer, source_project_id"
+      )
       .eq("claim_id", claim.id)
       .is("deleted_at", null);
 
@@ -147,12 +165,16 @@ export default async function handler(
       return;
     }
 
-    const projectIds = (projects || []).map((p) => p.id);
+    const projects = projectsData || [];
+    const projectIds = projects.map((p) => p.id);
 
     const { data: narrativeStates, error: statesError } = await supabaseServer
       .from("rd_project_narrative_state")
       .select("id, claim_project_id, current_narrative_id, final_narrative_id")
-      .in("claim_project_id", projectIds.length > 0 ? projectIds : ["00000000-0000-0000-0000-000000000000"]);
+      .in(
+        "claim_project_id",
+        projectIds.length > 0 ? projectIds : ["00000000-0000-0000-0000-000000000000"]
+      );
 
     if (statesError) {
       console.error("Error loading narrative state in draft PDF handler:", statesError);
@@ -163,12 +185,15 @@ export default async function handler(
       return;
     }
 
-    const { data: narratives, error: narrativesError } = await supabaseServer
+    const { data: narrativesData, error: narrativesError } = await supabaseServer
       .from("rd_project_narratives")
       .select(
         "id, claim_project_id, status, version_number, advance_sought, baseline_knowledge, technological_uncertainty, work_undertaken, outcome"
       )
-      .in("claim_project_id", projectIds.length > 0 ? projectIds : ["00000000-0000-0000-0000-000000000000"]);
+      .in(
+        "claim_project_id",
+        projectIds.length > 0 ? projectIds : ["00000000-0000-0000-0000-000000000000"]
+      );
 
     if (narrativesError) {
       console.error("Error loading narratives in draft PDF handler:", narrativesError);
@@ -199,181 +224,241 @@ export default async function handler(
         claim_project_id: string;
         status: string;
         version_number: number;
-        advance_sought: string | null;
-        baseline_knowledge: string | null;
-        technological_uncertainty: string | null;
-        work_undertaken: string | null;
-        outcome: string | null;
+        advance_sought: string;
+        baseline_knowledge: string;
+        technological_uncertainty: string;
+        work_undertaken: string;
+        outcome: string;
       }
     >();
-    (narratives || []).forEach((n) => {
+    (narrativesData || []).forEach((n) => {
       narrativesById.set(n.id, n as any);
     });
 
-    const pdfDoc = await PDFDocument.create();
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const leadIds = Array.from(
+      new Set(
+        projects
+          .map((p) => p.technical_reviewer)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      )
+    );
 
-    const titlePage = pdfDoc.addPage();
-    const { width, height } = titlePage.getSize();
-    const titleFontSize = 18;
-    const lineHeight = 16;
+    let leadsById = new Map<string, { id: string; full_name: string | null }>();
+    if (leadIds.length > 0) {
+      const { data: leadsData, error: leadsError } = await supabaseServer
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", leadIds);
 
-    let y = height - 80;
-
-    titlePage.drawText("Draft R&D Claim Pack", {
-      x: 50,
-      y,
-      size: titleFontSize,
-      font,
-    });
-    y -= titleFontSize + 20;
-
-    titlePage.drawText(`Claim ID: ${claim.id}`, {
-      x: 50,
-      y,
-      size: 12,
-      font,
-    });
-    y -= lineHeight;
-
-    if ((claim as any).claim_year) {
-      titlePage.drawText(`Claim year: ${(claim as any).claim_year}`, {
-        x: 50,
-        y,
-        size: 12,
-        font,
-      });
-      y -= lineHeight;
-    }
-
-    const periodParts: string[] = [];
-    if (claim.period_start) periodParts.push(String(claim.period_start));
-    if (claim.period_end) periodParts.push(String(claim.period_end));
-
-    if (periodParts.length > 0) {
-      titlePage.drawText(`Accounting period: ${periodParts.join(" to ")}`, {
-        x: 50,
-        y,
-        size: 12,
-        font,
-      });
-      y -= lineHeight;
-    }
-
-    y -= lineHeight;
-
-    titlePage.drawText("Status: DRAFT – NOT FOR SUBMISSION", {
-      x: 50,
-      y,
-      size: 12,
-      font,
-    });
-
-    titlePage.drawText("DRAFT – NOT FOR SUBMISSION", {
-      x: width / 4,
-      y: height / 2,
-      size: 24,
-      font,
-    });
-
-    for (const project of projects || []) {
-      const projPage = pdfDoc.addPage();
-      const { width: pw, height: ph } = projPage.getSize();
-      let py = ph - 60;
-
-      projPage.drawText("DRAFT – NOT FOR SUBMISSION", {
-        x: pw / 4,
-        y: ph / 2,
-        size: 20,
-        font,
-      });
-
-      projPage.drawText(`Project: ${project.name}`, {
-        x: 50,
-        y: py,
-        size: 14,
-        font,
-      });
-      py -= 24;
-
-      const state = stateByProjectId.get(project.id);
-      let narrativeId: string | null = null;
-
-      if (state?.current_narrative_id) {
-        narrativeId = state.current_narrative_id;
-      } else if (state?.final_narrative_id) {
-        narrativeId = state.final_narrative_id;
-      }
-
-      if (!narrativeId) {
-        projPage.drawText("No narrative selected yet for this project.", {
-          x: 50,
-          y: py,
-          size: 12,
-          font,
-        });
-        continue;
-      }
-
-      const narrative = narrativesById.get(narrativeId);
-
-      if (!narrative) {
-        projPage.drawText(
-          "Narrative referenced in state could not be loaded.",
-          {
-            x: 50,
-            y: py,
-            size: 12,
-            font,
-          }
+      if (leadsError) {
+        console.error("Error loading lead engineer profiles in draft PDF handler:", leadsError);
+      } else {
+        leadsById = new Map(
+          (leadsData || []).map((p) => [p.id as string, p as { id: string; full_name: string | null }])
         );
-        continue;
-      }
-
-      const sections: { label: string; value: string | null }[] = [
-        { label: "Advance sought", value: narrative.advance_sought },
-        { label: "Baseline knowledge", value: narrative.baseline_knowledge },
-        {
-          label: "Technological uncertainty",
-          value: narrative.technological_uncertainty,
-        },
-        {
-          label: "Work undertaken",
-          value: narrative.work_undertaken,
-        },
-        { label: "Outcome", value: narrative.outcome },
-      ];
-
-      for (const section of sections) {
-        if (py < 80) {
-          py = 80;
-        }
-
-        projPage.drawText(section.label + ":", {
-          x: 50,
-          y: py,
-          size: 12,
-          font,
-        });
-        py -= lineHeight;
-
-        const text = (section.value || "").trim() || "(not provided)";
-        const wrapped = text.split("\n");
-        for (const line of wrapped) {
-          projPage.drawText(line, {
-            x: 60,
-            y: py,
-            size: 11,
-            font,
-          });
-          py -= lineHeight;
-        }
-
-        py -= lineHeight / 2;
       }
     }
 
-    const pdfBytes = await pdfDoc.save();
+    const { data: costsData, error: costsError } = await supabaseServer
+      .from("claim_costs")
+      .select("cost_type, amount")
+      .eq("claim_id", claim.id);
+
+    if (costsError) {
+      console.error("Error loading claim costs in draft PDF handler:", costsError);
+      res.status(500).json({
+        ok: false,
+        error: "Failed to load claim costs",
+      });
+      return;
+    }
+
+    const costAccumulator: DossierCostSummary = {
+      staff: 0,
+      externallyProvidedWorkers: 0,
+      subcontractor: 0,
+      consumables: 0,
+      software: 0,
+      totalQualifying: 0,
+    };
+
+    (costsData || []).forEach((c) => {
+      const amount = Number(c.amount || 0);
+      switch (c.cost_type) {
+        case "staff":
+          costAccumulator.staff += amount;
+          break;
+        case "subcontractor":
+          costAccumulator.subcontractor += amount;
+          break;
+        case "consumables":
+          costAccumulator.consumables += amount;
+          break;
+        case "software":
+          costAccumulator.software += amount;
+          break;
+        default:
+          break;
+      }
+      costAccumulator.totalQualifying += amount;
+    });
+
+    const sourceProjectIds = Array.from(
+      new Set(
+        projects
+          .map((p) => p.source_project_id)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      )
+    );
+
+    const { data: claimEvidence, error: claimEvidenceError } = await supabaseServer
+      .from("rd_claim_evidence")
+      .select("id, claim_id, project_id, sidekick_evidence_id, type, description, tag")
+      .eq("claim_id", claim.id)
+      .in(
+        "project_id",
+        sourceProjectIds.length > 0
+          ? sourceProjectIds
+          : ["00000000-0000-0000-0000-000000000000"]
+      );
+
+    if (claimEvidenceError) {
+      console.error("Error loading rd_claim_evidence in draft PDF handler:", claimEvidenceError);
+    }
+
+    const sidekickEvidenceIds = Array.from(
+      new Set(
+        (claimEvidence || [])
+          .map((e) => e.sidekick_evidence_id)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      )
+    );
+
+    let sidekickEvidenceById = new Map<
+      string,
+      { id: string; title: string | null; body: string | null; file_path: string | null; type: string }
+    >();
+
+    if (sidekickEvidenceIds.length > 0) {
+      const { data: sidekickEvidence, error: sidekickError } = await supabaseServer
+        .from("sidekick_evidence_items")
+        .select("id, title, body, file_path, type")
+        .in("id", sidekickEvidenceIds);
+
+      if (sidekickError) {
+        console.error(
+          "Error loading sidekick_evidence_items in draft PDF handler:",
+          sidekickError
+        );
+      } else {
+        sidekickEvidenceById = new Map(
+          (sidekickEvidence || []).map((e) => [
+            e.id as string,
+            e as {
+              id: string;
+              title: string | null;
+              body: string | null;
+              file_path: string | null;
+              type: string;
+            },
+          ])
+        );
+      }
+    }
+
+    const evidenceByClaimProjectId = new Map<string, DossierProjectEvidenceItem[]>();
+
+    (claimEvidence || []).forEach((e, index) => {
+      const projectSourceId = e.project_id;
+      if (!projectSourceId) return;
+
+      const claimProject = projects.find(
+        (p) => p.source_project_id && p.source_project_id === projectSourceId
+      );
+      if (!claimProject) return;
+
+      const key = claimProject.id;
+      const list = evidenceByClaimProjectId.get(key) || [];
+
+      const linked = e.sidekick_evidence_id
+        ? sidekickEvidenceById.get(e.sidekick_evidence_id as string)
+        : null;
+
+      const title = linked?.title || e.tag || e.type || "Evidence item";
+      const caption = linked?.body || e.description || "";
+      const filePath = linked?.file_path || "";
+      const isImage =
+        !!filePath &&
+        /(\.png|\.jpg|\.jpeg|\.gif|\.webp)$/i.test(filePath);
+
+      const evidenceCode = `E${index + 1}`;
+
+      list.push({
+        code: evidenceCode,
+        title,
+        caption,
+        isImage,
+      });
+
+      evidenceByClaimProjectId.set(key, list);
+    });
+
+    const dossierProjects: DossierProject[] = projects.map((project) => {
+      const state = stateByProjectId.get(project.id);
+      const narrativeId = state?.current_narrative_id || null;
+      const narrative = narrativeId ? narrativesById.get(narrativeId) : undefined;
+      const leadProfile =
+        project.technical_reviewer &&
+        leadsById.get(project.technical_reviewer as string);
+
+      return {
+        id: project.id,
+        name: project.name || "Untitled project",
+        field: project.rd_theme || null,
+        startDate: project.start_date ? String(project.start_date) : null,
+        endDate: project.end_date ? String(project.end_date) : null,
+        leadEngineer: leadProfile?.full_name || null,
+        narrative: narrative
+          ? {
+              advance_sought: narrative.advance_sought,
+              baseline_knowledge: narrative.baseline_knowledge,
+              technological_uncertainty: narrative.technological_uncertainty,
+              work_undertaken: narrative.work_undertaken,
+              outcome: narrative.outcome,
+            }
+          : undefined,
+        evidence: evidenceByClaimProjectId.get(project.id) || [],
+      };
+    });
+
+    const keyTechnologyFields = Array.from(
+      new Set(
+        dossierProjects
+          .map((p) => p.field)
+          .filter((f): f is string => !!f && f.trim().length > 0)
+      )
+    );
+
+    const generatedAt = new Date().toISOString();
+
+    const { pdfBytes, pageCount } = await buildRdClaimTechnicalDossier({
+      mode: "draft",
+      claim: {
+        id: claim.id,
+        claimYear: (claim as any).claim_year ?? null,
+        periodStart: claim.period_start ? String(claim.period_start) : null,
+        periodEnd: claim.period_end ? String(claim.period_end) : null,
+      },
+      organisation: {
+        name: organisation.name,
+        companyNumber: organisation.organisation_code || null,
+      },
+      projects: dossierProjects,
+      costs: costAccumulator,
+      keyTechnologyFields,
+      generatedAt,
+    });
+
     const filePath = `claims/${claimId}/draft-pack.pdf`;
     const bucket = "Draft-Claims";
 
@@ -405,19 +490,16 @@ export default async function handler(
 
     if (updateError) {
       console.error("Error saving draft PDF path:", updateError);
-      res
-        .status(500)
-        .json({
-          ok: false,
-          error: (updateError as any)?.message
-            ? `claims update: ${(updateError as any).message}`
-            : "Failed to save draft PDF path",
-        });
+      res.status(500).json({
+        ok: false,
+        error: (updateError as any)?.message
+          ? `claims update: ${(updateError as any).message}`
+          : "Failed to save draft PDF path",
+      });
       return;
     }
 
-    const { data: signedUrlData, error: signedUrlError } = await supabaseServer
-      .storage
+    const { data: signedUrlData, error: signedUrlError } = await supabaseServer.storage
       .from(bucket)
       .createSignedUrl(filePath, 60 * 10);
 
@@ -428,8 +510,7 @@ export default async function handler(
       );
     }
 
-    const generatedAt = new Date().toISOString();
-    const pageCount = pdfDoc.getPageCount();
+    const pageCountValue = pageCount;
 
     const isInternalStaff =
       profile &&
@@ -437,25 +518,22 @@ export default async function handler(
       profile.internal_role !== "";
 
     if (isInternalStaff && userId) {
-      const { error: auditError } = await supabaseServer
-        .from("rd_audit_log")
-        .insert({
-          claim_id: claim.id,
-          project_id: null,
-          action: "pdf_draft",
-          actor_user_id: userId,
-          details_json: {
-            pdf_path: filePath,
-            page_count: pageCount,
-          },
-        });
+      const { error: auditError } = await supabaseServer.from("rd_audit_log").insert({
+        claim_id: claim.id,
+        project_id: null,
+        action: "pdf_draft",
+        actor_user_id: userId,
+        details_json: {
+          pdf_path: filePath,
+          page_count: pageCountValue,
+        },
+      });
 
       if (auditError) {
         console.error(
           "Failed to write rd_audit_log for pdf_draft:",
           auditError
         );
-        // Do not fail the whole request on audit error, but log context.
       }
     } else {
       console.warn(
@@ -468,7 +546,7 @@ export default async function handler(
       ok: true,
       pdf_url: filePath,
       generated_at: generatedAt,
-      page_count: pageCount,
+      page_count: pageCountValue,
       signed_url: signedUrlData?.signedUrl,
     };
 

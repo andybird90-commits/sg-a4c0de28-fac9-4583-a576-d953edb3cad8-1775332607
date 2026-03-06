@@ -1,6 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { PDFDocument, StandardFonts } from "pdf-lib";
 import { supabaseServer } from "@/integrations/supabase/serverClient";
+import {
+  buildRdClaimTechnicalDossier,
+  type DossierProject,
+  type DossierProjectEvidenceItem,
+  type DossierCostSummary,
+} from "@/lib/pdf/rdClaimDossier";
 
 type FinalPdfSuccessResponse = {
   ok: true;
@@ -34,7 +39,7 @@ export default async function handler(
   try {
     const { data: claim, error: claimError } = await supabaseServer
       .from("claims")
-      .select("id, org_id, claim_year, period_start, period_end, status")
+      .select("id, org_id, claim_year, period_start, period_end, status, final_pdf_url")
       .eq("id", claimId)
       .maybeSingle();
 
@@ -52,9 +57,26 @@ export default async function handler(
       return;
     }
 
-    const { data: projects, error: projectsError } = await supabaseServer
+    const { data: organisation, error: orgError } = await supabaseServer
+      .from("organisations")
+      .select("id, name, organisation_code")
+      .eq("id", claim.org_id)
+      .maybeSingle();
+
+    if (orgError || !organisation) {
+      console.error("Error loading organisation in final PDF handler:", orgError);
+      res.status(500).json({
+        ok: false,
+        error: "Failed to load organisation for claim",
+      });
+      return;
+    }
+
+    const { data: projectsData, error: projectsError } = await supabaseServer
       .from("claim_projects")
-      .select("id, name")
+      .select(
+        "id, name, rd_theme, start_date, end_date, technical_reviewer, source_project_id"
+      )
       .eq("claim_id", claim.id)
       .is("deleted_at", null);
 
@@ -66,13 +88,19 @@ export default async function handler(
       return;
     }
 
-    const projectIds = (projects || []).map((p) => p.id);
+    const projects = projectsData || [];
+    const projectIds = projects.map((p) => p.id);
 
     const { data: narrativeStates, error: statesError } =
       await supabaseServer
         .from("rd_project_narrative_state")
         .select("id, claim_project_id, final_narrative_id")
-        .in("claim_project_id", projectIds);
+        .in(
+          "claim_project_id",
+          projectIds.length > 0
+            ? projectIds
+            : ["00000000-0000-0000-0000-000000000000"]
+        );
 
     if (statesError) {
       res.status(500).json({
@@ -82,12 +110,17 @@ export default async function handler(
       return;
     }
 
-    const { data: narratives, error: narrativesError } = await supabaseServer
+    const { data: narrativesData, error: narrativesError } = await supabaseServer
       .from("rd_project_narratives")
       .select(
         "id, claim_project_id, status, version_number, advance_sought, baseline_knowledge, technological_uncertainty, work_undertaken, outcome"
       )
-      .in("claim_project_id", projectIds);
+      .in(
+        "claim_project_id",
+        projectIds.length > 0
+          ? projectIds
+          : ["00000000-0000-0000-0000-000000000000"]
+      );
 
     if (narrativesError) {
       res.status(500).json({
@@ -116,169 +149,25 @@ export default async function handler(
         claim_project_id: string;
         status: string;
         version_number: number;
-        advance_sought: string | null;
-        baseline_knowledge: string | null;
-        technological_uncertainty: string | null;
-        work_undertaken: string | null;
-        outcome: string | null;
+        advance_sought: string;
+        baseline_knowledge: string;
+        technological_uncertainty: string;
+        work_undertaken: string;
+        outcome: string;
       }
     >();
-    (narratives || []).forEach((n) => {
+    (narrativesData || []).forEach((n) => {
       narrativesById.set(n.id, n as any);
     });
 
     const missingProjectIds: string[] = [];
 
-    const pdfDoc = await PDFDocument.create();
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-    const titlePage = pdfDoc.addPage();
-    const { width, height } = titlePage.getSize();
-    const titleFontSize = 18;
-    const lineHeight = 16;
-
-    let y = height - 80;
-
-    titlePage.drawText("Final R&D Claim Pack", {
-      x: 50,
-      y,
-      size: titleFontSize,
-      font,
-    });
-    y -= titleFontSize + 20;
-
-    titlePage.drawText(`Claim ID: ${claim.id}`, {
-      x: 50,
-      y,
-      size: 12,
-      font,
-    });
-    y -= lineHeight;
-
-    if ((claim as any).claim_year) {
-      titlePage.drawText(`Claim year: ${(claim as any).claim_year}`, {
-        x: 50,
-        y,
-        size: 12,
-        font,
-      });
-      y -= lineHeight;
-    }
-
-    const periodParts: string[] = [];
-    if (claim.period_start) periodParts.push(String(claim.period_start));
-    if (claim.period_end) periodParts.push(String(claim.period_end));
-
-    if (periodParts.length > 0) {
-      titlePage.drawText(
-        `Accounting period: ${periodParts.join(" to ")}`,
-        {
-          x: 50,
-          y,
-          size: 12,
-          font,
-        }
-      );
-      y -= lineHeight;
-    }
-
-    y -= lineHeight;
-
-    titlePage.drawText("Status: READY TO FILE", {
-      x: 50,
-      y,
-      size: 12,
-      font,
-    });
-
-    for (const project of projects || []) {
-      const projPage = pdfDoc.addPage();
-      const { width: pw, height: ph } = projPage.getSize();
-      let py = ph - 60;
-
-      projPage.drawText(`Project: ${project.name}`, {
-        x: 50,
-        y: py,
-        size: 14,
-        font,
-      });
-      py -= 24;
-
+    projects.forEach((project) => {
       const state = stateByProjectId.get(project.id);
-      const narrativeId = state?.final_narrative_id || null;
-
-      if (!narrativeId) {
+      if (!state || !state.final_narrative_id) {
         missingProjectIds.push(project.id);
-        projPage.drawText(
-          "No final narrative set for this project.",
-          {
-            x: 50,
-            y: py,
-            size: 12,
-            font,
-          }
-        );
-        continue;
       }
-
-      const narrative = narrativesById.get(narrativeId);
-
-      if (!narrative || narrative.status !== "final") {
-        missingProjectIds.push(project.id);
-        projPage.drawText(
-          "Narrative is not in final status for this project.",
-          {
-            x: 50,
-            y: py,
-            size: 12,
-            font,
-          }
-        );
-        continue;
-      }
-
-      const sections: { label: string; value: string | null }[] = [
-        { label: "Advance sought", value: narrative.advance_sought },
-        { label: "Baseline knowledge", value: narrative.baseline_knowledge },
-        {
-          label: "Technological uncertainty",
-          value: narrative.technological_uncertainty,
-        },
-        {
-          label: "Work undertaken",
-          value: narrative.work_undertaken,
-        },
-        { label: "Outcome", value: narrative.outcome },
-      ];
-
-      for (const section of sections) {
-        if (py < 80) {
-          py = 80;
-        }
-
-        projPage.drawText(section.label + ":", {
-          x: 50,
-          y: py,
-          size: 12,
-          font,
-        });
-        py -= lineHeight;
-
-        const text = (section.value || "").trim() || "(not provided)";
-        const wrapped = text.split("\n");
-        for (const line of wrapped) {
-          projPage.drawText(line, {
-            x: 60,
-            y: py,
-            size: 11,
-            font,
-          });
-          py -= lineHeight;
-        }
-
-        py -= lineHeight / 2;
-      }
-    }
+    });
 
     if (missingProjectIds.length > 0) {
       res.status(400).json({
@@ -290,11 +179,234 @@ export default async function handler(
       return;
     }
 
-    const pdfBytes = await pdfDoc.save();
+    const leadIds = Array.from(
+      new Set(
+        projects
+          .map((p) => p.technical_reviewer)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      )
+    );
+
+    let leadsById = new Map<string, { id: string; full_name: string | null }>();
+    if (leadIds.length > 0) {
+      const { data: leadsData, error: leadsError } = await supabaseServer
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", leadIds);
+
+      if (leadsError) {
+        console.error("Error loading lead engineer profiles in final PDF handler:", leadsError);
+      } else {
+        leadsById = new Map(
+          (leadsData || []).map((p) => [p.id as string, p as { id: string; full_name: string | null }])
+        );
+      }
+    }
+
+    const { data: costsData, error: costsError } = await supabaseServer
+      .from("claim_costs")
+      .select("cost_type, amount")
+      .eq("claim_id", claim.id);
+
+    if (costsError) {
+      console.error("Error loading claim costs in final PDF handler:", costsError);
+      res.status(500).json({
+        ok: false,
+        error: "Failed to load claim costs",
+      });
+      return;
+    }
+
+    const costAccumulator: DossierCostSummary = {
+      staff: 0,
+      externallyProvidedWorkers: 0,
+      subcontractor: 0,
+      consumables: 0,
+      software: 0,
+      totalQualifying: 0,
+    };
+
+    (costsData || []).forEach((c) => {
+      const amount = Number(c.amount || 0);
+      switch (c.cost_type) {
+        case "staff":
+          costAccumulator.staff += amount;
+          break;
+        case "subcontractor":
+          costAccumulator.subcontractor += amount;
+          break;
+        case "consumables":
+          costAccumulator.consumables += amount;
+          break;
+        case "software":
+          costAccumulator.software += amount;
+          break;
+        default:
+          break;
+      }
+      costAccumulator.totalQualifying += amount;
+    });
+
+    const sourceProjectIds = Array.from(
+      new Set(
+        projects
+          .map((p) => p.source_project_id)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      )
+    );
+
+    const { data: claimEvidence, error: claimEvidenceError } = await supabaseServer
+      .from("rd_claim_evidence")
+      .select("id, claim_id, project_id, sidekick_evidence_id, type, description, tag")
+      .eq("claim_id", claim.id)
+      .in(
+        "project_id",
+        sourceProjectIds.length > 0
+          ? sourceProjectIds
+          : ["00000000-0000-0000-0000-000000000000"]
+      );
+
+    if (claimEvidenceError) {
+      console.error("Error loading rd_claim_evidence in final PDF handler:", claimEvidenceError);
+    }
+
+    const sidekickEvidenceIds = Array.from(
+      new Set(
+        (claimEvidence || [])
+          .map((e) => e.sidekick_evidence_id)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      )
+    );
+
+    let sidekickEvidenceById = new Map<
+      string,
+      { id: string; title: string | null; body: string | null; file_path: string | null; type: string }
+    >();
+
+    if (sidekickEvidenceIds.length > 0) {
+      const { data: sidekickEvidence, error: sidekickError } = await supabaseServer
+        .from("sidekick_evidence_items")
+        .select("id, title, body, file_path, type")
+        .in("id", sidekickEvidenceIds);
+
+      if (sidekickError) {
+        console.error(
+          "Error loading sidekick_evidence_items in final PDF handler:",
+          sidekickError
+        );
+      } else {
+        sidekickEvidenceById = new Map(
+          (sidekickEvidence || []).map((e) => [
+            e.id as string,
+            e as {
+              id: string;
+              title: string | null;
+              body: string | null;
+              file_path: string | null;
+              type: string;
+            },
+          ])
+        );
+      }
+    }
+
+    const evidenceByClaimProjectId = new Map<string, DossierProjectEvidenceItem[]>();
+
+    (claimEvidence || []).forEach((e, index) => {
+      const projectSourceId = e.project_id;
+      if (!projectSourceId) return;
+
+      const claimProject = projects.find(
+        (p) => p.source_project_id && p.source_project_id === projectSourceId
+      );
+      if (!claimProject) return;
+
+      const key = claimProject.id;
+      const list = evidenceByClaimProjectId.get(key) || [];
+
+      const linked = e.sidekick_evidence_id
+        ? sidekickEvidenceById.get(e.sidekick_evidence_id as string)
+        : null;
+
+      const title = linked?.title || e.tag || e.type || "Evidence item";
+      const caption = linked?.body || e.description || "";
+      const filePath = linked?.file_path || "";
+      const isImage =
+        !!filePath &&
+        /(\.png|\.jpg|\.jpeg|\.gif|\.webp)$/i.test(filePath);
+
+      const evidenceCode = `E${index + 1}`;
+
+      list.push({
+        code: evidenceCode,
+        title,
+        caption,
+        isImage,
+      });
+
+      evidenceByClaimProjectId.set(key, list);
+    });
+
+    const dossierProjects: DossierProject[] = projects.map((project) => {
+      const state = stateByProjectId.get(project.id);
+      const narrativeId = state?.final_narrative_id || null;
+      const narrative = narrativeId ? narrativesById.get(narrativeId) : undefined;
+      const leadProfile =
+        project.technical_reviewer &&
+        leadsById.get(project.technical_reviewer as string);
+
+      return {
+        id: project.id,
+        name: project.name || "Untitled project",
+        field: project.rd_theme || null,
+        startDate: project.start_date ? String(project.start_date) : null,
+        endDate: project.end_date ? String(project.end_date) : null,
+        leadEngineer: leadProfile?.full_name || null,
+        narrative: narrative
+          ? {
+              advance_sought: narrative.advance_sought,
+              baseline_knowledge: narrative.baseline_knowledge,
+              technological_uncertainty: narrative.technological_uncertainty,
+              work_undertaken: narrative.work_undertaken,
+              outcome: narrative.outcome,
+            }
+          : undefined,
+        evidence: evidenceByClaimProjectId.get(project.id) || [],
+      };
+    });
+
+    const keyTechnologyFields = Array.from(
+      new Set(
+        dossierProjects
+          .map((p) => p.field)
+          .filter((f): f is string => !!f && f.trim().length > 0)
+      )
+    );
+
+    const generatedAt = new Date().toISOString();
+
+    const { pdfBytes, pageCount } = await buildRdClaimTechnicalDossier({
+      mode: "final",
+      claim: {
+        id: claim.id,
+        claimYear: (claim as any).claim_year ?? null,
+        periodStart: claim.period_start ? String(claim.period_start) : null,
+        periodEnd: claim.period_end ? String(claim.period_end) : null,
+      },
+      organisation: {
+        name: organisation.name,
+        companyNumber: organisation.organisation_code || null,
+      },
+      projects: dossierProjects,
+      costs: costAccumulator,
+      keyTechnologyFields,
+      generatedAt,
+    });
+
     const filePath = `claims/${claimId}/final-pack.pdf`;
     const bucket = "Submitted-Claims";
 
-    const { data: uploadData, error: uploadError } = await supabaseServer.storage
+    const { error: uploadError } = await supabaseServer.storage
       .from(bucket)
       .upload(filePath, Buffer.from(pdfBytes), {
         contentType: "application/pdf",
@@ -324,8 +436,8 @@ export default async function handler(
       return;
     }
 
-    const generatedAt = new Date().toISOString();
-    const pageCount = pdfDoc.getPageCount();
+    const generatedAtIso = generatedAt;
+    const pageCountValue = pageCount;
 
     const { error: auditError } = await supabaseServer
       .from("rd_audit_log")
@@ -336,7 +448,7 @@ export default async function handler(
         actor_user_id: null,
         details_json: {
           pdf_path: filePath,
-          page_count: pageCount,
+          page_count: pageCountValue,
         },
       });
 
@@ -347,8 +459,8 @@ export default async function handler(
     const responseBody: FinalPdfSuccessResponse = {
       ok: true,
       pdf_url: filePath,
-      generated_at: generatedAt,
-      page_count: pageCount,
+      generated_at: generatedAtIso,
+      page_count: pageCountValue,
     };
 
     res.status(200).json(responseBody);
