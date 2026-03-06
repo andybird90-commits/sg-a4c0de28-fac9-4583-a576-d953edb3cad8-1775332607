@@ -23,12 +23,14 @@ import { ArrowLeft, Lightbulb, FileText, MessageSquare, Send, Upload, Link as Li
 import type { Database } from "@/integrations/supabase/types";
 import { MessageWidget } from "@/components/MessageWidget";
 import { sidekickCostAdviceService, type SidekickCostAdvice } from "@/services/sidekickCostAdviceService";
+import { sidekickTimelineService, type SidekickTimelineItem } from "@/services/sidekickTimelineService";
 import { toast } from "@/hooks/use-toast";
 import { useCallback } from "react";
 import { ProjectPhaseTimeline } from "@/components/projects/ProjectPhaseTimeline";
 import { ProjectReadinessPanel } from "@/components/projects/ProjectReadinessPanel";
 import { ProjectCostSummary } from "@/components/projects/ProjectCostSummary";
 import { ProjectHistoryPanel } from "@/components/projects/ProjectHistoryPanel";
+import { ProjectGantt } from "@/components/projects/ProjectGantt";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
 type SidekickEvidenceItem = Database["public"]["Tables"]["sidekick_evidence_items"]["Row"];
@@ -37,6 +39,7 @@ type SidekickProjectComment = Database["public"]["Tables"]["sidekick_project_com
 };
 
 type ClaimProject = Database["public"]["Tables"]["claim_projects"]["Row"];
+type SidekickTimelineItemRow = Database["public"]["Tables"]["sidekick_project_timeline_items"]["Row"];
 
 type ApprovalSectionStatus = "approved" | "needs_revision";
 type ApprovalSections = {
@@ -187,6 +190,12 @@ export default function ProjectDetailPage() {
   const [costDescription, setCostDescription] = useState<string>("");
   const [costNotes, setCostNotes] = useState<string>("");
   const [editingCostId, setEditingCostId] = useState<string | null>(null);
+
+  const [timelineItems, setTimelineItems] = useState<SidekickTimelineItemRow[]>([]);
+  const [newTimelineName, setNewTimelineName] = useState<string>("");
+  const [newTimelineStart, setNewTimelineStart] = useState<string>("");
+  const [newTimelineEnd, setNewTimelineEnd] = useState<string>("");
+  const [isSavingTimeline, setIsSavingTimeline] = useState<boolean>(false);
 
   const [technicalBaseline, setTechnicalBaseline] = useState<string>("");
   const [technicalChange, setTechnicalChange] = useState<string>("");
@@ -463,6 +472,14 @@ export default function ProjectDetailPage() {
             console.error("Error fetching feasibility analysis in sync:", feasibilityError);
           }
         })(),
+        (async () => {
+          try {
+            const items = await sidekickTimelineService.getByProject(project.id);
+            setTimelineItems(items);
+          } catch (timelineError) {
+            console.error("Error fetching timeline items in sync:", timelineError);
+          }
+        })(),
       ]);
 
       toast({
@@ -530,6 +547,12 @@ export default function ProjectDetailPage() {
 
         if (projectData?.id) {
           void loadCostAdvice(projectData.id);
+          try {
+            const items = await sidekickTimelineService.getByProject(projectData.id);
+            setTimelineItems(items);
+          } catch (timelineError) {
+            console.error("Error fetching timeline items:", timelineError);
+          }
         }
       } catch (error) {
         console.error("Error fetching project data:", error);
@@ -1069,6 +1092,105 @@ export default function ProjectDetailPage() {
       });
     } finally {
       setIsSubmittingCostAdvice(false);
+    }
+  };
+
+  const handleAddTimelineItem = async (): Promise<void> => {
+    if (!project) return;
+
+    const name = newTimelineName.trim();
+    if (!name) {
+      toast({
+        title: "Add an activity name",
+        description: "Give the activity a short, clear label.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!newTimelineStart || !newTimelineEnd) {
+      toast({
+        title: "Start and finish required",
+        description: "Choose both a start and finish date for this activity.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const start = new Date(newTimelineStart);
+    const end = new Date(newTimelineEnd);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      toast({
+        title: "Dates look invalid",
+        description: "Please check the start and finish dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (end.getTime() < start.getTime()) {
+      toast({
+        title: "Finish before start",
+        description: "The finish date must be on or after the start date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSavingTimeline(true);
+    try {
+      const created: SidekickTimelineItem = await sidekickTimelineService.createItem({
+        project_id: project.id,
+        name,
+        start_date: newTimelineStart,
+        end_date: newTimelineEnd,
+      });
+
+      setTimelineItems((prev) =>
+        [...prev, created].sort((a, b) => {
+          const aDate = a.start_date ? new Date(a.start_date).getTime() : 0;
+          const bDate = b.start_date ? new Date(b.start_date).getTime() : 0;
+          return aDate - bDate;
+        })
+      );
+
+      setNewTimelineName("");
+      setNewTimelineStart("");
+      setNewTimelineEnd("");
+
+      toast({
+        title: "Activity added",
+        description: "Your project timeline has been updated.",
+      });
+    } catch (error) {
+      console.error("Error adding timeline activity:", error);
+      toast({
+        title: "Could not add activity",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingTimeline(false);
+    }
+  };
+
+  const handleDeleteTimelineItem = async (id: string): Promise<void> => {
+    if (!window.confirm("Remove this activity from the timeline?")) return;
+
+    try {
+      await sidekickTimelineService.deleteItem(id);
+      setTimelineItems((prev) => prev.filter((item) => item.id !== id));
+      toast({
+        title: "Activity removed",
+        description: "The timeline has been updated.",
+      });
+    } catch (error) {
+      console.error("Error deleting timeline activity:", error);
+      toast({
+        title: "Could not remove activity",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

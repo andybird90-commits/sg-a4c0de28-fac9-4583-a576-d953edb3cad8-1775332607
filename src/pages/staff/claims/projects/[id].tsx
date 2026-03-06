@@ -19,6 +19,7 @@ import { feasibilityService, type FeasibilityAnalysis } from "@/services/feasibi
 import { sidekickCostAdviceService, type SidekickCostAdvice } from "@/services/sidekickCostAdviceService";
 import { MessageWidget } from "@/components/MessageWidget";
 import { ProjectCostSummary } from "@/components/projects/ProjectCostSummary";
+import { ProjectGantt } from "@/components/projects/ProjectGantt";
 import {
   ArrowLeft,
   Calendar,
@@ -52,6 +53,7 @@ type SidekickProjectComment = Database["public"]["Tables"]["sidekick_project_com
   author?: { email: string };
 };
 type SidekickCostAdviceRow = SidekickCostAdvice;
+type SidekickTimelineItemRow = Database["public"]["Tables"]["sidekick_project_timeline_items"]["Row"];
 
 export default function ProjectDetailPage() {
   const router = useRouter();
@@ -93,6 +95,7 @@ export default function ProjectDetailPage() {
 
   const [savingNotes, setSavingNotes] = useState<boolean>(false);
   const [lastSavedNotesAt, setLastSavedNotesAt] = useState<Date | null>(null);
+  const [timelineItems, setTimelineItems] = useState<SidekickTimelineItemRow[]>([]);
 
   useEffect(() => {
     if (id && typeof id === "string") {
@@ -132,29 +135,29 @@ export default function ProjectDetailPage() {
         try {
           const sidekickId = projectData.source_sidekick_project_id as string;
 
-          const [sp, evidenceItems, comments, analyses, advice] = await Promise.all([
+          const [sp, evidenceItems, comments, analyses, advice, timeline] = await Promise.all([
             sidekickProjectService.getProjectById(sidekickId),
             sidekickEvidenceService.getEvidenceByProject(sidekickId),
             sidekickCommentService.getCommentsByProject(sidekickId),
             feasibilityService.getAnalysesByProject(sidekickId),
             sidekickCostAdviceService.getByProject(sidekickId),
+            (async () => {
+              try {
+                const items = await sidekickTimelineService.getByProject(sidekickId);
+                return items;
+              } catch (timelineError) {
+                console.error("Error loading Sidekick timeline items:", timelineError);
+                return [];
+              }
+            })(),
           ]);
 
           setSidekickProject(sp);
           setSidekickEvidence(evidenceItems || []);
           setSidekickComments(comments || []);
           setCostAdvice(advice || []);
-
-          if (analyses && analyses.length > 0) {
-            const sortedAnalyses = analyses.sort(
-              (a, b) =>
-                new Date(b.created_at ?? "").getTime() -
-                new Date(a.created_at ?? "").getTime()
-            );
-            setFeasibilityAnalysis(sortedAnalyses[0]);
-          } else {
-            setFeasibilityAnalysis(null);
-          }
+          setFeasibilityAnalysis(analyses && analyses.length > 0 ? analyses.sort((a, b) => new Date(b.created_at ?? "").getTime() - new Date(a.created_at ?? "").getTime())[0] : null);
+          setTimelineItems(timeline || []);
         } catch (sidekickError) {
           console.error("Error loading linked Sidekick project:", sidekickError);
         }
@@ -930,6 +933,17 @@ export default function ProjectDetailPage() {
               </p>
             ) : (
               <>
+                <div className="space-y-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    Project Timeline
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Read-only view of the activities the client has added to their project timeline in RD Companion.
+                  </p>
+                  <ProjectGantt items={timelineItems} />
+                </div>
+
                 {/* Evidence */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
