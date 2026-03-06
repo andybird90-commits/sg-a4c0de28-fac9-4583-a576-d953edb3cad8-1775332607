@@ -1802,6 +1802,149 @@ export type Database = {
           },
         ]
       }
+      hmrc_inspector_findings: {
+        Row: {
+          category: string
+          claim_id: string
+          created_at: string
+          description: string
+          id: string
+          project_id: string | null
+          recommendation: string
+          session_id: string
+          severity: string
+          source_refs_json: Json | null
+          title: string
+        }
+        Insert: {
+          category: string
+          claim_id: string
+          created_at?: string
+          description: string
+          id?: string
+          project_id?: string | null
+          recommendation: string
+          session_id: string
+          severity: string
+          source_refs_json?: Json | null
+          title: string
+        }
+        Update: {
+          category?: string
+          claim_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          project_id?: string | null
+          recommendation?: string
+          session_id?: string
+          severity?: string
+          source_refs_json?: Json | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hmrc_inspector_findings_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hmrc_inspector_findings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "hmrc_inspector_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hmrc_inspector_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message_text: string
+          role: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_text: string
+          role: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_text?: string
+          role?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hmrc_inspector_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "hmrc_inspector_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hmrc_inspector_sessions: {
+        Row: {
+          claim_id: string
+          created_at: string
+          created_by_user_id: string
+          id: string
+          mode: string
+          overall_score: number | null
+          risk_level: string | null
+          status: string
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          created_by_user_id: string
+          id?: string
+          mode: string
+          overall_score?: number | null
+          risk_level?: string | null
+          status: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          id?: string
+          mode?: string
+          overall_score?: number | null
+          risk_level?: string | null
+          status?: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hmrc_inspector_sessions_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hmrc_inspector_sessions_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       internal_comments: {
         Row: {
           author_id: string
