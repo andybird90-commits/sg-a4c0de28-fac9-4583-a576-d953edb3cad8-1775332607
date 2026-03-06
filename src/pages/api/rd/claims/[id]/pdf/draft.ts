@@ -299,9 +299,12 @@ export default async function handler(
 
     if (uploadError) {
       console.error("Error uploading draft PDF:", uploadError);
-      res
-        .status(500)
-        .json({ ok: false, error: "Failed to upload draft PDF" });
+      res.status(500).json({
+        ok: false,
+        error:
+          uploadError.message ||
+          "Failed to upload draft PDF",
+      });
       return;
     }
 

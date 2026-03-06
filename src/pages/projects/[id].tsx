@@ -1134,6 +1134,21 @@ export default function ProjectDetailPage() {
   const technicalPlaceholders = getTechnicalPlaceholders(sector);
   const challengePlaceholders = getChallengePlaceholders(sector);
 
+  const clientTechnicalChars =
+    technicalBaseline.trim().length +
+    technicalChange.trim().length +
+    technicalInnovation.trim().length;
+
+  const clientChallengeChars =
+    challengeUncertainties.trim().length +
+    challengeKnowledge.trim().length +
+    challengeWorkDone.trim().length;
+
+  // Require a reasonable amount of client-entered content before we treat
+  // technical story / challenges as "present" for readiness scoring.
+  const hasClientTechnical = clientTechnicalChars >= 300;
+  const hasClientChallenges = clientChallengeChars >= 300;
+
   const latestStaffComment =
     comments && comments.length > 0
       ? comments
@@ -1294,16 +1309,8 @@ export default function ProjectDetailPage() {
               dueDate={claimProject?.due_date ?? null}
             />
             <ProjectReadinessPanel
-              hasTechnical={Boolean(
-                technicalBaseline ||
-                  technicalChange ||
-                  technicalInnovation
-              )}
-              hasChallenges={Boolean(
-                challengeUncertainties ||
-                  challengeKnowledge ||
-                  challengeWorkDone
-              )}
+              hasTechnical={hasClientTechnical}
+              hasChallenges={hasClientChallenges}
               activityCount={rdActivities.length}
               evidenceCount={evidence.length}
               costCount={costAdvice.length}

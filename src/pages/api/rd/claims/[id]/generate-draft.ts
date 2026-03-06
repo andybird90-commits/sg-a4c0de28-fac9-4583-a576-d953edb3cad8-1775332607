@@ -111,6 +111,10 @@ export default async function handler(
 
   try {
     const claimId = req.query.id as string | undefined;
+    const requestedProjectId =
+      typeof req.query.projectId === "string"
+        ? (req.query.projectId as string)
+        : undefined;
 
     if (!claimId) {
       res.status(400).json({ ok: false, error: "Missing claim id" });
@@ -200,6 +204,20 @@ export default async function handler(
       return;
     }
 
+    let projectsToProcess = projects;
+
+    if (requestedProjectId) {
+      projectsToProcess = projects.filter((p) => p.id === requestedProjectId);
+
+      if (projectsToProcess.length === 0) {
+        res.status(400).json({
+          ok: false,
+          error: "Requested project is not part of this claim",
+        });
+        return;
+      }
+    }
+
     const projectIds = projects.map((p) => p.id);
 
     const { data: narrativeStates, error: statesError } = await supabase
@@ -265,7 +283,7 @@ export default async function handler(
     const skippedCount = 0;
     let errorCount = 0;
 
-    for (const project of projects) {
+    for (const project of projectsToProcess) {
       const projectId = project.id;
 
       try {
@@ -492,7 +510,7 @@ Project:
     const responseBody: GenerateDraftResponseBody = {
       ok: true,
       claimId: claim.id,
-      total_projects: projects.length,
+      total_projects: projectsToProcess.length,
       generated_count: generatedCount,
       skipped_count: skippedCount,
       error_count: errorCount,

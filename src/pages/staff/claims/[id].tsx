@@ -652,6 +652,16 @@ export default function ClaimDetailPage() {
   const handleGenerateDraftClaim = async (): Promise<void> => {
     if (!claim) return;
 
+    if (!projects || projects.length === 0) {
+      toast({
+        title: "No projects",
+        description:
+          "This claim has no projects to generate narratives for.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setGeneratingDraft(true);
     setDraftSummary(null);
 
@@ -670,71 +680,99 @@ export default function ClaimDetailPage() {
         return;
       }
 
-      const response = await fetch(
-        `/api/rd/claims/${claim.id}/generate-draft`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
-      );
+      const totalProjects = projects.length;
+      let generatedCount = 0;
+      let skippedCount = 0;
+      let errorCount = 0;
 
-      const raw = await response.text();
-      let data: any = null;
-
-      if (raw) {
+      for (const project of projects) {
         try {
-          data = JSON.parse(raw);
-        } catch (parseError) {
-          console.error(
-            "Unexpected non-JSON response from generate-draft:",
+          const response = await fetch(
+            `/api/rd/claims/${claim.id}/generate-draft?projectId=${encodeURIComponent(
+              project.id
+            )}`,
             {
-              raw,
-              parseError,
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
             }
           );
-        }
-      }
 
-      if (response.status === 401) {
-        toast({
-          title: "Not authorised",
-          description:
-            (data && (data.error || data.message)) ||
-            "Your session may have expired or you do not have access to generate this draft.",
-          variant: "destructive",
-        });
-        return;
-      }
+          const raw = await response.text();
+          let data: any = null;
 
-      if (!response.ok || !data || data.ok !== true) {
-        const message =
-          (data && (data.error || data.message)) ||
-          `Failed to generate draft claim (status ${response.status})`;
+          if (raw) {
+            try {
+              data = JSON.parse(raw);
+            } catch (parseError) {
+              console.error(
+                "Unexpected non-JSON response from generate-draft:",
+                {
+                  raw,
+                  parseError,
+                }
+              );
+            }
+          }
 
-        toast({
-          title: "Error generating draft claim",
-          description: message,
-          variant: "destructive",
-        });
+          if (response.status === 401) {
+            toast({
+              title: "Not authorised",
+              description:
+                (data && (data.error || data.message)) ||
+                "Your session may have expired or you do not have access to generate this draft.",
+              variant: "destructive",
+            });
+            errorCount += 1;
+            break;
+          }
 
-        return;
-      }
+          if (!response.ok || !data || data.ok !== true) {
+            const message =
+              (data && (data.error || data.message)) ||
+              `Failed to generate draft for project "${project.name}" (status ${response.status})`;
 
-      if (data && typeof data === "object") {
-        if ("summary" in data) {
-          setDraftSummary((data as any).summary);
-        } else {
-          setDraftSummary(data);
+            console.error("Error generating draft for project:", {
+              projectId: project.id,
+              message,
+            });
+            errorCount += 1;
+            continue;
+          }
+
+          const perProject = Array.isArray(data.per_project)
+            ? data.per_project[0]
+            : null;
+
+          if (perProject && perProject.result === "generated") {
+            generatedCount += 1;
+          } else if (perProject && perProject.result === "skipped_existing_draft") {
+            skippedCount += 1;
+          } else {
+            // Treat any other outcome as an error for counting purposes
+            errorCount += 1;
+          }
+
+          setDraftSummary({
+            total_projects: totalProjects,
+            generated_count: generatedCount,
+            skipped_count: skippedCount,
+            error_count: errorCount,
+          });
+        } catch (projectError: any) {
+          console.error(
+            "Error generating draft claim for project:",
+            project.id,
+            projectError
+          );
+          errorCount += 1;
         }
       }
 
       toast({
         title: "Draft claim generated",
-        description:
-          (data && ((data as any).summaryText || (data as any).message)) ||
-          "Draft narratives generated for eligible projects.",
+        description: `Draft narratives run for ${totalProjects} project${totalProjects === 1 ? "" : "s"}: ${generatedCount} generated, ${skippedCount} skipped, ${errorCount} with errors.`,
       });
     } catch (error: any) {
       console.error("Error generating draft claim:", error);
