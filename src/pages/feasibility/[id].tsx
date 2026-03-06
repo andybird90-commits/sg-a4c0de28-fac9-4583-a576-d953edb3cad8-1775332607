@@ -14,11 +14,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { 
-  ArrowLeft, Download, AlertTriangle, CheckCircle2, 
+import {
+  ArrowLeft, Download, AlertTriangle, CheckCircle2,
   Clock, Gauge, TrendingUp, ShieldAlert, PoundSterling,
-  FolderPlus, Trash2, Edit, Sparkles
-} from "lucide-react";
+  FolderPlus, Trash2, Edit, Sparkles } from
+"lucide-react";
 import { useNotifications } from "@/contexts/NotificationContext";
 
 export default function FeasibilityResultPage() {
@@ -59,9 +59,9 @@ export default function FeasibilityResultPage() {
       setProjectName(analysis.idea_title || "");
       setProjectDescription(analysis.summary || "");
       const tags = [
-        analysis.sector_guess,
-        ...(analysis.target_customers || []).slice(0, 2)
-      ].filter(Boolean).join(", ");
+      analysis.sector_guess,
+      ...(analysis.target_customers || []).slice(0, 2)].
+      filter(Boolean).join(", ");
       setProjectTags(tags);
     }
   }, [showCreateProject, analysis]);
@@ -74,7 +74,7 @@ export default function FeasibilityResultPage() {
       const newProject = await organisationService.createProject(currentOrg.id, {
         name: projectName,
         description: projectDescription,
-        tags: projectTags.split(",").map(t => t.trim()).filter(Boolean),
+        tags: projectTags.split(",").map((t) => t.trim()).filter(Boolean),
         is_active: true
       });
 
@@ -226,25 +226,25 @@ export default function FeasibilityResultPage() {
       `}</style>
       <SEO
         title={`Analysis: ${analysis.idea_title || "New Idea"} - RD Companion`}
-        description="R&D feasibility analysis"
-      />
+        description="R&D feasibility analysis" />
+      
       <Layout>
         <div className="min-h-screen bg-[#020617] text-slate-100">
           <div className="max-w-5xl mx-auto px-4 py-8 print-full-width">
             <div className="flex items-center justify-between mb-8 print-hide">
-              <Link 
-                href="/feasibility/history" 
-                className="text-slate-300 hover:text-slate-100 flex items-center gap-2"
-              >
+              <Link
+                href="/feasibility/history"
+                className="text-slate-300 hover:text-slate-100 flex items-center gap-2">
+                
                 <ArrowLeft size={20} />
                 Back to Analysis History
               </Link>
               <div className="flex gap-3">
-                <Button 
+                <Button
                   variant="default"
                   onClick={() => setShowCreateProject(true)}
-                  className="bg-[#FF6B35] hover:bg-[#FF8C61]"
-                >
+                  className="bg-[#FF6B35] hover:bg-[#FF8C61]">
+                  
                   <FolderPlus size={16} className="mr-2" />
                   Create Project
                 </Button>
@@ -252,15 +252,15 @@ export default function FeasibilityResultPage() {
                   <Download size={16} className="mr-2" />
                   Export PDF
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                >
-                  <Trash2 size={16} className="mr-2" />
-                  {deleting ? "Deleting..." : "Delete"}
-                </Button>
+                
+
+
+
+
+
+
+
+                
               </div>
             </div>
 
@@ -297,18 +297,18 @@ export default function FeasibilityResultPage() {
                 </CardHeader>
                 <CardContent className="print-compact print-text-sm">
                   <p className="text-sm text-slate-300 mb-4">{analysis.technical_reasoning}</p>
-                  {analysis.technical_constraints && analysis.technical_constraints.length > 0 && (
-                    <div>
+                  {analysis.technical_constraints && analysis.technical_constraints.length > 0 &&
+                  <div>
                       <h4 className="text-xs font-semibold text-slate-200 mb-2 uppercase">Key Constraints</h4>
                       <ul className="text-sm space-y-1">
-                        {analysis.technical_constraints.map((item, i) => (
-                          <li key={i} className="flex gap-2 text-slate-300">
+                        {analysis.technical_constraints.map((item, i) =>
+                      <li key={i} className="flex gap-2 text-slate-300">
                             <span className="text-blue-500">•</span> {item}
                           </li>
-                        ))}
+                      )}
                       </ul>
                     </div>
-                  )}
+                  }
                 </CardContent>
               </Card>
 
@@ -328,35 +328,35 @@ export default function FeasibilityResultPage() {
                 <CardContent className="print-compact print-text-sm">
                   <p className="text-sm text-slate-300 mb-4">{analysis.commercial_reasoning}</p>
                   
-                  {analysis.target_customers && analysis.target_customers.length > 0 && (
-                    <div className="mb-4">
+                  {analysis.target_customers && analysis.target_customers.length > 0 &&
+                  <div className="mb-4">
                       <h4 className="text-xs font-semibold text-slate-200 mb-2 uppercase">Target Customers</h4>
                       <div className="flex flex-wrap gap-2">
-                        {analysis.target_customers.map((tag, i) => (
-                          <Badge
-                            key={i}
-                            variant="secondary"
-                            className="bg-slate-800 text-slate-100 border border-slate-600"
-                          >
+                        {analysis.target_customers.map((tag, i) =>
+                      <Badge
+                        key={i}
+                        variant="secondary"
+                        className="bg-slate-800 text-slate-100 border border-slate-600">
+                        
                             {tag}
                           </Badge>
-                        ))}
+                      )}
                       </div>
                     </div>
-                  )}
+                  }
                   
-                  {analysis.revenue_ideas && analysis.revenue_ideas.length > 0 && (
-                    <div>
+                  {analysis.revenue_ideas && analysis.revenue_ideas.length > 0 &&
+                  <div>
                       <h4 className="text-xs font-semibold text-slate-200 mb-2 uppercase">Revenue Models</h4>
                       <ul className="text-sm space-y-1">
-                        {analysis.revenue_ideas.map((item, i) => (
-                          <li key={i} className="flex gap-2 text-sm text-slate-300">
+                        {analysis.revenue_ideas.map((item, i) =>
+                      <li key={i} className="flex gap-2 text-sm text-slate-300">
                             <span className="text-green-500">•</span> {item}
                           </li>
-                        ))}
+                      )}
                       </ul>
                     </div>
-                  )}
+                  }
                 </CardContent>
               </Card>
 
@@ -372,27 +372,27 @@ export default function FeasibilityResultPage() {
                       <Badge variant="outline" className={getComplexityColor(analysis.delivery_complexity)}>
                         {analysis.delivery_complexity?.toUpperCase()} COMPLEXITY
                       </Badge>
-                      {analysis.delivery_timeframe_months && (
-                        <span className="text-xs text-gray-500 font-medium">
+                      {analysis.delivery_timeframe_months &&
+                      <span className="text-xs text-gray-500 font-medium">
                           ~{analysis.delivery_timeframe_months} months
                         </span>
-                      )}
+                      }
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="print-compact print-text-sm">
-                  {analysis.delivery_dependencies && analysis.delivery_dependencies.length > 0 && (
-                    <div>
+                  {analysis.delivery_dependencies && analysis.delivery_dependencies.length > 0 &&
+                  <div>
                       <h4 className="text-xs font-semibold text-slate-200 mb-2 uppercase">Key Dependencies</h4>
                       <ul className="text-sm space-y-1">
-                        {analysis.delivery_dependencies.map((item, i) => (
-                          <li key={i} className="flex gap-2 text-sm text-slate-300">
+                        {analysis.delivery_dependencies.map((item, i) =>
+                      <li key={i} className="flex gap-2 text-sm text-slate-300">
                             <span className="text-purple-500">•</span> {item}
                           </li>
-                        ))}
+                      )}
                       </ul>
                     </div>
-                  )}
+                  }
                 </CardContent>
               </Card>
             </div>
@@ -411,23 +411,23 @@ export default function FeasibilityResultPage() {
                     <div>
                       <h4 className="text-sm font-semibold mb-2">Notable Risks</h4>
                       <ul className="space-y-2">
-                        {(analysis.notable_risks || []).map((risk, i) => (
-                          <li key={i} className="flex gap-2 text-sm text-slate-200 bg-orange-500/10 p-2 rounded">
+                        {(analysis.notable_risks || []).map((risk, i) =>
+                        <li key={i} className="flex gap-2 text-sm text-slate-200 bg-orange-500/10 p-2 rounded">
                             <AlertTriangle size={16} className="text-orange-400 mt-0.5 shrink-0" />
                             {risk}
                           </li>
-                        ))}
+                        )}
                       </ul>
                     </div>
                     <div>
                       <h4 className="text-sm font-semibold mb-2">Regulatory Considerations</h4>
                       <ul className="space-y-2">
-                        {(analysis.regulatory_issues || []).map((issue, i) => (
-                          <li key={i} className="flex gap-2 text-sm text-slate-200 bg-slate-800 p-2 rounded">
+                        {(analysis.regulatory_issues || []).map((issue, i) =>
+                        <li key={i} className="flex gap-2 text-sm text-slate-200 bg-slate-800 p-2 rounded">
                             <ShieldAlert size={16} className="text-gray-400 mt-0.5 shrink-0" />
                             {issue}
                           </li>
-                        ))}
+                        )}
                       </ul>
                     </div>
                   </div>
@@ -445,14 +445,14 @@ export default function FeasibilityResultPage() {
                   </CardHeader>
                   <CardContent className="print-compact print-text-sm">
                     <ul className="space-y-3">
-                      {(analysis.next_actions || []).map((action, i) => (
-                        <li key={i} className="flex gap-3 text-sm text-slate-100">
+                      {(analysis.next_actions || []).map((action, i) =>
+                      <li key={i} className="flex gap-3 text-sm text-slate-100">
                           <div className="bg-[#FF6B35] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
                             {i + 1}
                           </div>
                           {action}
                         </li>
-                      ))}
+                      )}
                     </ul>
                   </CardContent>
                 </Card>
@@ -468,8 +468,8 @@ export default function FeasibilityResultPage() {
                     <div className="flex items-start gap-4">
                       <div className={`
                         px-3 py-1 rounded font-bold text-sm uppercase shrink-0
-                        ${analysis.rd_tax_flag === 'yes' ? 'bg-green-600 text-white' : 
-                          analysis.rd_tax_flag === 'maybe' ? 'bg-yellow-500 text-white' : 'bg-gray-400 text-white'}
+                        ${analysis.rd_tax_flag === 'yes' ? 'bg-green-600 text-white' :
+                      analysis.rd_tax_flag === 'maybe' ? 'bg-yellow-500 text-white' : 'bg-gray-400 text-white'}
                       `}>
                         {analysis.rd_tax_flag}
                       </div>
@@ -489,8 +489,8 @@ export default function FeasibilityResultPage() {
               <button
                 type="button"
                 onClick={() => router.push("/feasibility/history")}
-                className="text-sm text-blue-300 hover:underline flex items-center gap-1"
-              >
+                className="text-sm text-blue-300 hover:underline flex items-center gap-1">
+                
                 <span className="text-lg">←</span>
                 <span className="leading-tight">
                   Back to
@@ -504,8 +504,8 @@ export default function FeasibilityResultPage() {
               <div className="flex flex-wrap gap-3 md:justify-end">
                 <Button
                   onClick={() => setShowCreateProject(true)}
-                  className="bg-[#FF7A45] hover:bg-[#ff8f61] text-sm sm:text-base"
-                >
+                  className="bg-[#FF7A45] hover:bg-[#ff8f61] text-sm sm:text-base">
+                  
                   <span className="mr-2">📁</span>
                   Create Project
                 </Button>
@@ -513,8 +513,8 @@ export default function FeasibilityResultPage() {
                 <Button
                   variant="outline"
                   onClick={() => window.print()}
-                  className="text-sm sm:text-base"
-                >
+                  className="text-sm sm:text-base">
+                  
                   <span className="mr-2">⬇️</span>
                   Export PDF
                 </Button>
@@ -523,8 +523,8 @@ export default function FeasibilityResultPage() {
                   variant="outline"
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="border-red-500 text-red-400 hover:bg-red-500/10 text-sm sm:text-base"
-                >
+                  className="border-red-500 text-red-400 hover:bg-red-500/10 text-sm sm:text-base">
+                  
                   {deleting ? "Deleting..." : "Delete"}
                 </Button>
               </div>
@@ -553,8 +553,8 @@ export default function FeasibilityResultPage() {
                   id="project-name"
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
-                  placeholder="Enter project name"
-                />
+                  placeholder="Enter project name" />
+                
               </div>
 
               <div className="space-y-2">
@@ -564,8 +564,8 @@ export default function FeasibilityResultPage() {
                   value={projectDescription}
                   onChange={(e) => setProjectDescription(e.target.value)}
                   placeholder="Enter project description"
-                  rows={4}
-                />
+                  rows={4} />
+                
               </div>
 
               <div className="space-y-2">
@@ -574,8 +574,8 @@ export default function FeasibilityResultPage() {
                   id="project-tags"
                   value={projectTags}
                   onChange={(e) => setProjectTags(e.target.value)}
-                  placeholder="e.g., energy, sustainability, AI"
-                />
+                  placeholder="e.g., energy, sustainability, AI" />
+                
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -596,17 +596,17 @@ export default function FeasibilityResultPage() {
               <Button variant="outline" onClick={() => setShowCreateProject(false)}>
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={handleCreateProject}
                 disabled={creatingProject || !projectName.trim()}
-                className="bg-[#FF6B35] hover:bg-[#FF8C61]"
-              >
+                className="bg-[#FF6B35] hover:bg-[#FF8C61]">
+                
                 {creatingProject ? "Creating..." : "Create Project"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </Layout>
-    </>
-  );
+    </>);
+
 }
