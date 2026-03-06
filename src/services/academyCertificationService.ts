@@ -22,8 +22,9 @@ export async function getCertificationEligibility(userId: string): Promise<Certi
 
   const requiredModules = [
     "rd-fundamentals",
+    "claim-writing-mastery",
     "evidence-assessment",
-    "claim-writing",
+    "permitted-costs",
     "hmrc-enquiry-simulator",
     "ai-claim-critique",
   ];

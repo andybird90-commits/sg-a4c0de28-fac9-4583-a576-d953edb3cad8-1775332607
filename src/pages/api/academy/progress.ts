@@ -56,7 +56,7 @@ export default async function handler(
     return;
   }
 
-  const rows: ModuleProgressRow[] = data ?? [];
+  const rows = data ?? [];
 
   const modules: ModuleProgressResponseItem[] = rows.map((row) => ({
     moduleId: row.module_id,

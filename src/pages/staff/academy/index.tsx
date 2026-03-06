@@ -38,6 +38,13 @@ const ACADEMY_MODULES: AcademyModule[] = [
     duration: "45–60 min",
   },
   {
+    id: "permitted-costs",
+    title: "Permitted Costs & Apportionment",
+    description:
+      "Understand which UK R&D costs qualify, which do not, and how to apportion staff and overheads defensibly.",
+    duration: "45–60 min",
+  },
+  {
     id: "hmrc-enquiry-simulator",
     title: "HMRC Enquiry Simulator",
     description: "Practice responding to HMRC enquiries through interactive AI-driven simulations.",
@@ -167,9 +174,14 @@ function getModuleStatusFromProgress(
   if (!record) {
     return "not_started";
   }
-  if (record.quizPassed) {
+
+  const hasPassedQuiz = record.quizPassed;
+  const hasSufficientScore = record.lastScore !== null && record.lastScore >= 70;
+
+  if (hasPassedQuiz || hasSufficientScore) {
     return "completed";
   }
+
   return "in_progress";
 }
 
