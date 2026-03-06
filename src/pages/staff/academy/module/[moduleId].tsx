@@ -843,6 +843,30 @@ const MODULES: ModuleConfig[] = [
         explanation:
           "ML can involve R&D, but routine implementation of known models to well‑understood problems may not involve genuine uncertainty.",
       },
+      {
+        id: "sd-q3",
+        type: "multiple_choice",
+        question:
+          "When assessing whether a complex data pipeline contains qualifying R&D, which factor is most important?",
+        options: [
+          {
+            id: "a",
+            label: "Whether the pipeline uses fashionable tools like Kafka, Spark or Snowflake.",
+          },
+          {
+            id: "b",
+            label:
+              "Whether competent professionals faced genuine uncertainty about meeting performance, reliability or data‑quality requirements using known techniques.",
+          },
+          {
+            id: "c",
+            label: "Whether the client describes the work as 'AI' in sales and marketing material.",
+          },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "The BEIS test focuses on technological uncertainty for competent professionals, not tool branding or marketing labels.",
+      },
     ],
   },
   {
@@ -926,6 +950,39 @@ const MODULES: ModuleConfig[] = [
         explanation:
           "This scenario suggests genuine uncertainty about achieving the required specification.",
       },
+      {
+        id: "me-q2",
+        type: "true_false",
+        question:
+          "True or false: A continuous improvement project can sometimes contain qualifying R&D elements.",
+        correctAnswer: true,
+        explanation:
+          "Even within wider CI programmes, specific workstreams can involve advances and technological uncertainty if they push beyond established capability.",
+      },
+      {
+        id: "me-q3",
+        type: "multiple_choice",
+        question:
+          "Which evidence set best supports an R&D claim about a new welding process?",
+        options: [
+          {
+            id: "a",
+            label: "Marketing brochures describing the new weld as 'next‑generation'.",
+          },
+          {
+            id: "b",
+            label:
+              "Lab notes, test coupons, destructive testing reports and FEA output showing how different parameters were trialled.",
+          },
+          {
+            id: "c",
+            label: "Board minutes approving the capital expenditure on a new welding rig.",
+          },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "Contemporaneous test data and experiment records are far stronger evidence of systematic R&D than high‑level commercial documents.",
+      },
     ],
   },
   {
@@ -1004,6 +1061,41 @@ const MODULES: ModuleConfig[] = [
         correctOptionId: "a",
         explanation:
           "HMRC cares more about transparency and evidence than absolute precision.",
+      },
+      {
+        id: "asa-q2",
+        type: "true_false",
+        question:
+          "True or false: It is acceptable to use different sampling approaches for different staff cohorts if this is documented and evidence‑based.",
+        correctAnswer: true,
+        explanation:
+          "Segmenting staff into cohorts (e.g. core R&D, mixed roles, BAU) with tailored evidence can improve accuracy and defendability.",
+      },
+      {
+        id: "asa-q3",
+        type: "multiple_choice",
+        question:
+          "Which weakness is most likely to undermine an otherwise sensible sampling methodology?",
+        options: [
+          {
+            id: "a",
+            label:
+              "Documenting limitations and judgement calls in a short methodology note.",
+          },
+          {
+            id: "b",
+            label:
+              "Using multiple data sources such as tickets, deployments and interviews to triangulate effort.",
+          },
+          {
+            id: "c",
+            label:
+              "Failing to keep any record of how sample projects or periods were chosen, beyond a memory of 'it felt representative'.",
+          },
+        ],
+        correctOptionId: "c",
+        explanation:
+          "Lack of documentation around sampling choices makes it hard for HMRC to trust the methodology or reproduce it.",
       },
     ],
   },
@@ -1088,6 +1180,39 @@ const MODULES: ModuleConfig[] = [
         explanation:
           "Risk‑based QA focuses scarce senior time where it has most impact.",
       },
+      {
+        id: "rg-q2",
+        type: "true_false",
+        question:
+          "True or false: A good governance framework should explicitly cover when to disengage from a client or decline borderline work.",
+        correctAnswer: true,
+        explanation:
+          "Clear disengagement and escalation policies are a key part of protecting the firm and advisers in high‑risk situations.",
+      },
+      {
+        id: "rg-q3",
+        type: "multiple_choice",
+        question:
+          "Which governance artefact most directly helps defend a borderline judgement in an enquiry?",
+        options: [
+          {
+            id: "a",
+            label: "A signed engagement letter with standard small print.",
+          },
+          {
+            id: "b",
+            label:
+              "A short internal memo or review note documenting the reasoning, risks and agreed position on the borderline issue.",
+          },
+          {
+            id: "c",
+            label: "A high‑level marketing brochure describing your firm's expertise.",
+          },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "Documented internal reasoning shows that decisions were considered and controlled, not casual or purely commercial.",
+      },
     ],
   },
   {
@@ -1167,6 +1292,41 @@ const MODULES: ModuleConfig[] = [
         correctOptionId: "b",
         explanation:
           "Large, unexplained changes can trigger risk‑based enquiries.",
+      },
+      {
+        id: "ecs-q2",
+        type: "true_false",
+        question:
+          "True or false: Lessons from one enquiry should generally be fed back into templates, training and governance for future files.",
+        correctAnswer: true,
+        explanation:
+          "Treating enquiries as learning opportunities helps improve future file quality and reduce repeat issues.",
+      },
+      {
+        id: "ecs-q3",
+        type: "multiple_choice",
+        question:
+          "In a high‑risk enquiry, which behaviour is most likely to damage your credibility with HMRC?",
+        options: [
+          {
+            id: "a",
+            label:
+              "Conceding weaker elements of the claim while defending stronger elements with good evidence.",
+          },
+          {
+            id: "b",
+            label:
+              "Providing clear, structured answers and a curated evidence pack indexed to the questions.",
+          },
+          {
+            id: "c",
+            label:
+              "Issuing emotional, argumentative responses that accuse HMRC of bad faith without addressing the technical points.",
+          },
+        ],
+        correctOptionId: "c",
+        explanation:
+          "Emotional or confrontational tone undermines credibility and distracts from the technical merits of the file.",
       },
     ],
   },
@@ -1252,6 +1412,36 @@ const MODULES: ModuleConfig[] = [
         explanation:
           "This creates pressure to stretch borderline projects into claims, increasing enquiry risk.",
       },
+      {
+        id: "cpc-q2",
+        type: "true_false",
+        question:
+          "True or false: Scope letters and engagement terms are key tools for aligning pricing with risk and delivery effort.",
+        correctAnswer: true,
+        explanation:
+          "Clear scope and engagement terms reduce later disputes and help resist pressure to over‑claim.",
+      },
+      {
+        id: "cpc-q3",
+        type: "multiple_choice",
+        question:
+          "Which communication approach best supports sustainable, compliant pricing?",
+        options: [
+          {
+            id: "a",
+            label:
+              "Explaining to clients how file quality, evidence and governance drive both fees and risk levels.",
+          },
+          { id: "b", label: "Avoiding any discussion of risk so as not to scare clients away from signing." },
+          {
+            id: "c",
+            label: "Promising that you will 'always maximise the claim' regardless of evidence.",
+          },
+        ],
+        correctOptionId: "a",
+        explanation:
+          "Transparent communication about quality and risk builds trust and justifies appropriate fee levels.",
+      },
     ],
   },
   {
@@ -1332,6 +1522,39 @@ const MODULES: ModuleConfig[] = [
         explanation:
           "Policies and logs demonstrate that AI is being used under professional control.",
       },
+      {
+        id: "aiop-q2",
+        type: "true_false",
+        question:
+          "True or false: It is acceptable to use client confidential data in any public AI system as long as terms of service mention encryption.",
+        correctAnswer: false,
+        explanation:
+          "Regulatory and professional standards typically require strict control over where client data goes; public AI endpoints may be inappropriate.",
+      },
+      {
+        id: "aiop-q3",
+        type: "multiple_choice",
+        question:
+          "Which metric is most meaningful when assessing the impact of AI on your practice operations?",
+        options: [
+          {
+            id: "a",
+            label: "Number of AI prompts sent per month, regardless of outcome.",
+          },
+          {
+            id: "b",
+            label:
+              "Reduction in manual drafting/review time while maintaining or improving enquiry outcomes and file quality.",
+          },
+          {
+            id: "c",
+            label: "How often staff talk about AI on internal chat channels.",
+          },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "Impact should be measured in terms of efficiency and risk/quality, not raw usage or hype.",
+      },
     ],
   },
   {
@@ -1411,6 +1634,40 @@ const MODULES: ModuleConfig[] = [
         correctOptionId: "a",
         explanation:
           "Documented, escalated decisions protect both clients and the firm.",
+      },
+      {
+        id: "eps-q2",
+        type: "true_false",
+        question:
+          "True or false: Personal regulatory and disciplinary risk for individual advisers can be a factor when deciding whether to disengage from a client.",
+        correctAnswer: true,
+        explanation:
+          "Advisers have personal obligations to regulators and professional bodies, not just to their employer or clients.",
+      },
+      {
+        id: "eps-q3",
+        type: "multiple_choice",
+        question:
+          "Which behaviour most clearly indicates an ethical red flag in an R&D advisory engagement?",
+        options: [
+          {
+            id: "a",
+            label:
+              "A client asking probing questions about BEIS guidelines and wanting to understand your methodology.",
+          },
+          {
+            id: "b",
+            label:
+              "A client insisting that you 'just make it work' and threatening to move providers if you refuse to include weak or unevidenced projects.",
+          },
+          {
+            id: "c",
+            label: "A client requesting a second opinion on a complex borderline project.",
+          },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "Pressure to over‑claim in the face of weak evidence is a clear ethical warning sign and should trigger escalation.",
       },
     ],
   },
