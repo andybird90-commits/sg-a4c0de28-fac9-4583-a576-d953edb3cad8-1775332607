@@ -76,6 +76,10 @@ import { format } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
 import { sidekickCostAdviceService } from "@/services/sidekickCostAdviceService";
 import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
+import {
+  getLatestInspectorSummaryForClaim,
+  type ClaimInspectorSummary,
+} from "@/services/hmrcInspectorService";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-GB", {
@@ -377,6 +381,9 @@ export default function ClaimDetailPage() {
       }
 
       setClaim(loaded);
+
+      const summary = await getLatestInspectorSummaryForClaim(claimId);
+      setInspectorSummary(summary);
 
       const existingHmrc =
         (loaded.hmrc_responses as HmrcResponseItem[] | null) ?? [];
@@ -1870,6 +1877,9 @@ export default function ClaimDetailPage() {
   const totalDocumentsCount =
     (claim?.documents?.length ?? 0) + projectEvidenceCount;
 
+  const [inspectorSummary, setInspectorSummary] =
+    useState<ClaimInspectorSummary | null>(null);
+
   if (loading) {
     return (
       <StaffLayout>
@@ -2533,6 +2543,64 @@ export default function ClaimDetailPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* HMRC Inspector card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>HMRC Inspector</CardTitle>
+                <CardDescription>
+                  Live HMRC-style review of this claim&apos;s robustness.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex items-center justify-between text-xs">
+                  <span>Status</span>
+                  <span className="font-medium">
+                    {inspectorSummary
+                      ? inspectorSummary.latestStatus === "completed"
+                        ? "Completed"
+                        : "In progress"
+                      : "Not run"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span>Latest score</span>
+                  <span>
+                    {inspectorSummary?.latestScore != null
+                      ? `${inspectorSummary.latestScore}/100`
+                      : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span>Risk level</span>
+                  <span>
+                    {inspectorSummary?.latestRiskLevel
+                      ? inspectorSummary.latestRiskLevel
+                      : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span>Last run</span>
+                  <span>
+                    {inspectorSummary?.lastRunAt
+                      ? new Date(
+                          inspectorSummary.lastRunAt
+                        ).toLocaleDateString()
+                      : "—"}
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-col gap-2">
+                  <Button asChild size="sm">
+                    <Link href={`/staff/claims/${id}/inspector`}>
+                      {inspectorSummary &&
+                      inspectorSummary.latestStatus !== "not_run"
+                        ? "Open Inspector Review"
+                        : "Run Inspector"}
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* PROJECTS – simple list using ProjectCard */}
@@ -2627,7 +2695,7 @@ export default function ClaimDetailPage() {
               const schemeType =
                 ((claim as any)?.scheme_type as string | null | undefined) ??
                 ((claim as any)?.scheme as string | null | undefined) ??
-                null;
+                "";
 
               const schemeForCalc = schemeType || schemeDraft || "";
 

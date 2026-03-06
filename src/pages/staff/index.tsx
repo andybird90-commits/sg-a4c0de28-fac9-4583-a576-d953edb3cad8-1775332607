@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { pipelineService } from "@/services/pipelineService";
 import type { PipelineWithDetails } from "@/services/pipelineService";
+import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
@@ -31,6 +32,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+type InspectorSessionRow =
+  Database["public"]["Tables"]["hmrc_inspector_sessions"]["Row"];
 
 export default function StaffHomePage() {
   const router = useRouter();
@@ -210,6 +214,38 @@ export default function StaffHomePage() {
         }));
         setPortfolioProjects([]);
       }
+
+      // load inspector-based simulator metrics
+      const { data: inspectorSessions } = await supabase
+        .from("hmrc_inspector_sessions")
+        .select("*")
+        .eq("status", "completed");
+
+      let claimsPassingInspector = 0;
+      if (inspectorSessions && inspectorSessions.length > 0) {
+        const byClaim = new Map<string, InspectorSessionRow>();
+        for (const row of inspectorSessions as InspectorSessionRow[]) {
+          if (!row.claim_id) continue;
+          const existing = byClaim.get(row.claim_id);
+          if (
+            !existing ||
+            (existing.updated_at || "") < (row.updated_at || "")
+          ) {
+            byClaim.set(row.claim_id, row);
+          }
+        }
+
+        for (const session of byClaim.values()) {
+          if (typeof session.overall_score === "number" && session.overall_score >= 70) {
+            claimsPassingInspector += 1;
+          }
+        }
+      }
+
+      setInnovationMetrics((prev) => ({
+        ...prev,
+        claimsPassingInspector,
+      }));
 
       // Claim readiness metrics – use cached claim status only
       const { data: claims, error: claimsError } = await supabase
