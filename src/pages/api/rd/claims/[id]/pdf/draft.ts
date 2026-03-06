@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { PDFDocument, StandardFonts } from "pdf-lib";
-import { supabaseServer } from "@/integrations/supabase/serverClient";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 type DraftPdfSuccessResponse = {
   ok: true;
@@ -13,6 +14,70 @@ type DraftPdfErrorResponse = {
   ok: false;
   error: string;
 };
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+function getBearerToken(req: NextApiRequest): string | null {
+  const authHeader = req.headers.authorization;
+  if (typeof authHeader !== "string") return null;
+  if (!authHeader.startsWith("Bearer ")) return null;
+  return authHeader.slice("Bearer ".length);
+}
+
+function getSupabaseForRequest(req: NextApiRequest) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error(
+      "Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+    );
+  }
+
+  const token = getBearerToken(req);
+
+  if (!token) {
+    const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return { client, token: null as string | null };
+  }
+
+  const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  });
+
+  return { client, token };
+}
+
+async function getAuthContext(req: NextApiRequest) {
+  const { client: supabase, token } = getSupabaseForRequest(req);
+
+  if (!token) {
+    return { supabase, userId: null as string | null, profile: null as any };
+  }
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { supabase, userId: null as string | null, profile: null as any };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, internal_role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError || !profile) {
+    return { supabase, userId: user.id, profile: null as any };
+  }
+
+  return { supabase, userId: user.id, profile };
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -31,7 +96,16 @@ export default async function handler(
   }
 
   try {
-    const { data: claim, error: claimError } = await supabaseServer
+    const { supabase, userId, profile } = await getAuthContext(req);
+
+    if (!userId) {
+      res
+        .status(401)
+        .json({ ok: false, error: "Unauthorized: missing or invalid token" });
+      return;
+    }
+
+    const { data: claim, error: claimError } = await supabase
       .from("claims")
       .select("id, org_id, claim_year, period_start, period_end, status")
       .eq("id", claimId)
@@ -42,7 +116,7 @@ export default async function handler(
       return;
     }
 
-    const { data: projects, error: projectsError } = await supabaseServer
+    const { data: projects, error: projectsError } = await supabase
       .from("claim_projects")
       .select("id, name")
       .eq("claim_id", claim.id)
@@ -58,11 +132,10 @@ export default async function handler(
 
     const projectIds = (projects || []).map((p) => p.id);
 
-    const { data: narrativeStates, error: statesError } =
-      await supabaseServer
-        .from("rd_project_narrative_state")
-        .select("id, claim_project_id, current_narrative_id, final_narrative_id")
-        .in("claim_project_id", projectIds);
+    const { data: narrativeStates, error: statesError } = await supabase
+      .from("rd_project_narrative_state")
+      .select("id, claim_project_id, current_narrative_id, final_narrative_id")
+      .in("claim_project_id", projectIds);
 
     if (statesError) {
       res.status(500).json({
@@ -72,7 +145,7 @@ export default async function handler(
       return;
     }
 
-    const { data: narratives, error: narrativesError } = await supabaseServer
+    const { data: narratives, error: narrativesError } = await supabase
       .from("rd_project_narratives")
       .select(
         "id, claim_project_id, status, version_number, advance_sought, baseline_knowledge, technological_uncertainty, work_undertaken, outcome"
@@ -159,15 +232,12 @@ export default async function handler(
     if (claim.period_end) periodParts.push(String(claim.period_end));
 
     if (periodParts.length > 0) {
-      titlePage.drawText(
-        `Accounting period: ${periodParts.join(" to ")}`,
-        {
-          x: 50,
-          y,
-          size: 12,
-          font,
-        }
-      );
+      titlePage.drawText(`Accounting period: ${periodParts.join(" to ")}`, {
+        x: 50,
+        y,
+        size: 12,
+        font,
+      });
       y -= lineHeight;
     }
 
@@ -217,15 +287,12 @@ export default async function handler(
       }
 
       if (!narrativeId) {
-        projPage.drawText(
-          "No narrative selected yet for this project.",
-          {
-            x: 50,
-            y: py,
-            size: 12,
-            font,
-          }
-        );
+        projPage.drawText("No narrative selected yet for this project.", {
+          x: 50,
+          y: py,
+          size: 12,
+          font,
+        });
         continue;
       }
 
@@ -289,9 +356,10 @@ export default async function handler(
 
     const pdfBytes = await pdfDoc.save();
     const filePath = `claims/${claimId}/draft-pack.pdf`;
+    const bucket = "Draft-Claims";
 
-    const { error: uploadError } = await supabaseServer.storage
-      .from("submitted-claims")
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
       .upload(filePath, Buffer.from(pdfBytes), {
         contentType: "application/pdf",
         upsert: true,
@@ -301,14 +369,12 @@ export default async function handler(
       console.error("Error uploading draft PDF:", uploadError);
       res.status(500).json({
         ok: false,
-        error:
-          uploadError.message ||
-          "Failed to upload draft PDF",
+        error: uploadError.message || "Failed to upload draft PDF",
       });
       return;
     }
 
-    const { error: updateError } = await supabaseServer
+    const { error: updateError } = await supabase
       .from("claims")
       .update({
         draft_pdf_url: filePath,
@@ -326,21 +392,29 @@ export default async function handler(
     const generatedAt = new Date().toISOString();
     const pageCount = pdfDoc.getPageCount();
 
-    const { error: auditError } = await supabaseServer
-      .from("rd_audit_log")
-      .insert({
+    const isInternalStaff =
+      profile && typeof profile.internal_role === "string" && profile.internal_role !== "";
+
+    if (isInternalStaff && userId) {
+      const { error: auditError } = await supabase.from("rd_audit_log").insert({
         claim_id: claim.id,
         project_id: null,
         action: "pdf_draft",
-        actor_user_id: null,
+        actor_user_id: userId,
         details_json: {
           pdf_path: filePath,
           page_count: pageCount,
         },
       });
 
-    if (auditError) {
-      console.error("Failed to write rd_audit_log for pdf_draft:", auditError);
+      if (auditError) {
+        console.error("Failed to write rd_audit_log for pdf_draft:", auditError);
+      }
+    } else {
+      console.warn(
+        "Skipping rd_audit_log insert for pdf_draft because user is not internal staff or missing profile",
+        { userId, profile }
+      );
     }
 
     const responseBody: DraftPdfSuccessResponse = {

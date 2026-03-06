@@ -649,139 +649,64 @@ export default function ClaimDetailPage() {
     }
   };
 
-  const handleGenerateDraftClaim = async (): Promise<void> => {
+  const handleGenerateDraftPack = async (): Promise<void> => {
     if (!claim) return;
 
-    if (!projects || projects.length === 0) {
-      toast({
-        title: "No projects",
-        description:
-          "This claim has no projects to generate narratives for.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setGeneratingDraft(true);
-    setDraftSummary(null);
-
     try {
+      setGeneratingDraft(true);
+
+      // Get current Supabase session so we can pass the JWT to the API
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
-      if (!session?.access_token) {
+      const response = await fetch(
+        `/api/rd/claims/${encodeURIComponent(
+          claim.id
+        )}/pdf/draft`,
+        {
+          method: "POST",
+          headers: session?.access_token
+            ? {
+                Authorization: `Bearer ${session.access_token}`,
+              }
+            : undefined,
+        }
+      );
+
+      const text = await response.text();
+      let parsed: { ok: boolean; error?: string; pdf_url?: string } | null = null;
+
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        parsed = null;
+      }
+
+      if (!response.ok || !parsed || !parsed.ok) {
+        const message =
+          parsed?.error ||
+          (text && text.length < 500 ? text : "Failed to generate draft pack");
         toast({
-          title: "Not authenticated",
-          description:
-            "You need to be logged in again before generating a draft claim.",
+          title: "Draft pack generation failed",
+          description: message,
           variant: "destructive",
         });
         return;
       }
 
-      const totalProjects = projects.length;
-      let generatedCount = 0;
-      let skippedCount = 0;
-      let errorCount = 0;
-
-      for (const project of projects) {
-        try {
-          const response = await fetch(
-            `/api/rd/claims/${claim.id}/generate-draft?projectId=${encodeURIComponent(
-              project.id
-            )}`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${session.access_token}`,
-              },
-            }
-          );
-
-          const raw = await response.text();
-          let data: any = null;
-
-          if (raw) {
-            try {
-              data = JSON.parse(raw);
-            } catch (parseError) {
-              console.error(
-                "Unexpected non-JSON response from generate-draft:",
-                {
-                  raw,
-                  parseError,
-                }
-              );
-            }
-          }
-
-          if (response.status === 401) {
-            toast({
-              title: "Not authorised",
-              description:
-                (data && (data.error || data.message)) ||
-                "Your session may have expired or you do not have access to generate this draft.",
-              variant: "destructive",
-            });
-            errorCount += 1;
-            break;
-          }
-
-          if (!response.ok || !data || data.ok !== true) {
-            const message =
-              (data && (data.error || data.message)) ||
-              `Failed to generate draft for project "${project.name}" (status ${response.status})`;
-
-            console.error("Error generating draft for project:", {
-              projectId: project.id,
-              message,
-            });
-            errorCount += 1;
-            continue;
-          }
-
-          const perProject = Array.isArray(data.per_project)
-            ? data.per_project[0]
-            : null;
-
-          if (perProject && perProject.result === "generated") {
-            generatedCount += 1;
-          } else if (perProject && perProject.result === "skipped_existing_draft") {
-            skippedCount += 1;
-          } else {
-            // Treat any other outcome as an error for counting purposes
-            errorCount += 1;
-          }
-
-          setDraftSummary({
-            total_projects: totalProjects,
-            generated_count: generatedCount,
-            skipped_count: skippedCount,
-            error_count: errorCount,
-          });
-        } catch (projectError: any) {
-          console.error(
-            "Error generating draft claim for project:",
-            project.id,
-            projectError
-          );
-          errorCount += 1;
-        }
-      }
-
       toast({
-        title: "Draft claim generated",
-        description: `Draft narratives run for ${totalProjects} project${totalProjects === 1 ? "" : "s"}: ${generatedCount} generated, ${skippedCount} skipped, ${errorCount} with errors.`,
+        title: "Draft pack generated",
+        description: "The draft R&D claim pack PDF has been saved for this claim.",
       });
-    } catch (error: any) {
-      console.error("Error generating draft claim:", error);
 
+      // Optionally refetch claim or update local state if you display draft_pdf_url
+    } catch (error: any) {
+      console.error("Error generating draft pack:", error);
       toast({
-        title: "Error generating draft claim",
+        title: "Draft pack generation failed",
         description:
-          error?.message ||
-          "An unexpected error occurred while generating the draft.",
+          error?.message || "An unexpected error occurred while generating the draft pack.",
         variant: "destructive",
       });
     } finally {
@@ -946,7 +871,7 @@ export default function ClaimDetailPage() {
       }
 
       const { data: fileData, error: downloadError } = await supabase.storage
-        .from("submitted-claims")
+        .from("Submitted-Claims")
         .download(pdfPath);
 
       if (downloadError || !fileData) {
@@ -1046,7 +971,7 @@ export default function ClaimDetailPage() {
       }
 
       const { data: fileData, error: downloadError } = await supabase.storage
-        .from("submitted-claims")
+        .from("Submitted-Claims")
         .download(pdfPath);
 
       if (downloadError || !fileData) {
@@ -2095,7 +2020,7 @@ export default function ClaimDetailPage() {
                       <Button
                         size="sm"
                         variant="secondary"
-                        onClick={handleGenerateDraftClaim}
+                        onClick={handleGenerateDraftPack}
                         disabled={generatingDraft}
                       >
                         {generatingDraft ? (
@@ -2912,7 +2837,9 @@ export default function ClaimDetailPage() {
                             </Label>
                             <Select
                               value={schemeDraft}
-                              onValueChange={setSchemeDraft}
+                              onValueChange={(value) =>
+                                setSchemeDraft(value)
+                              }
                             >
                               <SelectTrigger id="scheme-type-select">
                                 <SelectValue placeholder="Select scheme type" />

@@ -111,8 +111,9 @@ export default async function handler(
     const responseIndex = existingPaths.length + 1;
     const filePath = `claims/${claimId}/response-${responseIndex}-claim-${claimId}.pdf`;
 
+    const bucket = "Submitted-Claims";
     const { error: uploadError } = await supabaseServer.storage
-      .from("submitted-claims")
+      .from(bucket)
       .upload(filePath, Buffer.from(pdfBytes), {
         contentType: "application/pdf",
         upsert: true,

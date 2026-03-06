@@ -92,8 +92,9 @@ export default async function handler(
     const pdfBytes = await pdfDoc.save();
     const filePath = `claims/${claimId}/submission.pdf`;
 
+    const bucket = "Submitted-Claims";
     const { error: uploadError } = await supabaseServer.storage
-      .from("submitted-claims")
+      .from(bucket)
       .upload(filePath, Buffer.from(pdfBytes), {
         contentType: "application/pdf",
         upsert: true,
