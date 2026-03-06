@@ -68,7 +68,10 @@ async function fetchProjectSignals(projectId: ClaimProjectId): Promise<ProjectSi
     .eq("id", projectId)
     .maybeSingle();
 
-  const projectRow = project as ClaimProjectRow | null;
+  const projectRow: ClaimProjectRow | null =
+    project && typeof project === "object"
+      ? ((project as unknown) as ClaimProjectRow)
+      : null;
 
   if (projectError) {
     console.error("Project health engine: error loading claim_project", projectError);
