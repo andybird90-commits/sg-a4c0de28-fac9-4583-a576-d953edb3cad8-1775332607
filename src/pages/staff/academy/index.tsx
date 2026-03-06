@@ -7,12 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 
+type ModuleStatus = "not_started" | "in_progress" | "completed";
+
 interface AcademyModule {
   id: string;
   title: string;
   description: string;
   duration: string;
-  status: "not_started" | "in_progress" | "completed";
 }
 
 const ACADEMY_MODULES: AcademyModule[] = [
@@ -22,7 +23,6 @@ const ACADEMY_MODULES: AcademyModule[] = [
     description:
       "Understand the legal framework behind UK R&D tax relief including BEIS guidelines and HMRC CIRD rules.",
     duration: "45–60 min",
-    status: "in_progress",
   },
   {
     id: "claim-writing-mastery",
@@ -30,23 +30,18 @@ const ACADEMY_MODULES: AcademyModule[] = [
     description:
       "Learn how to write strong technical narratives that clearly demonstrate technological uncertainty and advancement.",
     duration: "60–90 min",
-    status: "not_started",
   },
   {
     id: "evidence-assessment",
     title: "Evidence Assessment",
-    description:
-      "Identify and organise the correct supporting evidence to strengthen a claim.",
+    description: "Identify and organise the correct supporting evidence to strengthen a claim.",
     duration: "45–60 min",
-    status: "not_started",
   },
   {
     id: "hmrc-enquiry-simulator",
     title: "HMRC Enquiry Simulator",
-    description:
-      "Practice responding to HMRC enquiries through interactive AI-driven simulations.",
+    description: "Practice responding to HMRC enquiries through interactive AI-driven simulations.",
     duration: "60 min",
-    status: "not_started",
   },
   {
     id: "ai-claim-critique",
@@ -54,7 +49,6 @@ const ACADEMY_MODULES: AcademyModule[] = [
     description:
       "Upload draft claims and receive AI analysis highlighting weaknesses and improvement opportunities.",
     duration: "30–45 min",
-    status: "not_started",
   },
 ];
 
@@ -62,6 +56,13 @@ interface CertificationStatus {
   loading: boolean;
   eligible: boolean;
   reason?: string;
+}
+
+interface ModuleProgressSummary {
+  moduleId: string;
+  quizPassed: boolean;
+  completedAt: string | null;
+  lastScore: number | null;
 }
 
 function useCertificationStatus(): [CertificationStatus, () => Promise<void>] {
@@ -104,7 +105,37 @@ function useCertificationStatus(): [CertificationStatus, () => Promise<void>] {
   return [status, refresh];
 }
 
-function getStatusLabel(status: AcademyModule["status"]): string {
+function useModuleProgress(): [ModuleProgressSummary[], boolean] {
+  const [progress, setProgress] = useState<ModuleProgressSummary[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchProgress = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch("/api/academy/progress");
+        if (!response.ok) {
+          setProgress([]);
+          setLoading(false);
+          return;
+        }
+        const json = await response.json();
+        const modules: ModuleProgressSummary[] = Array.isArray(json.modules) ? json.modules : [];
+        setProgress(modules);
+      } catch {
+        setProgress([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchProgress();
+  }, []);
+
+  return [progress, loading];
+}
+
+function getStatusLabel(status: ModuleStatus): string {
   switch (status) {
     case "completed":
       return "Review Module";
@@ -116,7 +147,7 @@ function getStatusLabel(status: AcademyModule["status"]): string {
   }
 }
 
-function getStatusChipClasses(status: AcademyModule["status"]): string {
+function getStatusChipClasses(status: ModuleStatus): string {
   switch (status) {
     case "completed":
       return "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40";
@@ -126,6 +157,20 @@ function getStatusChipClasses(status: AcademyModule["status"]): string {
     default:
       return "bg-slate-800 text-slate-200 border border-slate-700";
   }
+}
+
+function getModuleStatusFromProgress(
+  moduleId: string,
+  progress: ModuleProgressSummary[],
+): ModuleStatus {
+  const record = progress.find((item) => item.moduleId === moduleId);
+  if (!record) {
+    return "not_started";
+  }
+  if (record.quizPassed) {
+    return "completed";
+  }
+  return "in_progress";
 }
 
 async function generateCertificate(): Promise<void> {
@@ -151,16 +196,21 @@ async function generateCertificate(): Promise<void> {
 export default function StaffRdAgentAcademyPage() {
   const { user } = useApp();
   const [certStatus, refreshStatus] = useCertificationStatus();
+  const [moduleProgress, moduleProgressLoading] = useModuleProgress();
 
   const totals = useMemo(() => {
-    const total = ACADEMY_MODULES.length;
-    const completed = ACADEMY_MODULES.filter((m) => m.status === "completed").length;
-    const inProgress = ACADEMY_MODULES.filter((m) => m.status === "in_progress").length;
+    const statuses: ModuleStatus[] = ACADEMY_MODULES.map((module) =>
+      getModuleStatusFromProgress(module.id, moduleProgress),
+    );
+
+    const total = statuses.length;
+    const completed = statuses.filter((status) => status === "completed").length;
+    const inProgress = statuses.filter((status) => status === "in_progress").length;
     const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
-    const certificationStatus = completed === total ? "Completed" : "In Progress";
+    const certificationStatus = completed === total && total > 0 ? "Completed" : "In Progress";
 
     return { total, completed, inProgress, percent, certificationStatus };
-  }, []);
+  }, [moduleProgress]);
 
   const handleGenerateCertificate = async () => {
     await generateCertificate();
@@ -243,51 +293,54 @@ export default function StaffRdAgentAcademyPage() {
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {ACADEMY_MODULES.map((module) => (
-                      <Card
-                        key={module.id}
-                        className="flex flex-col justify-between border-slate-800 bg-[#020817] transition-colors hover:border-[#ff6b35]/60 hover:shadow-professional-lg"
-                      >
-                        <CardHeader className="pb-3">
-                          <CardTitle className="mb-1 text-base text-slate-50 sm:text-lg">
-                            {module.title}
-                          </CardTitle>
-                          <CardDescription className="text-xs text-slate-400 sm:text-sm">
-                            {module.description}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="px-6 pb-4 pt-0">
-                          <div className="flex flex-col gap-3">
-                            <div className="flex items-center justify-between text-xs text-slate-400">
-                              <span>Estimated duration</span>
-                              <span className="font-medium text-slate-200">
-                                {module.duration}
-                              </span>
+                    {ACADEMY_MODULES.map((module) => {
+                      const status = getModuleStatusFromProgress(module.id, moduleProgress);
+                      return (
+                        <Card
+                          key={module.id}
+                          className="flex flex-col justify-between border-slate-800 bg-[#020817] transition-colors hover:border-[#ff6b35]/60 hover:shadow-professional-lg"
+                        >
+                          <CardHeader className="pb-3">
+                            <CardTitle className="mb-1 text-base text-slate-50 sm:text-lg">
+                              {module.title}
+                            </CardTitle>
+                            <CardDescription className="text-xs text-slate-400 sm:text-sm">
+                              {module.description}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="px-6 pb-4 pt-0">
+                            <div className="flex flex-col gap-3">
+                              <div className="flex items-center justify-between text-xs text-slate-400">
+                                <span>Estimated duration</span>
+                                <span className="font-medium text-slate-200">
+                                  {module.duration}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-400">Status</span>
+                                <span
+                                  className={
+                                    "rounded-full px-2 py-0.5 text-[11px] font-medium " +
+                                    getStatusChipClasses(status)
+                                  }
+                                >
+                                  {status === "completed"
+                                    ? "Completed"
+                                    : status === "in_progress"
+                                    ? "In Progress"
+                                    : "Not Started"}
+                                </span>
+                              </div>
+                              <Link href={`/staff/academy/module/${module.id}`} passHref>
+                                <Button className="mt-1 w-full bg-[#ff6b35] text-slate-950 text-sm hover:bg-[#ff8c42]">
+                                  {moduleProgressLoading ? "Loading…" : getStatusLabel(status)}
+                                </Button>
+                              </Link>
                             </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-slate-400">Status</span>
-                              <span
-                                className={
-                                  "rounded-full px-2 py-0.5 text-[11px] font-medium " +
-                                  getStatusChipClasses(module.status)
-                                }
-                              >
-                                {module.status === "completed"
-                                  ? "Completed"
-                                  : module.status === "in_progress"
-                                  ? "In Progress"
-                                  : "Not Started"}
-                              </span>
-                            </div>
-                            <Link href={`/staff/academy/module/${module.id}`} passHref>
-                              <Button className="mt-1 w-full bg-[#ff6b35] text-slate-950 text-sm hover:bg-[#ff8c42]">
-                                {getStatusLabel(module.status)}
-                              </Button>
-                            </Link>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </section>
               </div>
