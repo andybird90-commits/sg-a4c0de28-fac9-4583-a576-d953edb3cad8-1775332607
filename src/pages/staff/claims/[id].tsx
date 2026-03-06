@@ -1857,6 +1857,13 @@ export default function ClaimDetailPage() {
     return <Badge variant="secondary" className={config.className}>{config.label}</Badge>;
   };
 
+  const projectEvidenceCount = Object.values(clientEvidenceByProject).reduce(
+    (sum, items) => sum + items.length,
+    0
+  );
+  const totalDocumentsCount =
+    (claim.documents ? claim.documents.length : 0) + projectEvidenceCount;
+
   if (loading) {
     return (
       <StaffLayout>
@@ -1975,7 +1982,7 @@ export default function ClaimDetailPage() {
                 Documents
               </p>
               <p className="text-2xl font-semibold text-slate-50">
-                {claim.documents ? claim.documents.length : 0}
+                {totalDocumentsCount}
               </p>
               <p className="text-xs text-slate-500">
                 uploaded against this claim
