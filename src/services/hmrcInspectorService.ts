@@ -11,6 +11,8 @@ export type HmrcInspectorMessage =
   Database["public"]["Tables"]["hmrc_inspector_messages"]["Row"];
 export type HmrcInspectorFinding =
   Database["public"]["Tables"]["hmrc_inspector_findings"]["Row"];
+type HmrcInspectorFindingInsert =
+  Database["public"]["Tables"]["hmrc_inspector_findings"]["Insert"];
 
 export interface StartInspectorPayload {
   claimId: string;
@@ -38,7 +40,7 @@ export interface InspectorAiTurnResponseFinding {
   description: string;
   recommendation: string;
   project_id?: string | null;
-  source_refs_json?: unknown;
+  source_refs_json?: HmrcInspectorFindingInsert["source_refs_json"];
 }
 
 export interface InspectorAiTurnResponse {
@@ -221,17 +223,19 @@ export async function appendInspectorFindings(
 ): Promise<void> {
   if (!findings.length) return;
 
-  const rows = findings.map((finding) => ({
-    session_id: sessionId,
-    claim_id: claimId,
-    project_id: finding.project_id ?? null,
-    category: finding.category,
-    severity: finding.severity,
-    title: finding.title,
-    description: finding.description,
-    recommendation: finding.recommendation,
-    source_refs_json: finding.source_refs_json ?? null,
-  }));
+  const rows: HmrcInspectorFindingInsert[] = findings.map(
+    (finding): HmrcInspectorFindingInsert => ({
+      session_id: sessionId,
+      claim_id: claimId,
+      project_id: finding.project_id ?? null,
+      category: finding.category,
+      severity: finding.severity,
+      title: finding.title,
+      description: finding.description,
+      recommendation: finding.recommendation,
+      source_refs_json: finding.source_refs_json ?? null,
+    })
+  );
 
   const { error } = await supabase
     .from("hmrc_inspector_findings")
