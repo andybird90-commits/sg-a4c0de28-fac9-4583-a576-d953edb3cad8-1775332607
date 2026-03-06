@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { StaffLayout } from "@/components/staff/StaffLayout";
@@ -6,25 +6,16 @@ import { SEO } from "@/components/SEO";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type QuestionType = "multiple_choice" | "true_false" | "scenario";
-
-interface ScenarioOption {
-  id: string;
-  label: string;
-  isCorrect: boolean;
-  explanation: string;
-}
-
-interface Scenario {
-  id: string;
-  title: string;
-  description: string;
-  options: ScenarioOption[];
-}
+type QuestionType = "multiple_choice" | "true_false";
 
 interface QuizOption {
   id: string;
@@ -41,6 +32,20 @@ interface QuizQuestion {
   explanation: string;
 }
 
+interface ScenarioOption {
+  id: string;
+  label: string;
+  isCorrect: boolean;
+  explanation: string;
+}
+
+interface Scenario {
+  id: string;
+  title: string;
+  description: string;
+  options: ScenarioOption[];
+}
+
 interface LessonContent {
   overview: string;
   keyConcepts: string[];
@@ -48,907 +53,19 @@ interface LessonContent {
   commonMistakes: string[];
 }
 
+type ModuleLevel = "foundation" | "advanced";
+
 interface ModuleConfig {
   id: string;
   title: string;
   description: string;
   estimatedTime: string;
+  level: ModuleLevel;
   lesson: LessonContent;
   scenario: Scenario;
   exercisePrompt: string;
   quiz: QuizQuestion[];
 }
-
-const MODULES: ModuleConfig[] = [
-  {
-    id: "rd-fundamentals",
-    title: "R&D Fundamentals",
-    description:
-      "Understand the legal framework behind UK R&D tax relief including BEIS guidelines and HMRC CIRD rules.",
-    estimatedTime: "45–60 min",
-    lesson: {
-      overview:
-        "This module introduces the statutory basis for UK R&D tax relief and how the concept of technological uncertainty is interpreted in practice.",
-      keyConcepts: [
-        "BEIS Guidelines set out the definition of R&D for tax purposes, separate from accounting treatment.",
-        "Technological uncertainty focuses on whether a competent professional could easily work out the solution.",
-        "Advances are measured against the baseline of knowledge and capability in the wider field, not just the company.",
-      ],
-      realExamples: [
-        "Developing a new algorithm that materially improves processing speed beyond what is publicly known, where the solution is not obvious.",
-        "Re‑engineering a manufacturing process to achieve tolerances that current industry methods cannot reliably deliver.",
-      ],
-      commonMistakes: [
-        "Describing commercial or product uncertainty (e.g. market fit, customer adoption) instead of technological uncertainty.",
-        "Simply listing features rather than explaining why the underlying problem was hard to solve.",
-        "Failing to reference the existing baseline of industry knowledge or publicly available techniques.",
-      ],
-    },
-    scenario: {
-      id: "manufacturing-automation",
-      title: "Manufacturing Automation Project",
-      description:
-        "A manufacturer is introducing new robotics to automate a manual assembly process. Off‑the‑shelf robots exist, but the company needs to handle very delicate components at a speed that current vendor specifications do not support. The engineering team is experimenting with custom end‑effectors and control algorithms to avoid component damage while maintaining throughput.",
-      options: [
-        {
-          id: "option-a",
-          label:
-            "This is likely qualifying R&D because the team is resolving uncertainties about how to achieve performance beyond what current robotic systems can reliably deliver.",
-          isCorrect: true,
-          explanation:
-            "The project appears to push beyond the stated capabilities of existing robots. If competent professionals could not easily predict how to achieve the required speed without damage, there is a credible technological uncertainty.",
-        },
-        {
-          id: "option-b",
-          label:
-            "This is not qualifying R&D because robotics already exist and the company is only implementing standard vendor solutions.",
-          isCorrect: false,
-          explanation:
-            "Simply using off‑the‑shelf robots would not normally qualify. However, here the facts state that the required performance is beyond vendor specifications, suggesting non‑trivial technical challenges.",
-        },
-        {
-          id: "option-c",
-          label:
-            "This is qualifying R&D because any automation is automatically treated as an R&D project for tax purposes.",
-          isCorrect: false,
-          explanation:
-            "Automation is not automatically R&D. It only qualifies when there is genuine technological uncertainty about achieving the required capability or performance.",
-        },
-      ],
-    },
-    exercisePrompt:
-      "Write a short paragraph (3–5 sentences) explaining the technological uncertainty in the manufacturing automation scenario above. Focus on why a competent professional could not easily predict the solution.",
-    quiz: [
-      {
-        id: "q1",
-        type: "multiple_choice",
-        question: "What is the primary test for technological uncertainty in UK R&D tax relief?",
-        options: [
-          {
-            id: "a",
-            label: "Whether the project was commercially risky for the company.",
-          },
-          {
-            id: "b",
-            label: "Whether a competent professional could easily work out how to achieve the desired outcome.",
-          },
-          {
-            id: "c",
-            label: "Whether the project used any form of automation or software.",
-          },
-        ],
-        correctOptionId: "b",
-        explanation:
-          "The BEIS guidelines emphasise whether a competent professional, using existing knowledge, could readily deduce the solution.",
-      },
-      {
-        id: "q2",
-        type: "true_false",
-        question: "True or false: If a project fails, it is automatically qualifying R&D.",
-        correctAnswer: false,
-        explanation:
-          "Failure alone does not make work R&D. The work must seek an advance in science or technology and address genuine technological uncertainties.",
-      },
-      {
-        id: "q3",
-        type: "multiple_choice",
-        question:
-          "In R&D tax terms, how should you normally describe the 'advance' in a software project?",
-        options: [
-          {
-            id: "a",
-            label: "By listing new user‑facing features delivered in the product.",
-          },
-          {
-            id: "b",
-            label: "By explaining how the underlying technical solution goes beyond existing industry capabilities.",
-          },
-          {
-            id: "c",
-            label: "By describing the increase in revenue the product generated.",
-          },
-        ],
-        correctOptionId: "b",
-        explanation:
-          "The advance should be described in terms of underlying science or technology, not commercial outcomes or surface‑level features.",
-      },
-      {
-        id: "q4",
-        type: "scenario",
-        question:
-          "A company integrates a standard payment gateway API into their website with minimal changes. Is this likely to be qualifying R&D?",
-        options: [
-          { id: "a", label: "Yes, because it involves software development." },
-          { id: "b", label: "No, because it is routine implementation of known technology." },
-        ],
-        correctOptionId: "b",
-        explanation:
-          "Routine integration of well‑understood APIs rarely involves genuine technological uncertainty.",
-      },
-      {
-        id: "q5",
-        type: "true_false",
-        question:
-          "True or false: Commercial risk (e.g. whether a product will sell) is different from technological risk in the context of R&D.",
-        correctAnswer: true,
-        explanation:
-          "R&D focuses on resolving technological uncertainties, not purely commercial uncertainties.",
-      },
-    ],
-  },
-  {
-    id: "claim-writing-mastery",
-    title: "Claim Writing Mastery",
-    description:
-      "Learn how to write strong technical narratives that clearly demonstrate technological uncertainty and advancement.",
-    estimatedTime: "60–90 min",
-    lesson: {
-      overview:
-        "This module focuses on turning raw technical information into structured narratives that align with the BEIS tests and HMRC reading habits.",
-      keyConcepts: [
-        "Good narratives clearly separate context, baseline knowledge, advance sought, and technological uncertainty.",
-        "HMRC reviewers scan for explicit references to competent professionals, baseline knowledge, and why the solution was not readily deducible.",
-        "Narratives must tie back to the underlying evidence and cost schedule rather than existing in isolation.",
-      ],
-      realExamples: [
-        "Rewriting a marketing‑style paragraph into a balanced, technical explanation that HMRC can follow step by step.",
-        "Adding a short section describing failed approaches so that systematic R&D work is evidenced, not just the successful outcome.",
-      ],
-      commonMistakes: [
-        "Over‑using vague phrases such as 'cutting‑edge' or 'innovative' without concrete technical detail.",
-        "Focusing on commercial risk (deadlines, sales targets) instead of explaining why the solution was hard for a competent professional.",
-        "Failing to connect staff, software, and subcontractor costs to the specific activities described in the narrative.",
-      ],
-    },
-    scenario: {
-      id: "software-rewrite-narrative",
-      title: "Software Platform Rebuild Narrative",
-      description:
-        "You receive a first‑draft project description: 'We rebuilt our platform to be faster and more scalable using modern cloud technologies. This was cutting‑edge and very important commercially.' You need to turn this into something HMRC can rely on.",
-      options: [
-        {
-          id: "option-a",
-          label:
-            "Rewrite to explain the previous architecture, specific performance constraints, why known patterns were insufficient, and how the team systematically experimented with different designs.",
-          isCorrect: true,
-          explanation:
-            "HMRC needs to understand the baseline, the advance, and the uncertainties. Explaining the architecture and experiments moves the narrative from marketing to technical evidence.",
-        },
-        {
-          id: "option-b",
-          label:
-            "Add stronger adjectives about innovation and stress that the company is a market leader using cutting‑edge cloud technology.",
-          isCorrect: false,
-          explanation:
-            "More marketing language does not help. Without technical detail and reference to uncertainty, the narrative remains weak.",
-        },
-        {
-          id: "option-c",
-          label:
-            "Shorten the description to one sentence focusing only on the cost of the rebuild and the expected ROI.",
-          isCorrect: false,
-          explanation:
-            "Cost and ROI may be relevant commercially, but they do not explain whether the work meets the BEIS R&D tests.",
-        },
-      ],
-    },
-    exercisePrompt:
-      "Take a short marketing‑style paragraph about a project you have worked on and rewrite it into a BEIS‑aligned R&D narrative. Clearly separate context, baseline, advance, and technological uncertainty.",
-    quiz: [
-      {
-        id: "cwm-q1",
-        type: "multiple_choice",
-        question: "Which element is most important in an R&D narrative for HMRC?",
-        options: [
-          {
-            id: "a",
-            label: "A detailed explanation of the commercial benefits and expected ROI.",
-          },
-          {
-            id: "b",
-            label:
-              "A clear description of the technological uncertainties and why they could not readily be resolved by a competent professional.",
-          },
-          {
-            id: "c",
-            label: "A full history of the company and its market positioning.",
-          },
-        ],
-        correctOptionId: "b",
-        explanation:
-          "Commercial context can be useful, but the central test is technological uncertainty relative to a competent professional baseline.",
-      },
-      {
-        id: "cwm-q2",
-        type: "true_false",
-        question:
-          "True or false: It is acceptable for an R&D narrative to contain minor technical inaccuracies if it makes the work sound more advanced.",
-        correctAnswer: false,
-        explanation:
-          "Narratives must be factually accurate and grounded in the actual work performed. Overstatement or technical inaccuracies increase enquiry risk.",
-      },
-      {
-        id: "cwm-q3",
-        type: "multiple_choice",
-        question:
-          "Which structure is generally most effective for an R&D project write‑up?",
-        options: [
-          {
-            id: "a",
-            label: "Objectives, commercial benefits, list of features, conclusion.",
-          },
-          {
-            id: "b",
-            label:
-              "Business context, baseline and competent professional view, advance sought, technological uncertainties, systematic work and outcomes.",
-          },
-          {
-            id: "c",
-            label: "Introduction, project management timeline, budget, final result.",
-          },
-        ],
-        correctOptionId: "b",
-        explanation:
-          "This structure mirrors how BEIS defines R&D and how HMRC typically reviews claims.",
-      },
-      {
-        id: "cwm-q4",
-        type: "scenario",
-        question:
-          "You are editing a draft that repeatedly states the project was 'innovative' but gives little technical detail. What is the best next step?",
-        options: [
-          {
-            id: "a",
-            label:
-              "Ask the technical team to describe at least one specific problem that was hard to solve and the approaches they tried.",
-          },
-          {
-            id: "b",
-            label: "Add more adjectives to emphasise how innovative the work was.",
-          },
-          {
-            id: "c",
-            label: "Delete all references to uncertainty to avoid confusing HMRC.",
-          },
-        ],
-        correctOptionId: "a",
-        explanation:
-          "You need concrete technical detail and evidence of uncertainty. Simply adding adjectives weakens the narrative.",
-      },
-      {
-        id: "cwm-q5",
-        type: "true_false",
-        question:
-          "True or false: Describing failed approaches and dead ends can strengthen an R&D narrative.",
-        correctAnswer: true,
-        explanation:
-          "Evidence of systematic investigation, including failed approaches, helps demonstrate genuine technological uncertainty and R&D activity.",
-      },
-    ],
-  },
-  {
-    id: "evidence-assessment",
-    title: "Evidence Assessment",
-    description:
-      "Identify and organise the correct supporting evidence to strengthen a claim.",
-    estimatedTime: "45–60 min",
-    lesson: {
-      overview:
-        "This module helps you recognise, prioritise, and organise the documents and data HMRC find most persuasive in R&D enquiries.",
-      keyConcepts: [
-        "Contemporaneous, technical records are usually stronger than retrospective summaries.",
-        "Different evidence types support different BEIS tests: advance, uncertainty, systematic work, and costs.",
-        "Quality matters more than volume; a small, well‑organised pack beats a large, unfocused dump of files.",
-      ],
-      realExamples: [
-        "Using Jira tickets and test reports to evidence the experimental work undertaken during a software project.",
-        "Indexing design documents, lab notes, and trial results so that each HMRC question can quickly be mapped to a specific item.",
-      ],
-      commonMistakes: [
-        "Relying mainly on high‑level slide decks and marketing collateral as 'evidence'.",
-        "Failing to link staff timesheets or sampling logic back to the projects and uncertainties described in the narrative.",
-        "Providing excessive raw data without any indexing or explanation of relevance.",
-      ],
-    },
-    scenario: {
-      id: "evidence-pack-selection",
-      title: "Building an Evidence Pack",
-      description:
-        "You have limited time with a client and need to assemble an evidence pack for a software R&D claim. The client has shared a large folder containing design documents, Git logs, tickets, marketing slides, and board packs.",
-      options: [
-        {
-          id: "option-a",
-          label:
-            "Prioritise technical design docs, relevant tickets, and test results, then supplement with a simple index explaining how they link to each project.",
-          isCorrect: true,
-          explanation:
-            "Technical, contemporaneous records directly support the BEIS tests. An index helps HMRC navigate the pack efficiently.",
-        },
-        {
-          id: "option-b",
-          label:
-            "Send all available documents to HMRC in a zip file without review so they can decide what is relevant.",
-          isCorrect: false,
-          explanation:
-            "Unfiltered document dumps frustrate reviewers and can surface inconsistencies or irrelevant material.",
-        },
-        {
-          id: "option-c",
-          label:
-            "Rely mainly on marketing and board slides because they are already nicely formatted and client‑approved.",
-          isCorrect: false,
-          explanation:
-            "Marketing and board material rarely provides the technical detail HMRC needs for R&D assessments.",
-        },
-      ],
-    },
-    exercisePrompt:
-      "List the 5–8 strongest evidence items you would request for a typical software R&D project and explain briefly which BEIS test each item supports.",
-    quiz: [
-      {
-        id: "ea-q1",
-        type: "multiple_choice",
-        question:
-          "Which of the following is usually the strongest evidence of systematic R&D work?",
-        options: [
-          {
-            id: "a",
-            label: "A slide showing forecast R&D tax savings.",
-          },
-          {
-            id: "b",
-            label: "A sequence of tickets showing experiments, failures, and design changes.",
-          },
-          {
-            id: "c",
-            label: "A marketing brochure describing the final product features.",
-          },
-        ],
-        correctOptionId: "b",
-        explanation:
-          "Ticket histories can show the experimental, iterative nature of work in a way that aligns well with BEIS tests.",
-      },
-      {
-        id: "ea-q2",
-        type: "true_false",
-        question:
-          "True or false: Timesheets are always required for an R&D claim to be accepted.",
-        correctAnswer: false,
-        explanation:
-          "Timesheets are helpful, but HMRC can accept other forms of evidence for staffing effort if they are consistent and well‑documented.",
-      },
-      {
-        id: "ea-q3",
-        type: "multiple_choice",
-        question:
-          "Which evidence type most directly supports the 'advance in science or technology' test?",
-        options: [
-          { id: "a", label: "Signed engagement letters with the client." },
-          { id: "b", label: "Technical design documents explaining limitations of existing approaches." },
-          { id: "c", label: "Invoices from subcontractors." },
-        ],
-        correctOptionId: "b",
-        explanation:
-          "Design documents can show how the project seeks to move beyond the existing baseline of knowledge or capability.",
-      },
-      {
-        id: "ea-q4",
-        type: "scenario",
-        question:
-          "HMRC asks how staff time percentages were determined. Which response is best supported by evidence?",
-        options: [
-          {
-            id: "a",
-            label:
-              "Explain that percentages were estimated 'by feel' without any documented basis.",
-          },
-          {
-            id: "b",
-            label:
-              "Reference a combination of timesheets, ticket volumes, and manager interviews, with a short note explaining the sampling method.",
-          },
-          {
-            id: "c",
-            label:
-              "State that apportionments were based on commercial priorities and that no further detail is necessary.",
-          },
-        ],
-        correctOptionId: "b",
-        explanation:
-          "A transparent, documented sampling approach gives HMRC something concrete to evaluate.",
-      },
-      {
-        id: "ea-q5",
-        type: "true_false",
-        question:
-          "True or false: Providing a clear index or contents page for the evidence pack is unnecessary if all documents are included.",
-        correctAnswer: false,
-        explanation:
-          "A simple index helps HMRC navigate the evidence and reduces the risk that important items are missed.",
-      },
-    ],
-  },
-  {
-    id: "permitted-costs",
-    title: "Permitted Costs & Apportionment",
-    description:
-      "Understand which UK R&D costs qualify, which do not, and how to apportion staff and overheads defensibly.",
-    estimatedTime: "45–60 min",
-    lesson: {
-      overview:
-        "This module focuses on which UK R&D costs are normally qualifying, which are excluded, and how to document sensible apportionments that HMRC can follow.",
-      keyConcepts: [
-        "Only certain categories of expenditure qualify for UK R&D relief – for example staffing costs, certain EPWs, subcontractors, consumables, software, and relevant cloud or data costs.",
-        "Costs must be attributable to qualifying R&D activities; apportionment is often required where staff or assets are only partly involved.",
-        "Clear, documented methodology for apportionments is more important than false precision.",
-      ],
-      realExamples: [
-        "Splitting a developer’s salary 60/40 between qualifying R&D work on an experimental feature and non‑qualifying business‑as‑usual maintenance.",
-        "Separating hosting and cloud costs for R&D test environments from those relating to steady‑state production usage.",
-      ],
-      commonMistakes: [
-        "Including sales, marketing, and general admin salaries as qualifying R&D staffing costs.",
-        "Treating all subcontractor invoices as qualifying without checking whether the work itself was R&D.",
-        "Using arbitrary, undocumented percentages for staff time or overheads.",
-      ],
-    },
-    scenario: {
-      id: "cost-categories-schedule",
-      title: "Building a Cost Schedule",
-      description:
-        "You are preparing a cost schedule for a software R&D project. The client provides: developer and architect salaries, a QA contractor invoice, cloud hosting bills for production and test environments, sales commission payments, and a generic marketing campaign budget.",
-      options: [
-        {
-          id: "option-a",
-          label:
-            "Include developer and architect salaries with an apportionment, include the QA contractor and R&D‑related test environment costs, exclude sales commissions and general marketing.",
-          isCorrect: true,
-          explanation:
-            "Technical staff and directly related testing and environments can qualify where linked to R&D activities. Sales commissions and generic marketing spend are normally excluded.",
-        },
-        {
-          id: "option-b",
-          label:
-            "Include all items because they all relate to the same product the R&D project supported.",
-          isCorrect: false,
-          explanation:
-            "Commercial costs such as sales commission and broad marketing do not become qualifying simply because they support a product that benefited from R&D.",
-        },
-        {
-          id: "option-c",
-          label:
-            "Exclude the QA contractor because testing is not considered R&D, but include sales and marketing as they are crucial for the success of the innovation.",
-          isCorrect: false,
-          explanation:
-            "Testing can be an integral part of systematic R&D work. Sales and marketing are generally not qualifying R&D expenditure.",
-        },
-      ],
-    },
-    exercisePrompt:
-      "Draft a short note (4–6 sentences) explaining how you would determine and document staff time apportionments for a mixed R&D / BAU software team working on several projects.",
-    quiz: [
-      {
-        id: "pc-q1",
-        type: "multiple_choice",
-        question:
-          "Which of the following cost types is most likely to be qualifying R&D expenditure in the UK?",
-        options: [
-          {
-            id: "a",
-            label: "Salary costs of developers working on resolving technological uncertainties.",
-          },
-          {
-            id: "b",
-            label: "Sales commission on contracts won after the new product launch.",
-          },
-          {
-            id: "c",
-            label: "General corporate branding and awareness marketing spend.",
-          },
-        ],
-        correctOptionId: "a",
-        explanation:
-          "Staffing costs for employees directly and actively engaged in resolving technological uncertainties are a core qualifying category.",
-      },
-      {
-        id: "pc-q2",
-        type: "true_false",
-        question:
-          "True or false: 100% of a developer’s salary can always be treated as qualifying R&D expenditure if they worked on at least one R&D project during the year.",
-        correctAnswer: false,
-        explanation:
-          "Where staff work on a mix of qualifying and non‑qualifying activities, a reasonable apportionment should be made and documented.",
-      },
-      {
-        id: "pc-q3",
-        type: "multiple_choice",
-        question:
-          "Which description best fits an 'externally provided worker' (EPW) for UK R&D tax purposes?",
-        options: [
-          {
-            id: "a",
-            label:
-              "An individual supplied by a staff provider to work under the company’s supervision, where the company pays the provider for their time.",
-          },
-          {
-            id: "b",
-            label: "Any subcontractor performing fixed‑price project work offsite.",
-          },
-          {
-            id: "c",
-            label: "A temporary admin assistant hired to cover reception during holidays.",
-          },
-        ],
-        correctOptionId: "a",
-        explanation:
-          "EPWs are individuals provided by a staff provider who work under the company’s direction; they are treated differently from subcontracted project work.",
-      },
-      {
-        id: "pc-q4",
-        type: "scenario",
-        question:
-          "HMRC asks how you arrived at staff apportionment percentages for a project. Which response is most appropriate?",
-        options: [
-          {
-            id: "a",
-            label:
-              "Explain that the percentages were chosen because they gave a sensible claim size and no further detail is available.",
-          },
-          {
-            id: "b",
-            label:
-              "Provide a short methodology note referencing sample timesheets, ticket volumes, and manager interviews, with a short note explaining the sampling method.",
-          },
-          {
-            id: "c",
-            label:
-              "State that apportionments were based on commercial priorities and that no further detail is necessary.",
-          },
-        ],
-        correctOptionId: "b",
-        explanation:
-          "HMRC expects a reasonable, documented basis for apportionments that can be understood and, if necessary, challenged.",
-      },
-      {
-        id: "pc-q5",
-        type: "true_false",
-        question:
-          "True or false: Success‑based fees paid to an R&D adviser are normally qualifying R&D expenditure for UK tax relief.",
-        correctAnswer: false,
-        explanation:
-          "Success‑based adviser fees are generally not treated as qualifying R&D expenditure in their own right, even though they relate to the claim.",
-      },
-    ],
-  },
-  {
-    id: "hmrc-enquiry-simulator",
-    title: "HMRC Enquiry Simulator",
-    description: "Practice responding to HMRC enquiries through interactive AI‑driven simulations.",
-    estimatedTime: "60 min",
-    lesson: {
-      overview:
-        "This module prepares you for HMRC enquiries by explaining why enquiries are opened, what typical letters look like, and how to respond in a calm, structured way.",
-      keyConcepts: [
-        "Enquiries may be random or risk‑based, but the principles of a good response are the same.",
-        "Responses should address each HMRC question directly and explicitly, cross‑referencing evidence and BEIS tests.",
-        "Tone matters: factual, balanced explanations are more effective than defensive or argumentative language.",
-      ],
-      realExamples: [
-        "An enquiry triggered by a large year‑on‑year increase in qualifying costs where a clear, structured response avoided any adjustment.",
-        "A case where vague initial responses led to further questioning until a more detailed, BEIS‑aligned explanation was provided.",
-      ],
-      commonMistakes: [
-        "Responding only partially to HMRC questions or ignoring points that are uncomfortable.",
-        "Introducing new, unsupported technical claims in an attempt to 'strengthen' the case.",
-        "Allowing correspondence to become emotional or confrontational instead of staying factual.",
-      ],
-    },
-    scenario: {
-      id: "enquiry-letter-response",
-      title: "First HMRC Enquiry Letter",
-      description:
-        "You receive an enquiry letter asking why projects in a particular claim should qualify as R&D and requesting evidence to support staff apportionments. The original narratives are fairly high‑level.",
-      options: [
-        {
-          id: "option-a",
-          label:
-            "Prepare a structured response that restates the BEIS tests, clarifies the technological uncertainties, and attaches a focused evidence pack with an index.",
-          isCorrect: true,
-          explanation:
-            "This approach addresses HMRC's questions clearly and provides the material they need to reach a conclusion.",
-        },
-        {
-          id: "option-b",
-          label:
-            "Reply briefly stating that the work is clearly R&D and that all details were already included in the original claim.",
-          isCorrect: false,
-          explanation:
-            "This is likely to be seen as unhelpful and may prolong or escalate the enquiry.",
-        },
-        {
-          id: "option-c",
-          label:
-            "Ignore the letter initially in the hope that HMRC will close the enquiry without further action.",
-          isCorrect: false,
-          explanation:
-            "Missing deadlines or failing to engage increases risk and may lead to adjustments or penalties.",
-        },
-      ],
-    },
-    exercisePrompt:
-      "Draft a short opening paragraph you could use in a response to an HMRC enquiry, setting a professional tone and explaining how your letter is structured.",
-    quiz: [
-      {
-        id: "hes-q1",
-        type: "multiple_choice",
-        question:
-          "Which of the following is the best way to structure a response to an HMRC enquiry letter?",
-        options: [
-          {
-            id: "a",
-            label:
-              "Provide a single long narrative covering all points in one blended paragraph.",
-          },
-          {
-            id: "b",
-            label:
-              "Respond point‑by‑point, using HMRC's question numbers as headings and cross‑referencing relevant evidence.",
-          },
-          {
-            id: "c",
-            label:
-              "Send the client a copy of the letter and ask them to respond directly without your involvement.",
-          },
-        ],
-        correctOptionId: "b",
-        explanation:
-          "Point‑by‑point responses make it easy for HMRC to see that each question has been addressed.",
-      },
-      {
-        id: "hes-q2",
-        type: "true_false",
-        question:
-          "True or false: You should avoid referencing the BEIS definition of R&D in an enquiry response because HMRC already know it.",
-        correctAnswer: false,
-        explanation:
-          "Briefly anchoring your explanation back to the BEIS tests helps frame your arguments in the language HMRC expects.",
-      },
-      {
-        id: "hes-q3",
-        type: "multiple_choice",
-        question:
-          "Which situation most likely increases the risk of an enquiry being opened?",
-        options: [
-          {
-            id: "a",
-            label: "The company has claimed R&D relief at a consistent level for several years.",
-          },
-          {
-            id: "b",
-            label:
-              "Qualifying costs have more than doubled year‑on‑year without a clear accompanying explanation.",
-          },
-          {
-            id: "c",
-            label: "The claim was submitted a few days before the filing deadline.",
-          },
-        ],
-        correctOptionId: "b",
-        explanation:
-          "Large, unexplained movements in claim size can attract attention and lead to enquiries.",
-      },
-      {
-        id: "hes-q4",
-        type: "scenario",
-        question:
-          "HMRC questions staff apportionments and asks how you arrived at the percentages. Which response is most appropriate?",
-        options: [
-          {
-            id: "a",
-            label:
-              "Explain that the percentages were based on documented sampling using tickets and time records, and attach a short methodology note.",
-          },
-          {
-            id: "b",
-            label:
-              "State that the percentages are commercially sensitive and cannot be shared.",
-          },
-          {
-            id: "c",
-            label:
-              "Respond that the client simply 'felt' the percentages were correct without further detail.",
-          },
-        ],
-        correctOptionId: "a",
-        explanation:
-          "HMRC expects a reasonable, documented basis for apportionments that can be understood and, if necessary, challenged.",
-      },
-      {
-        id: "hes-q5",
-        type: "true_false",
-        question:
-          "True or false: It is sometimes appropriate to concede part of a claim if new information shows that certain costs are weakly supported.",
-        correctAnswer: true,
-        explanation:
-          "A sensible, evidence‑based concession can build credibility and help protect the stronger parts of a claim.",
-      },
-    ],
-  },
-  {
-    id: "ai-claim-critique",
-    title: "AI Claim Critique",
-    description:
-      "Upload draft claims and receive AI analysis highlighting weaknesses and improvement opportunities.",
-    estimatedTime: "30–45 min",
-    lesson: {
-      overview:
-        "This module explains how to use AI tools inside RD Companion to review and improve claims while maintaining professional and regulatory standards.",
-      keyConcepts: [
-        "AI can help spot vague language, missing references to uncertainty, and weak evidence mapping, but it must not replace professional judgement.",
-        "All AI‑generated suggestions must be checked against the underlying facts and documents.",
-        "Firms should adopt clear guidelines for when and how AI can be used in preparing R&D claims.",
-      ],
-      realExamples: [
-        "Using AI to highlight paragraphs that focus too heavily on commercial benefits rather than technological uncertainty.",
-        "Rejecting an AI suggestion that introduced a claim of using complex machine learning where the project actually relied on simpler techniques.",
-      ],
-      commonMistakes: [
-        "Copy‑pasting AI output into a claim without checking for technical accuracy or consistency with evidence.",
-        "Allowing AI to invent experiments or evidence that never occurred.",
-        "Relying on AI risk scores without understanding the underlying reasoning.",
-      ],
-    },
-    scenario: {
-      id: "ai-suggestion-review",
-      title: "Reviewing AI Suggestions",
-      description:
-        "You run a draft narrative through the AI critique tool. It correctly flags some vague wording but also suggests adding a reference to 'proprietary deep learning algorithms' where the project in fact used standard regression models.",
-      options: [
-        {
-          id: "option-a",
-          label:
-            "Keep the helpful suggestions about clarity but remove or rewrite any technically inaccurate AI suggestions.",
-          isCorrect: true,
-          explanation:
-            "Human review must filter AI output so that only factually accurate, evidence‑backed improvements are adopted.",
-        },
-        {
-          id: "option-b",
-          label:
-            "Accept all AI suggestions to maximise the apparent complexity of the project.",
-          isCorrect: false,
-          explanation:
-            "Over‑stating technical complexity creates risk and can undermine credibility if challenged.",
-        },
-        {
-          id: "option-c",
-          label:
-            "Abandon AI tools entirely because they occasionally make incorrect suggestions.",
-          isCorrect: false,
-          explanation:
-            "The goal is to use AI as an assistant, not as a replacement for human judgement. Managed correctly, it can still add value.",
-        },
-      ],
-    },
-    exercisePrompt:
-      "Run a short draft paragraph (or imagine one) through an AI lens: write down three questions you would ask yourself to check whether the AI's suggestions are factually accurate and properly evidenced.",
-    quiz: [
-      {
-        id: "aiq-q1",
-        type: "multiple_choice",
-        question:
-          "What is the safest way to use AI when preparing an R&D claim narrative?",
-        options: [
-          {
-            id: "a",
-            label:
-              "Use AI to draft and submit narratives without human review to save time.",
-          },
-          {
-            id: "b",
-            label:
-              "Use AI to generate suggestions and critique, then have a qualified adviser review and edit the final narrative.",
-          },
-          {
-            id: "c",
-            label:
-              "Avoid AI entirely because it is not allowed in R&D tax work.",
-          },
-        ],
-        correctOptionId: "b",
-        explanation:
-          "AI can assist, but responsibility for accuracy and compliance remains with the human adviser.",
-      },
-      {
-        id: "aiq-q2",
-        type: "true_false",
-        question:
-          "True or false: If AI suggests adding details that are not supported by the evidence, you may include them as long as they are technically plausible.",
-        correctAnswer: false,
-        explanation:
-          "Every statement in a claim must be supported by facts and evidence, not just technical plausibility.",
-      },
-      {
-        id: "aiq-q3",
-        type: "multiple_choice",
-        question:
-          "Which type of AI feedback is usually most helpful to incorporate?",
-        options: [
-          {
-            id: "a",
-            label: "Highlighting sentences that are vague or purely commercial in tone.",
-          },
-          {
-            id: "b",
-            label: "Inventing additional R&D projects to increase the size of the claim.",
-          },
-          {
-            id: "c",
-            label: "Suggesting that all projects should be described as 'ground‑breaking'.",
-          },
-        ],
-        correctOptionId: "a",
-        explanation:
-          "Spotting vague or commercial language can help you tighten narratives while staying within the facts.",
-      },
-      {
-        id: "aiq-q4",
-        type: "scenario",
-        question:
-          "The AI critique tool flags that a project description does not mention any failed approaches. In reality, the team tried several prototypes that did not work. What should you do?",
-        options: [
-          {
-            id: "a",
-            label:
-              "Update the narrative to briefly describe the failed approaches and what was learned from them.",
-          },
-          {
-            id: "b",
-            label:
-              "Ignore the suggestion because failure is embarrassing for the client.",
-          },
-          {
-            id: "c",
-            label:
-              "Delete the project from the claim altogether.",
-          },
-        ],
-        correctOptionId: "a",
-        explanation:
-          "Describing failed approaches can strengthen the case for genuine technological uncertainty and systematic investigation.",
-      },
-      {
-        id: "aiq-q5",
-        type: "true_false",
-        question:
-          "True or false: You should keep a record of how AI tools were used in claim preparation as part of your working papers.",
-        correctAnswer: true,
-        explanation:
-          "Documenting how AI was used helps demonstrate that you have appropriate controls and that final responsibility rests with human reviewers.",
-      },
-    ],
-  },
-];
 
 interface ScenarioState {
   selectedOptionId: string | null;
@@ -971,11 +88,1348 @@ interface QuizState {
   passed: boolean;
 }
 
+interface CertificationStatus {
+  loading: boolean;
+  eligible: boolean;
+}
+
+const MODULES: ModuleConfig[] = [
+  {
+    id: "rd-fundamentals",
+    level: "foundation",
+    title: "R&D Fundamentals",
+    description:
+      "Understand the statutory definition of R&D for tax purposes and how BEIS and HMRC interpret technological uncertainty.",
+    estimatedTime: "45–60 min",
+    lesson: {
+      overview:
+        "This module introduces the statutory basis for UK R&D tax relief and how the concept of technological uncertainty is interpreted in practice.",
+      keyConcepts: [
+        "BEIS Guidelines define R&D for tax purposes separately from accounting or marketing concepts.",
+        "Technological uncertainty is judged from the perspective of a competent professional in the field.",
+        "The baseline is the wider state of knowledge in the industry, not just the company’s starting point.",
+      ],
+      realExamples: [
+        "Developing an algorithm that achieves materially better performance than publicly documented techniques, where the solution path was not obvious.",
+        "Re‑engineering a manufacturing process to reach tolerances that existing industry methods could not reliably achieve.",
+      ],
+      commonMistakes: [
+        "Describing commercial uncertainty (e.g. will customers buy this?) instead of technological uncertainty.",
+        "Listing features rather than explaining why solving the underlying technical problem was hard.",
+        "Failing to describe the baseline of available knowledge or vendor capability.",
+      ],
+    },
+    scenario: {
+      id: "manufacturing-automation",
+      title: "Manufacturing Automation Project",
+      description:
+        "A manufacturer introduces new robotics to automate a delicate assembly process. Off‑the‑shelf robots exist, but the components are so fragile that vendor‑specified grippers damage them at required throughput. The engineering team experiments with custom end‑effectors and control algorithms to achieve speed without breakage.",
+      options: [
+        {
+          id: "a",
+          label:
+            "This is likely qualifying R&D because the team is resolving uncertainties about how to achieve performance beyond what current robotic systems can reliably deliver.",
+          isCorrect: true,
+          explanation:
+            "The facts suggest a genuine uncertainty about whether and how robots can meet the performance requirement without damage. If competent professionals could not readily predict the solution, this is classic technological uncertainty.",
+        },
+        {
+          id: "b",
+          label:
+            "This is not qualifying R&D because robotics already exist and the company is merely implementing vendor technology.",
+          isCorrect: false,
+          explanation:
+            "Simply using off‑the‑shelf robots is not R&D, but here the project is pushing beyond vendor specifications, which can create qualifying uncertainty.",
+        },
+        {
+          id: "c",
+          label:
+            "This is automatically qualifying R&D because any automation is treated as R&D for tax purposes.",
+          isCorrect: false,
+          explanation:
+            "Automation is not automatically R&D. The key question is whether there was genuine technological uncertainty about achieving the required capability.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "Write a short paragraph (3–5 sentences) explaining the technological uncertainty in the automation scenario above. Focus on why a competent professional could not easily predict the solution.",
+    quiz: [
+      {
+        id: "rd-q1",
+        type: "multiple_choice",
+        question: "What is the core test for technological uncertainty in UK R&D tax relief?",
+        options: [
+          { id: "a", label: "Whether the project was commercially risky for the company." },
+          {
+            id: "b",
+            label: "Whether a competent professional could readily work out how to achieve the desired result.",
+          },
+          { id: "c", label: "Whether the project involved any automation or software." },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "The BEIS test focuses on what a competent professional could readily deduce using existing knowledge and capability.",
+      },
+      {
+        id: "rd-q2",
+        type: "true_false",
+        question: "True or false: A failed project is automatically qualifying R&D.",
+        correctAnswer: false,
+        explanation:
+          "Failure alone is not sufficient. The work must seek an advance in science or technology and involve genuine technological uncertainty.",
+      },
+      {
+        id: "rd-q3",
+        type: "multiple_choice",
+        question:
+          "In a software project, how should the 'advance' normally be described in an R&D narrative?",
+        options: [
+          { id: "a", label: "In terms of new features and user interface." },
+          { id: "b", label: "In terms of underlying technical performance or capability gains." },
+          { id: "c", label: "In terms of revenue and market share improvement." },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "The advance is about underlying science or technology, not commercial outcomes or surface features.",
+      },
+    ],
+  },
+  {
+    id: "claim-writing-mastery",
+    level: "foundation",
+    title: "Claim Writing Mastery",
+    description:
+      "Turn raw technical detail into clear, BEIS‑aligned narratives that HMRC can follow and challenge if needed.",
+    estimatedTime: "60–90 min",
+    lesson: {
+      overview:
+        "This module focuses on structuring R&D narratives so that HMRC can clearly see how each BEIS test is satisfied.",
+      keyConcepts: [
+        "Effective narratives separate context, baseline, advance, and technological uncertainty.",
+        "HMRC readers skim; headers, signposting and concise explanations materially affect enquiry risk.",
+        "Narratives must be anchored in evidence and cost schedules, not written in isolation.",
+      ],
+      realExamples: [
+        "Rewriting a marketing paragraph into a technically accurate explanation that explicitly references competent professionals.",
+        "Adding a short section on failed approaches to show systematic investigation.",
+      ],
+      commonMistakes: [
+        "Over‑using vague terms like 'innovative' instead of specific technical detail.",
+        "Describing commercial objectives instead of technological obstacles.",
+        "Omitting how staff, subcontractor and software costs map to the work described.",
+      ],
+    },
+    scenario: {
+      id: "software-rewrite",
+      title: "Software Platform Rebuild Narrative",
+      description:
+        "You receive: 'We rebuilt our platform using modern cloud technologies. It is more scalable and innovative.' You must convert this into something HMRC can rely on.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Explain the legacy architecture, specific performance constraints, and why known patterns did not obviously meet the requirements.",
+          isCorrect: true,
+          explanation:
+            "HMRC needs to understand the baseline, the advance, and the uncertainties. You must anchor the narrative in concrete technical detail.",
+        },
+        {
+          id: "b",
+          label:
+            "Add stronger adjectives about innovation and leadership in the market to impress HMRC.",
+          isCorrect: false,
+          explanation:
+            "More marketing language weakens the file. HMRC is interested in technical substance, not hype.",
+        },
+        {
+          id: "c",
+          label:
+            "Focus entirely on ROI and payback period because HMRC mainly care about value for money.",
+          isCorrect: false,
+          explanation:
+            "Commercial outcomes are secondary to whether the BEIS R&D tests are met.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "Take a short marketing‑style description of a project you know (or imagine one). Rewrite it into 4–6 sentences following the structure: context, baseline, advance sought, technological uncertainty.",
+    quiz: [
+      {
+        id: "cwm-q1",
+        type: "multiple_choice",
+        question: "Which element is most important in an R&D narrative for HMRC?",
+        options: [
+          { id: "a", label: "Detailed commercial benefits and ROI." },
+          {
+            id: "b",
+            label:
+              "A clear description of the technological uncertainties and how they were investigated.",
+          },
+          { id: "c", label: "The company’s market positioning and brand strength." },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "HMRC needs to understand the uncertainties and the systematic work done to resolve them.",
+      },
+      {
+        id: "cwm-q2",
+        type: "true_false",
+        question:
+          "True or false: Describing failed approaches can strengthen an R&D narrative.",
+        correctAnswer: true,
+        explanation:
+          "Evidence of systematic investigation, including dead ends, supports the BEIS tests.",
+      },
+      {
+        id: "cwm-q3",
+        type: "multiple_choice",
+        question: "Which structure best fits a strong technical narrative?",
+        options: [
+          { id: "a", label: "Objectives, features, marketing impact." },
+          {
+            id: "b",
+            label:
+              "Business context, baseline and competent professional view, advance sought, uncertainties, systematic work and outcomes.",
+          },
+          { id: "c", label: "Timeline, budget, final client testimonial." },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "This mirrors BEIS and makes it easy for HMRC to map the narrative to the tests.",
+      },
+    ],
+  },
+  {
+    id: "evidence-assessment",
+    level: "foundation",
+    title: "Evidence Assessment",
+    description:
+      "Design lean, persuasive evidence packs that support each BEIS test without overwhelming HMRC.",
+    estimatedTime: "45–60 min",
+    lesson: {
+      overview:
+        "This module covers how to identify, prioritise and organise evidence that directly supports the BEIS definition of R&D.",
+      keyConcepts: [
+        "Contemporaneous technical records are more persuasive than retrospective summaries.",
+        "Different evidence types support different tests: advance, uncertainty, systematic work, and costs.",
+        "An indexed, curated pack beats a raw document dump every time.",
+      ],
+      realExamples: [
+        "Using ticket histories, design docs and test reports to evidence systematic experimentation.",
+        "Creating a simple evidence index so that every HMRC question can be linked to specific documents.",
+      ],
+      commonMistakes: [
+        "Relying mainly on marketing decks as 'evidence'.",
+        "Forgetting to tie apportionment logic back to R&D projects and narratives.",
+        "Sending unfiltered file dumps without explanation or indexing.",
+      ],
+    },
+    scenario: {
+      id: "evidence-pack",
+      title: "Building an Evidence Pack",
+      description:
+        "A client sends a large folder of documents: design notes, tickets, Git logs, slide decks and board papers. HMRC has requested evidence focused on uncertainty and systematic work.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Curate technical documents (designs, tickets, test outputs) and prepare a short index mapping each to BEIS tests.",
+          isCorrect: true,
+          explanation:
+            "This directly supports the tests and helps HMRC navigate quickly.",
+        },
+        {
+          id: "b",
+          label:
+            "Forward the entire folder as‑is and let HMRC decide what is relevant.",
+          isCorrect: false,
+          explanation:
+            "Unfiltered dumps waste reviewer time and can surface unhelpful material.",
+        },
+        {
+          id: "c",
+          label:
+            "Rely mainly on slide decks because they are already formatted and client‑approved.",
+          isCorrect: false,
+          explanation:
+            "Slides rarely contain the level of technical detail HMRC needs.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "List the 5–8 strongest evidence items you would request for a typical software R&D project, and note which BEIS test each supports (advance, uncertainty, systematic work, costs).",
+    quiz: [
+      {
+        id: "ea-q1",
+        type: "multiple_choice",
+        question:
+          "Which is usually the strongest evidence of systematic R&D work in a software project?",
+        options: [
+          { id: "a", label: "A slide summarising expected R&D tax savings." },
+          {
+            id: "b",
+            label: "A series of tickets showing experiments, failures and design changes.",
+          },
+          { id: "c", label: "A marketing brochure describing the final product." },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "Ticket histories can show the iterative, investigative nature of work very clearly.",
+      },
+      {
+        id: "ea-q2",
+        type: "true_false",
+        question:
+          "True or false: An evidence index is unnecessary if you provide a lot of material.",
+        correctAnswer: false,
+        explanation:
+          "An index makes it far easier for HMRC to find the right items and reduces enquiry friction.",
+      },
+      {
+        id: "ea-q3",
+        type: "multiple_choice",
+        question:
+          "Which evidence most directly supports the 'advance in science or technology' test?",
+        options: [
+          { id: "a", label: "Engagement letters with the client." },
+          {
+            id: "b",
+            label:
+              "Design documents explaining why existing approaches or vendor products were not sufficient.",
+          },
+          { id: "c", label: "Invoices from subcontractors." },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "These documents show how the project sought to move beyond the existing baseline.",
+      },
+    ],
+  },
+  {
+    id: "permitted-costs",
+    level: "foundation",
+    title: "Permitted Costs & Apportionment",
+    description:
+      "Go beyond simple lists of cost categories and design apportionment approaches HMRC can follow.",
+    estimatedTime: "45–60 min",
+    lesson: {
+      overview:
+        "This module explains which UK R&D cost categories qualify, which do not, and how to design and document apportionments.",
+      keyConcepts: [
+        "Only specific cost categories qualify (staffing, EPWs, qualifying subcontractors, consumables, certain software and cloud).",
+        "Apportionments should be grounded in real data (time records, ticket volumes, usage metrics) where possible.",
+        "Documentation of methodology matters more than false precision.",
+      ],
+      realExamples: [
+        "Splitting developer time between experimental features and BAU maintenance using ticket sampling.",
+        "Separating cloud spend on R&D test environments from steady‑state production usage.",
+      ],
+      commonMistakes: [
+        "Including sales and general admin salaries as R&D staff costs.",
+        "Treating all subcontractor spend as qualifying by default.",
+        "Using arbitrary percentages with no documented basis.",
+      ],
+    },
+    scenario: {
+      id: "cost-schedule",
+      title: "Building a Cost Schedule",
+      description:
+        "You are preparing a cost schedule for a software project. Inputs: developer and architect salaries, a QA contractor invoice, cloud hosting for production and test environments, sales commission payments, and a generic marketing campaign.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Include technical staff with apportionment, include QA contractor and R&D‑related test environment costs, exclude sales commissions and generic marketing.",
+          isCorrect: true,
+          explanation:
+            "These decisions align with typical UK R&D rules when linked properly to qualifying activities.",
+        },
+        {
+          id: "b",
+          label:
+            "Include all items because they ultimately support the same product.",
+          isCorrect: false,
+          explanation:
+            "Commercial support costs do not automatically qualify just because they relate to the product.",
+        },
+        {
+          id: "c",
+          label:
+            "Exclude QA because testing is not R&D, but include sales commissions because they are success‑based.",
+          isCorrect: false,
+          explanation:
+            "Testing can be integral to systematic R&D. Sales commissions are normally out of scope.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "Draft a short note (4–6 sentences) explaining how you would determine and document staff time apportionments for a mixed R&D / BAU software team working across multiple projects.",
+    quiz: [
+      {
+        id: "pc-q1",
+        type: "multiple_choice",
+        question:
+          "Which of the following is most likely to be qualifying R&D expenditure?",
+        options: [
+          {
+            id: "a",
+            label: "Salary costs of developers resolving technological uncertainties.",
+          },
+          { id: "b", label: "Sales commission on contracts won after launch." },
+          { id: "c", label: "General corporate branding spend." },
+        ],
+        correctOptionId: "a",
+        explanation:
+          "Core staffing costs for people directly and actively engaged in R&D are central to the rules.",
+      },
+      {
+        id: "pc-q2",
+        type: "true_false",
+        question:
+          "True or false: If a developer works on one R&D project during the year, 100% of their salary can always be claimed.",
+        correctAnswer: false,
+        explanation:
+          "Where staff split their time between qualifying and non‑qualifying work, a reasonable apportionment is expected.",
+      },
+      {
+        id: "pc-q3",
+        type: "multiple_choice",
+        question: "Which description best fits an Externally Provided Worker (EPW)?",
+        options: [
+          {
+            id: "a",
+            label:
+              "An individual supplied by a staff provider to work under the company’s supervision, with time charged to the company.",
+          },
+          {
+            id: "b",
+            label: "Any subcontractor performing a fixed‑price project offsite.",
+          },
+          {
+            id: "c",
+            label: "A temporary admin assistant covering reception.",
+          },
+        ],
+        correctOptionId: "a",
+        explanation:
+          "EPWs are a specific construct and have distinct rules compared to subcontractors.",
+      },
+    ],
+  },
+  {
+    id: "hmrc-enquiry-simulator",
+    level: "foundation",
+    title: "HMRC Enquiry Simulator",
+    description:
+      "Practice responding to enquiry letters with structured, BEIS‑aligned explanations and evidence.",
+    estimatedTime: "60 min",
+    lesson: {
+      overview:
+        "This module prepares you for HMRC enquiries: why they are opened, how letters are structured, and how to respond effectively.",
+      keyConcepts: [
+        "Enquiries can be random or risk‑based, but a good response is always structured and evidence‑backed.",
+        "Point‑by‑point replies using HMRC’s own numbering reduce friction and follow‑up.",
+        "Tone matters: factual and balanced is more effective than defensive or argumentative.",
+      ],
+      realExamples: [
+        "An enquiry triggered by a step‑change in qualifying costs but closed quickly due to a clear response.",
+        "A case where vague answers escalated the enquiry until a proper technical narrative was provided.",
+      ],
+      commonMistakes: [
+        "Ignoring parts of HMRC questions because they feel uncomfortable.",
+        "Introducing new unsupported technical claims in an attempt to strengthen the file.",
+        "Allowing correspondence to become emotional rather than factual.",
+      ],
+    },
+    scenario: {
+      id: "first-letter",
+      title: "First HMRC Enquiry Letter",
+      description:
+        "HMRC questions why several projects qualify and asks for evidence around staff apportionments. The original narratives are quite high‑level.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Prepare a point‑by‑point response referencing the BEIS tests and attaching a curated evidence pack with an index.",
+          isCorrect: true,
+          explanation:
+            "This directly addresses HMRC’s concerns and makes review as easy as possible.",
+        },
+        {
+          id: "b",
+          label:
+            "Reply briefly that the work is clearly R&D and everything was already in the original claim.",
+          isCorrect: false,
+          explanation:
+            "This is likely to be seen as evasive and may prolong or intensify the enquiry.",
+        },
+        {
+          id: "c",
+          label:
+            "Delay responding in the hope that HMRC will close the enquiry.",
+          isCorrect: false,
+          explanation:
+            "Missing deadlines or failing to engage increases risk and can lead to adjustments or penalties.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "Draft a short opening paragraph for an HMRC enquiry response letter. Set a professional tone and explain how your letter is structured.",
+    quiz: [
+      {
+        id: "hes-q1",
+        type: "multiple_choice",
+        question:
+          "What is generally the best structure for responding to an HMRC enquiry letter?",
+        options: [
+          {
+            id: "a",
+            label: "One long narrative covering all questions in a single block.",
+          },
+          {
+            id: "b",
+            label:
+              "Point‑by‑point responses using HMRC’s question numbers as headings, with cross‑references to evidence.",
+          },
+          {
+            id: "c",
+            label:
+              "A short response telling HMRC that all information was in the original claim.",
+          },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "This structure makes it obvious that every question has been answered and how.",
+      },
+      {
+        id: "hes-q2",
+        type: "true_false",
+        question:
+          "True or false: It is sometimes appropriate to concede weaker parts of a claim in an enquiry.",
+        correctAnswer: true,
+        explanation:
+          "Reasonable concessions can strengthen your credibility and help protect the stronger elements.",
+      },
+      {
+        id: "hes-q3",
+        type: "multiple_choice",
+        question:
+          "Which scenario is most likely to increase the risk of an enquiry being opened?",
+        options: [
+          {
+            id: "a",
+            label: "Claims are at a similar level to previous years with clear narratives.",
+          },
+          {
+            id: "b",
+            label:
+              "Qualifying costs have doubled year‑on‑year with minimal explanation of why.",
+          },
+          {
+            id: "c",
+            label: "The claim was submitted a few days before deadline.",
+          },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "Large unexplained movements can trigger risk‑based enquiries.",
+      },
+    ],
+  },
+  {
+    id: "ai-claim-critique",
+    level: "foundation",
+    title: "AI Claim Critique",
+    description:
+      "Use AI safely to critique and improve narratives without losing professional control or accuracy.",
+    estimatedTime: "30–45 min",
+    lesson: {
+      overview:
+        "This module explains how to use AI tools inside RD Companion to review claims while maintaining regulatory and ethical standards.",
+      keyConcepts: [
+        "AI is a drafting and critique assistant, not a decision‑maker.",
+        "All AI suggestions must be checked against underlying facts and evidence.",
+        "Firms should define clear policies for where AI is allowed in the workflow.",
+      ],
+      realExamples: [
+        "Using AI to flag vague wording that focuses on commercial benefits instead of technical uncertainty.",
+        "Rejecting AI suggestions that introduce unsupported references to advanced techniques.",
+      ],
+      commonMistakes: [
+        "Copy‑pasting AI output without checking for factual accuracy.",
+        "Allowing AI to invent experiments or evidence that never occurred.",
+        "Relying on AI 'risk scores' without understanding the reasoning.",
+      ],
+    },
+    scenario: {
+      id: "ai-suggestions",
+      title: "Reviewing AI Suggestions",
+      description:
+        "You run a narrative through the AI critique tool. It correctly highlights vague wording, but suggests adding references to 'proprietary deep learning' where the project actually used simple regression models.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Adopt the clarity suggestions but remove or rewrite technically inaccurate AI suggestions.",
+          isCorrect: true,
+          explanation:
+            "Human reviewers must filter AI output so that only factually accurate improvements are adopted.",
+        },
+        {
+          id: "b",
+          label:
+            "Accept all AI suggestions to make the project sound more advanced.",
+          isCorrect: false,
+          explanation:
+            "Over‑stating complexity increases enquiry risk and can damage credibility.",
+        },
+        {
+          id: "c",
+          label:
+            "Stop using AI entirely because it sometimes makes mistakes.",
+          isCorrect: false,
+          explanation:
+            "The goal is controlled use, not total avoidance. Managed correctly, AI adds real value.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "Imagine you have run a draft through the AI critique tool. Write down three questions you would ask yourself to check that its suggestions are factually accurate and properly evidenced.",
+    quiz: [
+      {
+        id: "aiq-q1",
+        type: "multiple_choice",
+        question:
+          "What is the safest way to use AI when preparing an R&D claim narrative?",
+        options: [
+          {
+            id: "a",
+            label: "Use AI to draft and submit narratives without human review.",
+          },
+          {
+            id: "b",
+            label:
+              "Use AI to generate suggestions and critique, then have a qualified adviser review and edit the final narrative.",
+          },
+          { id: "c", label: "Avoid AI completely in R&D tax work." },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "Responsibility for accuracy and compliance always remains with the human adviser.",
+      },
+      {
+        id: "aiq-q2",
+        type: "true_false",
+        question:
+          "True or false: You may add AI‑suggested technical details even if they are not evidenced, as long as they are plausible.",
+        correctAnswer: false,
+        explanation:
+          "All claims must be evidence‑backed; plausibility is not enough.",
+      },
+      {
+        id: "aiq-q3",
+        type: "multiple_choice",
+        question:
+          "Which type of AI feedback is usually most helpful to incorporate?",
+        options: [
+          {
+            id: "a",
+            label: "Highlighting sentences that are vague or purely commercial in tone.",
+          },
+          {
+            id: "b",
+            label: "Inventing additional R&D projects to increase claim size.",
+          },
+          { id: "c", label: "Labeling every project as 'ground‑breaking'." },
+        ],
+        correctOptionId: "a",
+        explanation:
+          "Tightening vague language while staying factual typically strengthens the file.",
+      },
+    ],
+  },
+  // Advanced modules – content pitched at a more senior/practice‑design level
+  {
+    id: "sector-software-digital",
+    level: "advanced",
+    title: "Sector Deep Dive: Software & Digital",
+    description:
+      "Disentangle genuine software R&D from routine delivery across SaaS, platforms, data and AI projects.",
+    estimatedTime: "60–90 min",
+    lesson: {
+      overview:
+        "This module looks at how BEIS tests apply in modern software and digital projects, with a focus on separating real R&D from 'just building the product'.",
+      keyConcepts: [
+        "Common non‑qualifying patterns: simple CRUD apps, standard integrations, re‑skins and migrations.",
+        "Where genuine uncertainty often lives: new algorithms, scalability at extreme loads, complex data pipelines, novel architectures.",
+        "How to evidence software R&D using repositories, tickets, design docs and observability data.",
+      ],
+      realExamples: [
+        "Borderline case: migration from on‑prem to cloud with some performance tuning — when it is and isn’t R&D.",
+        "Clear R&D: designing a new concurrency model to meet latency targets that off‑the‑shelf stacks cannot meet.",
+      ],
+      commonMistakes: [
+        "Treating any use of AI/ML buzzwords as R&D without understanding the actual work.",
+        "Writing narratives that focus on product features instead of underlying technical problems.",
+        "Undervaluing infrastructure work (e.g. observability, resilience) that actually contains the uncertainty.",
+      ],
+    },
+    scenario: {
+      id: "saas-borderline",
+      title: "Borderline SaaS Project",
+      description:
+        "A SaaS vendor rebuilt its reporting module. The team switched from a simple SQL layer to a new query engine to support complex ad‑hoc analytics with strict latency SLAs. Multiple indexing and caching strategies were trialled.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Likely qualifying R&D if competent professionals could not readily predict which architecture would satisfy the latency and query flexibility constraints.",
+          isCorrect: true,
+          explanation:
+            "The facts point to genuine uncertainty about achieving the required performance characteristics, beyond routine development.",
+        },
+        {
+          id: "b",
+          label:
+            "Automatically non‑qualifying because it sits inside an existing SaaS product.",
+          isCorrect: false,
+          explanation:
+            "Being part of an existing product does not rule out R&D; the key is technological uncertainty relative to the field.",
+        },
+        {
+          id: "c",
+          label:
+            "Qualifying R&D solely because analytics and big data are involved.",
+          isCorrect: false,
+          explanation:
+            "Use of buzzwords alone is irrelevant; BEIS tests must still be met.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "Draft a short outline for a software R&D project file in your sector. Identify 2–3 clearly non‑qualifying activities that must be ring‑fenced out of the narrative and cost base.",
+    quiz: [
+      {
+        id: "sd-q1",
+        type: "multiple_choice",
+        question:
+          "Which of the following is most likely to be non‑qualifying in a SaaS project?",
+        options: [
+          {
+            id: "a",
+            label: "Re‑skin of an existing UI with no material technical change.",
+          },
+          {
+            id: "b",
+            label:
+              "Developing a new distributed caching strategy to meet previously unattainable latency targets.",
+          },
+          {
+            id: "c",
+            label:
+              "Experimenting with new data structures to reduce storage and query costs at scale.",
+          },
+        ],
+        correctOptionId: "a",
+        explanation:
+          "Pure UI re‑skins usually lack technological uncertainty and are typically non‑qualifying.",
+      },
+      {
+        id: "sd-q2",
+        type: "true_false",
+        question:
+          "True or false: Any project involving machine learning automatically qualifies as R&D.",
+        correctAnswer: false,
+        explanation:
+          "ML can involve R&D, but routine implementation of known models to well‑understood problems may not involve genuine uncertainty.",
+      },
+    ],
+  },
+  {
+    id: "sector-manufacturing-engineering",
+    level: "advanced",
+    title: "Sector Deep Dive: Manufacturing & Engineering",
+    description:
+      "Assess R&D in physical products, processes, tolerances, automation and robotics with a focus on borderline cases.",
+    estimatedTime: "60–90 min",
+    lesson: {
+      overview:
+        "This module explores where manufacturing and engineering R&D typically arises and how to distinguish it from standard engineering work.",
+      keyConcepts: [
+        "Distinction between routine engineering improvement and advances in overall knowledge or capability.",
+        "Common R&D themes: novel materials, extreme tolerances, new joining methods, automation at performance extremes.",
+        "Evidence in this sector often comes from lab notebooks, test rigs, trial reports and FEA/CFD output.",
+      ],
+      realExamples: [
+        "Iteratively refining a welding process to achieve a new combination of strength and weight.",
+        "Non‑qualifying: repeating a vendor’s published guidance to set up a standard production line.",
+      ],
+      commonMistakes: [
+        "Treating every continuous improvement project as R&D.",
+        "Failing to capture experiment logs and test rig data contemporaneously.",
+        "Confusing commercial cost‑down initiatives with technological uncertainty.",
+      ],
+    },
+    scenario: {
+      id: "tolerance-case",
+      title: "Tight Tolerance Machining",
+      description:
+        "A precision engineering firm attempts to machine a component with tolerances well beyond current catalogue capabilities. They experiment with new tooling, coolants and toolpaths, logging vibration and temperature data.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Potentially qualifying R&D if the tolerances were not achievable using known techniques and required systematic experimentation.",
+          isCorrect: true,
+          explanation:
+            "Pushing beyond known tolerances with uncertain feasibility and multiple experiments is classic R&D in this sector.",
+        },
+        {
+          id: "b",
+          label:
+            "Non‑qualifying because machining is a mature field and all advances are now incremental.",
+          isCorrect: false,
+          explanation:
+            "Even in mature fields there can be genuine advances where the outcome is not readily deducible.",
+        },
+        {
+          id: "c",
+          label:
+            "Automatically qualifying because tight tolerances are always R&D.",
+          isCorrect: false,
+          explanation:
+            "The key is whether achieving those tolerances involved technological uncertainty relative to the field.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "List three examples of borderline engineering projects and note what extra information you would need to classify them as R&D or not.",
+    quiz: [
+      {
+        id: "me-q1",
+        type: "multiple_choice",
+        question:
+          "Which is most likely to be qualifying R&D in an engineering business?",
+        options: [
+          {
+            id: "a",
+            label: "Installing an off‑the‑shelf CNC machine using vendor settings.",
+          },
+          {
+            id: "b",
+            label:
+              "Developing a new machining strategy to produce a part that vendors state is not currently achievable.",
+          },
+          { id: "c", label: "Routine maintenance of existing production lines." },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "This scenario suggests genuine uncertainty about achieving the required specification.",
+      },
+    ],
+  },
+  {
+    id: "advanced-sampling-apportionment",
+    level: "advanced",
+    title: "Advanced Sampling & Apportionment Methods",
+    description:
+      "Design robust, explainable sampling and apportionment frameworks for staff time and costs.",
+    estimatedTime: "60–90 min",
+    lesson: {
+      overview:
+        "This module goes deeper into how to design sampling approaches that balance rigour with practicality in real‑world R&D practices.",
+      keyConcepts: [
+        "Trade‑offs between precision, cost of data collection and auditability.",
+        "Using multiple data sources (timesheets, tickets, commits, deployments) to triangulate staff effort.",
+        "How to document sampling logic so HMRC can challenge assumptions without discarding the whole methodology.",
+      ],
+      realExamples: [
+        "Hybrid sampling using ticket volumes plus manager interviews for teams without perfect timesheets.",
+        "Segmenting staff into activity cohorts (e.g. core R&D, mixed role, BAU) with different evidence requirements.",
+      ],
+      commonMistakes: [
+        "Using a single arbitrary percentage across all staff without justification.",
+        "Failing to segregate BAU and R&D environments in cloud cost apportionment.",
+        "Over‑engineering sampling to three decimal places that cannot be practically evidenced.",
+      ],
+    },
+    scenario: {
+      id: "sampling-framework",
+      title: "Designing a Sampling Framework",
+      description:
+        "A 40‑person engineering team works across multiple projects, only some of which are R&D. Timesheets are partial; ticket data is more complete. Management wants a defensible framework without forcing full daily time tracking.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Propose a cohort‑based sampling approach using a mix of tickets, deployment data and structured manager interviews, documented in a short methodology note.",
+          isCorrect: true,
+          explanation:
+            "This balances rigour with practicality and gives HMRC something concrete to evaluate.",
+        },
+        {
+          id: "b",
+          label:
+            "Apply a flat 70% R&D apportionment to all technical staff because 'that feels about right'.",
+          isCorrect: false,
+          explanation:
+            "Ungrounded percentages with no evidence are a common source of challenge.",
+        },
+        {
+          id: "c",
+          label:
+            "Abandon sampling and simply claim 0% to avoid any risk.",
+          isCorrect: false,
+          explanation:
+            "Well‑designed sampling can significantly de‑risk claims without needing absolute precision.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "Sketch a sampling approach for a 20‑person mixed software team with partial timesheets and good ticket data. State what you would document for HMRC.",
+    quiz: [
+      {
+        id: "asa-q1",
+        type: "multiple_choice",
+        question:
+          "Which is the strongest basis for staff apportionment in most R&D practices?",
+        options: [
+          {
+            id: "a",
+            label: "A documented, data‑backed sampling methodology that can be explained and repeated.",
+          },
+          { id: "b", label: "A single percentage chosen by the sales team." },
+          { id: "c", label: "Whatever percentage results in a target claim size." },
+        ],
+        correctOptionId: "a",
+        explanation:
+          "HMRC cares more about transparency and evidence than absolute precision.",
+      },
+    ],
+  },
+  {
+    id: "risk-governance-file-quality",
+    level: "advanced",
+    title: "Risk Management & File Governance",
+    description:
+      "Build file standards, QA processes and governance that can withstand enquiry‑level scrutiny.",
+    estimatedTime: "45–60 min",
+    lesson: {
+      overview:
+        "This module is about how a firm structures its governance so that every file is 'enquiry‑ready' by design.",
+      keyConcepts: [
+        "Defining what a gold‑standard file looks like (narratives, evidence index, sampling note, review sign‑offs).",
+        "Risk‑rating files and triaging extra review effort for higher‑risk situations.",
+        "Designing QA workflows that are realistic for fee levels and delivery models.",
+      ],
+      realExamples: [
+        "Implementing a traffic‑light risk system based on sector, claim size and novelty.",
+        "Creating lightweight peer review templates that can be completed in under 30 minutes.",
+      ],
+      commonMistakes: [
+        "Relying on one senior reviewer without scalable processes.",
+        "Treating QA as a tick‑box exercise detached from real risk.",
+        "Failing to document decisions on borderline projects and disengagements.",
+      ],
+    },
+    scenario: {
+      id: "file-governance",
+      title: "Designing a File Governance Standard",
+      description:
+        "Your firm has grown quickly. Files look very different between advisers and there is no consistent sign‑off trail. HMRC enquiries are increasing.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Define a standard file structure, introduce a risk‑rating step, and require sign‑offs proportionate to risk level.",
+          isCorrect: true,
+          explanation:
+            "This approach systematically links governance effort to where it matters most.",
+        },
+        {
+          id: "b",
+          label:
+            "Ask each adviser to keep doing what works for them; standardisation reduces flexibility.",
+          isCorrect: false,
+          explanation:
+            "Inconsistent files are hard to defend at scale and increase firm‑level risk.",
+        },
+        {
+          id: "c",
+          label:
+            "Focus governance only on template wording and ignore evidence and sampling standards.",
+          isCorrect: false,
+          explanation:
+            "Templates help, but risk lives in facts, evidence and judgements, not just wording.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "Write a one‑page outline of what a 'gold‑standard' R&D file should contain in your firm, including review and sign‑off steps.",
+    quiz: [
+      {
+        id: "rg-q1",
+        type: "multiple_choice",
+        question:
+          "Which files should generally receive the most intensive QA in an R&D practice?",
+        options: [
+          {
+            id: "a",
+            label: "Low‑value, repeat claims in sectors you know well.",
+          },
+          {
+            id: "b",
+            label:
+              "High‑value or novel claims, or those in sectors with active HMRC focus.",
+          },
+          { id: "c", label: "All files to exactly the same level, regardless of risk." },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "Risk‑based QA focuses scarce senior time where it has most impact.",
+      },
+    ],
+  },
+  {
+    id: "enquiry-case-studies-outcomes",
+    level: "advanced",
+    title: "HMRC Enquiry Case Studies & Outcomes",
+    description:
+      "Analyse anonymised enquiry cases to understand what triggered them and what resolved them.",
+    estimatedTime: "60–75 min",
+    lesson: {
+      overview:
+        "This module walks through realistic enquiry case studies to surface patterns in triggers, weak points and effective responses.",
+      keyConcepts: [
+        "Common enquiry triggers: step‑changes in claim size, sector focus, weak narratives or evidence gaps.",
+        "How early engagement and well‑structured responses change enquiry trajectories.",
+        "When to concede versus when to stand firm – and how to document those decisions.",
+      ],
+      realExamples: [
+        "A large software claim with vague narratives that triggered a deep dive into sampling.",
+        "A manufacturing case where strong lab data and logs led to a quick, favourable closure.",
+      ],
+      commonMistakes: [
+        "Assuming every enquiry means the file is weak.",
+        "Treating each enquiry as unique instead of building pattern awareness.",
+        "Failing to feed lessons learned back into templates and training.",
+      ],
+    },
+    scenario: {
+      id: "case-study",
+      title: "Case Study: Rapidly Growing Claim",
+      description:
+        "A client’s qualifying costs have tripled in two years due to aggressive product development. Narratives and evidence have not kept pace. HMRC opens an enquiry.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Strengthen narratives, complete a robust sampling note, and proactively explain the growth with supporting data.",
+          isCorrect: true,
+          explanation:
+            "You need to close the gap between growth in costs and the quality of the file.",
+        },
+        {
+          id: "b",
+          label:
+            "Argue that the growth is 'obvious' because the company is scaling, without further explanation.",
+          isCorrect: false,
+          explanation:
+            "HMRC needs specifics, not generic growth stories.",
+        },
+        {
+          id: "c",
+          label:
+            "Blame HMRC for unfair targeting and adopt a confrontational tone.",
+          isCorrect: false,
+          explanation:
+            "Tone matters; confrontational approaches seldom improve outcomes.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "Write a short 'lessons learned' note for your firm based on an imaginary enquiry case: what triggered it, what went well, and what should change in your templates or processes.",
+    quiz: [
+      {
+        id: "ecs-q1",
+        type: "multiple_choice",
+        question:
+          "Which pattern most often contributes to avoidable enquiries?",
+        options: [
+          { id: "a", label: "Consistent claim sizes with strong evidence." },
+          {
+            id: "b",
+            label:
+              "Rapid growth in claim size without corresponding improvements in narratives and evidence.",
+          },
+          { id: "c", label: "Occasional small claims in low‑risk sectors." },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "Large, unexplained changes can trigger risk‑based enquiries.",
+      },
+    ],
+  },
+  {
+    id: "commercials-pricing-communication",
+    level: "advanced",
+    title: "Commercials, Pricing & Client Communication",
+    description:
+      "Connect technical quality, risk and pricing to run a sustainable, de‑risked R&D practice.",
+    estimatedTime: "45–60 min",
+    lesson: {
+      overview:
+        "This module links delivery quality to how you price, scope and communicate with clients.",
+      keyConcepts: [
+        "Pricing models (contingent, fixed, hybrid) each create different behaviours and risks.",
+        "Scoping discipline is critical: what is in, what is out, and how changes are handled.",
+        "Clear communication about uncertainty, evidence and record‑keeping reduces friction later.",
+      ],
+      realExamples: [
+        "Moving a client from 'no win, no fee' to hybrid pricing with clearer expectations.",
+        "Using a scope letter to avoid pressure to stretch borderline projects into claims.",
+      ],
+      commonMistakes: [
+        "Letting pricing drive technical decisions instead of the other way round.",
+        "Over‑promising claim sizes in marketing and then trying to deliver at any cost.",
+        "Avoiding difficult conversations about weak evidence or borderline work.",
+      ],
+    },
+    scenario: {
+      id: "pricing-scope",
+      title: "Scope and Pricing Tension",
+      description:
+        "A client expects every borderline project to be claimed because your marketing emphasised high success rates. Your technical team is uncomfortable.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Reset expectations using a clear explanation of BEIS tests, risk appetite, and how pricing reflects the work required for quality.",
+          isCorrect: true,
+          explanation:
+            "Aligning expectations early reduces pressure to over‑claim and supports sustainable pricing.",
+        },
+        {
+          id: "b",
+          label:
+            "Quietly include all borderline projects to keep the client happy.",
+          isCorrect: false,
+          explanation:
+            "Short‑term appeasement can create significant regulatory and reputational risk.",
+        },
+        {
+          id: "c",
+          label:
+            "Refuse to discuss pricing; it is a sales issue, not a technical one.",
+          isCorrect: false,
+          explanation:
+            "Pricing and technical risk are tightly linked; advisers must have a view.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "Create a short script (bullet points) for explaining to a new client how your firm balances opportunity, risk and pricing in R&D claims.",
+    quiz: [
+      {
+        id: "cpc-q1",
+        type: "multiple_choice",
+        question:
+          "Which pricing behaviour most increases long‑term risk in an R&D practice?",
+        options: [
+          {
+            id: "a",
+            label:
+              "Consistently under‑promising and over‑delivering on claim size.",
+          },
+          {
+            id: "b",
+            label:
+              "Aggressively promising large claims on a pure success‑fee basis, regardless of evidence quality.",
+          },
+          { id: "c", label: "Charging more for high‑risk, complex claims." },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "This creates pressure to stretch borderline projects into claims, increasing enquiry risk.",
+      },
+    ],
+  },
+  {
+    id: "ai-enabled-practice-operations",
+    level: "advanced",
+    title: "AI‑Enabled Practice Operations",
+    description:
+      "Design safe, high‑leverage AI workflows across intake, drafting, evidence and QA.",
+    estimatedTime: "45–60 min",
+    lesson: {
+      overview:
+        "This module focuses on how to operationalise AI safely at firm level rather than just for individual advisers.",
+      keyConcepts: [
+        "Mapping where AI adds value (e.g. drafting, critique, evidence surfacing) and where human judgement must dominate.",
+        "Designing guardrails: red‑flag checks, mandatory human review, and forbidden use‑cases.",
+        "Measuring impact and continuously improving prompts, templates and workflows.",
+      ],
+      realExamples: [
+        "Using AI to pre‑structure client discovery notes and map them to BEIS tests.",
+        "Deploying an internal 'AI playbook' that documents allowed and disallowed uses.",
+      ],
+      commonMistakes: [
+        "Allowing uncontrolled AI use with no audit trail.",
+        "Treating AI outputs as 'the truth' instead of suggestions.",
+        "Ignoring regulator and professional body guidance on AI and client data.",
+      ],
+    },
+    scenario: {
+      id: "ai-workflow-design",
+      title: "Designing an AI Workflow",
+      description:
+        "Your firm wants to use RD Companion’s AI features more deeply. Some advisers are enthusiastic, others are sceptical or worried.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Define a set of approved AI workflows, mandatory human checks, and a log of where AI was used per file.",
+          isCorrect: true,
+          explanation:
+            "This balances innovation with control and builds a defensible audit trail.",
+        },
+        {
+          id: "b",
+          label:
+            "Allow each adviser to decide individually how they use AI, without central guidance.",
+          isCorrect: false,
+          explanation:
+            "Inconsistent and opaque AI usage is hard to defend if challenged.",
+        },
+        {
+          id: "c",
+          label:
+            "Ban AI entirely so you never have to explain it to HMRC or regulators.",
+          isCorrect: false,
+          explanation:
+            "This may forgo material efficiency gains and is unlikely to be sustainable.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "Design a one‑page 'AI usage policy' for your R&D team covering allowed uses, required reviews and prohibited activities.",
+    quiz: [
+      {
+        id: "aiop-q1",
+        type: "multiple_choice",
+        question:
+          "Which control is most important when using AI at scale in an R&D firm?",
+        options: [
+          { id: "a", label: "A blanket statement that 'AI was used'." },
+          {
+            id: "b",
+            label:
+              "A clear policy on where AI can be used, mandatory human review, and logging of key AI‑assisted steps.",
+          },
+          { id: "c", label: "Relying on vendor marketing about safety." },
+        ],
+        correctOptionId: "b",
+        explanation:
+          "Policies and logs demonstrate that AI is being used under professional control.",
+      },
+    ],
+  },
+  {
+    id: "ethics-professional-standards",
+    level: "advanced",
+    title: "Ethics & Professional Standards in R&D Advisory",
+    description:
+      "Handle borderline claims, conflicts and disengagements while protecting clients, the firm and you personally.",
+    estimatedTime: "45–60 min",
+    lesson: {
+      overview:
+        "This module covers ethical decision‑making and professional standards in R&D advisory work.",
+      keyConcepts: [
+        "Distinguishing 'client advocacy' from misrepresentation.",
+        "Identifying and managing conflicts of interest (including success‑fee incentives).",
+        "When and how to disengage from clients whose expectations are incompatible with compliant advice.",
+      ],
+      realExamples: [
+        "Choosing not to claim on projects where evidence is irrecoverably weak, despite client pressure.",
+        "Agreeing internal escalation thresholds for high‑risk, borderline cases.",
+      ],
+      commonMistakes: [
+        "Allowing fee pressure to override technical judgement.",
+        "Documenting only 'happy path' decisions and not the debates behind them.",
+        "Treating disengagements as purely commercial decisions rather than ethical ones.",
+      ],
+    },
+    scenario: {
+      id: "borderline-ethics",
+      title: "Borderline Client Pressure",
+      description:
+        "A key client insists that multiple projects with weak evidence must be claimed, and hints they will take their business elsewhere if you push back.",
+      options: [
+        {
+          id: "a",
+          label:
+            "Explain your professional obligations, document the advice, and if necessary disengage rather than over‑claim.",
+          isCorrect: true,
+          explanation:
+            "Ethical and professional standards require you to prioritise compliant advice over short‑term revenue.",
+        },
+        {
+          id: "b",
+          label:
+            "Agree to include everything to preserve the relationship and hope HMRC does not enquire.",
+          isCorrect: false,
+          explanation:
+            "This creates regulatory, reputational and personal risk.",
+        },
+        {
+          id: "c",
+          label:
+            "Ignore internal escalation policies because this is a 'special' client.",
+          isCorrect: false,
+          explanation:
+            "Consistency is essential; exceptions undermine your governance model.",
+        },
+      ],
+    },
+    exercisePrompt:
+      "Write a short decision‑making checklist you would use before agreeing to include a borderline project in a claim.",
+    quiz: [
+      {
+        id: "eps-q1",
+        type: "multiple_choice",
+        question:
+          "Which action best aligns with professional standards when dealing with borderline projects?",
+        options: [
+          {
+            id: "a",
+            label:
+              "Escalate internally, document the reasoning, and if necessary decline to include the project.",
+          },
+          { id: "b", label: "Leave the decision entirely to the client." },
+          { id: "c", label: "Decide based purely on short‑term revenue impact." },
+        ],
+        correctOptionId: "a",
+        explanation:
+          "Documented, escalated decisions protect both clients and the firm.",
+      },
+    ],
+  },
+];
+
 function evaluateExerciseResponse(response: string): ExerciseFeedback {
   const text = response.toLowerCase();
   const hasUncertainty = text.includes("uncertain") || text.includes("uncertainty");
-  const hasBaseline = text.includes("existing") || text.includes("current") || text.includes("industry");
-  const hasTechnical = text.includes("algorithm") || text.includes("tolerance") || text.includes("performance");
+  const hasBaseline =
+    text.includes("baseline") ||
+    text.includes("existing") ||
+    text.includes("current") ||
+    text.includes("industry");
+  const hasTechnical =
+    text.includes("algorithm") ||
+    text.includes("architecture") ||
+    text.includes("tolerance") ||
+    text.includes("performance") ||
+    text.includes("data");
   const hasMarketing =
     text.includes("innovative") ||
     text.includes("market-leading") ||
@@ -996,14 +1450,16 @@ function evaluateExerciseResponse(response: string): ExerciseFeedback {
     suggestions.push("Reference the existing baseline of industry or vendor capability.");
   }
   if (!hasTechnical) {
-    suggestions.push("Use more specific technical language to describe the problem and solution attempts.");
+    suggestions.push(
+      "Use more specific technical language to describe the problem, constraints and solution attempts.",
+    );
   }
   if (hasMarketing) {
     suggestions.push("Reduce marketing phrases and focus on objective technical facts.");
   }
 
   const summary =
-    "This AI-style review looks at how clearly you describe the technological uncertainty and how focused you are on technical detail rather than marketing language.";
+    "This AI-style review looks at how clearly you describe technological uncertainty and how focused you are on technical facts rather than marketing language.";
 
   return {
     technicalClarity,
@@ -1018,7 +1474,7 @@ function evaluateExerciseResponse(response: string): ExerciseFeedback {
 function calculateModuleProgress(
   scenarioState: ScenarioState,
   quizState: QuizState,
-  exerciseSubmitted: boolean
+  exerciseSubmitted: boolean,
 ): number {
   let completedSegments = 0;
   const totalSegments = 4;
@@ -1032,7 +1488,7 @@ function calculateModuleProgress(
   if (quizState.submitted) {
     completedSegments += 1;
   }
-  completedSegments += 1;
+  completedSegments += 1; // lesson viewed
 
   return Math.round((completedSegments / totalSegments) * 100);
 }
@@ -1045,6 +1501,32 @@ export default function StaffAcademyModulePage() {
     if (typeof moduleId !== "string") return undefined;
     return MODULES.find((m) => m.id === moduleId);
   }, [moduleId]);
+
+  const [certStatus, setCertStatus] = useState<CertificationStatus>({
+    loading: true,
+    eligible: false,
+  });
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch("/api/academy/certification/status");
+        if (!res.ok) {
+          setCertStatus({ loading: false, eligible: false });
+          return;
+        }
+        const json = await res.json();
+        setCertStatus({
+          loading: false,
+          eligible: Boolean(json.eligible),
+        });
+      } catch {
+        setCertStatus({ loading: false, eligible: false });
+      }
+    };
+
+    void fetchStatus();
+  }, []);
 
   const [scenarioState, setScenarioState] = useState<ScenarioState>({
     selectedOptionId: null,
@@ -1062,8 +1544,17 @@ export default function StaffAcademyModulePage() {
     passed: false,
   });
 
+  const isAdvancedModule = moduleConfig?.level === "advanced";
+  const foundationCertified = certStatus.eligible;
+  const advancedViewOnly = Boolean(isAdvancedModule && !foundationCertified);
+
   const persistModuleProgress = async (scorePercent: number, passed: boolean): Promise<void> => {
     if (!moduleConfig) return;
+
+    // Advanced modules are view-only until Foundation is achieved: do not persist progress.
+    if (moduleConfig.level === "advanced" && !foundationCertified) {
+      return;
+    }
 
     try {
       await fetch("/api/academy/update-progress", {
@@ -1096,7 +1587,7 @@ export default function StaffAcademyModulePage() {
     ? calculateModuleProgress(scenarioState, quizState, exerciseSubmitted)
     : 0;
 
-  const certificationStatus = progressPercent === 100 ? "Completed" : "In Progress";
+  const certificationStatusLabel = progressPercent === 100 ? "Completed" : "In Progress";
 
   const handleScenarioSelect = (optionId: string) => {
     setScenarioState({
@@ -1136,7 +1627,7 @@ export default function StaffAcademyModulePage() {
     quiz.forEach((q) => {
       const answer = quizState.answers[q.id];
 
-      if (q.type === "multiple_choice" || q.type === "scenario") {
+      if (q.type === "multiple_choice") {
         if (typeof answer === "string" && answer === q.correctOptionId) {
           correct += 1;
         }
@@ -1196,7 +1687,8 @@ export default function StaffAcademyModulePage() {
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff6b35]">
-                  RD Agent Academy
+                  RD Agent Academy ·{" "}
+                  {moduleConfig.level === "foundation" ? "Foundation" : "Advanced"}
                 </p>
                 <h1 className="text-2xl font-semibold text-slate-50 sm:text-3xl">
                   {moduleConfig.title}
@@ -1213,9 +1705,9 @@ export default function StaffAcademyModulePage() {
                   </span>
                   <span className="hidden h-1 w-1 rounded-full bg-slate-600 sm:inline-block" />
                   <span>
-                    Certification status:{" "}
+                    Module status:{" "}
                     <span className="font-medium text-slate-200">
-                      {certificationStatus}
+                      {certificationStatusLabel}
                     </span>
                   </span>
                 </div>
@@ -1245,6 +1737,19 @@ export default function StaffAcademyModulePage() {
               </div>
             </div>
 
+            {advancedViewOnly && (
+              <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-xs text-amber-100">
+                <p className="font-medium text-amber-200">
+                  View‑only mode for Advanced module
+                </p>
+                <p className="mt-1">
+                  You can read and practice this advanced module. Quiz results will only be
+                  recorded and count toward Advanced certification once you have completed all
+                  Foundation modules and earned your Foundation Certificate.
+                </p>
+              </div>
+            )}
+
             <div className="grid gap-6 lg:grid-cols-[minmax(0,2.5fr)_minmax(260px,1fr)]">
               <div className="space-y-6">
                 <Card className="border-slate-800 bg-[#020817]">
@@ -1253,8 +1758,8 @@ export default function StaffAcademyModulePage() {
                       Lesson Content
                     </CardTitle>
                     <CardDescription className="text-slate-400">
-                      Work through the lesson, then apply what you have learned in the scenarios,
-                      exercise, and quiz.
+                      Work through the key concepts, then apply what you have learned in the
+                      scenario, exercise and quiz.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 text-sm text-slate-200">
@@ -1309,7 +1814,7 @@ export default function StaffAcademyModulePage() {
                       Interactive Scenario
                     </CardTitle>
                     <CardDescription className="text-slate-400">
-                      Read the scenario and choose the best answer. You will see an AI-style
+                      Read the scenario and choose the best answer. You will see an AI‑style
                       explanation after you respond.
                     </CardDescription>
                   </CardHeader>
@@ -1325,7 +1830,7 @@ export default function StaffAcademyModulePage() {
                             "text-[11px]",
                             scenarioState.selectedOptionId
                               ? "border-emerald-500/60 text-emerald-300"
-                              : "border-slate-700 text-slate-300"
+                              : "border-slate-700 text-slate-300",
                           )}
                         >
                           {scenarioState.selectedOptionId ? "Answered" : "Not answered yet"}
@@ -1348,11 +1853,11 @@ export default function StaffAcademyModulePage() {
                                 ? option.isCorrect
                                   ? "border-emerald-500/70 bg-emerald-500/5"
                                   : "border-red-500/70 bg-red-500/5"
-                                : "border-slate-800 bg-slate-950/40 hover:border-slate-600"
+                                : "border-slate-800 bg-slate-950/40 hover:border-slate-600",
                             )}
                           >
                             <span className="mt-0.5 text-xs text-slate-400">
-                              {option.id.toUpperCase().slice(-1)}
+                              {option.id.toUpperCase()}
                             </span>
                             <span className="text-slate-100">{option.label}</span>
                           </button>
@@ -1373,8 +1878,8 @@ export default function StaffAcademyModulePage() {
                             </p>
                           ))}
                         <p className="text-[11px] text-slate-500">
-                          This explanation is generated according to pre‑defined training rules and
-                          is designed to mirror how an AI tutor would justify the answer.
+                          This explanation is generated using local scoring rules to mimic how an
+                          AI tutor would justify the answer.
                         </p>
                       </div>
                     )}
@@ -1401,8 +1906,8 @@ export default function StaffAcademyModulePage() {
                     />
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-xs text-slate-500">
-                        This exercise is not stored yet – it is for practice and immediate
-                        feedback.
+                        This exercise is not stored in your file – it is for practice and
+                        immediate feedback.
                       </p>
                       <Button
                         size="sm"
@@ -1498,7 +2003,8 @@ export default function StaffAcademyModulePage() {
                     </CardTitle>
                     <CardDescription className="text-slate-400">
                       Answer the questions to check your understanding. A score of 70% or higher
-                      will mark this module as passed.
+                      will mark this module as passed. For advanced modules, scores are only stored
+                      once you have completed Foundation.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 text-sm text-slate-200">
@@ -1514,17 +2020,13 @@ export default function StaffAcademyModulePage() {
                                 Question {index + 1}
                               </span>
                               <span className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
-                                {q.type === "multiple_choice"
-                                  ? "Multiple choice"
-                                  : q.type === "true_false"
-                                  ? "True / False"
-                                  : "Scenario analysis"}
+                                {q.type === "multiple_choice" ? "Multiple choice" : "True / False"}
                               </span>
                             </div>
                           </div>
                           <p className="mb-3 text-slate-100">{q.question}</p>
 
-                          {q.type === "multiple_choice" || q.type === "scenario" ? (
+                          {q.type === "multiple_choice" ? (
                             <div className="space-y-2">
                               {q.options?.map((opt) => {
                                 const selected = quizState.answers[q.id] === opt.id;
@@ -1540,7 +2042,7 @@ export default function StaffAcademyModulePage() {
                                       "flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
                                       selected
                                         ? "border-[#ff6b35] bg-[#ff6b35]/10"
-                                        : "border-slate-800 bg-slate-950/40 hover:border-slate-600"
+                                        : "border-slate-800 bg-slate-950/40 hover:border-slate-600",
                                     )}
                                   >
                                     <span className="mt-0.5 text-xs text-slate-400">
@@ -1560,30 +2062,26 @@ export default function StaffAcademyModulePage() {
                             <div className="flex gap-3">
                               <Button
                                 type="button"
-                                variant={
-                                  quizState.answers[q.id] === true ? "default" : "outline"
-                                }
+                                variant={quizState.answers[q.id] === true ? "default" : "outline"}
                                 onClick={() => handleQuizAnswerChange(q.id, true)}
                                 className={cn(
                                   "px-4 text-xs",
                                   quizState.answers[q.id] === true
                                     ? "bg-[#ff6b35] text-slate-950 hover:bg-[#ff8c42]"
-                                    : "border-slate-700 text-slate-200 hover:bg-slate-800"
+                                    : "border-slate-700 text-slate-200 hover:bg-slate-800",
                                 )}
                               >
                                 True
                               </Button>
                               <Button
                                 type="button"
-                                variant={
-                                  quizState.answers[q.id] === false ? "default" : "outline"
-                                }
+                                variant={quizState.answers[q.id] === false ? "default" : "outline"}
                                 onClick={() => handleQuizAnswerChange(q.id, false)}
                                 className={cn(
                                   "px-4 text-xs",
                                   quizState.answers[q.id] === false
                                     ? "bg-[#ff6b35] text-slate-950 hover:bg-[#ff8c42]"
-                                    : "border-slate-700 text-slate-200 hover:bg-slate-800"
+                                    : "border-slate-700 text-slate-200 hover:bg-slate-800",
                                 )}
                               >
                                 False
@@ -1615,12 +2113,19 @@ export default function StaffAcademyModulePage() {
                               <span
                                 className={cn(
                                   "font-semibold",
-                                  quizState.passed ? "text-emerald-400" : "text-amber-300"
+                                  quizState.passed ? "text-emerald-400" : "text-amber-300",
                                 )}
                               >
                                 {quizState.passed ? "Passed" : "Below pass threshold (70%)"}
                               </span>
                             </p>
+                            {advancedViewOnly && (
+                              <p className="mt-1 text-[11px] text-amber-200">
+                                As this is an Advanced module and your Foundation Certification is
+                                not yet complete, this score is not recorded in the academy
+                                dashboard. You can still use it for practice.
+                              </p>
+                            )}
                           </>
                         ) : (
                           <p>
@@ -1695,9 +2200,9 @@ export default function StaffAcademyModulePage() {
                         className="h-2 bg-slate-900 [&>div]:bg-[#ff6b35]"
                       />
                       <p className="mt-1 text-[11px] text-slate-400">
-                        This module is treated as complete in the academy dashboard once all
-                        segments are finished and the quiz is passed. We can later sync this
-                        status to Supabase for reporting and certificates.
+                        This page tracks your progress through lesson, scenario, exercise and quiz.
+                        For advanced modules, quiz results are only written to your academy record
+                        once you hold the Foundation Certification.
                       </p>
                     </div>
                   </CardContent>

@@ -14,15 +14,17 @@ interface AcademyModule {
   title: string;
   description: string;
   duration: string;
+  level: "foundation" | "advanced";
 }
 
-const ACADEMY_MODULES: AcademyModule[] = [
+const FOUNDATION_MODULES: AcademyModule[] = [
   {
     id: "rd-fundamentals",
     title: "R&D Fundamentals",
     description:
       "Understand the legal framework behind UK R&D tax relief including BEIS guidelines and HMRC CIRD rules.",
     duration: "45–60 min",
+    level: "foundation",
   },
   {
     id: "claim-writing-mastery",
@@ -30,12 +32,14 @@ const ACADEMY_MODULES: AcademyModule[] = [
     description:
       "Learn how to write strong technical narratives that clearly demonstrate technological uncertainty and advancement.",
     duration: "60–90 min",
+    level: "foundation",
   },
   {
     id: "evidence-assessment",
     title: "Evidence Assessment",
     description: "Identify and organise the correct supporting evidence to strengthen a claim.",
     duration: "45–60 min",
+    level: "foundation",
   },
   {
     id: "permitted-costs",
@@ -43,12 +47,14 @@ const ACADEMY_MODULES: AcademyModule[] = [
     description:
       "Understand which UK R&D costs qualify, which do not, and how to apportion staff and overheads defensibly.",
     duration: "45–60 min",
+    level: "foundation",
   },
   {
     id: "hmrc-enquiry-simulator",
     title: "HMRC Enquiry Simulator",
     description: "Practice responding to HMRC enquiries through interactive AI-driven simulations.",
     duration: "60 min",
+    level: "foundation",
   },
   {
     id: "ai-claim-critique",
@@ -56,6 +62,74 @@ const ACADEMY_MODULES: AcademyModule[] = [
     description:
       "Upload draft claims and receive AI analysis highlighting weaknesses and improvement opportunities.",
     duration: "30–45 min",
+    level: "foundation",
+  },
+];
+
+const ADVANCED_MODULES: AcademyModule[] = [
+  {
+    id: "sector-software-digital",
+    title: "Sector Deep Dive: Software & Digital",
+    description:
+      "Apply BEIS tests to SaaS, platforms, data and AI projects, and separate genuine R&D from routine delivery.",
+    duration: "60–90 min",
+    level: "advanced",
+  },
+  {
+    id: "sector-manufacturing-engineering",
+    title: "Sector Deep Dive: Manufacturing & Engineering",
+    description:
+      "Assess R&D in materials, tolerances, automation and robotics, including complex process-improvement borderline cases.",
+    duration: "60–90 min",
+    level: "advanced",
+  },
+  {
+    id: "advanced-sampling-apportionment",
+    title: "Advanced Sampling & Apportionment Methods",
+    description:
+      "Design statistically sensible, HMRC-ready sampling and apportionment frameworks for staff time and costs.",
+    duration: "60–90 min",
+    level: "advanced",
+  },
+  {
+    id: "risk-governance-file-quality",
+    title: "Risk Management & File Governance",
+    description:
+      "Build a gold-standard review and governance process so every file can withstand enquiry-level scrutiny.",
+    duration: "45–60 min",
+    level: "advanced",
+  },
+  {
+    id: "enquiry-case-studies-outcomes",
+    title: "HMRC Enquiry Case Studies & Outcomes",
+    description:
+      "Work through anonymised enquiry cases to understand what triggered them and what resolved them.",
+    duration: "60–75 min",
+    level: "advanced",
+  },
+  {
+    id: "commercials-pricing-communication",
+    title: "Commercials, Pricing & Client Communication",
+    description:
+      "Link technical quality to pricing, scope control and difficult client conversations in R&D advisory.",
+    duration: "45–60 min",
+    level: "advanced",
+  },
+  {
+    id: "ai-enabled-practice-operations",
+    title: "AI-Enabled Practice Operations",
+    description:
+      "Design safe AI workflows across your R&D practice, from drafting to evidence discovery and internal QA.",
+    duration: "45–60 min",
+    level: "advanced",
+  },
+  {
+    id: "ethics-professional-standards",
+    title: "Ethics & Professional Standards in R&D Advisory",
+    description:
+      "Handle borderline claims, conflicts and disengagements while protecting the firm and the adviser personally.",
+    duration: "45–60 min",
+    level: "advanced",
   },
 ];
 
@@ -185,33 +259,13 @@ function getModuleStatusFromProgress(
   return "in_progress";
 }
 
-async function generateCertificate(): Promise<void> {
-  const response = await fetch("/api/academy/certificates/generate", {
-    method: "POST",
-  });
-
-  if (!response.ok) {
-    return;
-  }
-
-  const blob = await response.blob();
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "rd-agent-certificate.pdf";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(url);
-}
-
 export default function StaffRdAgentAcademyPage() {
   const { user } = useApp();
   const [certStatus, refreshStatus] = useCertificationStatus();
   const [moduleProgress, moduleProgressLoading] = useModuleProgress();
 
-  const totals = useMemo(() => {
-    const statuses: ModuleStatus[] = ACADEMY_MODULES.map((module) =>
+  const foundationTotals = useMemo(() => {
+    const statuses: ModuleStatus[] = FOUNDATION_MODULES.map((module) =>
       getModuleStatusFromProgress(module.id, moduleProgress),
     );
 
@@ -219,15 +273,47 @@ export default function StaffRdAgentAcademyPage() {
     const completed = statuses.filter((status) => status === "completed").length;
     const inProgress = statuses.filter((status) => status === "in_progress").length;
     const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
-    const certificationStatus = completed === total && total > 0 ? "Completed" : "In Progress";
 
-    return { total, completed, inProgress, percent, certificationStatus };
+    return { total, completed, inProgress, percent };
+  }, [moduleProgress]);
+
+  const advancedTotals = useMemo(() => {
+    const statuses: ModuleStatus[] = ADVANCED_MODULES.map((module) =>
+      getModuleStatusFromProgress(module.id, moduleProgress),
+    );
+
+    const total = statuses.length;
+    const completed = statuses.filter((status) => status === "completed").length;
+    const inProgress = statuses.filter((status) => status === "in_progress").length;
+    const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    return { total, completed, inProgress, percent };
   }, [moduleProgress]);
 
   const handleGenerateCertificate = async () => {
-    await generateCertificate();
+    const response = await fetch("/api/academy/certificates/generate", {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      await refreshStatus();
+      return;
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "rd-agent-certificate.pdf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
     await refreshStatus();
   };
+
+  const foundationCertified = certStatus.eligible;
 
   return (
     <>
@@ -264,32 +350,55 @@ export default function StaffRdAgentAcademyPage() {
                     </div>
                     <div className="flex flex-wrap gap-3 text-sm">
                       <div className="rounded-full bg-slate-900 px-3 py-1 text-slate-200 border border-slate-700">
-                        Modules Completed:{" "}
+                        Foundation Modules:{" "}
                         <span className="font-semibold">
-                          {totals.completed} / {totals.total}
+                          {foundationTotals.completed} / {foundationTotals.total}
                         </span>
                       </div>
                       <div className="rounded-full bg-slate-900 px-3 py-1 text-slate-200 border border-slate-700">
-                        Certification:{" "}
-                        <span className="font-semibold">{totals.certificationStatus}</span>
+                        Foundation Certification:{" "}
+                        <span className="font-semibold">
+                          {foundationCertified ? "Completed" : "In Progress"}
+                        </span>
+                      </div>
+                      <div className="rounded-full bg-slate-900 px-3 py-1 text-slate-200 border border-slate-700">
+                        Advanced Modules:{" "}
+                        <span className="font-semibold">
+                          {advancedTotals.completed} / {advancedTotals.total}
+                        </span>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
-                        <span>Overall Progress</span>
-                        <span className="font-medium text-slate-200">
-                          {totals.percent}% complete
-                        </span>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+                          <span>Foundation track progress</span>
+                          <span className="font-medium text-slate-200">
+                            {foundationTotals.percent}% complete
+                          </span>
+                        </div>
+                        <Progress
+                          value={foundationTotals.percent}
+                          className="h-2 bg-slate-900 [&>div]:bg-[#ff6b35]"
+                        />
                       </div>
-                      <Progress
-                        value={totals.percent}
-                        className="h-2 bg-slate-900 [&>div]:bg-[#ff6b35]"
-                      />
+                      <div>
+                        <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+                          <span>Advanced track progress</span>
+                          <span className="font-medium text-slate-200">
+                            {advancedTotals.percent}% complete
+                          </span>
+                        </div>
+                        <Progress
+                          value={advancedTotals.percent}
+                          className="h-2 bg-slate-900 [&>div]:bg-slate-500"
+                        />
+                      </div>
                       <p className="text-xs text-slate-500">
-                        Complete all modules and pass the final assessment to unlock your RD Agent
-                        Certification.
+                        Complete all foundation modules and pass their assessments to unlock credit
+                        for the Advanced RD Agent track. You can still view advanced content before
+                        then, but quiz results will not count until Foundation is complete.
                       </p>
                     </div>
                   </CardContent>
@@ -297,15 +406,17 @@ export default function StaffRdAgentAcademyPage() {
 
                 <section className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-slate-50">Training Modules</h2>
+                    <h2 className="text-lg font-semibold text-slate-50">
+                      Foundation Modules
+                    </h2>
                     <p className="text-xs text-slate-400 sm:text-sm">
-                      {totals.completed} of {totals.total} modules completed
-                      {totals.inProgress > 0 && ` · ${totals.inProgress} in progress`}
+                      {foundationTotals.completed} of {foundationTotals.total} modules completed
+                      {foundationTotals.inProgress > 0 && ` · ${foundationTotals.inProgress} in progress`}
                     </p>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {ACADEMY_MODULES.map((module) => {
+                    {FOUNDATION_MODULES.map((module) => {
                       const status = getModuleStatusFromProgress(module.id, moduleProgress);
                       return (
                         <Card
@@ -313,6 +424,11 @@ export default function StaffRdAgentAcademyPage() {
                           className="flex flex-col justify-between border-slate-800 bg-[#020817] transition-colors hover:border-[#ff6b35]/60 hover:shadow-professional-lg"
                         >
                           <CardHeader className="pb-3">
+                            <div className="mb-2 flex items-center justify-between gap-2">
+                              <CardTitle className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                                Foundation
+                              </CardTitle>
+                            </div>
                             <CardTitle className="mb-1 text-base text-slate-50 sm:text-lg">
                               {module.title}
                             </CardTitle>
@@ -355,16 +471,119 @@ export default function StaffRdAgentAcademyPage() {
                     })}
                   </div>
                 </section>
+
+                <section className="space-y-4">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-50">
+                        Advanced Modules
+                      </h2>
+                      <p className="text-xs text-slate-400 sm:text-sm">
+                        Unlocks for certification credit after completing all foundation modules.
+                        You can still open and study these modules in view-only mode beforehand.
+                      </p>
+                    </div>
+                    <p className="text-xs text-slate-400 sm:text-sm">
+                      {advancedTotals.completed} of {advancedTotals.total} modules completed
+                      {advancedTotals.inProgress > 0 && ` · ${advancedTotals.inProgress} in progress`}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {ADVANCED_MODULES.map((module) => {
+                      const status = getModuleStatusFromProgress(module.id, moduleProgress);
+                      const lockedForCredit = !foundationCertified;
+
+                      return (
+                        <Card
+                          key={module.id}
+                          className="flex flex-col justify-between border-slate-800 bg-[#020817] transition-colors hover:border-[#ff6b35]/60 hover:shadow-professional-lg"
+                        >
+                          <CardHeader className="pb-3">
+                            <div className="mb-2 flex items-center justify-between gap-2">
+                              <CardTitle className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ff6b35]">
+                                Advanced
+                              </CardTitle>
+                              {lockedForCredit && (
+                                <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-[11px] text-slate-300">
+                                  Certification locked
+                                </span>
+                              )}
+                            </div>
+                            <CardTitle className="mb-1 text-base text-slate-50 sm:text-lg">
+                              {module.title}
+                            </CardTitle>
+                            <CardDescription className="text-xs text-slate-400 sm:text-sm">
+                              {module.description}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="px-6 pb-4 pt-0">
+                            <div className="flex flex-col gap-3">
+                              <div className="flex items-center justify-between text-xs text-slate-400">
+                                <span>Estimated duration</span>
+                                <span className="font-medium text-slate-200">
+                                  {module.duration}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-400">Status</span>
+                                <span
+                                  className={
+                                    "rounded-full px-2 py-0.5 text-[11px] font-medium " +
+                                    (lockedForCredit
+                                      ? "bg-slate-900 text-slate-300 border border-slate-700"
+                                      : getStatusChipClasses(status))
+                                  }
+                                >
+                                  {lockedForCredit
+                                    ? "View only (no credit yet)"
+                                    : status === "completed"
+                                    ? "Completed"
+                                    : status === "in_progress"
+                                    ? "In Progress"
+                                    : "Not Started"}
+                                </span>
+                              </div>
+                              <Link href={`/staff/academy/module/${module.id}`} passHref>
+                                <Button
+                                  className={
+                                    "mt-1 w-full text-sm " +
+                                    (lockedForCredit
+                                      ? "border border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-900"
+                                      : "bg-[#ff6b35] text-slate-950 hover:bg-[#ff8c42]")
+                                  }
+                                >
+                                  {lockedForCredit
+                                    ? "View module content"
+                                    : moduleProgressLoading
+                                    ? "Loading…"
+                                    : getStatusLabel(status)}
+                                </Button>
+                              </Link>
+                              {lockedForCredit && (
+                                <p className="mt-1 text-[11px] text-slate-500">
+                                  You can read and practice this module now. Quiz results will only
+                                  count toward Advanced certification after you complete all
+                                  Foundation modules.
+                                </p>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </section>
               </div>
 
               <aside className="space-y-4">
                 <Card className="bg-[#020817] border-slate-800 shadow-professional-md">
                   <CardHeader>
                     <CardTitle className="text-base text-slate-50">
-                      Your Certification
+                      Your Foundation Certification
                     </CardTitle>
                     <CardDescription className="text-slate-400">
-                      Track your progress toward becoming a certified RD Agent.
+                      Track your progress toward becoming a certified RD Agent (Foundation).
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -374,50 +593,78 @@ export default function StaffRdAgentAcademyPage() {
                       </div>
                       <div className="text-xs text-slate-300">
                         <p className="mb-1 font-medium text-slate-100">
-                          Certification Requirements
+                          Foundation Certification
                         </p>
                         <ul className="list-inside list-disc space-y-1">
-                          <li>Complete all core modules</li>
-                          <li>Pass the final knowledge assessment</li>
-                          <li>Demonstrate applied case study understanding</li>
+                          <li>Complete all 6 foundation modules</li>
+                          <li>Pass each module assessment</li>
+                          <li>Unlock access to Advanced track credit</li>
                         </ul>
                       </div>
                     </div>
 
                     <div className="space-y-2 text-xs text-slate-300">
-                      <p className="font-medium">Progress toward certification</p>
+                      <p className="font-medium">Foundation progress</p>
                       <div className="flex items-center justify-between">
                         <span>Modules completed</span>
                         <span className="font-semibold">
-                          {totals.completed} / {totals.total}
+                          {foundationTotals.completed} / {foundationTotals.total}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span>Certification status</span>
-                        <span className="font-semibold">{totals.certificationStatus}</span>
+                        <span className="font-semibold">
+                          {foundationCertified ? "Completed" : "In Progress"}
+                        </span>
                       </div>
                     </div>
 
                     <p className="text-xs text-slate-500">
-                      Complete all modules and pass the final assessment to receive the RD Agent
-                      Certification.
+                      Complete all foundation modules and pass the final assessments to receive the
+                      RD Agent Foundation Certification and unlock advanced certification credit.
                     </p>
 
                     <Button
                       variant="outline"
                       className="w-full border-[#ff6b35] text-sm text-[#ff6b35] hover:bg-[#ff6b35]/10"
-                      disabled={certStatus.loading || !certStatus.eligible}
+                      disabled={certStatus.loading || !foundationCertified}
                       onClick={handleGenerateCertificate}
                     >
                       {certStatus.loading
                         ? "Checking eligibility…"
-                        : certStatus.eligible
-                        ? "Generate Certificate"
+                        : foundationCertified
+                        ? "Generate Foundation Certificate"
                         : "Certification Locked"}
                     </Button>
-                    {!certStatus.loading && !certStatus.eligible && certStatus.reason && (
+                    {!certStatus.loading && !foundationCertified && certStatus.reason && (
                       <p className="text-[11px] text-slate-500">{certStatus.reason}</p>
                     )}
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-[#020817] border-slate-800">
+                  <CardHeader>
+                    <CardTitle className="text-base text-slate-50">
+                      Advanced Certification
+                    </CardTitle>
+                    <CardDescription className="text-slate-400">
+                      Advanced RD Agent certification for experienced advisers.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-xs text-slate-300">
+                    <p>
+                      To qualify for Advanced certification you will need to:
+                    </p>
+                    <ul className="list-inside list-disc space-y-1">
+                      <li>Hold the Foundation Certification</li>
+                      <li>Complete any 6 of the 8 advanced modules</li>
+                      <li>Pass each selected module assessment</li>
+                    </ul>
+                    <p className="mt-2 text-[11px] text-slate-500">
+                      Advanced module content is always viewable. Quiz results for advanced modules
+                      start counting toward certification once your Foundation Certificate is
+                      achieved.
+                    </p>
                   </CardContent>
                 </Card>
               </aside>
