@@ -2413,6 +2413,71 @@ export type Database = {
           },
         ]
       }
+      project_health_scores: {
+        Row: {
+          cost_support_score: number | null
+          documentation_strength: number | null
+          evidence_score: number | null
+          experimentation_score: number | null
+          health_rating: string | null
+          id: string
+          innovation_density_score: number | null
+          iteration_score: number | null
+          narrative_score: number | null
+          overall_health_score: number | null
+          project_id: string
+          reasons_json: Json | null
+          risk_level: string | null
+          timeline_score: number | null
+          uncertainty_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          cost_support_score?: number | null
+          documentation_strength?: number | null
+          evidence_score?: number | null
+          experimentation_score?: number | null
+          health_rating?: string | null
+          id?: string
+          innovation_density_score?: number | null
+          iteration_score?: number | null
+          narrative_score?: number | null
+          overall_health_score?: number | null
+          project_id: string
+          reasons_json?: Json | null
+          risk_level?: string | null
+          timeline_score?: number | null
+          uncertainty_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          cost_support_score?: number | null
+          documentation_strength?: number | null
+          evidence_score?: number | null
+          experimentation_score?: number | null
+          health_rating?: string | null
+          id?: string
+          innovation_density_score?: number | null
+          iteration_score?: number | null
+          narrative_score?: number | null
+          overall_health_score?: number | null
+          project_id?: string
+          reasons_json?: Json | null
+          risk_level?: string | null
+          timeline_score?: number | null
+          uncertainty_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_health_scores_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "claim_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_status_history: {
         Row: {
           changed_at: string | null
