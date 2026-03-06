@@ -484,6 +484,51 @@ export default function FeasibilityResultPage() {
                 </Card>
               </div>
             </div>
+
+            <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <button
+                type="button"
+                onClick={() => router.push("/feasibility/history")}
+                className="text-sm text-blue-300 hover:underline flex items-center gap-1"
+              >
+                <span className="text-lg">←</span>
+                <span className="leading-tight">
+                  Back to
+                  <br />
+                  Analysis
+                  <br />
+                  History
+                </span>
+              </button>
+
+              <div className="flex flex-wrap gap-3 md:justify-end">
+                <Button
+                  onClick={() => setShowCreateProject(true)}
+                  className="bg-[#FF7A45] hover:bg-[#ff8f61] text-sm sm:text-base"
+                >
+                  <span className="mr-2">📁</span>
+                  Create Project
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => window.print()}
+                  className="text-sm sm:text-base"
+                >
+                  <span className="mr-2">⬇️</span>
+                  Export PDF
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="border-red-500 text-red-400 hover:bg-red-500/10 text-sm sm:text-base"
+                >
+                  {deleting ? "Deleting..." : "Delete"}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
