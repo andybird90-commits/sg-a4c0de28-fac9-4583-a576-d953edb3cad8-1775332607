@@ -1052,7 +1052,7 @@ export class ClaimService {
       const update: Record<string, any> = {
         workflow_status: "cancelled",
         cancelled_at: new Date().toISOString(),
-        cancelled_by: userId,
+        updated_by: userId,
         updated_at: new Date().toISOString(),
       };
 
