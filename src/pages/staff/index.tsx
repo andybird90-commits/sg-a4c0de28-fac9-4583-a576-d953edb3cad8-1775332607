@@ -90,6 +90,17 @@ export default function StaffHomePage() {
     narrativeAlignmentIssues: null,
   });
 
+  const [emergingSignals, setEmergingSignals] = useState<
+    {
+      projectId: string;
+      projectName: string;
+      innovationDensity: number | null;
+      documentationStrength: number | null;
+      overallHealth: number | null;
+      lastUpdated: string | null;
+    }[]
+  >([]);
+
   useEffect(() => {
     if (isStaff) {
       loadPipelineData();
@@ -207,6 +218,34 @@ export default function StaffHomePage() {
         }));
 
         setPortfolioProjects(top);
+
+        const emerging = scoredRows
+          .map((r) => ({
+            projectId: r.project_id,
+            projectName: r.project?.name || "Untitled project",
+            innovationDensity: r.innovation_density_score,
+            documentationStrength: r.documentation_strength,
+            overallHealth: r.overall_health_score,
+            lastUpdated: r.updated_at,
+          }))
+          .filter((r) => {
+            const innovation = r.innovationDensity || 0;
+            const docs = r.documentationStrength || 0;
+            const overall = r.overallHealth || 0;
+            return (
+              innovation >= 60 &&
+              (docs < 60 || overall < 75)
+            );
+          })
+          .sort((a, b) => {
+            const innovDiff =
+              (b.innovationDensity || 0) - (a.innovationDensity || 0);
+            if (innovDiff !== 0) return innovDiff;
+            return (a.documentationStrength || 0) - (b.documentationStrength || 0);
+          })
+          .slice(0, 6);
+
+        setEmergingSignals(emerging);
       } else {
         setInnovationMetrics((prev) => ({
           ...prev,
@@ -981,12 +1020,66 @@ export default function StaffHomePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-slate-400">
-                The project R&amp;D signals feed is not yet wired to a backing table
-                (project_rnd_signals). Once available, this panel will surface the
-                highest-confidence innovation opportunities with links into the
-                underlying projects.
-              </div>
+              {innovationMetrics.loading ? (
+                <div className="text-center py-4 text-slate-400">
+                  Analysing project health signals…
+                </div>
+              ) : emergingSignals.length === 0 ? (
+                <div className="text-sm text-slate-400">
+                  No emerging R&amp;D opportunities detected yet. Once projects
+                  start to show strong innovation signals but weaker documentation,
+                  they will appear here for follow-up.
+                </div>
+              ) : (
+                <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#020617]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[35%]">Project</TableHead>
+                        <TableHead>Innovation</TableHead>
+                        <TableHead>Documentation</TableHead>
+                        <TableHead>Health</TableHead>
+                        <TableHead className="w-[20%]">Last Updated</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {emergingSignals.map((s) => (
+                        <TableRow
+                          key={s.projectId}
+                          className="cursor-pointer hover:bg-slate-900/60"
+                          onClick={() =>
+                            router.push(`/staff/claims/projects/${s.projectId}`)
+                          }
+                        >
+                          <TableCell className="font-medium">
+                            {s.projectName}
+                          </TableCell>
+                          <TableCell>
+                            {s.innovationDensity ?? "—"}
+                          </TableCell>
+                          <TableCell>
+                            {s.documentationStrength ?? "—"}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
+                                s.overallHealth
+                              )}`}
+                            >
+                              {s.overallHealth !== null
+                                ? `${s.overallHealth}`
+                                : "No score"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-400">
+                            {formatDateShort(s.lastUpdated)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
 

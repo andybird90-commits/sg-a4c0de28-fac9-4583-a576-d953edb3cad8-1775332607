@@ -116,30 +116,54 @@ async function buildClaimInspectorContext(
     .select(
       `
       id,
-      name,
+      org_id,
       status,
       claim_year,
-      total_costs,
-      organisations!claims_org_id_fkey(name),
-      projects:claim_projects(
-        id,
-        name,
-        rd_theme,
-        challenges_uncertainties,
-        qualifying_activities
-      )
+      submitted_claim_value,
+      received_claim_value,
+      organisations:org_id (name, organisation_code)
     `
     )
     .eq("id", claimId)
     .maybeSingle();
 
-  if (claimError || !rawClaim) {
-    console.error("HMRC Inspector: error loading claim for context", claimError);
+  if (claimError) {
+    console.error("HMRC Inspector: error loading claim for context", {
+      claimId,
+      error: claimError,
+    });
+    throw new Error("Unable to load claim for inspector context");
+  }
+
+  if (!rawClaim) {
+    console.error("HMRC Inspector: no claim found for context", { claimId });
     throw new Error("Unable to load claim for inspector context");
   }
 
   const claim: any = rawClaim;
-  const projects: any[] = Array.isArray(claim.projects) ? claim.projects : [];
+
+  const { data: projectsData, error: projectsError } = await supabase
+    .from("claim_projects")
+    .select(
+      `
+      id,
+      name,
+      rd_theme,
+      challenges_uncertainties,
+      qualifying_activities
+    `
+    )
+    .eq("claim_id", claimId)
+    .order("created_at", { ascending: true });
+
+  if (projectsError) {
+    console.error("HMRC Inspector: error loading claim projects for context", {
+      claimId,
+      error: projectsError,
+    });
+  }
+
+  const projects: any[] = Array.isArray(projectsData) ? projectsData : [];
   const projectIds = projects.map((p) => p.id).filter(Boolean);
 
   const healthByProject: Record<
@@ -162,7 +186,10 @@ async function buildClaimInspectorContext(
     if (healthError) {
       console.error(
         "HMRC Inspector: error loading project health for context",
-        healthError
+        {
+          claimId,
+          error: healthError,
+        }
       );
     } else if (healthRows) {
       for (const row of healthRows as {
@@ -201,7 +228,9 @@ ${index + 1}. ${p.name || "Unnamed project"}
      p.challenges_uncertainties || "Not clearly documented"
    }
    - Qualifying activities: ${
-     p.qualifying_activities || "Not clearly documented"
+     Array.isArray(p.qualifying_activities) && p.qualifying_activities.length
+       ? p.qualifying_activities.join("; ")
+       : "Not clearly documented"
    }
    - Innovation density score: ${
      health?.innovation_density_score ?? "not scored"
@@ -217,11 +246,17 @@ ${index + 1}. ${p.name || "Unnamed project"}
   const summaryText = `
 Claim ID: ${claim.id}
 Company: ${companyName}
+Organisation code: ${claim.organisations?.organisation_code ?? "N/A"}
 Claim year: ${claim.claim_year ?? "Not specified"}
 Status: ${claim.status ?? "Unknown"}
-Total costs (if recorded): £${
-    typeof claim.total_costs === "number"
-      ? claim.total_costs.toLocaleString()
+Submitted claim value: ${
+    typeof claim.submitted_claim_value === "number"
+      ? `£${claim.submitted_claim_value.toLocaleString()}`
+      : "not recorded"
+  }
+Received claim value: ${
+    typeof claim.received_claim_value === "number"
+      ? `£${claim.received_claim_value.toLocaleString()}`
       : "not recorded"
   }
 

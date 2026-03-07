@@ -1253,6 +1253,10 @@ export default function ProjectDetailPage() {
   const canRecallFromTeam =
     claimProject?.workflow_status === "submitted_to_team" ||
     claimProject?.workflow_status === "team_in_progress";
+  const canEditTimeline =
+    !claimProject ||
+    (claimProject.workflow_status !== "approved" &&
+      claimProject.workflow_status !== "cancelled");
   const slaStatus = getSLAStatus();
 
   const sector = project.sector ?? null;
@@ -1468,7 +1472,7 @@ export default function ProjectDetailPage() {
             <CardContent>
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.6fr)] items-start">
                 <div className="space-y-4">
-                  {canEdit && (
+                  {canEditTimeline && (
                     <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3 sm:p-4">
                       <h3 className="text-sm font-semibold text-slate-100">Add timeline activity</h3>
                       <p className="text-xs text-slate-400">
@@ -1560,7 +1564,7 @@ export default function ProjectDetailPage() {
                                   : "No end date"}
                               </p>
                             </div>
-                            {canEdit && (
+                            {canEditTimeline && (
                               <Button
                                 type="button"
                                 variant="ghost"
