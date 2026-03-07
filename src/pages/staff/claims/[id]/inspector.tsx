@@ -581,7 +581,12 @@ export default function ClaimInspectorPage() {
                     <Button
                       type="button"
                       onClick={handleStart}
-                      disabled={!!session || isStarting || !claimId}
+                      disabled={
+                        isStarting ||
+                        !claimId ||
+                        session?.status === "completed" ||
+                        inspectorMessages.length > 0
+                      }
                       size="sm"
                     >
                       {isStarting ? "Starting..." : "Start Inspector"}

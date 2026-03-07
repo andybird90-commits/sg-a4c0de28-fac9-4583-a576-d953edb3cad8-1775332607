@@ -1945,6 +1945,17 @@ export default function ClaimDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+            >
+              <Link href={`/staff/claims/${claim.id}/inspector`}>
+                {inspectorSummary && inspectorSummary.latestStatus !== "not_run"
+                  ? "Open Inspector Review"
+                  : "Run Inspector"}
+              </Link>
+            </Button>
             {getStatusBadge(claim.status || "draft")}
           </div>
         </div>
@@ -2598,7 +2609,7 @@ export default function ClaimDetailPage() {
                 </div>
                 <div className="mt-3 flex flex-col gap-2">
                   <Button asChild size="sm">
-                    <Link href={`/staff/claims/${id}/inspector`}>
+                    <Link href={`/staff/claims/${claim.id}/inspector`}>
                       {inspectorSummary &&
                       inspectorSummary.latestStatus !== "not_run"
                         ? "Open Inspector Review"
