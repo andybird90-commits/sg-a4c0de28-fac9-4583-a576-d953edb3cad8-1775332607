@@ -99,7 +99,6 @@ export class ClaimService {
 
       const claimsWithDetails = await Promise.all(
         ((data as any[]) || []).map(async (claim) => {
-          // 1) Load projects for this claim
           const { data: projectRows, error: projectsError } = await supabase
             .from("claim_projects")
             .select("*")
@@ -114,16 +113,26 @@ export class ClaimService {
           }
 
           const projects = (projectRows || []) as ClaimProject[];
+
           const projectIds = projects
             .map((p) => p.id)
             .filter((id): id is string => typeof id === "string" && id.length > 0);
 
-          // 2) Load costs linked either directly to the claim or to any of its projects
-          const [costsByClaim, costsByProjects] = await Promise.all([
-            supabase
-              .from("claim_costs")
-              .select("*")
-              .eq("claim_id", claim.id),
+          const sidekickIds = projects
+            .map((p) => p.source_sidekick_project_id)
+            .filter(
+              (id): id is string =>
+                typeof id === "string" && id.length > 0
+            );
+
+          const projectCostsTotal =
+            projects.reduce(
+              (sum, p) => sum + Number(p.total_qualifying_cost || 0),
+              0
+            ) || 0;
+
+          const [costsByClaim, costsByProjects, costAdviceResult] = await Promise.all([
+            supabase.from("claim_costs").select("*").eq("claim_id", claim.id),
             projectIds.length > 0
               ? supabase
                   .from("claim_costs")
@@ -131,6 +140,15 @@ export class ClaimService {
                   .in("project_id", projectIds)
               : Promise.resolve({ data: null, error: null } as {
                   data: ClaimCost[] | null;
+                  error: any;
+                }),
+            sidekickIds.length > 0
+              ? supabase
+                  .from("sidekick_project_cost_advice")
+                  .select("amount, project_id")
+                  .in("project_id", sidekickIds)
+              : Promise.resolve({ data: null, error: null } as {
+                  data: { amount: number | null; project_id: string | null }[] | null;
                   error: any;
                 }),
           ]);
@@ -147,6 +165,12 @@ export class ClaimService {
               { claimId: claim.id, error: costsByProjects.error }
             );
           }
+          if (costAdviceResult.error) {
+            console.error(
+              "[claimService.getAllClaims] Failed to load sidekick cost advice for claim projects",
+              { claimId: claim.id, error: costAdviceResult.error }
+            );
+          }
 
           const mergedCostsMap = new Map<string, ClaimCost>();
           (costsByClaim.data as ClaimCost[] | null)?.forEach((cost) => {
@@ -161,14 +185,21 @@ export class ClaimService {
           });
           const mergedCosts = Array.from(mergedCostsMap.values());
 
-          const totalCosts =
+          const costsFromLines =
             mergedCosts.reduce(
               (sum, cost) => sum + Number(cost.amount || 0),
               0
             ) || 0;
 
-          // 3) Load documents linked either directly to the claim or to any of its projects
-          const [docsByClaim, docsByProjects] = await Promise.all([
+          const clientCostsTotal =
+            (costAdviceResult.data || []).reduce(
+              (sum, row) => sum + Number(row.amount || 0),
+              0
+            ) || 0;
+
+          const totalCosts = projectCostsTotal + costsFromLines + clientCostsTotal;
+
+          const [docsByClaim, docsByProjects, evidenceResult] = await Promise.all([
             supabase
               .from("claim_documents")
               .select("*")
@@ -180,6 +211,15 @@ export class ClaimService {
                   .in("project_id", projectIds)
               : Promise.resolve({ data: null, error: null } as {
                   data: ClaimDocument[] | null;
+                  error: any;
+                }),
+            projectIds.length > 0
+              ? supabase
+                  .from("sidekick_evidence_items")
+                  .select("id")
+                  .in("project_id", projectIds)
+              : Promise.resolve({ data: null, error: null } as {
+                  data: { id: string }[] | null;
                   error: any;
                 }),
           ]);
@@ -196,6 +236,12 @@ export class ClaimService {
               { claimId: claim.id, error: docsByProjects.error }
             );
           }
+          if (evidenceResult.error) {
+            console.error(
+              "[claimService.getAllClaims] Failed to load sidekick evidence for projects",
+              { claimId: claim.id, error: evidenceResult.error }
+            );
+          }
 
           const mergedDocsMap = new Map<string, ClaimDocument>();
           (docsByClaim.data as ClaimDocument[] | null)?.forEach((doc) => {
@@ -210,12 +256,15 @@ export class ClaimService {
           });
           const mergedDocuments = Array.from(mergedDocsMap.values());
 
+          const evidenceCount =
+            ((evidenceResult.data as { id: string }[] | null)?.length || 0);
+
           return {
             ...claim,
             projects,
             costs: mergedCosts,
             total_costs: totalCosts,
-            document_count: mergedDocuments.length,
+            document_count: mergedDocuments.length + evidenceCount,
           };
         })
       );
