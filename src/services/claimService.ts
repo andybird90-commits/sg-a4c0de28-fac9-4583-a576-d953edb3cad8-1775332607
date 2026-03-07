@@ -213,11 +213,11 @@ export class ClaimService {
                   data: ClaimDocument[] | null;
                   error: any;
                 }),
-            projectIds.length > 0
+            sidekickIds.length > 0
               ? supabase
                   .from("sidekick_evidence_items")
                   .select("id")
-                  .in("project_id", projectIds)
+                  .in("project_id", sidekickIds)
               : Promise.resolve({ data: null, error: null } as {
                   data: { id: string }[] | null;
                   error: any;
