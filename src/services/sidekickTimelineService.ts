@@ -28,13 +28,14 @@ export const sidekickTimelineService = {
     name: string;
     start_date: string;
     end_date: string;
+    created_by: string;
   }): Promise<SidekickTimelineItem> {
     const payload: TimelineInsert = {
       project_id: input.project_id,
       name: input.name,
       start_date: input.start_date,
       end_date: input.end_date,
-      created_by: (await supabase.auth.getUser()).data.user?.id ?? "",
+      created_by: input.created_by,
     };
 
     const { data, error } = await supabase

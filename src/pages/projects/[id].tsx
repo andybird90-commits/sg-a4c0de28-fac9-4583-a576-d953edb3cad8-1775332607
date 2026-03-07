@@ -1099,7 +1099,14 @@ export default function ProjectDetailPage() {
   };
 
   const handleAddTimelineItem = async (): Promise<void> => {
-    if (!project) return;
+    if (!project || !user) {
+      toast({
+        title: "Cannot add activity",
+        description: "You need to be signed in with a valid account to add timeline activities.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const name = newTimelineName.trim();
     if (!name) {
@@ -1147,6 +1154,7 @@ export default function ProjectDetailPage() {
         name,
         start_date: newTimelineStart,
         end_date: newTimelineEnd,
+        created_by: user.id,
       });
 
       setTimelineItems((prev) =>
