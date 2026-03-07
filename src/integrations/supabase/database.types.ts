@@ -2615,7 +2615,7 @@ export type Database = {
           {
             foreignKeyName: "project_health_scores_project_id_fkey"
             columns: ["project_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "claim_projects"
             referencedColumns: ["id"]
           },

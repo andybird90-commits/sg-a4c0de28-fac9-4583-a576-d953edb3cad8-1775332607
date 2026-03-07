@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseServer as supabase } from "@/integrations/supabase/serverClient";
 import type { Database } from "@/integrations/supabase/types";
 
 type Json = Database["public"]["Tables"]["project_health_scores"]["Row"]["reasons_json"];

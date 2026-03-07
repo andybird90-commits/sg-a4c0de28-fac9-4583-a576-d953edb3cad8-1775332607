@@ -134,6 +134,29 @@ export default function StaffHomePage() {
 
   const loadInnovationIntelligence = async () => {
     try {
+      try {
+        const warmRes = await fetch(
+          "/api/projects/health-score/warm-cache",
+          {
+            method: "POST",
+          }
+        );
+
+        if (!warmRes.ok) {
+          const text = await warmRes.text().catch(() => "");
+          console.error(
+            "Failed to warm project health cache:",
+            warmRes.status,
+            text
+          );
+        }
+      } catch (err) {
+        console.error(
+          "Error calling project health warm-cache API:",
+          err
+        );
+      }
+
       // Project health / innovation metrics
       const { data: healthRows, error: healthError } = await supabase
         .from("project_health_scores")
@@ -149,7 +172,7 @@ export default function StaffHomePage() {
             name,
             updated_at
           )
-        `
+        `,
         );
 
       if (healthError) {

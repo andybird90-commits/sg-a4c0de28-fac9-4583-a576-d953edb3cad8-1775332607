@@ -1,0 +1,1 @@
+ALTER TABLE public.project_health_scores ADD CONSTRAINT project_health_scores_project_id_key UNIQUE (project_id);
