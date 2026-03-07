@@ -1529,6 +1529,13 @@ export default function ProjectDetailPage() {
                     </div>
                   )}
 
+                  {!canEditTimeline && (
+                    <p className="text-xs text-muted-foreground">
+                      The timeline is locked because this project&apos;s claim has been approved or cancelled. 
+                      If you need to update activities, please speak to your R&amp;D advisor to reopen the claim.
+                    </p>
+                  )}
+
                   <div className="space-y-2">
                     <h3 className="text-sm font-semibold text-slate-100">Activities</h3>
                     {timelineItems.length === 0 ? (
