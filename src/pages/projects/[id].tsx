@@ -151,6 +151,7 @@ export default function ProjectDetailPage() {
   const [editingProject, setEditingProject] = useState(false);
   const [deletingProject, setDeletingProject] = useState(false);
   const [deletingEvidence, setDeletingEvidence] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Project edit fields
   const [editProjectName, setEditProjectName] = useState("");
@@ -733,27 +734,54 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleCancelProject = async () => {
-    if (!project || !claimProject || !cancelReason.trim() || !user) return;
-    setSubmitting(true);
+  const handleCancelProject = async (): Promise<void> => {
+    if (!project || !claimProject) {
+      return;
+    }
+
+    setIsCancelling(true);
     try {
-      await claimService.cancelProject(claimProject.id, cancelReason.trim(), user.id);
-      await refreshClaimProject(project.id);
-      setCancelDialog(false);
-      setCancelReason("");
-      toast({
-        title: "Project cancelled",
-        description: "The R&D team has been notified.",
+      const response = await fetch("/api/projects/cancel-claim-project", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          claimProjectId: claimProject.id,
+          sidekickProjectId: project.id,
+          reason: cancelReason.trim() || null,
+        }),
       });
-    } catch (error) {
-      console.error("Error cancelling project:", error);
+
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(
+          data?.error || "Failed to delete project. Please try again."
+        );
+      }
+
       toast({
-        title: "Could not cancel project",
-        description: "Please try again.",
+        title: "Project deleted",
+        description:
+          "This project and its linked R&D claim have been permanently removed.",
+      });
+
+      setCancelDialog(false);
+      router.push("/projects");
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      toast({
+        title: "Could not delete project",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Something went wrong while deleting this project.",
         variant: "destructive",
       });
     } finally {
-      setSubmitting(false);
+      setIsCancelling(false);
     }
   };
 
@@ -2547,16 +2575,20 @@ export default function ProjectDetailPage() {
           <Dialog open={cancelDialog} onOpenChange={setCancelDialog}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Cancel Project?</DialogTitle>
+                <DialogTitle>Delete this R&amp;D project?</DialogTitle>
                 <DialogDescription>
-                  Please provide a reason for cancelling this project
+                  This will permanently delete the R&amp;D claim project and its
+                  history from your advisor&apos;s workspace. Your Sidekick
+                  project (ideas, notes, and evidence) will stay in place so you
+                  can reuse it later if needed.
                 </DialogDescription>
               </DialogHeader>
-              <div className="py-4">
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p>Reason for deleting this project (optional, shared with the R&D team if they still have access to historical logs elsewhere):</p>
                 <Textarea
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
-                  placeholder="Reason for cancellation..."
+                  placeholder="Reason for deleting this project..."
                   rows={4}
                 />
               </div>
@@ -2564,12 +2596,12 @@ export default function ProjectDetailPage() {
                 <Button variant="outline" onClick={() => setCancelDialog(false)}>
                   Keep Project
                 </Button>
-                <Button 
+                <Button
                   variant="destructive"
                   onClick={handleCancelProject}
-                  disabled={submitting || !cancelReason.trim()}
+                  disabled={isCancelling}
                 >
-                  {submitting ? "Cancelling..." : "Cancel Project"}
+                  {isCancelling ? "Deleting..." : "Delete Project"}
                 </Button>
               </DialogFooter>
             </DialogContent>
