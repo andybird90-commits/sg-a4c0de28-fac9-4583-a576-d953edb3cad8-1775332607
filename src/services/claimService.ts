@@ -99,33 +99,123 @@ export class ClaimService {
 
       const claimsWithDetails = await Promise.all(
         ((data as any[]) || []).map(async (claim) => {
-          const [projectsResult, costsResult, docsResult] = await Promise.all([
-            supabase
-              .from("claim_projects")
-              .select("*")
-              .eq("claim_id", claim.id),
+          // 1) Load projects for this claim
+          const { data: projectRows, error: projectsError } = await supabase
+            .from("claim_projects")
+            .select("*")
+            .eq("claim_id", claim.id)
+            .order("created_at", { ascending: false });
+
+          if (projectsError) {
+            console.error(
+              "[claimService.getAllClaims] Failed to load projects for claim",
+              { claimId: claim.id, error: projectsError }
+            );
+          }
+
+          const projects = (projectRows || []) as ClaimProject[];
+          const projectIds = projects
+            .map((p) => p.id)
+            .filter((id): id is string => typeof id === "string" && id.length > 0);
+
+          // 2) Load costs linked either directly to the claim or to any of its projects
+          const [costsByClaim, costsByProjects] = await Promise.all([
             supabase
               .from("claim_costs")
-              .select("amount")
+              .select("*")
               .eq("claim_id", claim.id),
-            supabase
-              .from("claim_documents")
-              .select("id")
-              .eq("claim_id", claim.id),
+            projectIds.length > 0
+              ? supabase
+                  .from("claim_costs")
+                  .select("*")
+                  .in("project_id", projectIds)
+              : Promise.resolve({ data: null, error: null } as {
+                  data: ClaimCost[] | null;
+                  error: any;
+                }),
           ]);
 
+          if (costsByClaim.error) {
+            console.error(
+              "[claimService.getAllClaims] Failed to load claim-level costs",
+              { claimId: claim.id, error: costsByClaim.error }
+            );
+          }
+          if (costsByProjects.error) {
+            console.error(
+              "[claimService.getAllClaims] Failed to load project-level costs",
+              { claimId: claim.id, error: costsByProjects.error }
+            );
+          }
+
+          const mergedCostsMap = new Map<string, ClaimCost>();
+          (costsByClaim.data as ClaimCost[] | null)?.forEach((cost) => {
+            if (cost.id) {
+              mergedCostsMap.set(cost.id, cost);
+            }
+          });
+          (costsByProjects.data as ClaimCost[] | null)?.forEach((cost) => {
+            if (cost.id && !mergedCostsMap.has(cost.id)) {
+              mergedCostsMap.set(cost.id, cost);
+            }
+          });
+          const mergedCosts = Array.from(mergedCostsMap.values());
+
           const totalCosts =
-            costsResult.data?.reduce(
+            mergedCosts.reduce(
               (sum, cost) => sum + Number(cost.amount || 0),
               0
             ) || 0;
 
+          // 3) Load documents linked either directly to the claim or to any of its projects
+          const [docsByClaim, docsByProjects] = await Promise.all([
+            supabase
+              .from("claim_documents")
+              .select("*")
+              .eq("claim_id", claim.id),
+            projectIds.length > 0
+              ? supabase
+                  .from("claim_documents")
+                  .select("*")
+                  .in("project_id", projectIds)
+              : Promise.resolve({ data: null, error: null } as {
+                  data: ClaimDocument[] | null;
+                  error: any;
+                }),
+          ]);
+
+          if (docsByClaim.error) {
+            console.error(
+              "[claimService.getAllClaims] Failed to load claim-level documents",
+              { claimId: claim.id, error: docsByClaim.error }
+            );
+          }
+          if (docsByProjects.error) {
+            console.error(
+              "[claimService.getAllClaims] Failed to load project-level documents",
+              { claimId: claim.id, error: docsByProjects.error }
+            );
+          }
+
+          const mergedDocsMap = new Map<string, ClaimDocument>();
+          (docsByClaim.data as ClaimDocument[] | null)?.forEach((doc) => {
+            if (doc.id) {
+              mergedDocsMap.set(doc.id, doc);
+            }
+          });
+          (docsByProjects.data as ClaimDocument[] | null)?.forEach((doc) => {
+            if (doc.id && !mergedDocsMap.has(doc.id)) {
+              mergedDocsMap.set(doc.id, doc);
+            }
+          });
+          const mergedDocuments = Array.from(mergedDocsMap.values());
+
           return {
             ...claim,
-            projects: projectsResult.data || [],
-            costs: costsResult.data || [],
+            projects,
+            costs: mergedCosts,
             total_costs: totalCosts,
-            document_count: docsResult.data?.length || 0,
+            document_count: mergedDocuments.length,
           };
         })
       );
