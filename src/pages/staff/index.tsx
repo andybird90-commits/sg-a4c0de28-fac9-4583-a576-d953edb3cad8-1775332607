@@ -193,7 +193,28 @@ export default function StaffHomePage() {
       }[];
 
       if (!healthError) {
-        const scoredRows = rows.filter(
+        const byProjectKey = new Map<string, (typeof rows)[number]>();
+
+        for (const row of rows) {
+          const key = (row.project?.name || "Untitled project")
+            .trim()
+            .toLowerCase();
+
+          const existing = byProjectKey.get(key);
+          if (!existing) {
+            byProjectKey.set(key, row);
+          } else {
+            const existingScore = existing.overall_health_score || 0;
+            const currentScore = row.overall_health_score || 0;
+            if (currentScore > existingScore) {
+              byProjectKey.set(key, row);
+            }
+          }
+        }
+
+        const uniqueRows = Array.from(byProjectKey.values());
+
+        const scoredRows = uniqueRows.filter(
           (r) =>
             typeof r.innovation_density_score === "number" &&
             !Number.isNaN(r.innovation_density_score as number)
@@ -209,11 +230,11 @@ export default function StaffHomePage() {
               )
             : null;
 
-        const activeProjects = rows.filter(
+        const activeProjects = uniqueRows.filter(
           (r) => (r.innovation_density_score || 0) >= 60
         ).length;
 
-        const documentationGaps = rows.filter(
+        const documentationGaps = uniqueRows.filter(
           (r) =>
             (r.innovation_density_score || 0) >= 60 &&
             (r.documentation_strength || 0) < 50
@@ -226,7 +247,7 @@ export default function StaffHomePage() {
           loading: false,
         });
 
-        const sorted = [...rows].sort(
+        const sorted = [...uniqueRows].sort(
           (a, b) =>
             (b.overall_health_score || 0) - (a.overall_health_score || 0)
         );
