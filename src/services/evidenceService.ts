@@ -190,5 +190,14 @@ export const evidenceService = {
       console.error("Error deleting file record:", dbError);
       throw dbError;
     }
+  },
+
+  async getAllEvidenceItems() {
+    const { data, error } = await supabase.from("evidence_items").select("*");
+    if (error) {
+      console.error("Error fetching all evidence items", error);
+      throw error;
+    }
+    return data ?? [];
   }
 };
