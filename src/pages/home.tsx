@@ -33,6 +33,8 @@ import { useNotifications } from "@/contexts/NotificationContext";
 import { VoiceNoteModal } from "@/components/voice-notes/VoiceNoteModal";
 import { organisationNotificationStatusService } from "@/services/organisationNotificationStatusService";
 import type { NotificationStatusState } from "@/services/organisationNotificationStatusService";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function HomePage() {
   const router = useRouter();
@@ -326,60 +328,6 @@ export default function HomePage() {
                 <p className="text-xs text-slate-400 mt-1">New evidence added</p>
               </CardContent>
             </Card>
-
-            {/* HMRC Notification Status */}
-            <Card className="bg-[#050b16] border border-slate-800 shadow-professional-md">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2 text-slate-200">
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-purple-500/15 text-purple-300">
-                    <Shield className="w-4 h-4" />
-                  </span>
-                  <span>HMRC Notification</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {notificationStatus ? (
-                  <>
-                    <div className="text-sm font-semibold text-slate-50">
-                      {notificationStatus === "required" && "Notification required"}
-                      {notificationStatus === "not_required" && "Notification not required"}
-                      {notificationStatus === "unclear" && "Status unclear"}
-                      {notificationStatus === "overdue" && "Notification overdue"}
-                      {notificationStatus === "submitted" && "Notification submitted"}
-                    </div>
-                    {notificationDeadline && (
-                      <p className="text-xs text-slate-400 mt-1">
-                        Deadline: {new Date(notificationDeadline).toLocaleDateString("en-GB")}
-                      </p>
-                    )}
-                    <p className="text-xs text-slate-500 mt-2">
-                      Manage in{" "}
-                      <button
-                        type="button"
-                        onClick={() => router.push("/onboarding")}
-                        className="underline underline-offset-2 text-slate-200"
-                      >
-                        onboarding
-                      </button>
-                      .
-                    </p>
-                  </>
-                ) : (
-                  <div className="text-xs text-slate-400">
-                    We haven&apos;t run an HMRC notification check for this organisation yet.
-                    Start in{" "}
-                    <button
-                      type="button"
-                      onClick={() => router.push("/onboarding")}
-                      className="underline underline-offset-2 text-slate-200"
-                    >
-                      onboarding
-                    </button>
-                    .
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
@@ -548,6 +496,103 @@ export default function HomePage() {
               </Card>
             </div>
           </div>
+
+          {/* Quick actions */}
+          <section className="mt-6">
+            <h2 className="text-xs font-medium text-slate-400 tracking-wide uppercase mb-3">
+              Quick actions
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {/* existing quick action cards here */}
+            </div>
+          </section>
+
+          {/* HMRC Notification Status – styled like a quick action card and placed just below */}
+          <section className="mt-3">
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="h-9 w-9 rounded-xl bg-purple-500/15 flex items-center justify-center text-purple-300">
+                  <Shield className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-sm font-semibold text-slate-50">HMRC Notification</h2>
+                    {notificationStatus && (
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px] px-1.5 py-0.5 rounded-full border",
+                          notificationStatus === "submitted"
+                            ? "border-emerald-500/60 text-emerald-300 bg-emerald-500/10"
+                            : notificationStatus === "not_required"
+                              ? "border-slate-500/60 text-slate-200 bg-slate-500/10"
+                              : notificationStatus === "overdue"
+                                ? "border-red-500/60 text-red-300 bg-red-500/10"
+                                : "border-amber-500/60 text-amber-300 bg-amber-500/10"
+                        )}
+                      >
+                        {notificationStatus === "submitted" && "Completed"}
+                        {notificationStatus === "not_required" && "Not required"}
+                        {notificationStatus === "required" && "Required"}
+                        {notificationStatus === "overdue" && "Overdue"}
+                        {notificationStatus === "unclear" && "Unclear"}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-slate-400 max-w-xl">
+                    {notificationStatus
+                      ? notificationStatus === "submitted"
+                        ? "We have a completed HMRC pre-notification recorded for this organisation."
+                        : notificationStatus === "not_required"
+                          ? "Based on your onboarding answers, pre-notification is not required for this organisation."
+                          : notificationStatus === "required"
+                            ? "This organisation still needs an HMRC pre-notification before a claim can be submitted."
+                            : notificationStatus === "overdue"
+                              ? "This organisation's HMRC pre-notification is overdue. Please complete it as soon as possible."
+                              : "We need more information to determine this organisation's HMRC notification status."
+                      : "We haven't run an HMRC notification check for this organisation yet. Start in "}
+                    {!notificationStatus && (
+                      <Link
+                        href="/onboarding"
+                        className="text-sky-400 hover:text-sky-300 underline-offset-2 hover:underline"
+                      >
+                        onboarding
+                      </Link>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:items-end gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/onboarding">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-slate-700 bg-slate-900/80 text-slate-100 hover:bg-slate-800/80"
+                    >
+                      Review onboarding
+                    </Button>
+                  </Link>
+                  <Link href="/staff/pre-notifications">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="bg-purple-500/90 text-slate-950 hover:bg-purple-400"
+                    >
+                      Manage pre-notifications
+                    </Button>
+                  </Link>
+                </div>
+                {notificationStatus && notificationStatus !== "submitted" && (
+                  <p className="text-[11px] text-slate-500 max-w-xs text-right">
+                    A pre-notification must be completed before you can submit a new claim
+                    for this organisation.
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
         </div>
       </div>
       <VoiceNoteModal
