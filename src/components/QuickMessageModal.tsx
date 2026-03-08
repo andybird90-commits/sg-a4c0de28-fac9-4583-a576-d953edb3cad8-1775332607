@@ -37,7 +37,8 @@ export function QuickMessageModal({
   const [mentionSearch, setMentionSearch] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const { toast } = useToast();
-  const { currentOrg } = useApp();
+  const { currentOrg, user } = useApp();
+  const [mentionUserIds, setMentionUserIds] = useState<string[]>([]);
 
   // Generate subject based on entity type
   const getSubject = () => {
@@ -76,15 +77,23 @@ export function QuickMessageModal({
     }
   };
 
-  // Insert mention
-  const insertMention = (user: Profile) => {
+  // Insert mention and track selected user IDs explicitly
+  const insertMention = (profile: Profile) => {
     const lastAtIndex = content.lastIndexOf("@", cursorPosition);
     const beforeMention = content.slice(0, lastAtIndex);
     const afterMention = content.slice(cursorPosition);
-    const newContent = `${beforeMention}@${user.full_name} ${afterMention}`;
+    const displayName = profile.full_name || profile.email || "User";
+    const newContent = `${beforeMention}@${displayName} ${afterMention}`;
     setContent(newContent);
     setShowMentions(false);
     setMentionSearch("");
+
+    setMentionUserIds((prev) => {
+      if (!profile.id || prev.includes(profile.id)) {
+        return prev;
+      }
+      return [...prev, profile.id];
+    });
   };
 
   // Filter users based on search
@@ -105,13 +114,19 @@ export function QuickMessageModal({
 
     setSending(true);
     try {
-      // Extract mentioned user IDs
-      const mentions: string[] = [];
-      users.forEach(user => {
-        if (user.full_name && content.includes(`@${user.full_name}`)) {
-          mentions.push(user.id);
-        }
-      });
+      // Use explicitly selected mention recipients, excluding the sender
+      const uniqueMentionIds = Array.from(new Set(mentionUserIds));
+      const recipientIds = uniqueMentionIds.filter((id) => id !== user?.id);
+
+      if (recipientIds.length === 0) {
+        toast({
+          title: "Select recipient",
+          description: "Mention at least one team member using @ before sending.",
+          variant: "destructive"
+        });
+        setSending(false);
+        return;
+      }
 
       const resolvedFromEntity = await messageService.resolveOrgId(entityType, entityId);
       const orgId = resolvedFromEntity || currentOrg?.id || null;
@@ -130,7 +145,7 @@ export function QuickMessageModal({
       // Send message
       await messageService.sendMessage(
         orgId,
-        mentions,
+        recipientIds,
         getSubject(),
         content,
         undefined, // parentMessageId
@@ -146,6 +161,7 @@ export function QuickMessageModal({
       });
 
       setContent("");
+      setMentionUserIds([]);
       onClose();
     } catch (error) {
       console.error("Error sending message:", error);
