@@ -327,6 +327,9 @@ function CIFCreationForm({
   const [researchLoading, setResearchLoading] = useState(false);
   const [companyResearch, setCompanyResearch] = useState("");
   const [analysisData, setAnalysisData] = useState<any>(null);
+
+  const [notificationStatus, setNotificationStatus] = useState<"required" | "not_required" | "unclear" | null>(null);
+  const [notificationDeadline, setNotificationDeadline] = useState<string | null>(null);
   
   // Define formData state with explicit initial values for ALL fields
   const [formData, setFormData] = useState({
@@ -347,7 +350,59 @@ function CIFCreationForm({
     feeTermsDiscussed: "",
     feeTermsDetails: "",
     additionalInfo: "",
+    // HMRC notification fields
+    claimedWithinLast3Years: "",
+    accountingPeriodStart: "",
+    accountingPeriodEnd: "",
+    internalRdContactName: "",
+    internalRdContactEmail: "",
+    organisationRdSummary: "",
   });
+
+  const recomputeNotificationStatus = (nextFormData: typeof formData) => {
+    const hasClaimedBeforeValue =
+      nextFormData.hasClaimedBefore === "yes"
+        ? true
+        : nextFormData.hasClaimedBefore === "no"
+        ? false
+        : null;
+
+    const claimedWithinLast3YearsValue =
+      nextFormData.claimedWithinLast3Years === "yes"
+        ? true
+        : nextFormData.claimedWithinLast3Years === "no"
+        ? false
+        : null;
+
+    let status: "required" | "not_required" | "unclear" | null = null;
+    let deadline: string | null = null;
+
+    if (
+      hasClaimedBeforeValue === null ||
+      (hasClaimedBeforeValue === true && claimedWithinLast3YearsValue === null) ||
+      !nextFormData.accountingPeriodEnd
+    ) {
+      status = "unclear";
+    } else {
+      const end = new Date(nextFormData.accountingPeriodEnd);
+      if (!Number.isNaN(end.getTime())) {
+        const deadlineDate = new Date(end);
+        deadlineDate.setMonth(deadlineDate.getMonth() + 6);
+        deadline = deadlineDate.toISOString().slice(0, 10);
+      }
+
+      if (hasClaimedBeforeValue === false) {
+        status = "required";
+      } else if (claimedWithinLast3YearsValue === true) {
+        status = "not_required";
+      } else {
+        status = "required";
+      }
+    }
+
+    setNotificationStatus(status);
+    setNotificationDeadline(deadline);
+  };
 
   useEffect(() => {
     if (initialCompanyNumber) {
@@ -424,10 +479,23 @@ function CIFCreationForm({
   };
 
   const handleCreateCIF = async () => {
-    if (!companyData || !profile?.id) return;
+    console.log("CIFCreationForm.handleCreateCIF clicked");
+
+    if (!companyData || !profile?.id) {
+      console.log("CreateCIF early return: missing companyData or profile", {
+        hasCompanyData: !!companyData,
+        profileId: profile?.id,
+      });
+      toast({
+        title: "Missing data",
+        description: "Company details or your user profile are not loaded yet. Please close and reopen the form.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Validate all required fields
-    const requiredFields = {
+    const requiredFields: Record<string, string> = {
       "Number of Employees": formData.numberOfEmployees,
       "Primary Contact Name": formData.primaryContactName,
       "Primary Contact Email": formData.primaryContactEmail,
@@ -438,9 +506,13 @@ function CIFCreationForm({
       "Projects Discussed": formData.projectsDiscussed,
       "Fee Terms Discussed": formData.feeTermsDiscussed,
       "Additional Information": formData.additionalInfo,
+      "Accounting Period Start Date": formData.accountingPeriodStart,
+      "Accounting Period End Date": formData.accountingPeriodEnd,
+      "Main Internal R&D Contact Name": formData.internalRdContactName,
+      "Main Internal R&D Contact Email": formData.internalRdContactEmail,
+      "High-level Innovation / R&D Summary": formData.organisationRdSummary,
     };
 
-    // Add conditional required fields
     if (formData.canAnswerFeasibility === "no") {
       requiredFields["Alternate Contact Informed"] = formData.alternateContactInformed;
     }
@@ -449,6 +521,7 @@ function CIFCreationForm({
     }
     if (formData.hasClaimedBefore === "yes") {
       requiredFields["Previous Claim Details"] = formData.previousClaimDetails;
+      requiredFields["Most Recent Claim Within Last 3 Years"] = formData.claimedWithinLast3Years;
     }
     if (formData.projectsDiscussed === "yes") {
       requiredFields["Projects Details"] = formData.projectsDetails;
@@ -461,6 +534,11 @@ function CIFCreationForm({
       .filter(([_, value]) => !value || value.trim() === "")
       .map(([key]) => key);
 
+    console.log("CIFCreationForm.handleCreateCIF validation", {
+      formData,
+      missingFields,
+    });
+
     if (missingFields.length > 0) {
       toast({
         title: "Missing Required Fields",
@@ -472,6 +550,7 @@ function CIFCreationForm({
 
     setSaving(true);
     try {
+      console.log("CIFCreationForm.handleCreateCIF calling cifService.createCIF");
       const result = await cifService.createCIF({
         prospectData: {
           company_name: companyData.company_name,
@@ -504,7 +583,12 @@ function CIFCreationForm({
           alternate_contact_informed: formData.alternateContactInformed || undefined,
           understands_scheme: formData.understandsScheme,
           scheme_understanding_details: formData.schemeUnderstandingDetails || undefined,
-          has_claimed_before: formData.hasClaimedBefore === "yes" ? true : formData.hasClaimedBefore === "no" ? false : null,
+          has_claimed_before:
+            formData.hasClaimedBefore === "yes"
+              ? true
+              : formData.hasClaimedBefore === "no"
+              ? false
+              : null,
           previous_claim_details: formData.previousClaimDetails || undefined,
           projects_discussed: formData.projectsDiscussed,
           projects_details: formData.projectsDetails || undefined,
@@ -516,11 +600,14 @@ function CIFCreationForm({
         createdBy: profile.id,
       });
 
+      console.log("CIFCreationForm.handleCreateCIF result", result);
+
       if (result) {
         toast({ title: "CIF created successfully!", description: "Redirecting to CIF details..." });
         setTimeout(() => {
           router.push(`/staff/cif/${result.cif.id}`);
         }, 1500);
+        onSuccess();
       }
     } catch (error: any) {
       console.error("CIF creation error:", error);
@@ -817,7 +904,13 @@ function CIFCreationForm({
                 type="button"
                 size="sm"
                 variant={formData.hasClaimedBefore === "yes" ? "default" : "outline"}
-                onClick={() => setFormData(prev => ({ ...prev, hasClaimedBefore: "yes" }))}
+                onClick={() =>
+                  setFormData(prev => {
+                    const next = { ...prev, hasClaimedBefore: "yes" };
+                    recomputeNotificationStatus(next);
+                    return next;
+                  })
+                }
               >
                 YES
               </Button>
@@ -825,7 +918,13 @@ function CIFCreationForm({
                 type="button"
                 size="sm"
                 variant={formData.hasClaimedBefore === "no" ? "default" : "outline"}
-                onClick={() => setFormData(prev => ({ ...prev, hasClaimedBefore: "no", previousClaimDetails: "" }))}
+                onClick={() =>
+                  setFormData(prev => {
+                    const next = { ...prev, hasClaimedBefore: "no" };
+                    recomputeNotificationStatus(next);
+                    return next;
+                  })
+                }
               >
                 NO
               </Button>
@@ -833,7 +932,13 @@ function CIFCreationForm({
                 type="button"
                 size="sm"
                 variant={formData.hasClaimedBefore === "dont_know" ? "default" : "outline"}
-                onClick={() => setFormData(prev => ({ ...prev, hasClaimedBefore: "dont_know", previousClaimDetails: "" }))}
+                onClick={() =>
+                  setFormData(prev => {
+                    const next = { ...prev, hasClaimedBefore: "dont_know" };
+                    recomputeNotificationStatus(next);
+                    return next;
+                  })
+                }
               >
                 DON'T KNOW
               </Button>
@@ -841,98 +946,71 @@ function CIFCreationForm({
           </div>
 
           {formData.hasClaimedBefore === "yes" && (
-            <div className="space-y-2 pl-4 border-l-4 border-orange-500">
-              <Label htmlFor="prev-claim-details">If yes, what has been claimed? *</Label>
-              <Textarea
-                id="prev-claim-details"
-                placeholder="Details of previous R&D tax credit claims..."
-                className="min-h-[80px]"
-                value={formData.previousClaimDetails}
-                onChange={(e) => setFormData(prev => ({ ...prev, previousClaimDetails: e.target.value }))}
-              />
+            <div className="space-y-4 pl-4 border-l-4 border-orange-500">
+              <div className="space-y-2">
+                <Label htmlFor="prev-claim-details">If yes, what has been claimed? *</Label>
+                <Textarea
+                  id="prev-claim-details"
+                  placeholder="Details of previous R&D tax credit claims..."
+                  className="min-h-[80px]"
+                  value={formData.previousClaimDetails}
+                  onChange={(e) =>
+                    setFormData(prev => ({ ...prev, previousClaimDetails: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-semibold">
+                  If yes, was the most recent claim within the last 3 years? *
+                </Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={formData.claimedWithinLast3Years === "yes" ? "default" : "outline"}
+                    onClick={() =>
+                      setFormData(prev => {
+                        const next = { ...prev, claimedWithinLast3Years: "yes" };
+                        recomputeNotificationStatus(next);
+                        return next;
+                      })
+                    }
+                  >
+                    YES
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={formData.claimedWithinLast3Years === "no" ? "default" : "outline"}
+                    onClick={() =>
+                      setFormData(prev => {
+                        const next = { ...prev, claimedWithinLast3Years: "no" };
+                        recomputeNotificationStatus(next);
+                        return next;
+                      })
+                    }
+                  >
+                    NO
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={formData.claimedWithinLast3Years === "dont_know" ? "default" : "outline"}
+                    onClick={() =>
+                      setFormData(prev => {
+                        const next = { ...prev, claimedWithinLast3Years: "dont_know" };
+                        recomputeNotificationStatus(next);
+                        return next;
+                      })
+                    }
+                  >
+                    DON'T KNOW
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
-
-          <div className="space-y-2">
-            <Label className="font-semibold">Have any projects been discussed? *</Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant={formData.projectsDiscussed === "yes" ? "default" : "outline"}
-                onClick={() => setFormData(prev => ({ ...prev, projectsDiscussed: "yes" }))}
-              >
-                YES
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={formData.projectsDiscussed === "no" ? "default" : "outline"}
-                onClick={() => setFormData(prev => ({ ...prev, projectsDiscussed: "no", projectsDetails: "" }))}
-              >
-                NO
-              </Button>
-            </div>
-          </div>
-
-          {formData.projectsDiscussed === "yes" && (
-            <div className="space-y-2 pl-4 border-l-4 border-orange-500">
-              <Label htmlFor="projects-details">If yes, what projects have been discussed? *</Label>
-              <Textarea
-                id="projects-details"
-                placeholder="Describe the R&D projects discussed..."
-                className="min-h-[100px]"
-                value={formData.projectsDetails}
-                onChange={(e) => setFormData(prev => ({ ...prev, projectsDetails: e.target.value }))}
-              />
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label className="font-semibold">Have the fee terms been discussed? *</Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant={formData.feeTermsDiscussed === "yes" ? "default" : "outline"}
-                onClick={() => setFormData(prev => ({ ...prev, feeTermsDiscussed: "yes" }))}
-              >
-                YES
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={formData.feeTermsDiscussed === "no" ? "default" : "outline"}
-                onClick={() => setFormData(prev => ({ ...prev, feeTermsDiscussed: "no", feeTermsDetails: "" }))}
-              >
-                NO
-              </Button>
-            </div>
-          </div>
-
-          {formData.feeTermsDiscussed === "yes" && (
-            <div className="space-y-2 pl-4 border-l-4 border-orange-500">
-              <Label htmlFor="fee-terms-details">If yes, what terms have been discussed? *</Label>
-              <Textarea
-                id="fee-terms-details"
-                placeholder="Details of fee structure and terms discussed..."
-                className="min-h-[100px]"
-                value={formData.feeTermsDetails}
-                onChange={(e) => setFormData(prev => ({ ...prev, feeTermsDetails: e.target.value }))}
-              />
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="additional-info">Any further information to help with the feasibility study? *</Label>
-            <Textarea
-              id="additional-info"
-              placeholder="Any additional notes or information..."
-              className="min-h-[100px]"
-              value={formData.additionalInfo}
-              onChange={(e) => setFormData(prev => ({ ...prev, additionalInfo: e.target.value }))}
-            />
-          </div>
 
           {/* ADDITIONAL FIELDS (Optional) */}
           <div className="pt-4 border-t">
@@ -940,7 +1018,12 @@ function CIFCreationForm({
           </div>
 
           <div className="flex gap-3 pt-4 sticky bottom-0 bg-white dark:bg-gray-950 pb-2">
-            <Button onClick={handleCreateCIF} disabled={saving} className="flex-1">
+            <Button
+              type="button"
+              onClick={handleCreateCIF}
+              disabled={saving}
+              className="flex-1"
+            >
               {saving ? "Creating CIF..." : "Create CIF"}
             </Button>
             <Button onClick={() => setStep("lookup")} variant="outline">Back</Button>
