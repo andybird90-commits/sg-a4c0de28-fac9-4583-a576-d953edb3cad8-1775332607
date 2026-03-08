@@ -504,6 +504,8 @@ function CIFCreationForm({
       "Can Answer Feasibility": formData.canAnswerFeasibility,
       "Understands Scheme": formData.understandsScheme,
       "Has Claimed Before": formData.hasClaimedBefore,
+      "Fee Terms Discussed": formData.feeTermsDiscussed,
+      "Additional Information to Help Feasibility Study": formData.additionalInfo,
       // HMRC notification fields
       "Accounting Period Start Date": formData.accountingPeriodStart,
       "Accounting Period End Date": formData.accountingPeriodEnd,
@@ -1143,8 +1145,59 @@ function CIFCreationForm({
           </div>
 
           {/* ADDITIONAL FIELDS (Optional) */}
-          <div className="pt-4 border-t">
-            {/* Business Background and Project Overview removed */}
+          <div className="pt-4 border-t space-y-4">
+            <div className="space-y-2">
+              <Label className="font-semibold">
+                Have the fee terms been discussed? <span className="text-red-500">*</span>
+              </Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={formData.feeTermsDiscussed === "yes" ? "default" : "outline"}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      feeTermsDiscussed: "yes",
+                    }))
+                  }
+                >
+                  YES
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={formData.feeTermsDiscussed === "no" ? "default" : "outline"}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      feeTermsDiscussed: "no",
+                    }))
+                  }
+                >
+                  NO
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="additional-info">
+                Any further information to help with the feasibility study?{" "}
+                <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="additional-info"
+                placeholder="Any additional notes or information..."
+                className="min-h-[80px]"
+                value={formData.additionalInfo}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    additionalInfo: e.target.value,
+                  }))
+                }
+              />
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4 sticky bottom-0 bg-white dark:bg-gray-950 pb-2">

@@ -212,9 +212,15 @@ export const cifService = {
         understands_scheme: bdmSectionData.understands_scheme,
         scheme_understanding_details: bdmSectionData.scheme_understanding_details,
         previous_claim_details: bdmSectionData.previous_claim_details,
-        projects_discussed: bdmSectionData.projects_discussed,
+        projects_discussed:
+          bdmSectionData.projects_discussed === "yes" || bdmSectionData.projects_discussed === "no"
+            ? bdmSectionData.projects_discussed
+            : null,
         projects_details: bdmSectionData.projects_details,
-        fee_terms_discussed: bdmSectionData.fee_terms_discussed,
+        fee_terms_discussed:
+          bdmSectionData.fee_terms_discussed === "yes" || bdmSectionData.fee_terms_discussed === "no"
+            ? bdmSectionData.fee_terms_discussed
+            : null,
         fee_terms_details: bdmSectionData.fee_terms_details,
         additional_info: bdmSectionData.additional_info,
 
