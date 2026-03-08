@@ -488,13 +488,14 @@ function CIFCreationForm({
       });
       toast({
         title: "Missing data",
-        description: "Company details or your user profile are not loaded yet. Please close and reopen the form.",
+        description:
+          "Company details or your user profile are not loaded yet. Please close and reopen the form.",
         variant: "destructive",
       });
       return;
     }
 
-    // Validate all required fields
+    // Only require fields that are actually visible and truly required
     const requiredFields: Record<string, string> = {
       "Number of Employees": formData.numberOfEmployees,
       "Primary Contact Name": formData.primaryContactName,
@@ -503,9 +504,7 @@ function CIFCreationForm({
       "Can Answer Feasibility": formData.canAnswerFeasibility,
       "Understands Scheme": formData.understandsScheme,
       "Has Claimed Before": formData.hasClaimedBefore,
-      "Projects Discussed": formData.projectsDiscussed,
-      "Fee Terms Discussed": formData.feeTermsDiscussed,
-      "Additional Information": formData.additionalInfo,
+      // HMRC notification fields
       "Accounting Period Start Date": formData.accountingPeriodStart,
       "Accounting Period End Date": formData.accountingPeriodEnd,
       "Main Internal R&D Contact Name": formData.internalRdContactName,
@@ -513,6 +512,7 @@ function CIFCreationForm({
       "High-level Innovation / R&D Summary": formData.organisationRdSummary,
     };
 
+    // Conditional requirements tied directly to on-screen follow-up questions
     if (formData.canAnswerFeasibility === "no") {
       requiredFields["Alternate Contact Informed"] = formData.alternateContactInformed;
     }
@@ -521,13 +521,8 @@ function CIFCreationForm({
     }
     if (formData.hasClaimedBefore === "yes") {
       requiredFields["Previous Claim Details"] = formData.previousClaimDetails;
-      requiredFields["Most Recent Claim Within Last 3 Years"] = formData.claimedWithinLast3Years;
-    }
-    if (formData.projectsDiscussed === "yes") {
-      requiredFields["Projects Details"] = formData.projectsDetails;
-    }
-    if (formData.feeTermsDiscussed === "yes") {
-      requiredFields["Fee Terms Details"] = formData.feeTermsDetails;
+      requiredFields["Most Recent Claim Within Last 3 Years"] =
+        formData.claimedWithinLast3Years;
     }
 
     const missingFields = Object.entries(requiredFields)
@@ -558,7 +553,7 @@ function CIFCreationForm({
           contact_name: formData.primaryContactName,
           contact_email: formData.primaryContactEmail,
           contact_phone: formData.primaryContactPhone,
-          registered_address: companyData.registered_office_address?.address_line_1 
+          registered_address: companyData.registered_office_address?.address_line_1
             ? [
                 companyData.registered_office_address.address_line_1,
                 companyData.registered_office_address.address_line_2,
@@ -582,7 +577,8 @@ function CIFCreationForm({
           can_answer_feasibility: formData.canAnswerFeasibility,
           alternate_contact_informed: formData.alternateContactInformed || undefined,
           understands_scheme: formData.understandsScheme,
-          scheme_understanding_details: formData.schemeUnderstandingDetails || undefined,
+          scheme_understanding_details:
+            formData.schemeUnderstandingDetails || undefined,
           has_claimed_before:
             formData.hasClaimedBefore === "yes"
               ? true
@@ -603,7 +599,10 @@ function CIFCreationForm({
       console.log("CIFCreationForm.handleCreateCIF result", result);
 
       if (result) {
-        toast({ title: "CIF created successfully!", description: "Redirecting to CIF details..." });
+        toast({
+          title: "CIF created successfully!",
+          description: "Redirecting to CIF details...",
+        });
         setTimeout(() => {
           router.push(`/staff/cif/${result.cif.id}`);
         }, 1500);
@@ -611,10 +610,10 @@ function CIFCreationForm({
       }
     } catch (error: any) {
       console.error("CIF creation error:", error);
-      toast({ 
-        title: "Failed to create CIF", 
+      toast({
+        title: "Failed to create CIF",
         description: error.message || "Unknown error occurred",
-        variant: "destructive" 
+        variant: "destructive",
       });
     } finally {
       setSaving(false);
@@ -1011,6 +1010,137 @@ function CIFCreationForm({
               </div>
             </div>
           )}
+
+          {/* HMRC Claim Notification Check */}
+          <div className="space-y-4 mt-6">
+            <div className="bg-orange-500 text-white px-4 py-2 font-semibold rounded">
+              HMRC CLAIM NOTIFICATION CHECK
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="accounting-period-start">
+                  Accounting period start date <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="accounting-period-start"
+                  type="date"
+                  value={formData.accountingPeriodStart}
+                  onChange={(e) =>
+                    setFormData(prev => ({
+                      ...prev,
+                      accountingPeriodStart: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="accounting-period-end">
+                  Accounting period end date <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="accounting-period-end"
+                  type="date"
+                  value={formData.accountingPeriodEnd}
+                  onChange={(e) =>
+                    setFormData(prev => {
+                      const next = { ...prev, accountingPeriodEnd: e.target.value };
+                      recomputeNotificationStatus(next);
+                      return next;
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="internal-rd-contact-name">
+                  Main internal R&amp;D contact name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="internal-rd-contact-name"
+                  value={formData.internalRdContactName}
+                  onChange={(e) =>
+                    setFormData(prev => ({
+                      ...prev,
+                      internalRdContactName: e.target.value,
+                    }))
+                  }
+                  placeholder="Who owns R&amp;D day to day?"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="internal-rd-contact-email">
+                  Main internal R&amp;D contact email <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="internal-rd-contact-email"
+                  type="email"
+                  value={formData.internalRdContactEmail}
+                  onChange={(e) =>
+                    setFormData(prev => ({
+                      ...prev,
+                      internalRdContactEmail: e.target.value,
+                    }))
+                  }
+                  placeholder="name@company.com"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="organisation-rd-summary">
+                High-level innovation / R&amp;D summary (company-level) <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                id="organisation-rd-summary"
+                className="min-h-[80px]"
+                placeholder="One-paragraph overview of the organisation's innovation / R&amp;D activity."
+                value={formData.organisationRdSummary}
+                onChange={(e) =>
+                  setFormData(prev => ({
+                    ...prev,
+                    organisationRdSummary: e.target.value,
+                  }))
+                }
+              />
+            </div>
+
+            <div className="rounded border border-dashed border-orange-500/60 bg-orange-500/5 p-3 text-sm">
+              <p className="font-semibold mb-1">Notification outcome</p>
+              {notificationStatus === "required" && (
+                <p>
+                  <span className="font-semibold text-orange-600 dark:text-orange-300">
+                    Notification required
+                  </span>
+                  {notificationDeadline && (
+                    <>
+                      {" "}
+                      – must be submitted by{" "}
+                      <span className="font-mono">{notificationDeadline}</span>
+                    </>
+                  )}
+                </p>
+              )}
+              {notificationStatus === "not_required" && (
+                <p className="text-emerald-600 dark:text-emerald-300 font-semibold">
+                  Notification not required based on current answers.
+                </p>
+              )}
+              {notificationStatus === "unclear" && (
+                <p className="text-yellow-600 dark:text-yellow-300">
+                  Notification status is <span className="font-semibold">unclear</span>. Please confirm previous
+                  claim history and the accounting period end date.
+                </p>
+              )}
+              {!notificationStatus && (
+                <p className="text-muted-foreground">
+                  Complete the questions above to see whether an HMRC Claim Notification is required.
+                </p>
+              )}
+            </div>
+          </div>
 
           {/* ADDITIONAL FIELDS (Optional) */}
           <div className="pt-4 border-t">
