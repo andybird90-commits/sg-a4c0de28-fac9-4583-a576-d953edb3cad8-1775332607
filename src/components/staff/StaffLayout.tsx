@@ -271,7 +271,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
       {/* Layout body */}
       <div className="flex">
         {/* Sidebar - desktop */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r border-slate-800 bg-[#050b16] sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r border-slate-900 bg-[#020617] text-slate-50 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
           <div className="px-3 py-4 space-y-1">
             {staffNavItems.map((item) => renderNavItem(item.path, item.label, item.icon))}
           </div>

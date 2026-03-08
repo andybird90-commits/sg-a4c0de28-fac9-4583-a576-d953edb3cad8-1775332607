@@ -631,250 +631,55 @@ export default function StaffHomePage() {
   }
 
   return (
-    <StaffLayout>
-      <div className="space-y-8">
-        {/* Welcome Section */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-4xl font-bold">Dashboard</h1>
-            <p className="text-lg text-muted-foreground mt-2">
-              Welcome, {userName} ({orgCode})
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Role: <span className="font-semibold">{role}</span>
-            </p>
-          </div>
-          <Button onClick={() => router.push("/staff/pipeline")}>
-            View Full Pipeline <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Revenue Summary Cards (Next 12 Months) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUp className="h-5 w-5 text-orange-400" />
-                Total Forecasted Revenue
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">
-                {formatCurrency(totalForecastedRevenue)}
-              </p>
-              <p className="text-sm text-slate-400 mt-1">
-                Next 24 months
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Calendar className="h-5 w-5 text-orange-400" />
-                Active Pipeline Items
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{activeItems}</p>
-              <p className="text-sm text-slate-400 mt-1">
-                Clients in pipeline
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Briefcase className="h-5 w-5 text-orange-400" />
-                This Month
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">
-                {formatCurrency(thisMonthRevenue)}
-              </p>
-              <p className="text-sm text-slate-400 mt-1">
-                Expected revenue
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 12-Month Pipeline Chart */}
-        <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <StaffLayout title="Dashboard">
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="mx-auto flex w-full flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+          {/* Welcome Section */}
+          <div className="flex justify-between items-start">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-orange-400" />
-                12-Month Pipeline
-              </CardTitle>
-              <CardDescription className="text-slate-400">
-                Revenue forecast and budget analysis (onboarded vs not yet
-                onboarded)
-              </CardDescription>
+              <h1 className="text-4xl font-bold">Dashboard</h1>
+              <p className="text-lg text-muted-foreground mt-2">
+                Welcome, {userName} ({orgCode})
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Role: <span className="font-semibold">{role}</span>
+              </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={securedOnly ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSecuredOnly((prev) => !prev)}
-                className={
-                  securedOnly
-                    ? "bg-orange-500 text-slate-950 hover:bg-orange-400"
-                    : "border-slate-700 text-slate-100 hover:bg-slate-900"
-                }
-              >
-                Secured Only
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push("/staff/pipeline")}
-                className="border-slate-700 text-slate-100 hover:bg-slate-900"
-              >
-                View Gantt
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8 text-slate-400">
-                Loading pipeline data...
-              </div>
-            ) : monthlyBuckets.every(
-                (bucket) =>
-                  bucket.onboarded === 0 && bucket.notOnboarded === 0
-              ) ? (
-              <div className="text-center py-8 text-slate-400">
-                No pipeline entries in the next 12 months. Enable claims or
-                import clients to build your pipeline forecast.
-              </div>
-            ) : (
-              <>
-                <div className="flex gap-4 h-72 pb-6">
-                  <div className="flex flex-col justify-between h-48 text-xs text-slate-500 pr-2">
-                    {yAxisTicks
-                      .slice()
-                      .reverse()
-                      .map((value) => (
-                        <span key={value}>{formatCurrency(value)}</span>
-                      ))}
-                  </div>
-                  <div className="flex items-end gap-3 h-72 flex-1 border-l border-b border-slate-800 pl-4 pb-6 overflow-x-auto">
-                    {monthlyBuckets.map((bucket, idx) => {
-                      const total =
-                        bucket.onboarded + bucket.notOnboarded;
-
-                      const hoverTitle = `Total: ${formatCurrency(
-                        total
-                      )}\nOnboarded: ${formatCurrency(
-                        bucket.onboarded
-                      )}\nNot onboarded: ${formatCurrency(
-                        bucket.notOnboarded
-                      )}`;
-
-                      const onboardedHeight =
-                        maxMonthTotal > 0
-                          ? (bucket.onboarded / maxMonthTotal) * 100
-                          : 0;
-                      const notOnboardedHeight =
-                        maxMonthTotal > 0
-                          ? (bucket.notOnboarded / maxMonthTotal) * 100
-                          : 0;
-
-                      return (
-                        <div
-                          key={idx}
-                          className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
-                        >
-                          <div
-                            className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-slate-900"
-                            title={hoverTitle}
-                          >
-                            {total > 0 && (
-                              <>
-                                {bucket.onboarded > 0 && (
-                                  <div
-                                    className="bg-emerald-500"
-                                    style={{
-                                      height: `${onboardedHeight}%`,
-                                    }}
-                                    title={`Onboarded: ${formatCurrency(
-                                      bucket.onboarded
-                                    )}`}
-                                  />
-                                )}
-                                {bucket.notOnboarded > 0 && (
-                                  <div
-                                    className="bg-orange-400"
-                                    style={{
-                                      height: `${notOnboardedHeight}%`,
-                                    }}
-                                    title={`Not onboarded: ${formatCurrency(
-                                      bucket.notOnboarded
-                                    )}`}
-                                  />
-                                )}
-                              </>
-                            )}
-                          </div>
-                          <span className="mt-2 text-xs text-slate-500 rotate-[-30deg] origin-top">
-                            {formatMonthYear(bucket.date)}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
-                  <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-emerald-500" />
-                    <span>Onboarded clients (has claim)</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-orange-400" />
-                    <span>Not yet onboarded</span>
-                  </div>
-                  {securedOnly && (
-                    <span className="text-xs text-slate-500">
-                      Showing secured (onboarded) revenue only.
-                    </span>
-                  )}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Innovation & Claim Intelligence */}
-        <section className="space-y-6 border-t border-slate-800 pt-8">
-          <div>
-            <h2 className="text-2xl font-semibold">Innovation & Claim Intelligence</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Real-time insight into innovation activity, claim readiness and documentation health.
-            </p>
+            <Button onClick={() => router.push("/staff/pipeline")}>
+              View Full Pipeline <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
 
-          {/* Row 1 – Innovation Metrics Cards */}
+          {/* Revenue Summary Cards (Next 12 Months) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <TrendingUp className="h-5 w-5 text-orange-400" />
-                  Innovation Density
+                  Total Forecasted Revenue
                 </CardTitle>
-                <CardDescription className="text-slate-400">
-                  Average R&amp;D activity score
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold">
-                  {innovationMetrics.loading
-                    ? "—"
-                    : innovationMetrics.averageInnovationDensity !== null
-                    ? innovationMetrics.averageInnovationDensity
-                    : "—"}
+                  {formatCurrency(totalForecastedRevenue)}
+                </p>
+                <p className="text-sm text-slate-400 mt-1">
+                  Next 24 months
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Calendar className="h-5 w-5 text-orange-400" />
+                  Active Pipeline Items
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold">{activeItems}</p>
+                <p className="text-sm text-slate-400 mt-1">
+                  Clients in pipeline
                 </p>
               </CardContent>
             </Card>
@@ -883,466 +688,663 @@ export default function StaffHomePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Briefcase className="h-5 w-5 text-orange-400" />
-                  Active R&amp;D Projects
+                  This Month
                 </CardTitle>
-                <CardDescription className="text-slate-400">
-                  Projects showing strong R&amp;D signals
-                </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-3xl font-bold">
-                  {innovationMetrics.loading
-                    ? "—"
-                    : innovationMetrics.activeProjects}
+                  {formatCurrency(thisMonthRevenue)}
                 </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <FileText className="h-5 w-5 text-orange-400" />
-                  Documentation Gaps
-                </CardTitle>
-                <CardDescription className="text-slate-400">
-                  Projects needing stronger evidence
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">
-                  {innovationMetrics.loading
-                    ? "—"
-                    : innovationMetrics.documentationGaps}
+                <p className="text-sm text-slate-400 mt-1">
+                  Expected revenue
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Row 2 – R&D Portfolio Map */}
+          {/* 12-Month Pipeline Chart */}
           <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
             <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle className="text-lg">R&amp;D Portfolio Overview</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-orange-400" />
+                  12-Month Pipeline
+                </CardTitle>
                 <CardDescription className="text-slate-400">
-                  Distribution of R&amp;D activity and documentation across projects
+                  Revenue forecast and budget analysis (onboarded vs not yet
+                  onboarded)
                 </CardDescription>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push("/staff/claims")}
-                className="border-slate-700 text-slate-100 hover:bg-slate-900"
-              >
-                View All Projects
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={securedOnly ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSecuredOnly((prev) => !prev)}
+                  className={
+                    securedOnly
+                      ? "bg-orange-500 text-slate-950 hover:bg-orange-400"
+                      : "border-slate-700 text-slate-100 hover:bg-slate-900"
+                  }
+                >
+                  Secured Only
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/staff/pipeline")}
+                  className="border-slate-700 text-slate-100 hover:bg-slate-900"
+                >
+                  View Gantt
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              {innovationMetrics.loading ? (
-                <div className="text-center py-6 text-slate-400">
-                  Loading portfolio…
+              {loading ? (
+                <div className="text-center py-8 text-slate-400">
+                  Loading pipeline data...
                 </div>
-              ) : portfolioProjects.length === 0 ? (
-                <div className="text-center py-6 text-slate-400">
-                  No project health scores available yet.
+              ) : monthlyBuckets.every(
+                (bucket) =>
+                  bucket.onboarded === 0 && bucket.notOnboarded === 0
+              ) ? (
+                <div className="text-center py-8 text-slate-400">
+                  No pipeline entries in the next 12 months. Enable claims or
+                  import clients to build your pipeline forecast.
                 </div>
               ) : (
-                <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#020617]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[30%]">Project</TableHead>
-                        <TableHead>Innovation Density</TableHead>
-                        <TableHead>Documentation Strength</TableHead>
-                        <TableHead>Overall Health</TableHead>
-                        <TableHead className="w-[20%]">Last Activity</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {portfolioProjects.map((p) => (
-                        <TableRow
-                          key={p.projectId}
-                          className="cursor-pointer hover:bg-slate-900/60"
-                          onClick={() =>
-                            router.push(`/staff/claims/projects/${p.projectId}`)
-                          }
-                        >
-                          <TableCell className="font-medium">
-                            {p.projectName}
-                          </TableCell>
-                          <TableCell>
-                            {p.innovationDensity ?? "—"}
-                          </TableCell>
-                          <TableCell>
-                            {p.documentationStrength ?? "—"}
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
-                                p.overallHealth
-                              )}`}
-                            >
-                              {p.overallHealth !== null
-                                ? `${p.overallHealth}`
-                                : "No score"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-xs text-slate-400">
-                            {formatDateShort(p.lastActivity)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                <>
+                  <div className="flex gap-4 h-72 pb-6">
+                    <div className="flex flex-col justify-between h-48 text-xs text-slate-500 pr-2">
+                      {yAxisTicks
+                        .slice()
+                        .reverse()
+                        .map((value) => (
+                          <span key={value}>{formatCurrency(value)}</span>
+                        ))}
+                    </div>
+                    <div className="flex items-end gap-3 h-72 flex-1 border-l border-b border-slate-800 pl-4 pb-6 overflow-x-auto">
+                      {monthlyBuckets.map((bucket, idx) => {
+                        const total =
+                          bucket.onboarded + bucket.notOnboarded;
 
-          {/* Row 3 – Claim Readiness */}
-          <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-            <CardHeader>
-              <CardTitle className="text-lg">Claim Readiness</CardTitle>
-              <CardDescription className="text-slate-400">
-                Pipeline of claims from draft through to submission
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {claimReadiness.loading ? (
-                <div className="text-center py-4 text-slate-400">
-                  Loading claim readiness…
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  <div>
-                    <div className="text-xs text-slate-400">Draft Claims</div>
-                    <div className="text-2xl font-semibold mt-1">
-                      {claimReadiness.draftClaims}
+                        const hoverTitle = `Total: ${formatCurrency(
+                          total
+                        )}\nOnboarded: ${formatCurrency(
+                          bucket.onboarded
+                        )}\nNot onboarded: ${formatCurrency(
+                          bucket.notOnboarded
+                        )}`;
+
+                        const onboardedHeight =
+                          maxMonthTotal > 0
+                            ? (bucket.onboarded / maxMonthTotal) * 100
+                            : 0;
+                        const notOnboardedHeight =
+                          maxMonthTotal > 0
+                            ? (bucket.notOnboarded / maxMonthTotal) * 100
+                            : 0;
+
+                        return (
+                          <div
+                            key={idx}
+                            className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
+                          >
+                            <div
+                              className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-slate-900"
+                              title={hoverTitle}
+                            >
+                              {total > 0 && (
+                                <>
+                                  {bucket.onboarded > 0 && (
+                                    <div
+                                      className="bg-emerald-500"
+                                      style={{
+                                        height: `${onboardedHeight}%`,
+                                      }}
+                                      title={`Onboarded: ${formatCurrency(
+                                        bucket.onboarded
+                                      )}`}
+                                    />
+                                  )}
+                                  {bucket.notOnboarded > 0 && (
+                                    <div
+                                      className="bg-orange-400"
+                                      style={{
+                                        height: `${notOnboardedHeight}%`,
+                                      }}
+                                      title={`Not onboarded: ${formatCurrency(
+                                        bucket.notOnboarded
+                                      )}`}
+                                    />
+                                  )}
+                                </>
+                              )}
+                            </div>
+                            <span className="mt-2 text-xs text-slate-500 rotate-[-30deg] origin-top">
+                              {formatMonthYear(bucket.date)}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                  <div>
-                    <div className="text-xs text-slate-400">
-                      Ready for Finalisation
+                  <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-sm bg-emerald-500" />
+                      <span>Onboarded clients (has claim)</span>
                     </div>
-                    <div className="text-2xl font-semibold mt-1">
-                      {claimReadiness.readyForFinalisation}
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-sm bg-orange-400" />
+                      <span>Not yet onboarded</span>
                     </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-400">
-                      Submitted Claims
-                    </div>
-                    <div className="text-2xl font-semibold mt-1">
-                      {claimReadiness.submittedClaims}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-400">
-                      Claims Passing HMRC Simulator
-                    </div>
-                    <div className="text-2xl font-semibold mt-1">
-                      {claimReadiness.simulatorPassCount !== null
-                        ? claimReadiness.simulatorPassCount
-                        : "—"}
-                    </div>
-                    {claimReadiness.simulatorPassCount === null && (
-                      <div className="mt-1 text-[11px] text-slate-500">
-                        Simulator integration not yet configured.
-                      </div>
+                    {securedOnly && (
+                      <span className="text-xs text-slate-500">
+                        Showing secured (onboarded) revenue only.
+                      </span>
                     )}
                   </div>
-                </div>
+                </>
               )}
             </CardContent>
           </Card>
 
-          {/* Row 4 – Emerging R&D Signals */}
-          <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-            <CardHeader>
-              <CardTitle className="text-lg">Emerging R&amp;D Opportunities</CardTitle>
-              <CardDescription className="text-slate-400">
-                Latest innovation signals detected across projects
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {innovationMetrics.loading ? (
-                <div className="text-center py-4 text-slate-400">
-                  Analysing project health signals…
+          {/* Innovation & Claim Intelligence */}
+          <section className="space-y-6 border-t border-slate-800 pt-8">
+            <div>
+              <h2 className="text-2xl font-semibold">Innovation & Claim Intelligence</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Real-time insight into innovation activity, claim readiness and documentation health.
+              </p>
+            </div>
+
+            {/* Row 1 – Innovation Metrics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <TrendingUp className="h-5 w-5 text-orange-400" />
+                    Innovation Density
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Average R&amp;D activity score
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">
+                    {innovationMetrics.loading
+                      ? "—"
+                      : innovationMetrics.averageInnovationDensity !== null
+                      ? innovationMetrics.averageInnovationDensity
+                      : "—"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Briefcase className="h-5 w-5 text-orange-400" />
+                    Active R&amp;D Projects
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Projects showing strong R&amp;D signals
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">
+                    {innovationMetrics.loading
+                      ? "—"
+                      : innovationMetrics.activeProjects}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <FileText className="h-5 w-5 text-orange-400" />
+                    Documentation Gaps
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Projects needing stronger evidence
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">
+                    {innovationMetrics.loading
+                      ? "—"
+                      : innovationMetrics.documentationGaps}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Row 2 – R&D Portfolio Map */}
+            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
+              <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle className="text-lg">R&amp;D Portfolio Overview</CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Distribution of R&amp;D activity and documentation across projects
+                  </CardDescription>
                 </div>
-              ) : emergingSignals.length === 0 ? (
-                <div className="text-sm text-slate-400">
-                  No emerging R&amp;D opportunities detected yet. Once projects
-                  start to show strong innovation signals but weaker documentation,
-                  they will appear here for follow-up.
-                </div>
-              ) : (
-                <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#020617]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[35%]">Project</TableHead>
-                        <TableHead>Innovation</TableHead>
-                        <TableHead>Documentation</TableHead>
-                        <TableHead>Health</TableHead>
-                        <TableHead className="w-[20%]">Last Updated</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {emergingSignals.map((s) => (
-                        <TableRow
-                          key={s.projectId}
-                          className="cursor-pointer hover:bg-slate-900/60"
-                          onClick={() =>
-                            router.push(`/staff/claims/projects/${s.projectId}`)
-                          }
-                        >
-                          <TableCell className="font-medium">
-                            {s.projectName}
-                          </TableCell>
-                          <TableCell>
-                            {s.innovationDensity ?? "—"}
-                          </TableCell>
-                          <TableCell>
-                            {s.documentationStrength ?? "—"}
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
-                                s.overallHealth
-                              )}`}
-                            >
-                              {s.overallHealth !== null
-                                ? `${s.overallHealth}`
-                                : "No score"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-xs text-slate-400">
-                            {formatDateShort(s.lastUpdated)}
-                          </TableCell>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/staff/claims")}
+                  className="border-slate-700 text-slate-100 hover:bg-slate-900"
+                >
+                  View All Projects
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {innovationMetrics.loading ? (
+                  <div className="text-center py-6 text-slate-400">
+                    Loading portfolio…
+                  </div>
+                ) : portfolioProjects.length === 0 ? (
+                  <div className="text-center py-6 text-slate-400">
+                    No project health scores available yet.
+                  </div>
+                ) : (
+                  <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#020617]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[30%]">Project</TableHead>
+                          <TableHead>Innovation Density</TableHead>
+                          <TableHead>Documentation Strength</TableHead>
+                          <TableHead>Overall Health</TableHead>
+                          <TableHead className="w-[20%]">Last Activity</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      </TableHeader>
+                      <TableBody>
+                        {portfolioProjects.map((p) => (
+                          <TableRow
+                            key={p.projectId}
+                            className="cursor-pointer hover:bg-slate-900/60"
+                            onClick={() =>
+                              router.push(`/staff/claims/projects/${p.projectId}`)
+                            }
+                          >
+                            <TableCell className="font-medium">
+                              {p.projectName}
+                            </TableCell>
+                            <TableCell>
+                              {p.innovationDensity ?? "—"}
+                            </TableCell>
+                            <TableCell>
+                              {p.documentationStrength ?? "—"}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
+                                  p.overallHealth
+                                )}`}
+                              >
+                                {p.overallHealth !== null
+                                  ? `${p.overallHealth}`
+                                  : "No score"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-400">
+                              {formatDateShort(p.lastActivity)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Row 5 – Defence Readiness */}
+            {/* Row 3 – Claim Readiness */}
+            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
+              <CardHeader>
+                <CardTitle className="text-lg">Claim Readiness</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Pipeline of claims from draft through to submission
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {claimReadiness.loading ? (
+                  <div className="text-center py-4 text-slate-400">
+                    Loading claim readiness…
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div>
+                      <div className="text-xs text-slate-400">Draft Claims</div>
+                      <div className="text-2xl font-semibold mt-1">
+                        {claimReadiness.draftClaims}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-400">
+                        Ready for Finalisation
+                      </div>
+                      <div className="text-2xl font-semibold mt-1">
+                        {claimReadiness.readyForFinalisation}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-400">
+                        Submitted Claims
+                      </div>
+                      <div className="text-2xl font-semibold mt-1">
+                        {claimReadiness.submittedClaims}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-400">
+                        Claims Passing HMRC Simulator
+                      </div>
+                      <div className="text-2xl font-semibold mt-1">
+                        {claimReadiness.simulatorPassCount !== null
+                          ? claimReadiness.simulatorPassCount
+                          : "—"}
+                      </div>
+                      {claimReadiness.simulatorPassCount === null && (
+                        <div className="mt-1 text-[11px] text-slate-500">
+                          Simulator integration not yet configured.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Row 4 – Emerging R&D Signals */}
+            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
+              <CardHeader>
+                <CardTitle className="text-lg">Emerging R&amp;D Opportunities</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Latest innovation signals detected across projects
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {innovationMetrics.loading ? (
+                  <div className="text-center py-4 text-slate-400">
+                    Analysing project health signals…
+                  </div>
+                ) : emergingSignals.length === 0 ? (
+                  <div className="text-sm text-slate-400">
+                    No emerging R&amp;D opportunities detected yet. Once projects
+                    start to show strong innovation signals but weaker documentation,
+                    they will appear here for follow-up.
+                  </div>
+                ) : (
+                  <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#020617]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[35%]">Project</TableHead>
+                          <TableHead>Innovation</TableHead>
+                          <TableHead>Documentation</TableHead>
+                          <TableHead>Health</TableHead>
+                          <TableHead className="w-[20%]">Last Updated</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {emergingSignals.map((s) => (
+                          <TableRow
+                            key={s.projectId}
+                            className="cursor-pointer hover:bg-slate-900/60"
+                            onClick={() =>
+                              router.push(`/staff/claims/projects/${s.projectId}`)
+                            }
+                          >
+                            <TableCell className="font-medium">
+                              {s.projectName}
+                            </TableCell>
+                            <TableCell>
+                              {s.innovationDensity ?? "—"}
+                            </TableCell>
+                            <TableCell>
+                              {s.documentationStrength ?? "—"}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
+                                  s.overallHealth
+                                )}`}
+                              >
+                                {s.overallHealth !== null
+                                  ? `${s.overallHealth}`
+                                  : "No score"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-xs text-slate-400">
+                              {formatDateShort(s.lastUpdated)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Row 5 – Defence Readiness */}
+            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
+              <CardHeader>
+                <CardTitle className="text-lg">Claim Defence Status</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Readiness of claims for enquiry defence and HMRC challenge
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-xs text-slate-400">
+                      Claims with Defence Packs
+                    </div>
+                    <div className="text-2xl font-semibold mt-1">
+                      {defenceStatus.claimsWithDefencePacks ?? "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-400">
+                      Simulator Risk Flags
+                    </div>
+                    <div className="text-2xl font-semibold mt-1">
+                      {defenceStatus.simulatorRiskFlags ?? "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-400">
+                      Narrative Alignment Issues
+                    </div>
+                    <div className="text-2xl font-semibold mt-1">
+                      {defenceStatus.narrativeAlignmentIssues ?? "—"}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 text-[11px] text-slate-500">
+                  Defence pack, simulator and narrative check metrics will
+                  automatically populate once corresponding cached tables
+                  (e.g. defence packs, simulator results, claim_narrative_checks)
+                  are connected to this dashboard.
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          {/* Monthly Predicted Submissions Chart */}
           <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
             <CardHeader>
-              <CardTitle className="text-lg">Claim Defence Status</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-orange-400" />
+                Monthly Predicted Submissions
+              </CardTitle>
               <CardDescription className="text-slate-400">
-                Readiness of claims for enquiry defence and HMRC challenge
+                Number of clients expected to submit in each month
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <div className="text-xs text-slate-400">
-                    Claims with Defence Packs
-                  </div>
-                  <div className="text-2xl font-semibold mt-1">
-                    {defenceStatus.claimsWithDefencePacks ?? "—"}
-                  </div>
+              {loading ? (
+                <div className="text-center py-8 text-slate-400">
+                  Loading submission data...
                 </div>
-                <div>
-                  <div className="text-xs text-slate-400">
-                    Simulator Risk Flags
-                  </div>
-                  <div className="text-2xl font-semibold mt-1">
-                    {defenceStatus.simulatorRiskFlags ?? "—"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-slate-400">
-                    Narrative Alignment Issues
-                  </div>
-                  <div className="text-2xl font-semibold mt-1">
-                    {defenceStatus.narrativeAlignmentIssues ?? "—"}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 text-[11px] text-slate-500">
-                Defence pack, simulator and narrative check metrics will
-                automatically populate once corresponding cached tables
-                (e.g. defence packs, simulator results, claim_narrative_checks)
-                are connected to this dashboard.
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Monthly Predicted Submissions Chart */}
-        <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-orange-400" />
-              Monthly Predicted Submissions
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              Number of clients expected to submit in each month
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8 text-slate-400">
-                Loading submission data...
-              </div>
-            ) : monthlyClientsBuckets.every(
+              ) : monthlyClientsBuckets.every(
                 (bucket) =>
                   bucket.onboardedCount === 0 &&
                   bucket.notOnboardedCount === 0
               ) ? (
-              <div className="text-center py-8 text-slate-400">
-                No predicted submissions in the next 24 months.
-              </div>
-            ) : (
-              <>
-                <div className="flex gap-4 h-64 pb-6">
-                  <div className="flex flex-col justify-between h-40 text-xs text-slate-500 pr-2">
-                    {clientYAxisTicks
-                      .slice()
-                      .reverse()
-                      .map((value) => (
-                        <span key={value}>{value}</span>
-                      ))}
-                  </div>
-                  <div className="flex items-end gap-3 h-64 flex-1 border-l border-b border-slate-800 pl-4 pb-6 overflow-x-auto">
-                    {monthlyClientsBuckets.map((bucket, idx) => {
-                      const totalCount =
-                        bucket.onboardedCount + bucket.notOnboardedCount;
+                <div className="text-center py-8 text-slate-400">
+                  No predicted submissions in the next 24 months.
+                </div>
+              ) : (
+                <>
+                  <div className="flex gap-4 h-64 pb-6">
+                    <div className="flex flex-col justify-between h-40 text-xs text-slate-500 pr-2">
+                      {clientYAxisTicks
+                        .slice()
+                        .reverse()
+                        .map((value) => (
+                          <span key={value}>{value}</span>
+                        ))}
+                    </div>
+                    <div className="flex items-end gap-3 h-64 flex-1 border-l border-b border-slate-800 pl-4 pb-6 overflow-x-auto">
+                      {monthlyClientsBuckets.map((bucket, idx) => {
+                        const totalCount =
+                          bucket.onboardedCount + bucket.notOnboardedCount;
 
-                      const onboardedHeight =
-                        maxClientsCount > 0
-                          ? (bucket.onboardedCount / maxClientsCount) * 100
-                          : 0;
-                      const notOnboardedHeight =
-                        maxClientsCount > 0
-                          ? (bucket.notOnboardedCount / maxClientsCount) * 100
-                          : 0;
+                        const onboardedHeight =
+                          maxClientsCount > 0
+                            ? (bucket.onboardedCount / maxClientsCount) * 100
+                            : 0;
+                        const notOnboardedHeight =
+                          maxClientsCount > 0
+                            ? (bucket.notOnboardedCount / maxClientsCount) * 100
+                            : 0;
 
-                      const hoverTitle = `Total: ${totalCount} client${
-                        totalCount === 1 ? "" : "s"
-                      }\nOnboarded: ${
-                        bucket.onboardedCount
-                      }\nNot onboarded: ${bucket.notOnboardedCount}`;
+                        const hoverTitle = `Total: ${totalCount} client${
+                          totalCount === 1 ? "" : "s"
+                        }\nOnboarded: ${
+                          bucket.onboardedCount
+                        }\nNot onboarded: ${bucket.notOnboardedCount}`;
 
-                      return (
-                        <div
-                          key={idx}
-                          className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
-                        >
+                        return (
                           <div
-                            className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-slate-900"
-                            title={hoverTitle}
+                            key={idx}
+                            className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
                           >
-                            {totalCount > 0 && (
-                              <>
-                                {bucket.onboardedCount > 0 && (
-                                  <div
-                                    className="bg-emerald-500"
-                                    style={{
-                                      height: `${onboardedHeight}%`,
-                                    }}
-                                    title={`Onboarded: ${bucket.onboardedCount}`}
-                                  />
-                                )}
-                                {bucket.notOnboardedCount > 0 && (
-                                  <div
-                                    className="bg-orange-400"
-                                    style={{
-                                      height: `${notOnboardedHeight}%`,
-                                    }}
-                                    title={`Not onboarded: ${bucket.notOnboardedCount}`}
-                                  />
-                                )}
-                              </>
-                            )}
+                            <div
+                              className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-slate-900"
+                              title={hoverTitle}
+                            >
+                              {totalCount > 0 && (
+                                <>
+                                  {bucket.onboardedCount > 0 && (
+                                    <div
+                                      className="bg-emerald-500"
+                                      style={{
+                                        height: `${onboardedHeight}%`,
+                                      }}
+                                      title={`Onboarded: ${bucket.onboardedCount}`}
+                                    />
+                                  )}
+                                  {bucket.notOnboardedCount > 0 && (
+                                    <div
+                                      className="bg-orange-400"
+                                      style={{
+                                        height: `${notOnboardedHeight}%`,
+                                      }}
+                                      title={`Not onboarded: ${bucket.notOnboardedCount}`}
+                                    />
+                                  )}
+                                </>
+                              )}
+                            </div>
+                            <span className="mt-2 text-xs text-slate-500 rotate-[-30deg] origin-top">
+                              {formatMonthYear(bucket.date)}
+                            </span>
                           </div>
-                          <span className="mt-2 text-xs text-slate-500 rotate-[-30deg] origin-top">
-                            {formatMonthYear(bucket.date)}
-                          </span>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
-                  <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-emerald-500" />
-                    <span>Onboarded clients (has claim)</span>
+                  <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-sm bg-emerald-500" />
+                      <span>Onboarded clients (has claim)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-sm bg-orange-400" />
+                      <span>Not yet onboarded</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-3 h-3 rounded-sm bg-orange-400" />
-                    <span>Not yet onboarded</span>
-                  </div>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Quick Access Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card
-            className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
-            onClick={() => router.push("/staff/claims")}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-orange-400" />
-                Claims
-              </CardTitle>
-              <CardDescription className="text-slate-400">
-                Manage R&amp;D tax credit claims
-              </CardDescription>
-            </CardHeader>
+                </>
+              )}
+            </CardContent>
           </Card>
 
-          <Card
-            className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
-            onClick={() => router.push("/staff/cif")}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Briefcase className="h-5 w-5 text-orange-400" />
-                Onboarding
-              </CardTitle>
-              <CardDescription className="text-slate-400">
-                Client Information Forms
-              </CardDescription>
-            </CardHeader>
-          </Card>
+          {/* Quick Access Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card
+              className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
+              onClick={() => router.push("/staff/claims")}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-orange-400" />
+                  Claims
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Manage R&amp;D tax credit claims
+                </CardDescription>
+              </CardHeader>
+            </Card>
 
-          <Card
-            className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
-            onClick={() => router.push("/staff/clients")}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-orange-400" />
-                Clients
-              </CardTitle>
-              <CardDescription className="text-slate-400">
-                Client management
-              </CardDescription>
-            </CardHeader>
-          </Card>
+            <Card
+              className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
+              onClick={() => router.push("/staff/cif")}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-orange-400" />
+                  Onboarding
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Client Information Forms
+                </CardDescription>
+              </CardHeader>
+            </Card>
 
-          <Card
-            className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
-            onClick={() => router.push("/staff/admin")}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-orange-400" />
-                Admin
-              </CardTitle>
-              <CardDescription className="text-slate-400">
-                Administrative functions
-              </CardDescription>
-            </CardHeader>
-          </Card>
+            <Card
+              className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
+              onClick={() => router.push("/staff/clients")}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-orange-400" />
+                  Clients
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Client management
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card
+              className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
+              onClick={() => router.push("/staff/admin")}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-orange-400" />
+                  Admin
+                </CardTitle>
+                <CardDescription className="text-slate-400">
+                  Administrative functions
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
         </div>
       </div>
     </StaffLayout>

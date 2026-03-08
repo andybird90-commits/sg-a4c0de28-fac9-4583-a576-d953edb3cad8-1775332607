@@ -322,7 +322,7 @@ export default function StaffRdAgentAcademyPage() {
         description="Professional training for R&D tax advisers. Learn legislation, claim writing, evidence assessment, and HMRC enquiry defence."
       />
       <StaffLayout title="RD Agent Academy">
-        <div className="min-h-screen bg-[#020617] text-slate-100">
+        <div className="min-h-screen bg-background text-foreground">
           <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
             <header className="mb-8">
               <h1 className="mb-3 text-3xl font-semibold text-slate-50 sm:text-4xl">

@@ -143,7 +143,7 @@ export default function ClaimsPage() {
 
   return (
     <StaffLayout>
-      <div className="space-y-6">
+      <div className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-3xl font-bold tracking-tight text-slate-100">
