@@ -96,10 +96,13 @@ export function QuickMessageModal({
     });
   };
 
-  // Filter users based on search
-  const filteredUsers = users.filter(user =>
-    (user.full_name || "").toLowerCase().includes(mentionSearch.toLowerCase()) ||
-    (user.email || "").toLowerCase().includes(mentionSearch.toLowerCase())
+  // Filter users based on search, excluding the current user so you can't message yourself
+  const filteredUsers = users.filter((profile) =>
+    profile.id !== user?.id &&
+    (
+      (profile.full_name || "").toLowerCase().includes(mentionSearch.toLowerCase()) ||
+      (profile.email || "").toLowerCase().includes(mentionSearch.toLowerCase())
+    )
   );
 
   const handleSend = async () => {

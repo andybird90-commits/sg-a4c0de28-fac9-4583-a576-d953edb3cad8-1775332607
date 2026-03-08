@@ -205,7 +205,17 @@ export async function sendMessage(
   }
 
   // Insert recipients
-  const recipientInserts = recipientIds.map(recipientId => ({
+  // De-duplicate and ensure we never send a message back to the sender
+  const uniqueRecipientIds = Array.from(new Set(recipientIds)).filter(
+    (id) => id !== user.id
+  );
+
+  if (uniqueRecipientIds.length === 0) {
+    console.warn("[messageService.sendMessage] No valid recipients after filtering (self-recipient removed).");
+    throw new Error("No valid recipients selected for this message.");
+  }
+
+  const recipientInserts = uniqueRecipientIds.map((recipientId) => ({
     message_id: message.id,
     recipient_id: recipientId,
   }));
@@ -310,6 +320,25 @@ export async function markMessageAsRead(messageId: string): Promise<void> {
 }
 
 /**
+ * Delete a message from the current user's inbox (recipient-only delete)
+ */
+export async function deleteMessageForCurrentUser(messageId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("message_recipients")
+    .delete()
+    .eq("message_id", messageId)
+    .eq("recipient_id", user.id);
+
+  if (error) {
+    console.error("[messageService.deleteMessageForCurrentUser] Error:", error);
+    throw error;
+  }
+}
+
+/**
  * Get unread message count
  */
 export async function getUnreadCount(): Promise<number> {
@@ -373,6 +402,7 @@ export const messageService = {
   getMessageThread,
   sendMessage,
   markMessageAsRead,
+  deleteMessageForCurrentUser,
   getUnreadCount,
   searchUsersForMention,
   resolveOrgId,
