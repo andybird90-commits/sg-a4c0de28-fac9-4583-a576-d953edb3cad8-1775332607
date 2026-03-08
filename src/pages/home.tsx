@@ -31,6 +31,8 @@ import { organisationService, type Project } from "@/services/organisationServic
 import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { VoiceNoteModal } from "@/components/voice-notes/VoiceNoteModal";
+import { organisationNotificationStatusService } from "@/services/organisationNotificationStatusService";
+import type { NotificationStatusState } from "@/services/organisationNotificationStatusService";
 
 export default function HomePage() {
   const router = useRouter();
@@ -46,6 +48,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
   const [isVoiceNoteOpen, setIsVoiceNoteOpen] = useState(false);
+  const [notificationStatus, setNotificationStatus] = useState<NotificationStatusState | null>(null);
+  const [notificationDeadline, setNotificationDeadline] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) {
@@ -64,6 +68,20 @@ export default function HomePage() {
 
     if (currentOrg) {
       loadDashboardData();
+      organisationNotificationStatusService
+        .getOrganisationNotificationStatus(currentOrg.id)
+        .then((status) => {
+          if (status) {
+            setNotificationStatus(status.status as NotificationStatusState);
+            setNotificationDeadline(status.deadline_date);
+          } else {
+            setNotificationStatus(null);
+            setNotificationDeadline(null);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load organisation notification status for dashboard", err);
+        });
     } else {
       setLoading(false);
     }
@@ -306,6 +324,60 @@ export default function HomePage() {
                   {stats.recentActivity}
                 </div>
                 <p className="text-xs text-slate-400 mt-1">New evidence added</p>
+              </CardContent>
+            </Card>
+
+            {/* HMRC Notification Status */}
+            <Card className="bg-[#050b16] border border-slate-800 shadow-professional-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 text-slate-200">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-purple-500/15 text-purple-300">
+                    <Shield className="w-4 h-4" />
+                  </span>
+                  <span>HMRC Notification</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {notificationStatus ? (
+                  <>
+                    <div className="text-sm font-semibold text-slate-50">
+                      {notificationStatus === "required" && "Notification required"}
+                      {notificationStatus === "not_required" && "Notification not required"}
+                      {notificationStatus === "unclear" && "Status unclear"}
+                      {notificationStatus === "overdue" && "Notification overdue"}
+                      {notificationStatus === "submitted" && "Notification submitted"}
+                    </div>
+                    {notificationDeadline && (
+                      <p className="text-xs text-slate-400 mt-1">
+                        Deadline: {new Date(notificationDeadline).toLocaleDateString("en-GB")}
+                      </p>
+                    )}
+                    <p className="text-xs text-slate-500 mt-2">
+                      Manage in{" "}
+                      <button
+                        type="button"
+                        onClick={() => router.push("/onboarding")}
+                        className="underline underline-offset-2 text-slate-200"
+                      >
+                        onboarding
+                      </button>
+                      .
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-xs text-slate-400">
+                    We haven&apos;t run an HMRC notification check for this organisation yet.
+                    Start in{" "}
+                    <button
+                      type="button"
+                      onClick={() => router.push("/onboarding")}
+                      className="underline underline-offset-2 text-slate-200"
+                    >
+                      onboarding
+                    </button>
+                    .
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
