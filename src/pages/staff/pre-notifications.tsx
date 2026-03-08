@@ -76,6 +76,7 @@ export default function StaffPreNotificationsPage() {
   const [formContactRole, setFormContactRole] = useState("");
   const [formAgentName, setFormAgentName] = useState("RD Companion");
   const [formSummary, setFormSummary] = useState("");
+  const [prefillingFromOnboarding, setPrefillingFromOnboarding] = useState(false);
 
   useEffect(() => {
     if (!isStaff) {
@@ -452,11 +453,44 @@ export default function StaffPreNotificationsPage() {
               </label>
               <Select
                 value={formOrgId}
-                onValueChange={(value) => {
+                onValueChange={async (value) => {
                   setFormOrgId(value);
+
                   const org = organisations.find((o) => o.id === value);
-                  if (org && !formCompanyName) {
-                    setFormCompanyName(org.name);
+                  if (org) {
+                    setFormCompanyName(org.name || "");
+                  }
+
+                  // Attempt to prefill from existing onboarding notification status
+                  setPrefillingFromOnboarding(true);
+                  try {
+                    const existing =
+                      await organisationNotificationStatusService.getOrganisationNotificationStatus(
+                        value
+                      );
+                    if (existing) {
+                      if (existing.accounting_period_start) {
+                        setFormPeriodStart(existing.accounting_period_start);
+                      }
+                      if (existing.accounting_period_end) {
+                        setFormPeriodEnd(existing.accounting_period_end);
+                      }
+                      if (existing.internal_rd_contact_name) {
+                        setFormContactName(existing.internal_rd_contact_name);
+                      }
+                      if (existing.organisation_rd_summary) {
+                        setFormSummary(existing.organisation_rd_summary);
+                      }
+                      // UTR and contact role are not stored in organisation_notification_status,
+                      // so they remain manual inputs.
+                    }
+                  } catch (error) {
+                    console.error(
+                      "Failed to prefill pre-notification form from onboarding data",
+                      error
+                    );
+                  } finally {
+                    setPrefillingFromOnboarding(false);
                   }
                 }}
               >
@@ -471,6 +505,11 @@ export default function StaffPreNotificationsPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {prefillingFromOnboarding && (
+                <p className="text-xs text-muted-foreground">
+                  Prefilling details from onboarding…
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -574,7 +613,7 @@ export default function StaffPreNotificationsPage() {
               >
                 Cancel
               </Button>
-              <Button onClick={handleCreate} disabled={submitting}>
+              <Button onClick={handleCreate} disabled={submitting || prefillingFromOnboarding}>
                 {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Create &amp; export PDF
               </Button>
