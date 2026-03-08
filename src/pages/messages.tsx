@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { messageService, MessageWithDetails } from "@/services/messageService";
-import { Inbox, Send, Reply, Users, AtSign, Loader2 } from "lucide-react";
+import { Inbox, Send, Reply, Users, AtSign, Loader2, Trash2 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { StaffLayout } from "@/components/staff/StaffLayout";
 import { useStaffStatus } from "@/hooks/useStaffStatus";
@@ -32,6 +32,9 @@ export default function MessagesPage() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [replyTo, setReplyTo] = useState<MessageWithDetails | null>(null);
   const [activeTab, setActiveTab] = useState("inbox");
+  const [selectedMessage, setSelectedMessage] = useState<MessageWithDetails | null>(null);
+  const [selectedMessageType, setSelectedMessageType] = useState<"inbox" | "sent">("inbox");
+  const [detailOpen, setDetailOpen] = useState(false);
 
   // Compose form state
   const [recipients, setRecipients] = useState("");
@@ -186,7 +189,15 @@ export default function MessagesPage() {
     setShowMentions(false);
   };
 
-  const MessageCard = ({ message, type }: { message: MessageWithDetails; type: "inbox" | "sent" }) => {
+  const MessageCard = ({
+    message,
+    type,
+    onOpen,
+  }: {
+    message: MessageWithDetails;
+    type: "inbox" | "sent";
+    onOpen: () => void;
+  }) => {
     const isUnread = type === "inbox" && !message.recipients.find(r => r.recipient_id === profile?.id)?.read_at;
     
     return (
@@ -196,6 +207,7 @@ export default function MessagesPage() {
           if (type === "inbox" && isUnread) {
             handleMarkAsRead(message.id);
           }
+          onOpen();
         }}
       >
         <CardHeader className="pb-3">
@@ -299,7 +311,16 @@ export default function MessagesPage() {
                   </Card>
                 ) : (
                   inbox.map(message => (
-                    <MessageCard key={message.id} message={message} type="inbox" />
+                    <MessageCard
+                      key={message.id}
+                      message={message}
+                      type="inbox"
+                      onOpen={() => {
+                        setSelectedMessage(message);
+                        setSelectedMessageType("inbox");
+                        setDetailOpen(true);
+                      }}
+                    />
                   ))
                 )}
               </TabsContent>
@@ -318,7 +339,16 @@ export default function MessagesPage() {
                   </Card>
                 ) : (
                   sent.map(message => (
-                    <MessageCard key={message.id} message={message} type="sent" />
+                    <MessageCard
+                      key={message.id}
+                      message={message}
+                      type="sent"
+                      onOpen={() => {
+                        setSelectedMessage(message);
+                        setSelectedMessageType("sent");
+                        setDetailOpen(true);
+                      }}
+                    />
                   ))
                 )}
               </TabsContent>
@@ -449,7 +479,16 @@ export default function MessagesPage() {
                   </Card>
                 ) : (
                   inbox.map(message => (
-                    <MessageCard key={message.id} message={message} type="inbox" />
+                    <MessageCard
+                      key={message.id}
+                      message={message}
+                      type="inbox"
+                      onOpen={() => {
+                        setSelectedMessage(message);
+                        setSelectedMessageType("inbox");
+                        setDetailOpen(true);
+                      }}
+                    />
                   ))
                 )}
               </TabsContent>
@@ -468,7 +507,16 @@ export default function MessagesPage() {
                   </Card>
                 ) : (
                   sent.map(message => (
-                    <MessageCard key={message.id} message={message} type="sent" />
+                    <MessageCard
+                      key={message.id}
+                      message={message}
+                      type="sent"
+                      onOpen={() => {
+                        setSelectedMessage(message);
+                        setSelectedMessageType("sent");
+                        setDetailOpen(true);
+                      }}
+                    />
                   ))
                 )}
               </TabsContent>
@@ -560,6 +608,105 @@ export default function MessagesPage() {
           </div>
         </Layout>
       )}
+
+      {/* Message Detail Dialog (shared for both staff and non-staff views) */}
+      <Dialog
+        open={detailOpen && !!selectedMessage}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) {
+            setSelectedMessage(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-500">
+                  {selectedMessage
+                    ? selectedMessage.sender?.full_name || "Unknown sender"
+                    : ""}
+                </span>
+                <span>{selectedMessage?.subject}</span>
+              </div>
+              {selectedMessage && (
+                <span className="text-xs text-gray-400">
+                  {new Date(selectedMessage.created_at).toLocaleString()}
+                </span>
+              )}
+            </DialogTitle>
+            {selectedMessage?.entity_type && selectedMessage?.entity_id && (
+              <DialogDescription>
+                Linked to {selectedMessage.entity_type} –{" "}
+                <span className="font-mono text-xs">
+                  {selectedMessage.entity_id}
+                </span>
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-md bg-gray-50 p-4 text-sm text-gray-800 whitespace-pre-wrap">
+              {selectedMessage?.body}
+            </div>
+          </div>
+
+          <DialogFooter className="flex items-center justify-between">
+            <div className="flex gap-2">
+              {selectedMessageType === "inbox" && selectedMessage && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex items-center gap-1"
+                  onClick={async () => {
+                    try {
+                      await messageService.deleteMessageForCurrentUser(
+                        selectedMessage.id
+                      );
+                      toast({
+                        title: "Message deleted",
+                        description: "The message has been removed from your inbox.",
+                      });
+                      setDetailOpen(false);
+                      setSelectedMessage(null);
+                      loadMessages();
+                    } catch (error) {
+                      console.error("Error deleting message:", error);
+                      toast({
+                        title: "Error",
+                        description: "Failed to delete message",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              {selectedMessage && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    handleReply(selectedMessage);
+                    setDetailOpen(false);
+                  }}
+                >
+                  <Reply className="h-4 w-4 mr-1" />
+                  Reply
+                </Button>
+              )}
+              <Button type="button" onClick={() => setDetailOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
