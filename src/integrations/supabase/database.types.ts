@@ -2207,6 +2207,74 @@ export type Database = {
           },
         ]
       }
+      organisation_notification_status: {
+        Row: {
+          accounting_period_end: string | null
+          accounting_period_start: string | null
+          claimed_within_last_3_years: boolean | null
+          created_at: string
+          deadline_date: string | null
+          has_claimed_before: boolean | null
+          id: string
+          internal_rd_contact_email: string | null
+          internal_rd_contact_name: string | null
+          notes: string | null
+          notification_required: boolean | null
+          organisation_id: string
+          organisation_rd_summary: string | null
+          status: string
+          submission_date: string | null
+          submission_reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          accounting_period_end?: string | null
+          accounting_period_start?: string | null
+          claimed_within_last_3_years?: boolean | null
+          created_at?: string
+          deadline_date?: string | null
+          has_claimed_before?: boolean | null
+          id?: string
+          internal_rd_contact_email?: string | null
+          internal_rd_contact_name?: string | null
+          notes?: string | null
+          notification_required?: boolean | null
+          organisation_id: string
+          organisation_rd_summary?: string | null
+          status?: string
+          submission_date?: string | null
+          submission_reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accounting_period_end?: string | null
+          accounting_period_start?: string | null
+          claimed_within_last_3_years?: boolean | null
+          created_at?: string
+          deadline_date?: string | null
+          has_claimed_before?: boolean | null
+          id?: string
+          internal_rd_contact_email?: string | null
+          internal_rd_contact_name?: string | null
+          notes?: string | null
+          notification_required?: boolean | null
+          organisation_id?: string
+          organisation_rd_summary?: string | null
+          status?: string
+          submission_date?: string | null
+          submission_reference?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organisation_notification_status_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_users: {
         Row: {
           created_at: string
