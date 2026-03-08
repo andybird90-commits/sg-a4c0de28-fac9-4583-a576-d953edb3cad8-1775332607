@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { messageService } from "@/services/messageService";
 import { profileService } from "@/services/profileService";
 import type { Profile } from "@/services/profileService";
+import { useApp } from "@/contexts/AppContext";
 
 interface QuickMessageModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export function QuickMessageModal({
   const [mentionSearch, setMentionSearch] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const { toast } = useToast();
+  const { currentOrg } = useApp();
 
   // Generate subject based on entity type
   const getSubject = () => {
@@ -111,11 +113,18 @@ export function QuickMessageModal({
         }
       });
 
-      // Resolve Org ID
-      const orgId = await messageService.resolveOrgId(entityType, entityId);
-      
+      const resolvedFromEntity = await messageService.resolveOrgId(entityType, entityId);
+      const orgId = resolvedFromEntity || currentOrg?.id || null;
+
       if (!orgId) {
-        throw new Error("Could not determine Organization for this item. Please contact support.");
+        toast({
+          title: "Cannot send message",
+          description:
+            "We could not determine which organisation this message belongs to. Please make sure you have a client selected or contact support.",
+          variant: "destructive"
+        });
+        setSending(false);
+        return;
       }
 
       // Send message
