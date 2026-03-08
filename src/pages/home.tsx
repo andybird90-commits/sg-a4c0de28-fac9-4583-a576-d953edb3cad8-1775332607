@@ -24,8 +24,8 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
-  Mic,
-} from "lucide-react";
+  Mic } from
+"lucide-react";
 import { evidenceService } from "@/services/evidenceService";
 import { organisationService, type Project } from "@/services/organisationService";
 import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
@@ -45,7 +45,7 @@ export default function HomePage() {
     totalEvidence: 0,
     evidenceThisMonth: 0,
     activeProjects: 0,
-    recentActivity: 0,
+    recentActivity: 0
   });
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
@@ -70,20 +70,20 @@ export default function HomePage() {
 
     if (currentOrg) {
       loadDashboardData();
-      organisationNotificationStatusService
-        .getOrganisationNotificationStatus(currentOrg.id)
-        .then((status) => {
-          if (status) {
-            setNotificationStatus(status.status as NotificationStatusState);
-            setNotificationDeadline(status.deadline_date);
-          } else {
-            setNotificationStatus(null);
-            setNotificationDeadline(null);
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to load organisation notification status for dashboard", err);
-        });
+      organisationNotificationStatusService.
+      getOrganisationNotificationStatus(currentOrg.id).
+      then((status) => {
+        if (status) {
+          setNotificationStatus(status.status as NotificationStatusState);
+          setNotificationDeadline(status.deadline_date);
+        } else {
+          setNotificationStatus(null);
+          setNotificationDeadline(null);
+        }
+      }).
+      catch((err) => {
+        console.error("Failed to load organisation notification status for dashboard", err);
+      });
     } else {
       setLoading(false);
     }
@@ -96,12 +96,12 @@ export default function HomePage() {
     setAuthError(false);
     try {
       const [oldEvidenceData, projectsData] = await Promise.all([
-        evidenceService.getEvidence(currentOrg.id),
-        organisationService.getProjects(currentOrg.id),
-      ]);
+      evidenceService.getEvidence(currentOrg.id),
+      organisationService.getProjects(currentOrg.id)]
+      );
 
       const sidekickEvidencePromises = projectsData.map((project) =>
-        sidekickEvidenceService.getEvidenceByProject(project.id).catch(() => []),
+      sidekickEvidenceService.getEvidenceByProject(project.id).catch(() => [])
       );
       const sidekickEvidenceArrays = await Promise.all(sidekickEvidencePromises);
       const sidekickEvidenceData = sidekickEvidenceArrays.flat();
@@ -124,7 +124,7 @@ export default function HomePage() {
         totalEvidence: allEvidence.length,
         evidenceThisMonth: thisMonth,
         activeProjects: projectsData.length,
-        recentActivity,
+        recentActivity
       });
     } catch (error: any) {
       console.error("Error loading dashboard data:", error);
@@ -134,14 +134,14 @@ export default function HomePage() {
         notify({
           type: "error",
           title: "Authentication Error",
-          message: "Your session has expired. Please log in again.",
+          message: "Your session has expired. Please log in again."
         });
         setTimeout(() => router.push("/auth/login"), 2000);
       } else {
         notify({
           type: "error",
           title: "Load failed",
-          message: error.message || "Failed to load dashboard data",
+          message: error.message || "Failed to load dashboard data"
         });
       }
     } finally {
@@ -166,8 +166,8 @@ export default function HomePage() {
             </CardContent>
           </Card>
         </div>
-      </Layout>
-    );
+      </Layout>);
+
   }
 
   if (authError) {
@@ -187,8 +187,8 @@ export default function HomePage() {
             </CardContent>
           </Card>
         </div>
-      </Layout>
-    );
+      </Layout>);
+
   }
 
   if (!currentOrg) {
@@ -206,16 +206,16 @@ export default function HomePage() {
                 </p>
                 <Button
                   onClick={() => router.push("/organisation-select")}
-                  className="gradient-primary w-full sm:w-auto text-slate-950"
-                >
+                  className="gradient-primary w-full sm:w-auto text-slate-950">
+                  
                   Select Organisation
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
-      </Layout>
-    );
+      </Layout>);
+
   }
 
   return (
@@ -232,22 +232,22 @@ export default function HomePage() {
                 <div className="flex items-center gap-2 text-slate-400 flex-wrap">
                   <Building2 className="h-4 w-4 flex-shrink-0" />
                   <span className="font-medium truncate text-slate-200">{currentOrg.name}</span>
-                  {currentOrg.sidekick_enabled && (
-                    <Badge
-                      variant="secondary"
-                      className="ml-2 bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-xs"
-                    >
+                  {currentOrg.sidekick_enabled &&
+                  <Badge
+                    variant="secondary"
+                    className="ml-2 bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-xs">
+                    
                       Companion Enabled
                     </Badge>
-                  )}
+                  }
                 </div>
               </div>
               <div className="flex w-full sm:w-auto sm:justify-end">
                 <Button
                   onClick={() => setIsVoiceNoteOpen(true)}
                   size="lg"
-                  className="gradient-primary shadow-professional-md hover:shadow-professional-lg transition-professional w-full sm:w-auto text-slate-950"
-                >
+                  className="gradient-primary shadow-professional-md hover:shadow-professional-lg transition-professional w-full sm:w-auto text-slate-950">
+                  
                   <Mic className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                   Voice Note
                 </Button>
@@ -343,59 +343,107 @@ export default function HomePage() {
                   <Button
                     onClick={() => router.push("/projects/new")}
                     variant="outline"
-                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
+                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5">
+                    
                     <FolderOpen className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">New Project</span>
                   </Button>
                   <Button
                     onClick={() => router.push("/projects")}
                     variant="outline"
-                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
+                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5">
+                    
                     <BarChart3 className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Browse Projects</span>
                   </Button>
                   <Button
                     onClick={() => router.push("/claims/new")}
                     variant="outline"
-                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
+                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5">
+                    
                     <FileText className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Start New Claim</span>
                   </Button>
                   <Button
                     onClick={() => router.push("/feasibility")}
                     variant="outline"
-                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
+                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5">
+                    
                     <Lightbulb className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Feasibility Analysis</span>
                   </Button>
                   <Button
                     onClick={() => router.push("/feasibility/history")}
                     variant="outline"
-                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
+                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5">
+                    
                     <Clock className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Feasibility History</span>
                   </Button>
                   <Button
                     onClick={() => router.push("/evidence/capture")}
                     variant="outline"
-                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
+                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5">
+                    
                     <Camera className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Capture Evidence</span>
                   </Button>
                   <Button
                     onClick={() => router.push("/settings")}
                     variant="outline"
-                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
+                    className="w-full justify-start border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5">
+                    
                     <Settings className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
                     <span className="truncate">Settings</span>
                   </Button>
+                </CardContent>
+              </Card>
+
+              {/* HMRC Notification card under Quick Actions, same visual style */}
+              <Card className="border border-slate-800 bg-slate-900/80 shadow-professional-md">
+                <CardHeader className="pb-3 sm:pb-4">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-slate-100">
+                    <div className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-purple-500/15 text-purple-300">
+                      <Shield className="h-4 w-4" />
+                    </div>
+                    <span className="truncate">HMRC Notification</span>
+                    {notificationStatus &&
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded-full border",
+                        notificationStatus === "submitted" ?
+                        "border-emerald-500/60 text-emerald-300 bg-emerald-500/10" :
+                        notificationStatus === "not_required" ?
+                        "border-slate-500/60 text-slate-200 bg-slate-500/10" :
+                        notificationStatus === "overdue" ?
+                        "border-red-500/60 text-red-300 bg-red-500/10" :
+                        "border-amber-500/60 text-amber-300 bg-amber-500/10"
+                      )}>
+                      
+                        {notificationStatus === "submitted" && "Completed"}
+                        {notificationStatus === "not_required" && "Not required"}
+                        {notificationStatus === "required" && "Required"}
+                        {notificationStatus === "overdue" && "Overdue"}
+                        {notificationStatus === "unclear" && "Unclear"}
+                      </Badge>
+                    }
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="mt-1 text-xs text-slate-400">
+                    {notificationStatus ?
+                    notificationStatus === "submitted" ?
+                    "Your HMRC pre-notification has been completed for this organisation. Your advisor will let you know if anything further is needed." :
+                    notificationStatus === "not_required" ?
+                    "Based on your onboarding answers, HMRC pre-notification is not required for this organisation." :
+                    notificationStatus === "required" ?
+                    "Your advisor needs to complete an HMRC pre-notification for this organisation before a claim can be submitted." :
+                    notificationStatus === "overdue" ?
+                    "Your HMRC pre-notification is overdue. Your advisor will contact you to complete this before submitting a claim." :
+                    "Your advisor is still assessing whether an HMRC pre-notification is required for this organisation." :
+                    "We haven’t run an HMRC notification check for this organisation yet. Your advisor will complete this as part of the onboarding process."}
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -408,26 +456,26 @@ export default function HomePage() {
                       <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-orange-400 flex-shrink-0" />
                       <span className="truncate">Recent Projects</span>
                     </CardTitle>
-                    {projects.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push("/projects")}
-                        className="text-orange-400 hover:text-orange-300 hover:bg-slate-800 flex-shrink-0 text-xs sm:text-sm"
-                      >
+                    {projects.length > 0 &&
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push("/projects")}
+                      className="text-orange-400 hover:text-orange-300 hover:bg-slate-800 flex-shrink-0 text-xs sm:text-sm">
+                      
                         View All
                         <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
-                    )}
+                    }
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
-                    <div className="flex items-center justify-center py-12">
+                  {loading ?
+                  <div className="flex items-center justify-center py-12">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                    </div>
-                  ) : projects.length === 0 ? (
-                    <div className="text-center py-12 px-4">
+                    </div> :
+                  projects.length === 0 ?
+                  <div className="text-center py-12 px-4">
                       <div className="bg-slate-900 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-4 border border-slate-700">
                         <FolderOpen className="h-6 w-6 sm:h-8 sm:w-8 text-slate-400" />
                       </div>
@@ -436,22 +484,22 @@ export default function HomePage() {
                         Create your first project to organize your R&D work
                       </p>
                       <Button
-                        onClick={() => router.push("/projects/new")}
-                        className="gradient-primary w-full sm:w-auto text-slate-950"
-                      >
+                      onClick={() => router.push("/projects/new")}
+                      className="gradient-primary w-full sm:w-auto text-slate-950">
+                      
                         <FolderOpen className="mr-2 h-4 w-4" />
                         Create Your First Project
                       </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 sm:space-y-4">
+                    </div> :
+
+                  <div className="space-y-3 sm:space-y-4">
                       {projects.slice(0, 8).map((project) => {
-                        return (
-                          <div
-                            key={project.id}
-                            onClick={() => router.push(`/projects/${project.id}`)}
-                            className="p-4 sm:p-5 rounded-lg border border-slate-800 hover:border-orange-500/70 shadow-professional transition-professional cursor-pointer bg-slate-900/80"
-                          >
+                      return (
+                        <div
+                          key={project.id}
+                          onClick={() => router.push(`/projects/${project.id}`)}
+                          className="p-4 sm:p-5 rounded-lg border border-slate-800 hover:border-orange-500/70 shadow-professional transition-professional cursor-pointer bg-slate-900/80">
+                          
                             <div className="flex items-start justify-between gap-3 sm:gap-4">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -459,19 +507,19 @@ export default function HomePage() {
                                     {project.name}
                                   </h3>
                                   <Badge
-                                    variant="default"
-                                    className="text-2xs bg-emerald-500/15 text-emerald-400 border-emerald-500/30 flex items-center gap-1 flex-shrink-0"
-                                  >
+                                  variant="default"
+                                  className="text-2xs bg-emerald-500/15 text-emerald-400 border-emerald-500/30 flex items-center gap-1 flex-shrink-0">
+                                  
                                     <CheckCircle2 className="h-3 w-3" />
                                     Active
                                   </Badge>
                                 </div>
 
-                                {project.description && (
-                                  <p className="text-xs sm:text-sm text-slate-400 mb-2 sm:mb-3 line-clamp-2">
+                                {project.description &&
+                              <p className="text-xs sm:text-sm text-slate-400 mb-2 sm:mb-3 line-clamp-2">
                                     {project.description}
                                   </p>
-                                )}
+                              }
 
                                 <div className="flex items-center text-xs text-slate-500">
                                   <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
@@ -487,120 +535,33 @@ export default function HomePage() {
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          </div>);
+
+                    })}
                     </div>
-                  )}
+                  }
                 </CardContent>
               </Card>
             </div>
           </div>
 
           {/* Quick actions */}
-          <section className="mt-6">
-            <h2 className="text-xs font-medium text-slate-400 tracking-wide uppercase mb-3">
-              Quick actions
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {/* existing quick action cards here */}
-            </div>
-          </section>
+          
 
-          {/* HMRC Notification Status – styled like a quick action card and placed just below */}
-          <section className="mt-3">
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="h-9 w-9 rounded-xl bg-purple-500/15 flex items-center justify-center text-purple-300">
-                  <Shield className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-semibold text-slate-50">HMRC Notification</h2>
-                    {notificationStatus && (
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[10px] px-1.5 py-0.5 rounded-full border",
-                          notificationStatus === "submitted"
-                            ? "border-emerald-500/60 text-emerald-300 bg-emerald-500/10"
-                            : notificationStatus === "not_required"
-                              ? "border-slate-500/60 text-slate-200 bg-slate-500/10"
-                              : notificationStatus === "overdue"
-                                ? "border-red-500/60 text-red-300 bg-red-500/10"
-                                : "border-amber-500/60 text-amber-300 bg-amber-500/10"
-                        )}
-                      >
-                        {notificationStatus === "submitted" && "Completed"}
-                        {notificationStatus === "not_required" && "Not required"}
-                        {notificationStatus === "required" && "Required"}
-                        {notificationStatus === "overdue" && "Overdue"}
-                        {notificationStatus === "unclear" && "Unclear"}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="mt-1 text-xs text-slate-400 max-w-xl">
-                    {notificationStatus
-                      ? notificationStatus === "submitted"
-                        ? "We have a completed HMRC pre-notification recorded for this organisation."
-                        : notificationStatus === "not_required"
-                          ? "Based on your onboarding answers, pre-notification is not required for this organisation."
-                          : notificationStatus === "required"
-                            ? "This organisation still needs an HMRC pre-notification before a claim can be submitted."
-                            : notificationStatus === "overdue"
-                              ? "This organisation's HMRC pre-notification is overdue. Please complete it as soon as possible."
-                              : "We need more information to determine this organisation's HMRC notification status."
-                      : "We haven't run an HMRC notification check for this organisation yet. Start in "}
-                    {!notificationStatus && (
-                      <Link
-                        href="/onboarding"
-                        className="text-sky-400 hover:text-sky-300 underline-offset-2 hover:underline"
-                      >
-                        onboarding
-                      </Link>
-                    )}
-                  </p>
-                </div>
-              </div>
 
-              <div className="flex flex-col sm:items-end gap-2">
-                <div className="flex flex-wrap gap-2">
-                  <Link href="/onboarding">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-slate-700 bg-slate-900/80 text-slate-100 hover:bg-slate-800/80"
-                    >
-                      Review onboarding
-                    </Button>
-                  </Link>
-                  <Link href="/staff/pre-notifications">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="bg-purple-500/90 text-slate-950 hover:bg-purple-400"
-                    >
-                      Manage pre-notifications
-                    </Button>
-                  </Link>
-                </div>
-                {notificationStatus && notificationStatus !== "submitted" && (
-                  <p className="text-[11px] text-slate-500 max-w-xs text-right">
-                    A pre-notification must be completed before you can submit a new claim
-                    for this organisation.
-                  </p>
-                )}
-              </div>
-            </div>
-          </section>
+
+
+
+
+          
         </div>
       </div>
       <VoiceNoteModal
         open={isVoiceNoteOpen}
         onClose={() => setIsVoiceNoteOpen(false)}
         organisationId={currentOrg.id}
-        userId={user?.id ?? ""}
-      />
-    </Layout>
-  );
+        userId={user?.id ?? ""} />
+      
+    </Layout>);
+
 }
