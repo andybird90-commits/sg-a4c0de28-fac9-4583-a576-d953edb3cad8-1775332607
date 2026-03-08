@@ -93,6 +93,20 @@ export const organisationService = {
     }
   },
 
+  async getAllOrganisations(): Promise<Organisation[]> {
+    const { data, error } = await supabase
+      .from("organisations")
+      .select("id, name, organisation_code, sidekick_enabled, created_at")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching all organisations:", error);
+      throw error;
+    }
+
+    return (data || []) as Organisation[];
+  },
+
   async joinOrganisation(orgId: string, role: string = "client"): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");

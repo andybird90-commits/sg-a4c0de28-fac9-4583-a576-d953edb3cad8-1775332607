@@ -123,16 +123,24 @@ export default function OnboardingPage() {
     try {
       const result =
         await organisationNotificationStatusService.upsertOrganisationNotificationStatus({
-          organisationId: currentOrg.id,
-          answers: {
-            hasClaimedBefore,
-            claimedWithinLast3Years,
-            accountingPeriodStart: accountingPeriodStart || null,
-            accountingPeriodEnd: accountingPeriodEnd || null,
-            internalRdContactName: internalRdContactName || null,
-            internalRdContactEmail: internalRdContactEmail || null,
-            organisationRdSummary: organisationRdSummary || null,
-          },
+          organisation_id: currentOrg.id,
+          accounting_period_start: accountingPeriodStart || null,
+          accounting_period_end: accountingPeriodEnd || null,
+          has_claimed_before:
+            hasClaimedBefore === "yes"
+              ? true
+              : hasClaimedBefore === "no"
+              ? false
+              : null,
+          claimed_within_last_3_years:
+            claimedWithinLast3Years === "yes"
+              ? true
+              : claimedWithinLast3Years === "no"
+              ? false
+              : null,
+          internal_rd_contact_name: internalRdContactName || null,
+          internal_rd_contact_email: internalRdContactEmail || null,
+          organisation_rd_summary: organisationRdSummary || null,
         });
 
       setNotificationStatus(result.status as NotificationStatusState);

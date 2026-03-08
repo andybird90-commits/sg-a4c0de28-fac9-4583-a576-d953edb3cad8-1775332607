@@ -22,6 +22,9 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { SidekickResearchPanel } from "@/components/staff/cif/SidekickResearchPanel";
+import { clientFeeReconciliationService } from "@/services/clientFeeReconciliationService";
+import { organisationNotificationStatusService } from "@/services/organisationNotificationStatusService";
+import type { NotificationStatusState } from "@/services/organisationNotificationStatusService";
 
 const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -132,6 +135,9 @@ export default function StaffClients() {
   const [clientAnalysisData, setClientAnalysisData] = useState<any | null>(null);
   const [clientResearchFallbackText, setClientResearchFallbackText] = useState("");
   const [clientSidekickLoading, setClientSidekickLoading] = useState(false);
+  const [notificationStatuses, setNotificationStatuses] = useState<
+    Record<string, NotificationStatusState>
+  >({});
 
   const [searchToOnboard, setSearchToOnboard] = useState<string>("");
   const [sortToOnboard, setSortToOnboard] = useState<"name-asc" | "name-desc">("name-asc");
@@ -792,6 +798,64 @@ export default function StaffClients() {
     );
   };
 
+  const filteredProspectsOnboarded = prospectsOnboarded
+    .filter((prospect) => {
+      if (!onboardedSearch) return true;
+      const haystack = [
+        prospect.company_name,
+        prospect.company_number,
+        prospect.company_status
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(onboardedSearch);
+    })
+    .sort((a, b) => {
+      const nameA = (a.company_name || "").toLowerCase();
+      const nameB = (b.company_name || "").toLowerCase();
+      if (nameA < nameB) return -1 * sortFactorOnboarded;
+      if (nameA > nameB) return 1 * sortFactorOnboarded;
+      return 0;
+    });
+
+  useEffect(() => {
+    const loadNotificationStatuses = async () => {
+      try {
+        const orgIds = Array.from(
+          new Set(
+            prospectsOnboarded
+              .map((p) => p.org_id)
+              .filter((id): id is string => Boolean(id))
+          )
+        );
+        if (orgIds.length === 0) return;
+
+        const statuses =
+          await organisationNotificationStatusService.getAllStatusesWithOrg();
+
+        const map: Record<string, NotificationStatusState> = {};
+        for (const row of statuses) {
+          if (!row.organisation_id || !row.status) continue;
+          if (!orgIds.includes(row.organisation_id)) continue;
+          if (!map[row.organisation_id]) {
+            map[row.organisation_id] = row.status as NotificationStatusState;
+          }
+        }
+        setNotificationStatuses(map);
+      } catch (error) {
+        console.error(
+          "Failed to load organisation notification statuses for clients",
+          error
+        );
+      }
+    };
+
+    if (prospectsOnboarded.length > 0) {
+      void loadNotificationStatuses();
+    }
+  }, [prospectsOnboarded]);
+
   if (!isStaff) {
     return null;
   }
@@ -849,27 +913,6 @@ export default function StaffClients() {
       const nameB = (b.company_name || "").toLowerCase();
       if (nameA < nameB) return -1 * sortFactorToOnboard;
       if (nameA > nameB) return 1 * sortFactorToOnboard;
-      return 0;
-    });
-
-  const filteredProspectsOnboarded = prospectsOnboarded
-    .filter((prospect) => {
-      if (!onboardedSearch) return true;
-      const haystack = [
-        prospect.company_name,
-        prospect.company_number,
-        prospect.company_status
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(onboardedSearch);
-    })
-    .sort((a, b) => {
-      const nameA = (a.company_name || "").toLowerCase();
-      const nameB = (b.company_name || "").toLowerCase();
-      if (nameA < nameB) return -1 * sortFactorOnboarded;
-      if (nameA > nameB) return 1 * sortFactorOnboarded;
       return 0;
     });
 
@@ -1219,8 +1262,27 @@ export default function StaffClients() {
                       >
                         <CardContent className="py-3 px-4 flex items-center justify-between gap-4">
                           <div>
-                            <p className="font-semibold text-sm">
+                            <p className="font-semibold text-sm flex items-center gap-2">
                               {prospect.company_name}
+                              {prospect.org_id &&
+                                (() => {
+                                  const status = notificationStatuses[prospect.org_id];
+                                  if (
+                                    status === "required" ||
+                                    status === "overdue" ||
+                                    status === "unclear"
+                                  ) {
+                                    return (
+                                      <Badge
+                                        variant="destructive"
+                                        className="text-[10px] px-1.5 py-0.5 rounded-full"
+                                      >
+                                        PRE
+                                      </Badge>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
                               {prospect.company_number

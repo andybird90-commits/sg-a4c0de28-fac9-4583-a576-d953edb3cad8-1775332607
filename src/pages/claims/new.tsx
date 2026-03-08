@@ -5,6 +5,8 @@ import { SEO } from "@/components/SEO";
 import { useApp } from "@/contexts/AppContext";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { sidekickProjectService } from "@/services/sidekickProjectService";
+import { organisationNotificationStatusService } from "@/services/organisationNotificationStatusService";
+import type { NotificationStatusState } from "@/services/organisationNotificationStatusService";
 import {
   Card,
   CardContent,
@@ -15,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, FolderOpen, ArrowLeft, FileText } from "lucide-react";
+import { Calendar, FolderOpen, ArrowLeft, FileText, AlertCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
@@ -30,6 +32,8 @@ export default function NewClaimFromProjectsPage() {
   const [claimYear, setClaimYear] = useState<number>(new Date().getFullYear());
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [preNotificationStatus, setPreNotificationStatus] =
+    useState<NotificationStatusState | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -52,6 +56,12 @@ export default function NewClaimFromProjectsPage() {
         );
 
         setProjects(data);
+
+        const status =
+          await organisationNotificationStatusService.getOrganisationNotificationStatus(
+            currentOrg.id
+          );
+        setPreNotificationStatus(status?.status ?? null);
       } catch (error: any) {
         console.error("[NewClaimFromProjectsPage] Error loading projects:", error);
         notify({
@@ -226,6 +236,25 @@ export default function NewClaimFromProjectsPage() {
             </CardContent>
           </Card>
 
+          {preNotificationStatus &&
+            (preNotificationStatus === "required" ||
+              preNotificationStatus === "overdue" ||
+              preNotificationStatus === "unclear") && (
+              <Card className="mb-6 border border-yellow-700/60 bg-yellow-950/40">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-sm text-yellow-200">
+                    <AlertCircle className="h-4 w-4" />
+                    HMRC pre-notification outstanding
+                  </CardTitle>
+                  <CardDescription className="text-yellow-100/80">
+                    This organisation has not yet completed an HMRC pre-notification. A claim
+                    should not be submitted until pre-notification has been completed and confirmed
+                    by the RD team.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            )}
+
           <Card className="border border-slate-800 bg-slate-900/90 shadow-professional-md">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-base text-slate-50 sm:text-lg">
@@ -338,7 +367,14 @@ export default function NewClaimFromProjectsPage() {
                       <Button
                         className="bg-orange-500 text-slate-950 hover:bg-orange-400 disabled:bg-orange-500/40 disabled:text-slate-300"
                         onClick={handleCreateClaim}
-                        disabled={submitting || selectedIds.size === 0}
+                        disabled={
+                          submitting ||
+                          selectedIds.size === 0 ||
+                          (preNotificationStatus &&
+                            (preNotificationStatus === "required" ||
+                              preNotificationStatus === "overdue" ||
+                              preNotificationStatus === "unclear"))
+                        }
                       >
                         {submitting ? "Creating claim..." : "Create claim"}
                       </Button>

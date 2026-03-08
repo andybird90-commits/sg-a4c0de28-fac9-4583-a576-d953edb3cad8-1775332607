@@ -239,3 +239,11 @@ export function reconcileFeesWithClients(
 
   return { exactMatches, suggestedMatches, ambiguousMatches, noMatches };
 }
+
+export const clientFeeReconciliationService = {
+  async getClientFeeReconciliationSummary() {
+    // Implementation for getting client fee reconciliation summary
+  },
+};
+
+export default clientFeeReconciliationService;

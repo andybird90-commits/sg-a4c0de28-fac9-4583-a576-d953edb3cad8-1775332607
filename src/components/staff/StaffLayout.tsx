@@ -47,6 +47,11 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
       icon: Briefcase,
     },
     {
+      path: "/staff/pre-notifications",
+      label: "Pre-notifications",
+      icon: FileText,
+    },
+    {
       path: "/staff/claims",
       label: "Claims",
       icon: FileText,
