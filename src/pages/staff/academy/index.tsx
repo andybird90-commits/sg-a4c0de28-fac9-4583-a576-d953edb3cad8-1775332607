@@ -336,7 +336,7 @@ export default function StaffRdAgentAcademyPage() {
 
             <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2.5fr)_minmax(280px,1fr)]">
               <div className="space-y-6">
-                <Card className="bg-[#020817] border-slate-800 shadow-professional-md">
+                <Card className="bg-[#0F1D2D] border-border shadow-professional-md">
                   <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <CardTitle className="text-lg text-slate-50">
@@ -421,7 +421,7 @@ export default function StaffRdAgentAcademyPage() {
                       return (
                         <Card
                           key={module.id}
-                          className="flex flex-col justify-between border-slate-800 bg-[#020817] transition-colors hover:border-[#ff6b35]/60 hover:shadow-professional-lg"
+                          className="flex flex-col justify-between border-border bg-[#0F1D2D] transition-colors hover:border-[#ff6b35]/60 hover:shadow-professional-lg"
                         >
                           <CardHeader className="pb-3">
                             <div className="mb-2 flex items-center justify-between gap-2">
@@ -497,7 +497,7 @@ export default function StaffRdAgentAcademyPage() {
                       return (
                         <Card
                           key={module.id}
-                          className="flex flex-col justify-between border-slate-800 bg-[#020817] transition-colors hover:border-[#ff6b35]/60 hover:shadow-professional-lg"
+                          className="flex flex-col justify-between border-border bg-[#0F1D2D] transition-colors hover:border-[#ff6b35]/60 hover:shadow-professional-lg"
                         >
                           <CardHeader className="pb-3">
                             <div className="mb-2 flex items-center justify-between gap-2">
@@ -577,7 +577,7 @@ export default function StaffRdAgentAcademyPage() {
               </div>
 
               <aside className="space-y-4">
-                <Card className="bg-[#020817] border-slate-800 shadow-professional-md">
+                <Card className="bg-[#0F1D2D] border-border shadow-professional-md">
                   <CardHeader>
                     <CardTitle className="text-base text-slate-50">
                       Your Foundation Certification
@@ -642,7 +642,7 @@ export default function StaffRdAgentAcademyPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-[#020817] border-slate-800">
+                <Card className="bg-[#0F1D2D] border-border">
                   <CardHeader>
                     <CardTitle className="text-base text-slate-50">
                       Advanced Certification

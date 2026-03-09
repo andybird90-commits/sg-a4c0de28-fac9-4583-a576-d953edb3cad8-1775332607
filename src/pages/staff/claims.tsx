@@ -160,7 +160,7 @@ export default function ClaimsPage() {
         </div>
 
         {/* Filters */}
-        <Card className="bg-card border border-border shadow-professional-md">
+        <Card className="bg-[#0F1D2D] border border-border text-secondary-foreground shadow-professional-md">
           <CardContent className="p-4">
             <div className="flex gap-4">
               <div className="relative flex-1">
@@ -203,7 +203,7 @@ export default function ClaimsPage() {
         </Card>
 
         {/* Claims List */}
-        <Card className="bg-card border border-border shadow-professional-md">
+        <Card className="bg-[#0F1D2D] border border-border text-secondary-foreground shadow-professional-md">
           <CardHeader>
             <CardTitle className="text-foreground">Active Claims</CardTitle>
             <CardDescription className="text-muted-foreground">

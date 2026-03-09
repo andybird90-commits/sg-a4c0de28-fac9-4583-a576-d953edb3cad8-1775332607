@@ -1050,7 +1050,7 @@ export default function StaffClients() {
                           {filteredClientsToOnboard.map((client) => (
                             <Card
                               key={client.id}
-                              className="border border-border bg-card hover:bg-muted hover:border-border hover:shadow-professional-md transition-colors cursor-pointer"
+                              className="border border-border bg-[#0F1D2D] text-secondary-foreground hover:bg-[#14273A] hover:border-border hover:shadow-professional-md transition-colors cursor-pointer"
                               onClick={() => handleOpenClientDetail(client)}
                             >
                               <CardContent className="py-3 px-4">
