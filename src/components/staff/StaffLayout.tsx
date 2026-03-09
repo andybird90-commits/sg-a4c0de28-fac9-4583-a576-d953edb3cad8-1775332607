@@ -210,12 +210,12 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
                 <img
                   src="/rd_tax_white_wording.png"
                   alt="RD TAX"
-                  className="h-10 sm:h-11 md:h-12 lg:h-[3.25rem] w-auto"
-                />
+                  className="h-10 sm:h-11 md:h-12 lg:h-[3.25rem] w-auto" />
+                
               </div>
               <div className="hidden sm:block">
-                <div className="text-sm font-semibold">RD Companion</div>
-                <div className="text-xs text-secondary-foreground/80">Staff Portal</div>
+                
+                
               </div>
             </div>
           </div>
