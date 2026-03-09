@@ -190,7 +190,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background text-foreground">
       <Head>
         <title>{title ? `${title} | RD Companion` : "RD Companion Staff Portal"}</title>
       </Head>
@@ -268,7 +268,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
       </header>
 
       {/* Layout body */}
-      <div className="flex">
+      <div className="flex w-full max-w-full overflow-x-hidden">
         {/* Sidebar - desktop */}
         <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r border-border bg-[#0F1D2D] text-secondary-foreground sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
           <div className="px-3 py-4 space-y-1">
@@ -277,7 +277,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 bg-background min-h-[calc(100vh-3.5rem)]">
+        <main className="flex-1 bg-background min-h-[calc(100vh-3.5rem)] overflow-x-hidden">
           <div className="px-4 sm:px-6 lg:px-8 py-6">
             <div className="max-w-7xl mx-auto space-y-6">{children}</div>
           </div>

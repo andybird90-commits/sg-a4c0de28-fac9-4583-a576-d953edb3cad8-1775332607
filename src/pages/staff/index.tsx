@@ -630,8 +630,8 @@ export default function StaffHomePage() {
 
   return (
     <StaffLayout title="Dashboard">
-      <div className="min-h-screen bg-background text-foreground">
-        <div className="mx-auto flex w-full flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+      <div className="w-full max-w-full bg-background text-foreground overflow-x-hidden">
+        <div className="mx-auto flex w-full max-w-full flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
           {/* Welcome Section */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
