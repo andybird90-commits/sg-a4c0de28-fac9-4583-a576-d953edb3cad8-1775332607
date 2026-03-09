@@ -849,7 +849,7 @@ export default function StaffHomePage() {
           </Card>
 
           {/* Innovation & Claim Intelligence */}
-          <section className="space-y-6 border-t border-slate-800 pt-8">
+          <section className="space-y-6 border-t border-border pt-8">
             <div>
               <h2 className="text-2xl font-semibold">Innovation & Claim Intelligence</h2>
               <p className="text-sm text-muted-foreground mt-1">
@@ -859,46 +859,42 @@ export default function StaffHomePage() {
 
             {/* Row 1 – Innovation Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-                <CardHeader className="flex items-center gap-2 text-lg">
-                  <Zap className="h-5 w-5 text-orange-400" />
-                  Innovation Density
+              <Card className="shadow-professional-md">
+                <CardHeader className="flex items-center gap-2 text-lg text-muted-foreground">
+                  <Zap className="h-5 w-5 text-primary" />
+                  <span className="text-foreground">Innovation Density</span>
                 </CardHeader>
-                <CardContent style={{ backgroundColor: "#ffffff" }}>
-                  <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
-                    {innovationMetrics.loading ?
-                    "—" :
-                    innovationMetrics.averageInnovationDensity !== null ?
-                    innovationMetrics.averageInnovationDensity :
-                    "—"}
+                <CardContent>
+                  <p className="text-3xl font-bold text-foreground">
+                    {innovationMetrics.loading
+                      ? "—"
+                      : innovationMetrics.averageInnovationDensity !== null
+                        ? innovationMetrics.averageInnovationDensity
+                        : "—"}
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-                <CardHeader className="flex items-center gap-2 text-lg">
-                  <Lightbulb className="h-5 w-5 text-orange-400" />
-                  Active R&amp;D Projects
+              <Card className="shadow-professional-md">
+                <CardHeader className="flex items-center gap-2 text-lg text-muted-foreground">
+                  <Lightbulb className="h-5 w-5 text-primary" />
+                  <span className="text-foreground">Active R&amp;D Projects</span>
                 </CardHeader>
-                <CardContent style={{ backgroundColor: "#ffffff" }}>
-                  <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
-                    {innovationMetrics.loading ?
-                    "—" :
-                    innovationMetrics.activeProjects}
+                <CardContent>
+                  <p className="text-3xl font-bold text-foreground">
+                    {innovationMetrics.loading ? "—" : innovationMetrics.activeProjects}
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-                <CardHeader className="flex items-center gap-2 text-lg">
-                  <FileWarning className="h-5 w-5 text-orange-400" />
-                  Documentation Gaps
+              <Card className="shadow-professional-md">
+                <CardHeader className="flex items-center gap-2 text-lg text-muted-foreground">
+                  <FileWarning className="h-5 w-5 text-primary" />
+                  <span className="text-foreground">Documentation Gaps</span>
                 </CardHeader>
-                <CardContent style={{ backgroundColor: "#ffffff" }}>
-                  <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
-                    {innovationMetrics.loading ?
-                    "—" :
-                    innovationMetrics.documentationGaps}
+                <CardContent>
+                  <p className="text-3xl font-bold text-foreground">
+                    {innovationMetrics.loading ? "—" : innovationMetrics.documentationGaps}
                   </p>
                 </CardContent>
               </Card>
