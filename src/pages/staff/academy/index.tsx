@@ -231,12 +231,12 @@ function getStatusLabel(status: ModuleStatus): string {
 function getStatusChipClasses(status: ModuleStatus): string {
   switch (status) {
     case "completed":
-      return "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40";
+      return "bg-emerald-50 text-emerald-700 border border-emerald-200";
     case "in_progress":
-      return "bg-amber-500/10 text-amber-300 border border-amber-500/40";
+      return "bg-amber-50 text-amber-700 border border-amber-200";
     case "not_started":
     default:
-      return "bg-slate-800 text-slate-200 border border-slate-700";
+      return "bg-muted text-muted-foreground border border-border";
   }
 }
 
@@ -325,10 +325,10 @@ export default function StaffRdAgentAcademyPage() {
         <div className="min-h-screen bg-background text-foreground">
           <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
             <header className="mb-8">
-              <h1 className="mb-3 text-3xl font-semibold text-slate-50 sm:text-4xl">
+              <h1 className="mb-3 text-3xl font-semibold text-foreground sm:text-4xl">
                 RD Agent Academy
               </h1>
-              <p className="max-w-3xl text-sm text-slate-400 sm:text-base">
+              <p className="max-w-3xl text-sm text-muted-foreground sm:text-base">
                 Professional training for R&amp;D tax advisers. Learn legislation, claim writing,
                 evidence assessment, and HMRC enquiry defence.
               </p>
@@ -336,34 +336,34 @@ export default function StaffRdAgentAcademyPage() {
 
             <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2.5fr)_minmax(280px,1fr)]">
               <div className="space-y-6">
-                <Card className="bg-[#0F1D2D] border-border shadow-professional-md">
+                <Card className="bg-card border-border shadow-sm">
                   <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <CardTitle className="text-lg text-slate-50">
+                      <CardTitle className="text-lg text-foreground">
                         Your Academy Progress
                       </CardTitle>
-                      <CardDescription className="text-slate-400">
+                      <CardDescription className="text-muted-foreground">
                         {user?.email
                           ? `Learning profile for ${user.email}`
                           : "Track your progress through the RD Agent curriculum."}
                       </CardDescription>
                     </div>
-                    <div className="flex flex-wrap gap-3 text-sm">
-                      <div className="rounded-full bg-slate-900 px-3 py-1 text-slate-200 border border-slate-700">
+                    <div className="flex flex-wrap gap-3 text-xs">
+                      <div className="rounded-full border border-border bg-muted px-3 py-1 text-muted-foreground">
                         Foundation Modules:{" "}
-                        <span className="font-semibold">
+                        <span className="font-semibold text-foreground">
                           {foundationTotals.completed} / {foundationTotals.total}
                         </span>
                       </div>
-                      <div className="rounded-full bg-slate-900 px-3 py-1 text-slate-200 border border-slate-700">
+                      <div className="rounded-full border border-border bg-muted px-3 py-1 text-muted-foreground">
                         Foundation Certification:{" "}
-                        <span className="font-semibold">
+                        <span className="font-semibold text-foreground">
                           {foundationCertified ? "Completed" : "In Progress"}
                         </span>
                       </div>
-                      <div className="rounded-full bg-slate-900 px-3 py-1 text-slate-200 border border-slate-700">
+                      <div className="rounded-full border border-border bg-muted px-3 py-1 text-muted-foreground">
                         Advanced Modules:{" "}
-                        <span className="font-semibold">
+                        <span className="font-semibold text-foreground">
                           {advancedTotals.completed} / {advancedTotals.total}
                         </span>
                       </div>
@@ -372,30 +372,30 @@ export default function StaffRdAgentAcademyPage() {
                   <CardContent>
                     <div className="space-y-4">
                       <div>
-                        <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+                        <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
                           <span>Foundation track progress</span>
-                          <span className="font-medium text-slate-200">
+                          <span className="font-medium text-foreground">
                             {foundationTotals.percent}% complete
                           </span>
                         </div>
                         <Progress
                           value={foundationTotals.percent}
-                          className="h-2 bg-slate-900 [&>div]:bg-[#ff6b35]"
+                          className="h-2 bg-muted [&>div]:bg-primary"
                         />
                       </div>
                       <div>
-                        <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+                        <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
                           <span>Advanced track progress</span>
-                          <span className="font-medium text-slate-200">
+                          <span className="font-medium text-foreground">
                             {advancedTotals.percent}% complete
                           </span>
                         </div>
                         <Progress
                           value={advancedTotals.percent}
-                          className="h-2 bg-slate-900 [&>div]:bg-slate-500"
+                          className="h-2 bg-muted [&>div]:bg-slate-400"
                         />
                       </div>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted-foreground">
                         Complete all foundation modules and pass their assessments to unlock credit
                         for the Advanced RD Agent track. You can still view advanced content before
                         then, but quiz results will not count until Foundation is complete.
@@ -406,10 +406,10 @@ export default function StaffRdAgentAcademyPage() {
 
                 <section className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-slate-50">
+                    <h2 className="text-lg font-semibold text-foreground">
                       Foundation Modules
                     </h2>
-                    <p className="text-xs text-slate-400 sm:text-sm">
+                    <p className="text-xs text-muted-foreground sm:text-sm">
                       {foundationTotals.completed} of {foundationTotals.total} modules completed
                       {foundationTotals.inProgress > 0 && ` · ${foundationTotals.inProgress} in progress`}
                     </p>
@@ -421,31 +421,31 @@ export default function StaffRdAgentAcademyPage() {
                       return (
                         <Card
                           key={module.id}
-                          className="flex flex-col justify-between border-border bg-[#0F1D2D] transition-colors hover:border-[#ff6b35]/60 hover:shadow-professional-lg"
+                          className="flex flex-col justify-between border-border bg-card transition-colors hover:border-primary/60 hover:shadow-professional-lg"
                         >
                           <CardHeader className="pb-3">
                             <div className="mb-2 flex items-center justify-between gap-2">
-                              <CardTitle className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                              <CardTitle className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                 Foundation
                               </CardTitle>
                             </div>
-                            <CardTitle className="mb-1 text-base text-slate-50 sm:text-lg">
+                            <CardTitle className="mb-1 text-base text-foreground sm:text-lg">
                               {module.title}
                             </CardTitle>
-                            <CardDescription className="text-xs text-slate-400 sm:text-sm">
+                            <CardDescription className="text-xs text-muted-foreground sm:text-sm">
                               {module.description}
                             </CardDescription>
                           </CardHeader>
                           <CardContent className="px-6 pb-4 pt-0">
                             <div className="flex flex-col gap-3">
-                              <div className="flex items-center justify-between text-xs text-slate-400">
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>Estimated duration</span>
-                                <span className="font-medium text-slate-200">
+                                <span className="font-medium text-foreground">
                                   {module.duration}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between text-xs">
-                                <span className="text-slate-400">Status</span>
+                                <span className="text-muted-foreground">Status</span>
                                 <span
                                   className={
                                     "rounded-full px-2 py-0.5 text-[11px] font-medium " +
@@ -460,7 +460,7 @@ export default function StaffRdAgentAcademyPage() {
                                 </span>
                               </div>
                               <Link href={`/staff/academy/module/${module.id}`} passHref>
-                                <Button className="mt-1 w-full bg-[#ff6b35] text-slate-950 text-sm hover:bg-[#ff8c42]">
+                                <Button className="mt-1 w-full bg-primary text-sm text-primary-foreground hover:bg-orange-500">
                                   {moduleProgressLoading ? "Loading…" : getStatusLabel(status)}
                                 </Button>
                               </Link>
@@ -475,15 +475,15 @@ export default function StaffRdAgentAcademyPage() {
                 <section className="space-y-4">
                   <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="text-lg font-semibold text-slate-50">
+                      <h2 className="text-lg font-semibold text-foreground">
                         Advanced Modules
                       </h2>
-                      <p className="text-xs text-slate-400 sm:text-sm">
+                      <p className="text-xs text-muted-foreground sm:text-sm">
                         Unlocks for certification credit after completing all foundation modules.
                         You can still open and study these modules in view-only mode beforehand.
                       </p>
                     </div>
-                    <p className="text-xs text-slate-400 sm:text-sm">
+                    <p className="text-xs text-muted-foreground sm:text-sm">
                       {advancedTotals.completed} of {advancedTotals.total} modules completed
                       {advancedTotals.inProgress > 0 && ` · ${advancedTotals.inProgress} in progress`}
                     </p>
@@ -497,41 +497,41 @@ export default function StaffRdAgentAcademyPage() {
                       return (
                         <Card
                           key={module.id}
-                          className="flex flex-col justify-between border-border bg-[#0F1D2D] transition-colors hover:border-[#ff6b35]/60 hover:shadow-professional-lg"
+                          className="flex flex-col justify-between border-border bg-card transition-colors hover:border-primary/60 hover:shadow-professional-lg"
                         >
                           <CardHeader className="pb-3">
                             <div className="mb-2 flex items-center justify-between gap-2">
-                              <CardTitle className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ff6b35]">
+                              <CardTitle className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
                                 Advanced
                               </CardTitle>
                               {lockedForCredit && (
-                                <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-[11px] text-slate-300">
+                                <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
                                   Certification locked
                                 </span>
                               )}
                             </div>
-                            <CardTitle className="mb-1 text-base text-slate-50 sm:text-lg">
+                            <CardTitle className="mb-1 text-base text-foreground sm:text-lg">
                               {module.title}
                             </CardTitle>
-                            <CardDescription className="text-xs text-slate-400 sm:text-sm">
+                            <CardDescription className="text-xs text-muted-foreground sm:text-sm">
                               {module.description}
                             </CardDescription>
                           </CardHeader>
                           <CardContent className="px-6 pb-4 pt-0">
                             <div className="flex flex-col gap-3">
-                              <div className="flex items-center justify-between text-xs text-slate-400">
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>Estimated duration</span>
-                                <span className="font-medium text-slate-200">
+                                <span className="font-medium text-foreground">
                                   {module.duration}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between text-xs">
-                                <span className="text-slate-400">Status</span>
+                                <span className="text-muted-foreground">Status</span>
                                 <span
                                   className={
                                     "rounded-full px-2 py-0.5 text-[11px] font-medium " +
                                     (lockedForCredit
-                                      ? "bg-slate-900 text-slate-300 border border-slate-700"
+                                      ? "bg-muted text-muted-foreground border border-border"
                                       : getStatusChipClasses(status))
                                   }
                                 >
@@ -549,8 +549,8 @@ export default function StaffRdAgentAcademyPage() {
                                   className={
                                     "mt-1 w-full text-sm " +
                                     (lockedForCredit
-                                      ? "border border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-900"
-                                      : "bg-[#ff6b35] text-slate-950 hover:bg-[#ff8c42]")
+                                      ? "border border-border bg-muted text-foreground hover:bg-muted"
+                                      : "bg-primary text-primary-foreground hover:bg-orange-500")
                                   }
                                 >
                                   {lockedForCredit
@@ -561,7 +561,7 @@ export default function StaffRdAgentAcademyPage() {
                                 </Button>
                               </Link>
                               {lockedForCredit && (
-                                <p className="mt-1 text-[11px] text-slate-500">
+                                <p className="mt-1 text-[11px] text-muted-foreground">
                                   You can read and practice this module now. Quiz results will only
                                   count toward Advanced certification after you complete all
                                   Foundation modules.
@@ -577,22 +577,22 @@ export default function StaffRdAgentAcademyPage() {
               </div>
 
               <aside className="space-y-4">
-                <Card className="bg-[#0F1D2D] border-border shadow-professional-md">
+                <Card className="bg-card border-border shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-base text-slate-50">
+                    <CardTitle className="text-base text-foreground">
                       Your Foundation Certification
                     </CardTitle>
-                    <CardDescription className="text-slate-400">
+                    <CardDescription className="text-muted-foreground">
                       Track your progress toward becoming a certified RD Agent (Foundation).
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-10 items-center justify-center rounded-md border border-slate-700 bg-slate-900 text-2xl">
+                      <div className="flex h-12 w-10 items-center justify-center rounded-md border border-border bg-muted text-2xl">
                         🎓
                       </div>
-                      <div className="text-xs text-slate-300">
-                        <p className="mb-1 font-medium text-slate-100">
+                      <div className="text-xs text-muted-foreground">
+                        <p className="mb-1 font-medium text-foreground">
                           Foundation Certification
                         </p>
                         <ul className="list-inside list-disc space-y-1">
@@ -603,30 +603,30 @@ export default function StaffRdAgentAcademyPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-2 text-xs text-slate-300">
-                      <p className="font-medium">Foundation progress</p>
+                    <div className="space-y-2 text-xs text-muted-foreground">
+                      <p className="font-medium text-foreground">Foundation progress</p>
                       <div className="flex items-center justify-between">
                         <span>Modules completed</span>
-                        <span className="font-semibold">
+                        <span className="font-semibold text-foreground">
                           {foundationTotals.completed} / {foundationTotals.total}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span>Certification status</span>
-                        <span className="font-semibold">
+                        <span className="font-semibold text-foreground">
                           {foundationCertified ? "Completed" : "In Progress"}
                         </span>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted-foreground">
                       Complete all foundation modules and pass the final assessments to receive the
                       RD Agent Foundation Certification and unlock advanced certification credit.
                     </p>
 
                     <Button
                       variant="outline"
-                      className="w-full border-[#ff6b35] text-sm text-[#ff6b35] hover:bg-[#ff6b35]/10"
+                      className="w-full border-primary text-sm text-primary hover:bg-primary/10"
                       disabled={certStatus.loading || !foundationCertified}
                       onClick={handleGenerateCertificate}
                     >
@@ -637,30 +637,28 @@ export default function StaffRdAgentAcademyPage() {
                         : "Certification Locked"}
                     </Button>
                     {!certStatus.loading && !foundationCertified && certStatus.reason && (
-                      <p className="text-[11px] text-slate-500">{certStatus.reason}</p>
+                      <p className="text-[11px] text-muted-foreground">{certStatus.reason}</p>
                     )}
                   </CardContent>
                 </Card>
 
-                <Card className="bg-[#0F1D2D] border-border">
+                <Card className="bg-card border-border shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-base text-slate-50">
+                    <CardTitle className="text-base text-foreground">
                       Advanced Certification
                     </CardTitle>
-                    <CardDescription className="text-slate-400">
+                    <CardDescription className="text-muted-foreground">
                       Advanced RD Agent certification for experienced advisers.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-xs text-slate-300">
-                    <p>
-                      To qualify for Advanced certification you will need to:
-                    </p>
+                  <CardContent className="space-y-2 text-xs text-muted-foreground">
+                    <p>To qualify for Advanced certification you will need to:</p>
                     <ul className="list-inside list-disc space-y-1">
                       <li>Hold the Foundation Certification</li>
                       <li>Complete any 6 of the 8 advanced modules</li>
                       <li>Pass each selected module assessment</li>
                     </ul>
-                    <p className="mt-2 text-[11px] text-slate-500">
+                    <p className="mt-2 text-[11px] text-muted-foreground">
                       Advanced module content is always viewable. Quiz results for advanced modules
                       start counting toward certification once your Foundation Certificate is
                       achieved.
