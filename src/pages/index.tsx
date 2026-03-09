@@ -114,7 +114,7 @@ export default function LandingPage() {
       
 
       <div className="min-h-screen bg-background text-foreground">
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
+        <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-[#0F1D2D] text-secondary-foreground">
           <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
@@ -127,7 +127,7 @@ export default function LandingPage() {
                 <Button
                   variant="ghost"
                   onClick={() => router.push("/auth/login")}
-                  className="text-foreground hover:text-foreground hover:bg-muted text-xs sm:text-sm lg:text-base px-2 sm:px-3 lg:px-4">
+                  className="text-secondary-foreground hover:text-secondary-foreground hover:bg-secondary/70 text-xs sm:text-sm lg:text-base px-2 sm:px-3 lg:px-4">
                   
                   Log In
                 </Button>
