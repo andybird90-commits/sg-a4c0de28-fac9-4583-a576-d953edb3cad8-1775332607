@@ -452,8 +452,8 @@ export default function StaffHomePage() {
       const filingDate = new Date(entry.expected_accounts_filing_date);
       const monthIndex = months.findIndex(
         (m) =>
-        m.getFullYear() === filingDate.getFullYear() &&
-        m.getMonth() === filingDate.getMonth()
+          m.getFullYear() === filingDate.getFullYear() &&
+          m.getMonth() === filingDate.getMonth()
       );
       if (monthIndex === -1) return buckets;
 
@@ -469,12 +469,8 @@ export default function StaffHomePage() {
     initialBuckets
   );
 
-  const halfMonths = Math.floor(monthlyBuckets.length / 2);
-  for (let i = halfMonths; i < monthlyBuckets.length; i += 1) {
-    const source = monthlyBuckets[i - halfMonths];
-    monthlyBuckets[i].onboarded = source.onboarded;
-    monthlyBuckets[i].notOnboarded = source.notOnboarded;
-  }
+  // Each month now reflects only real pipeline data; we no longer mirror
+  // the first half of the series into the second half.
 
   const totalForecastedRevenue = monthlyBuckets.reduce(
     (sum, bucket) => sum + bucket.onboarded + bucket.notOnboarded,
@@ -483,8 +479,8 @@ export default function StaffHomePage() {
 
   const thisMonthBucket = monthlyBuckets[0];
   const thisMonthRevenue =
-  (thisMonthBucket?.onboarded || 0) + (
-  thisMonthBucket?.notOnboarded || 0);
+    (thisMonthBucket?.onboarded || 0) +
+    (thisMonthBucket?.notOnboarded || 0);
 
   const activeItems = visiblePipeline.length;
 
@@ -497,12 +493,12 @@ export default function StaffHomePage() {
 
   const tickStep = 50000;
   const maxScaleValue =
-  maxMonthTotal > 0 ?
-  Math.max(
-    tickStep,
-    Math.ceil(maxMonthTotal / tickStep) * tickStep
-  ) :
-  tickStep;
+    maxMonthTotal > 0
+      ? Math.max(
+          tickStep,
+          Math.ceil(maxMonthTotal / tickStep) * tickStep
+        )
+      : tickStep;
 
   const yAxisTicks: number[] = [];
   for (let value = 0; value <= maxScaleValue; value += tickStep) {
@@ -528,8 +524,8 @@ export default function StaffHomePage() {
       const filingDate = new Date(entry.expected_accounts_filing_date);
       const monthIndex = months.findIndex(
         (m) =>
-        m.getFullYear() === filingDate.getFullYear() &&
-        m.getMonth() === filingDate.getMonth()
+          m.getFullYear() === filingDate.getFullYear() &&
+          m.getMonth() === filingDate.getMonth()
       );
       if (monthIndex === -1) return buckets;
 
@@ -544,12 +540,8 @@ export default function StaffHomePage() {
     initialClientBuckets
   );
 
-  const clientHalfMonths = Math.floor(monthlyClientsBuckets.length / 2);
-  for (let i = clientHalfMonths; i < monthlyClientsBuckets.length; i += 1) {
-    const source = monthlyClientsBuckets[i - clientHalfMonths];
-    monthlyClientsBuckets[i].onboardedCount = source.onboardedCount;
-    monthlyClientsBuckets[i].notOnboardedCount = source.notOnboardedCount;
-  }
+  // Client counts are now taken directly from pipeline data for every month,
+  // with no artificial mirroring of earlier months.
 
   const maxClientsCount = Math.max(
     0,
