@@ -12,8 +12,8 @@ import {
   LogOut,
   Building2,
   MessageSquare,
-  Bell } from
-"lucide-react";
+  Bell,
+} from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { authService } from "@/services/authService";
 import { NotificationToast } from "./NotificationToast";
@@ -60,14 +60,14 @@ export function Layout({ children, showNav = true }: LayoutProps) {
   };
 
   const navItems = [
-  { href: "/home", icon: Home, label: "Home" },
-  { href: "/messages", icon: MessageSquare, label: "Messages" },
-  { href: "/evidence/capture", icon: Camera, label: "Capture" },
-  { href: "/evidence", icon: Layers, label: "Evidence" },
-  { href: "/projects", icon: FolderOpen, label: "Projects" },
-  { href: "/feasibility", icon: Lightbulb, label: "Feasibility" },
-  { href: "/settings", icon: Settings, label: "Settings" }];
-
+    { href: "/home", icon: Home, label: "Home" },
+    { href: "/messages", icon: MessageSquare, label: "Messages" },
+    { href: "/evidence/capture", icon: Camera, label: "Capture" },
+    { href: "/evidence", icon: Layers, label: "Evidence" },
+    { href: "/projects", icon: FolderOpen, label: "Projects" },
+    { href: "/feasibility", icon: Lightbulb, label: "Feasibility" },
+    { href: "/settings", icon: Settings, label: "Settings" },
+  ];
 
   const publicRoutes = ["/auth/login", "/auth/signup", "/"];
   const isPublicRoute = publicRoutes.includes(router.pathname);
@@ -79,165 +79,207 @@ export function Layout({ children, showNav = true }: LayoutProps) {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
           <p className="text-muted-foreground">Loading...</p>
         </div>
-      </div>);
-
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border bg-[#0F1D2D] text-secondary-foreground">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {user &&
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden text-secondary-foreground hover:bg-secondary/70">
-                  
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent
-                side="left"
-                className="w-[280px] sm:w-[320px] bg-[#0F1D2D] text-secondary-foreground border-r border-border">
-                
-                  <SheetHeader>
-                    <SheetTitle className="text-left">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center text-secondary-foreground font-bold text-sm border border-border">
-                          RD
-                        </div>
-                        <span className="font-bold text-lg">RD Companion</span>
-                      </div>
-                    </SheetTitle>
-                  </SheetHeader>
-
-                  <nav className="mt-8 space-y-2">
-                    {navItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive =
-                    router.pathname === item.href || router.pathname.startsWith(item.href + "/");
-                    return (
-                      <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}>
-                          <Button
-                          variant={isActive ? "default" : "ghost"}
-                          className={`w-full justify-start gap-3 ${
-                          isActive ?
-                          "bg-primary text-primary-foreground hover:bg-primary/90" :
-                          "text-muted-foreground hover:bg-muted"}`
-                          }>
-                          
-                            <Icon className="h-4 w-4" />
-                            {item.label}
-                          </Button>
-                        </Link>);
-
-                  })}
-
-                    {currentOrg &&
-                  <div className="pt-4 mt-4 border-t border-border">
-                        <div className="px-3 py-2 rounded-lg bg-muted">
-                          <p className="text-xs font-medium text-muted-foreground">Organisation</p>
-                          <p className="text-sm font-semibold">{currentOrg.name}</p>
-                        </div>
-                      </div>
-                  }
-
-                    <div className="pt-4">
-                      <Button
-                      variant="outline"
-                      className="w-full justify-start gap-3 text-destructive border-destructive hover:bg-destructive/10"
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        handleLogout();
-                      }}>
-                      
-                        <LogOut className="h-4 w-4" />
-                        Logout
-                      </Button>
-                    </div>
-                  </nav>
-                </SheetContent>
-              </Sheet>
-            }
-
-            <div className="flex items-center gap-2 cursor-default">
-              <img
-                src="/rd_tax_white_wording.png"
-                alt="RD TAX"
-                className="h-10 sm:h-11 md:h-12 lg:h-[3.25rem] w-auto flex-shrink-0" />
-              
-              <div className="hidden sm:block">
-                
-                
-              </div>
-            </div>
+    <div className="min-h-screen bg-background text-foreground flex">
+      {showNav && user && (
+        <aside className="hidden lg:flex w-64 bg-[#0F1D2D] text-secondary-foreground border-r border-border flex-col">
+          <div className="h-14 flex items-center px-4 border-b border-border/70">
+            <img
+              src="/rd_tax_white_wording.png"
+              alt="RD TAX"
+              className="h-9 w-auto flex-shrink-0"
+            />
           </div>
 
-          {user &&
-          <div className="hidden lg:flex items-center gap-2">
-              <Link href="/messages">
-                <Button
+          <nav className="mt-4 flex-1 space-y-1 px-3">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                router.pathname === item.href ||
+                router.pathname.startsWith(item.href + "/");
+
+              return (
+                <Link key={item.href} href={item.href}>
+                  <Button
+                    variant={isActive ? "default" : "ghost"}
+                    className={`w-full justify-start gap-3 ${
+                      isActive
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "text-secondary-foreground hover:bg-secondary/60"
+                    }`}
+                    size="sm"
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </Button>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {currentOrg && (
+            <div className="px-4 pb-3 pt-2 border-t border-border/70">
+              <div className="flex items-center gap-2 rounded-lg bg-secondary/20 px-3 py-2">
+                <Building2 className="h-4 w-4 opacity-80" />
+                <div className="min-w-0">
+                  <p className="text-[11px] uppercase tracking-wide text-secondary-foreground/70">
+                    Organisation
+                  </p>
+                  <p className="text-sm font-semibold truncate">{currentOrg.name}</p>
+                </div>
+              </div>
+              <Button
                 variant="outline"
                 size="sm"
-                className="relative border-border bg-background text-foreground hover:bg-muted">
-                
-                  <Bell className="h-4 w-4" />
-                  {unreadCount > 0 &&
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                }
-                </Button>
-              </Link>
-              <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              className="flex items-center gap-2 border-destructive/70 text-destructive hover:bg-destructive/10">
-              
+                className="mt-3 w-full justify-center gap-2 border-destructive/70 text-destructive hover:bg-destructive/10"
+                onClick={handleLogout}
+              >
                 <LogOut className="h-4 w-4" />
                 Logout
               </Button>
             </div>
-          }
-        </div>
-      </header>
+          )}
+        </aside>
+      )}
 
-      <main className="flex-1 pb-20">{children}</main>
+      <div className="flex-1 flex flex-col min-h-screen">
+        <header className="sticky top-0 z-40 border-b border-border bg-[#0F1D2D] text-secondary-foreground">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {user && showNav && (
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="lg:hidden text-secondary-foreground hover:bg-secondary/70"
+                    >
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent
+                    side="left"
+                    className="w-[280px] sm:w-[320px] bg-[#0F1D2D] text-secondary-foreground border-r border-border"
+                  >
+                    <SheetHeader>
+                      <SheetTitle className="text-left">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center text-secondary-foreground font-bold text-sm border border-border">
+                            RD
+                          </div>
+                          <span className="font-bold text-lg">RD Companion</span>
+                        </div>
+                      </SheetTitle>
+                    </SheetHeader>
 
-      {showNav && user &&
-      <nav className="fixed bottom-0 left-0 right-0 bg-secondary border-t border-border z-30 hidden md:block">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center justify-around py-2">
-              {navItems.map((item) => {
-              const isActive = router.pathname === item.href;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-                  isActive ?
-                  "text-primary" :
-                  "text-muted-foreground hover:text-secondary-foreground"}`
-                  }>
-                  
-                    <Icon size={24} />
-                    <span className="text-xs font-medium">{item.label}</span>
-                  </Link>);
+                    <nav className="mt-8 space-y-2">
+                      {navItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive =
+                          router.pathname === item.href ||
+                          router.pathname.startsWith(item.href + "/");
 
-            })}
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <Button
+                              variant={isActive ? "default" : "ghost"}
+                              className={`w-full justify-start gap-3 ${
+                                isActive
+                                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                  : "text-muted-foreground hover:bg-muted"
+                              }`}
+                            >
+                              <Icon className="h-4 w-4" />
+                              {item.label}
+                            </Button>
+                          </Link>
+                        );
+                      })}
+
+                      {currentOrg && (
+                        <div className="pt-4 mt-4 border-t border-border">
+                          <div className="px-3 py-2 rounded-lg bg-muted">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Organisation
+                            </p>
+                            <p className="text-sm font-semibold">{currentOrg.name}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="pt-4">
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start gap-3 text-destructive border-destructive hover:bg-destructive/10"
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            void handleLogout();
+                          }}
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Logout
+                        </Button>
+                      </div>
+                    </nav>
+                  </SheetContent>
+                </Sheet>
+              )}
+
+              <div className="flex items-center gap-2 cursor-default lg:hidden">
+                <img
+                  src="/rd_tax_white_wording.png"
+                  alt="RD TAX"
+                  className="h-9 sm:h-10 w-auto flex-shrink-0"
+                />
+              </div>
             </div>
+
+            {user && (
+              <div className="flex items-center gap-2">
+                <Link href="/messages">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="relative border-border bg-background text-foreground hover:bg-muted"
+                  >
+                    <Bell className="h-4 w-4" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="hidden sm:inline-flex items-center gap-2 border-destructive/70 text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            )}
           </div>
-        </nav>
-      }
+        </header>
 
-      <SyncIndicator count={syncingCount} />
-      <NotificationToast />
-      <OfflineBanner isOnline={isOnline} />
-    </div>);
+        <main className="flex-1 pb-8">
+          {children}
+        </main>
 
+        <SyncIndicator count={syncingCount} />
+        <NotificationToast />
+        <OfflineBanner isOnline={isOnline} />
+      </div>
+    </div>
+  );
 }

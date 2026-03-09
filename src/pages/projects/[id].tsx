@@ -1509,13 +1509,13 @@ export default function ProjectDetailPage() {
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.6fr)] items-start">
                 <div className="space-y-4">
                   {canEditTimeline && (
-                    <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3 sm:p-4">
-                      <h3 className="text-sm font-semibold text-slate-100">Add timeline activity</h3>
-                      <p className="text-xs text-slate-400">
+                    <div className="space-y-3 rounded-lg border border-border bg-muted p-3 sm:p-4">
+                      <h3 className="text-sm font-semibold text-foreground">Add timeline activity</h3>
+                      <p className="text-xs text-muted-foreground">
                         Add design phases, experiments, prototyping rounds, or testing windows. You can keep it high level.
                       </p>
                       <div className="space-y-2">
-                        <Label htmlFor="timeline-name" className="text-xs">
+                        <Label htmlFor="timeline-name" className="text-xs text-foreground">
                           Activity name
                         </Label>
                         <Input
@@ -1528,7 +1528,7 @@ export default function ProjectDetailPage() {
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-2">
-                          <Label htmlFor="timeline-start" className="text-xs">
+                          <Label htmlFor="timeline-start" className="text-xs text-foreground">
                             Start date
                           </Label>
                           <Input
@@ -1540,7 +1540,7 @@ export default function ProjectDetailPage() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="timeline-end" className="text-xs">
+                          <Label htmlFor="timeline-end" className="text-xs text-foreground">
                             Finish date
                           </Label>
                           <Input
@@ -1573,7 +1573,7 @@ export default function ProjectDetailPage() {
                   )}
 
                   <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-slate-100">Activities</h3>
+                    <h3 className="text-sm font-semibold text-foreground">Activities</h3>
                     {timelineItems.length === 0 ? (
                       <p className="text-xs text-muted-foreground">
                         No activities added yet. Use the form above to add design, build, test, or analysis phases.
@@ -1583,13 +1583,13 @@ export default function ProjectDetailPage() {
                         {timelineItems.map((item) => (
                           <div
                             key={item.id}
-                            className="flex items-center justify-between gap-2 rounded-md border border-slate-800 bg-slate-950/60 px-3 py-2"
+                            className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted px-3 py-2"
                           >
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-medium text-slate-100 truncate">
+                              <p className="text-xs font-medium text-foreground truncate">
                                 {item.name || "Untitled activity"}
                               </p>
-                              <p className="text-[11px] text-slate-400">
+                              <p className="text-[11px] text-muted-foreground">
                                 {item.start_date
                                   ? new Date(item.start_date).toLocaleDateString("en-GB", {
                                       day: "2-digit",
@@ -1626,8 +1626,8 @@ export default function ProjectDetailPage() {
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 sm:p-4">
-                  <h3 className="mb-2 text-sm font-semibold text-slate-100">Visual timeline</h3>
+                <div className="rounded-lg border border-border bg-card p-3 sm:p-4">
+                  <h3 className="mb-2 text-sm font-semibold text-foreground">Visual timeline</h3>
                   <ProjectGantt
                     items={timelineItems.map((item) => ({
                       id: item.id,
@@ -1659,7 +1659,7 @@ export default function ProjectDetailPage() {
                 </Select>
               </div>
 
-              <TabsList className="w-full justify-start bg-slate-950/80 border border-slate-800 px-1 py-1 rounded-lg hidden md:flex">
+              <TabsList className="w-full justify-start bg-muted border border-border px-1 py-1 rounded-lg hidden md:flex">
                 <TabsTrigger value="feasibility" className="px-3 sm:px-4">
                   Feasibility
                 </TabsTrigger>
@@ -1697,12 +1697,12 @@ export default function ProjectDetailPage() {
                   ) : feasibilityAnalysis ? (
                     <div className="space-y-4">
                       {feasibilityAnalysis.summary && (
-                        <div className="p-3 sm:p-4 rounded-lg bg-slate-900 border border-slate-700">
-                          <h3 className="font-semibold text-sm sm:text-base mb-2 flex items-center gap-2 text-slate-50">
+                        <div className="p-3 sm:p-4 rounded-lg bg-card border border-border">
+                          <h3 className="font-semibold text-sm sm:text-base mb-2 flex items-center gap-2 text-foreground">
                             <Sparkles className="h-4 w-4 text-[#ff6b35]" />
                             Analysis Summary
                           </h3>
-                          <p className="text-xs sm:text-sm text-slate-200 break-words">
+                          <p className="text-xs sm:text-sm text-muted-foreground break-words">
                             {feasibilityAnalysis.summary}
                           </p>
                         </div>
@@ -1793,8 +1793,11 @@ export default function ProjectDetailPage() {
             <TabsContent value="rd-details">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle>R&amp;D Details</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4 text-[#ff6b35]" />
+                    R&amp;D Details
+                  </CardTitle>
+                  <CardDescription className="text-sm">
                     Capture the core information our team needs to assess this work for R&amp;D relief.
                     Work through each section; you don&apos;t need perfect wording, just describe things in your own words.
                   </CardDescription>
@@ -1813,16 +1816,22 @@ export default function ProjectDetailPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <TabsList className="bg-slate-900 hidden md:inline-flex">
-                      <TabsTrigger value="technical">Technical Details</TabsTrigger>
-                      <TabsTrigger value="challenges">Challenges</TabsTrigger>
-                      <TabsTrigger value="activities">Qualifying Activities</TabsTrigger>
+                    <TabsList className="bg-muted hidden md:inline-flex">
+                      <TabsTrigger value="technical" className="px-3 sm:px-4">
+                        Technical Details
+                      </TabsTrigger>
+                      <TabsTrigger value="challenges" className="px-3 sm:px-4">
+                        Challenges
+                      </TabsTrigger>
+                      <TabsTrigger value="activities" className="px-3 sm:px-4">
+                        Qualifying Activities
+                      </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="technical" className="pt-4 space-y-6">
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-100">1. Baseline / current system</h3>
-                        <p className="mt-1 text-xs text-slate-400">
+                        <h3 className="text-sm font-semibold text-foreground">1. Baseline / current system</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
                           {technicalPlaceholders.baseline}
                         </p>
                         <Textarea
@@ -1834,8 +1843,8 @@ export default function ProjectDetailPage() {
                       </div>
 
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-100">2. Change or new development</h3>
-                        <p className="mt-1 text-xs text-slate-400">
+                        <h3 className="text-sm font-semibold text-foreground">2. Change or new development</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
                           {technicalPlaceholders.change}
                         </p>
                         <Textarea
@@ -1847,8 +1856,8 @@ export default function ProjectDetailPage() {
                       </div>
 
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-100">3. Innovation / why this is different</h3>
-                        <p className="mt-1 text-xs text-slate-400">
+                        <h3 className="text-sm font-semibold text-foreground">3. Innovation / why this is different</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
                           {technicalPlaceholders.innovation}
                         </p>
                         <Textarea
@@ -1862,8 +1871,8 @@ export default function ProjectDetailPage() {
 
                     <TabsContent value="challenges" className="pt-4 space-y-6">
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-100">1. Uncertainties at the start</h3>
-                        <p className="mt-1 text-xs text-slate-400">
+                        <h3 className="text-sm font-semibold text-foreground">1. Uncertainties at the start</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
                           {challengePlaceholders.uncertainties}
                         </p>
                         <Textarea
@@ -1875,8 +1884,8 @@ export default function ProjectDetailPage() {
                       </div>
 
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-100">2. Existing knowledge and information</h3>
-                        <p className="mt-1 text-xs text-slate-400">
+                        <h3 className="text-sm font-semibold text-foreground">2. Existing knowledge and information</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
                           {challengePlaceholders.knowledge}
                         </p>
                         <Textarea
@@ -1888,10 +1897,10 @@ export default function ProjectDetailPage() {
                       </div>
 
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-100">
+                        <h3 className="text-sm font-semibold text-foreground">
                           3. Work done to resolve the uncertainties (tests, experiments, iterations)
                         </h3>
-                        <p className="mt-1 text-xs text-slate-400">
+                        <p className="mt-1 text-xs text-muted-foreground">
                           {challengePlaceholders.workDone}
                         </p>
                         <Textarea
@@ -1905,8 +1914,8 @@ export default function ProjectDetailPage() {
 
                     <TabsContent value="activities" className="pt-4 space-y-4">
                       <div>
-                        <h3 className="text-sm font-semibold text-slate-100">Qualifying R&amp;D activities</h3>
-                        <p className="mt-1 text-xs text-slate-400">
+                        <h3 className="text-sm font-semibold text-foreground">Qualifying R&amp;D activities</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">
                           List the main pieces of work that involved overcoming technical uncertainty. Each item should be a distinct activity
                           (e.g. &quot;Prototype intake design and testing&quot;, &quot;Control algorithm modelling&quot;).
                         </p>
