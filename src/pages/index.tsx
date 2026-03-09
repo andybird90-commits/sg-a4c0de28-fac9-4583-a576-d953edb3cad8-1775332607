@@ -119,9 +119,9 @@ export default function LandingPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
                 <img src="/RDTAXHEADER_1_.png" alt="RD TAX" className="h-8 sm:h-10 w-auto flex-shrink-0" />
-                <span className="text-base sm:text-lg lg:text-xl font-bold text-foreground truncate">
-                  RD Companion
-                </span>
+                
+
+                
               </div>
               <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                 <Button
@@ -153,9 +153,9 @@ export default function LandingPage() {
                     src="/rdtax-logo.png"
                     alt="RD TAX"
                     className="w-full max-w-[250px] sm:max-w-xs lg:max-w-md h-auto drop-shadow-2xl mb-4 lg:mb-6" />
-                  <p className="text-sm sm:text-base md:text-lg font-medium text-muted-foreground text-center lg:text-left">
-                    Raising Funds for Businesses
-                  </p>
+                  
+
+                  
                 </div>
 
                 <div className="text-center lg:text-left order-1 lg:order-2">
