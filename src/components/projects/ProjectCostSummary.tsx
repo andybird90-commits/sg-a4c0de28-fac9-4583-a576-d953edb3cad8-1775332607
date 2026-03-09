@@ -63,14 +63,14 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
 
   return (
     <Card className="bg-slate-950/60 border-slate-800">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3" style={{ backgroundColor: "#0f1d2d" }}>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-sm text-slate-100">
             <Wallet className="h-4 w-4 text-emerald-400" />
             Project Costs
           </CardTitle>
           <div className="text-right">
-            <div className="text-[11px] text-slate-400">Indicative total</div>
+            <div className="text-[11px] text-slate-400" style={{ color: "#ffffff" }}>Indicative total</div>
             <div className="text-base font-semibold text-slate-50">
               £
               {total.toLocaleString("en-GB", {
@@ -78,14 +78,14 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
               })}
             </div>
             {schemeLabel &&
-            <div className="mt-0.5 text-[11px] text-slate-400">
+            <div className="mt-0.5 text-[11px] text-slate-400" style={{ color: "#ffffff" }}>
                 Scheme: {schemeLabel}
               </div>
             }
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 space-y-3">
+      <CardContent className="pt-0 space-y-3" style={{ backgroundColor: "#0f1d2d" }}>
         <div className="space-y-2">
           {entries.map(([type, value]) => {
             const percentage = total > 0 ? value / total * 100 : 0;
@@ -94,7 +94,7 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
               <div key={type} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="capitalize">
+                    <Badge variant="outline" className="capitalize" style={{ color: "#ffffff" }}>
                       {label}
                     </Badge>
                     <span className="text-slate-300">
@@ -104,7 +104,7 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
                       })}
                     </span>
                   </div>
-                  <span className="text-slate-400">
+                  <span className="text-slate-400" style={{ color: "#ffffff" }}>
                     {Math.round(percentage)}%
                   </span>
                 </div>
@@ -120,7 +120,7 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
         </div>
         {total > 0 &&
         <div className="pt-1 border-t border-slate-800/60 mt-2 pt-2 space-y-1">
-            <div className="text-[11px] text-slate-400">
+            <div className="text-[11px] text-slate-400" style={{ color: "#ffffff" }}>
               Rough indication of potential R&amp;D tax benefit
               {schemeLabel ? ` (${schemeLabel} scheme)` : ""}
             </div>
@@ -134,7 +134,7 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
               maximumFractionDigits: 0
             })}
             </div>
-            <p className="text-[10px] text-slate-500">
+            <p className="text-[10px] text-slate-500" style={{ color: "#ffffff" }}>
               This is a broad range based on typical relief levels
               {schemeLabel ? ` for the ${schemeLabel} scheme` : ""}. Your actual
               benefit will depend on your specific circumstances and tax
@@ -142,7 +142,7 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
             </p>
           </div>
         }
-        <p className="pt-1 text-[11px] text-slate-400">
+        <p className="pt-1 text-[11px] text-slate-400" style={{ color: "#ffffff" }}>
           These figures are for guidance only and will be refined by your RDtax
           team as part of the claim preparation.
         </p>
