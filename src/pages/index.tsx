@@ -153,7 +153,9 @@ export default function LandingPage() {
                     src="/rdtax-logo.png"
                     alt="RD TAX"
                     className="w-full max-w-[250px] sm:max-w-xs lg:max-w-md h-auto drop-shadow-2xl" />
-                  
+                  <p className="mt-4 text-sm sm:text-base md:text-lg font-medium text-muted-foreground text-center lg:text-left">
+                    Raising Funds for Businesses
+                  </p>
                 </div>
 
                 <div className="text-center lg:text-left order-1 lg:order-2">
