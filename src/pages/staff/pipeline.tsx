@@ -402,14 +402,14 @@ export default function PipelinePage() {
               
               Refresh Predictions
             </Button>
-            <Button
-              variant="outline"
-              onClick={handleApplyAverageFees}
-              disabled={applyingFees}>
-              
-              <Save className="w-4 h-4 mr-2" />
-              Apply Avg Fees
-            </Button>
+            
+
+
+
+
+
+
+            
           </div>
         </div>
 
@@ -550,7 +550,7 @@ export default function PipelinePage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3">
-                          <h3 className="font-semibold text-lg">
+                          <h3 className="font-semibold text-lg" style={{ fontSize: "12px" }}>
                             {entry.organisation?.name || "Unknown Organisation"}
                           </h3>
                           <Badge variant={getConfidenceBadge(confidence)}>
