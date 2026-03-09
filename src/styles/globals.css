@@ -190,6 +190,29 @@
   }
 }
 
+/* Global overrides to remap old slate utilities onto RD Tax brand tokens */
+@layer utilities {
+  /* Dark card/background remap */
+  .bg-slate-800,
+  .bg-slate-900,
+  .bg-slate-950 {
+    @apply bg-secondary;
+  }
+
+  /* Borders on dark cards */
+  .border-slate-700,
+  .border-slate-800,
+  .border-slate-900 {
+    @apply border-border;
+  }
+
+  /* Muted text on dark cards – make it readable */
+  .text-slate-300,
+  .text-slate-400 {
+    @apply text-secondary-foreground;
+  }
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
