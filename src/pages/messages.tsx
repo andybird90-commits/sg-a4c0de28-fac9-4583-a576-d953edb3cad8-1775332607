@@ -198,11 +198,15 @@ export default function MessagesPage() {
     type: "inbox" | "sent";
     onOpen: () => void;
   }) => {
-    const isUnread = type === "inbox" && !message.recipients.find(r => r.recipient_id === profile?.id)?.read_at;
-    
+    const isUnread =
+      type === "inbox" &&
+      !message.recipients.find((r) => r.recipient_id === profile?.id)?.read_at;
+
     return (
-      <Card 
-        className={`cursor-pointer hover:bg-gray-50 transition-colors ${isUnread ? "border-l-4 border-l-blue-500" : ""}`}
+      <Card
+        className={`w-full max-w-full cursor-pointer hover:bg-gray-50 transition-colors ${
+          isUnread ? "border-l-4 border-l-blue-500" : ""
+        }`}
         onClick={() => {
           if (type === "inbox" && isUnread) {
             handleMarkAsRead(message.id);
@@ -211,28 +215,36 @@ export default function MessagesPage() {
         }}
       >
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3 flex-1">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               <Avatar>
                 <AvatarFallback>
-                  {type === "inbox" 
-                    ? (message.sender?.full_name?.[0] || "?")
-                    : (message.recipients[0]?.recipient?.full_name?.[0] || "?")}
+                  {type === "inbox"
+                    ? message.sender?.full_name?.[0] || "?"
+                    : message.recipients[0]?.recipient?.full_name?.[0] || "?"}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <CardTitle className="text-base truncate">
-                    {type === "inbox" 
-                      ? (message.sender?.full_name || "Unknown")
-                      : `To: ${message.recipients.map(r => r.recipient?.full_name).join(", ")}`}
+                  <CardTitle className="text-base break-words line-clamp-2">
+                    {type === "inbox"
+                      ? message.sender?.full_name || "Unknown"
+                      : `To: ${message.recipients
+                          .map((r) => r.recipient?.full_name)
+                          .join(", ")}`}
                   </CardTitle>
-                  {isUnread && <Badge variant="default" className="text-xs">New</Badge>}
+                  {isUnread && (
+                    <Badge variant="default" className="text-xs">
+                      New
+                    </Badge>
+                  )}
                 </div>
-                <CardDescription className="text-sm truncate">{message.subject}</CardDescription>
+                <CardDescription className="text-sm text-gray-600 break-words line-clamp-2">
+                  {message.subject}
+                </CardDescription>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-row items-center justify-between gap-2 sm:flex-col sm:items-end">
               <span className="text-xs text-gray-500">
                 {new Date(message.created_at).toLocaleDateString()}
               </span>
@@ -253,12 +265,17 @@ export default function MessagesPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-600 line-clamp-2">{message.body}</p>
+          <p className="text-sm text-gray-600 break-words line-clamp-2">
+            {message.body}
+          </p>
           {message.mentions && message.mentions.length > 0 && (
             <div className="flex items-center gap-1 mt-2">
               <AtSign className="h-3 w-3 text-blue-500" />
-              <span className="text-xs text-blue-500">
-                Mentioned: {message.mentions.map(m => m.mentioned_user?.full_name).join(", ")}
+              <span className="text-xs text-blue-500 break-words">
+                Mentioned:{" "}
+                {message.mentions
+                  .map((m) => m.mentioned_user?.full_name)
+                  .join(", ")}
               </span>
             </div>
           )}
