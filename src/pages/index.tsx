@@ -148,12 +148,12 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
-                <div className="flex justify-center lg:justify-start order-2 lg:order-1">
+                <div className="flex flex-col justify-between items-center lg:items-start order-2 lg:order-1 h-full">
                   <img
                     src="/rdtax-logo.png"
                     alt="RD TAX"
-                    className="w-full max-w-[250px] sm:max-w-xs lg:max-w-md h-auto drop-shadow-2xl" />
-                  <p className="mt-4 text-sm sm:text-base md:text-lg font-medium text-muted-foreground text-center lg:text-left">
+                    className="w-full max-w-[250px] sm:max-w-xs lg:max-w-md h-auto drop-shadow-2xl mb-4 lg:mb-6" />
+                  <p className="text-sm sm:text-base md:text-lg font-medium text-muted-foreground text-center lg:text-left">
                     Raising Funds for Businesses
                   </p>
                 </div>
