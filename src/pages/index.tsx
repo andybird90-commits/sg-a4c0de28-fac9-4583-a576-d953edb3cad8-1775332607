@@ -197,7 +197,7 @@ export default function LandingPage() {
                     {stats.map((stat, index) =>
                     <div
                       key={index}
-                      className="bg-slate-900/60 rounded-lg sm:rounded-xl lg:rounded-2xl p-2.5 sm:p-3 lg:p-4 border border-slate-800" style={{ backgroundColor: "#262626" }}>
+                      className="bg-slate-900/60 rounded-lg sm:rounded-xl lg:rounded-2xl p-2.5 sm:p-3 lg:p-4 border border-slate-800" style={{ backgroundColor: "#0f1d2d" }}>
                       
                         <div className="flex justify-center lg:justify-start mb-1 sm:mb-2">
                           <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-orange-400" />
