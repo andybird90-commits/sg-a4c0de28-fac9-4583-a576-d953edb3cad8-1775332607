@@ -13,22 +13,22 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  CardTitle } from
+"@/components/ui/card";
 import {
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+  TabsTrigger } from
+"@/components/ui/tabs";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  TableRow } from
+"@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -36,15 +36,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  DialogTrigger } from
+"@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue } from
+"@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { claimService, ClaimWithDetails } from "@/services/claimService";
 import { messageService } from "@/services/messageService";
@@ -70,23 +70,23 @@ import {
   AlertCircle,
   RefreshCw,
   Lock,
-  Sparkles,
-} from "lucide-react";
+  Sparkles } from
+"lucide-react";
 import { format } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
 import { sidekickCostAdviceService } from "@/services/sidekickCostAdviceService";
 import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
 import {
   getLatestInspectorSummaryForClaim,
-  type ClaimInspectorSummary,
-} from "@/services/hmrcInspectorService";
+  type ClaimInspectorSummary } from
+"@/services/hmrcInspectorService";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency: "GBP",
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 0
   }).format(amount);
 };
 
@@ -108,12 +108,12 @@ type HmrcResponseItem = {
 function ProjectCard({
   project,
   showClaimButton,
-  showSendToClient,
-}: {
-  project: ClaimProject;
-  showClaimButton?: boolean;
-  showSendToClient?: boolean;
-}) {
+  showSendToClient
+
+
+
+
+}: {project: ClaimProject;showClaimButton?: boolean;showSendToClient?: boolean;}) {
   const { user } = useApp();
   const [claiming, setClaiming] = useState(false);
   const [sending, setSending] = useState(false);
@@ -160,7 +160,7 @@ function ProjectCard({
 
     if (!target) return null;
     const hoursLeft =
-      (target.getTime() - now.getTime()) / (1000 * 60 * 60);
+    (target.getTime() - now.getTime()) / (1000 * 60 * 60);
 
     if (hoursLeft < 0) {
       return <Badge variant="destructive">Overdue</Badge>;
@@ -168,14 +168,14 @@ function ProjectCard({
       return (
         <Badge className="bg-orange-500 text-slate-950">
           {Math.floor(hoursLeft)}h left
-        </Badge>
-      );
+        </Badge>);
+
     } else {
       return (
         <Badge className="bg-green-500 text-slate-950">
           {Math.floor(hoursLeft / 24)}d left
-        </Badge>
-      );
+        </Badge>);
+
     }
   };
 
@@ -199,11 +199,11 @@ function ProjectCard({
   return (
     <div
       className={`p-4 border rounded-lg transition-colors ${
-        project.workflow_status === "submitted_to_team"
-          ? "border-orange-500/80 bg-orange-500/5"
-          : "hover:bg-accent/50"
-      }`}
-    >
+      project.workflow_status === "submitted_to_team" ?
+      "border-orange-500/80 bg-orange-500/5" :
+      "hover:bg-accent/50"}`
+      }>
+      
       <Link href={`/staff/claims/projects/${project.id}`} className="block">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -212,51 +212,51 @@ function ProjectCard({
               <Badge variant="outline">
                 {getWorkflowLabel(project.workflow_status)}
               </Badge>
-              {project.workflow_status === "submitted_to_team" && (
-                <Badge className="bg-orange-500 text-slate-950">
+              {project.workflow_status === "submitted_to_team" &&
+              <Badge className="bg-orange-500 text-slate-950">
                   Pending from client
                 </Badge>
-              )}
+              }
               {getSLABadge()}
             </div>
-            {project.description && (
-              <p className="text-sm text-muted-foreground break-words mb-2">
+            {project.description &&
+            <p className="text-sm text-muted-foreground break-words mb-2">
                 {project.description}
               </p>
-            )}
-            {project.rd_theme && (
-              <Badge variant="secondary" className="text-xs">
+            }
+            {project.rd_theme &&
+            <Badge variant="secondary" className="text-xs">
                 {project.rd_theme}
               </Badge>
-            )}
-            {project.assigned_to_user_id && (
-              <p className="text-xs text-muted-foreground mt-2">
+            }
+            {project.assigned_to_user_id &&
+            <p className="text-xs text-muted-foreground mt-2">
                 Assigned to team member
               </p>
-            )}
+            }
           </div>
         </div>
       </Link>
       <div className="flex gap-2 flex-shrink-0 mt-2">
         {showClaimButton &&
-          !project.assigned_to_user_id &&
-          false && (
-            <Button
-              onClick={handleClaimProject}
-              disabled={claiming}
-              size="sm"
-            >
+        !project.assigned_to_user_id &&
+        false &&
+        <Button
+          onClick={handleClaimProject}
+          disabled={claiming}
+          size="sm">
+          
               {claiming ? "Claiming..." : "Claim Project"}
             </Button>
-          )}
-        {showSendToClient && (
-          <Button onClick={handleSendToClient} disabled={sending} size="sm">
+        }
+        {showSendToClient &&
+        <Button onClick={handleSendToClient} disabled={sending} size="sm">
             {sending ? "Sending..." : "Send to Client"}
           </Button>
-        )}
+        }
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 export default function ClaimDetailPage() {
@@ -293,7 +293,7 @@ export default function ClaimDetailPage() {
     rd_theme: "",
     technical_understanding: "",
     challenges_uncertainties: "",
-    qualifying_activities: "",
+    qualifying_activities: ""
   });
 
   // Cost management state
@@ -304,11 +304,11 @@ export default function ClaimDetailPage() {
     description: "",
     amount: "",
     cost_date: "",
-    project_id: "",
+    project_id: ""
   });
   const [clientCostTotalsByType, setClientCostTotalsByType] = useState<
-    Record<string, { total: number; count: number }>
-  >({});
+    Record<string, {total: number;count: number;}>>(
+    {});
   const [clientTotalCost, setClientTotalCost] = useState(0);
   const [clientCostEntryCount, setClientCostEntryCount] = useState(0);
   const [clientProjectCostSummary, setClientProjectCostSummary] = useState<
@@ -317,10 +317,10 @@ export default function ClaimDetailPage() {
       {
         total: number;
         count: number;
-        byType: Record<string, { total: number; count: number }>;
-      }
-    >
-  >({});
+        byType: Record<string, {total: number;count: number;}>;
+      }>>(
+
+    {});
   const [clientEvidenceByProject, setClientEvidenceByProject] = useState<
     Record<
       string,
@@ -332,9 +332,9 @@ export default function ClaimDetailPage() {
         createdAt: string;
         externalUrl?: string | null;
         body?: string | null;
-      }>
-    >
-  >({});
+      }>>>(
+
+    {});
   const [saving, setSaving] = useState(false);
 
   // Document management state
@@ -345,8 +345,8 @@ export default function ClaimDetailPage() {
   const [documentProjectId, setDocumentProjectId] = useState("");
 
   const [qaAdmins, setQaAdmins] = useState<
-    { id: string; full_name: string | null; email: string | null }[]
-  >([]);
+    {id: string;full_name: string | null;email: string | null;}[]>(
+    []);
   const [selectedQaAdmin, setSelectedQaAdmin] = useState("");
   const [loadingQaAdmins, setLoadingQaAdmins] = useState(false);
   const [submittingQa, setSubmittingQa] = useState(false);
@@ -392,28 +392,28 @@ export default function ClaimDetailPage() {
       setInspectorSummary(summary);
 
       const existingHmrc =
-        (loaded.hmrc_responses as HmrcResponseItem[] | null) ?? [];
+      loaded.hmrc_responses as HmrcResponseItem[] | null ?? [];
       setHmrcResponses(existingHmrc);
 
       setOutcomeSubmittedValue(
-        loaded.submitted_claim_value != null
-          ? String(loaded.submitted_claim_value)
-          : ""
+        loaded.submitted_claim_value != null ?
+        String(loaded.submitted_claim_value) :
+        ""
       );
       setOutcomeReceivedValue(
-        loaded.received_claim_value != null
-          ? String(loaded.received_claim_value)
-          : ""
+        loaded.received_claim_value != null ?
+        String(loaded.received_claim_value) :
+        ""
       );
 
       const existingScheme =
-        ((loaded as any).scheme_type as string | null) ??
-        ((loaded as any).scheme as string | null) ??
-        "";
+      (loaded as any).scheme_type as string | null ??
+      (loaded as any).scheme as string | null ??
+      "";
       setSchemeDraft(existingScheme || "");
 
       const claimProjects =
-        (loaded.projects as ClaimProject[] | null) ?? [];
+      loaded.projects as ClaimProject[] | null ?? [];
       setProjects(claimProjects);
 
       // Reset client-side aggregated cost state
@@ -424,39 +424,39 @@ export default function ClaimDetailPage() {
       setClientEvidenceByProject({});
 
       // Load client-side cost advice from linked sidekick projects
-      const sidekickIds = claimProjects
-        .map((p) => p.source_sidekick_project_id)
-        .filter((id): id is string => typeof id === "string" && id.length > 0);
+      const sidekickIds = claimProjects.
+      map((p) => p.source_sidekick_project_id).
+      filter((id): id is string => typeof id === "string" && id.length > 0);
 
       if (sidekickIds.length > 0) {
         try {
           const [adviceResults, evidenceResults] = await Promise.all([
-            Promise.all(
-              sidekickIds.map(async (sidekickId) => {
-                const advice =
-                  (await sidekickCostAdviceService.getByProject(sidekickId)) ??
-                  [];
-                return { sidekickId, advice };
-              })
-            ),
-            Promise.all(
-              sidekickIds.map(async (sidekickId) => {
-                try {
-                  const evidenceItems =
-                    (await sidekickEvidenceService.getEvidenceByProject(
-                      sidekickId
-                    )) ?? [];
-                  return { sidekickId, evidenceItems };
-                } catch (e) {
-                  console.error(
-                    "[ClaimDetailPage.loadClaim] Error loading client evidence for sidekick project",
-                    { sidekickId, error: e }
-                  );
-                  return { sidekickId, evidenceItems: [] };
-                }
-              })
-            ),
-          ]);
+          Promise.all(
+            sidekickIds.map(async (sidekickId) => {
+              const advice =
+              (await sidekickCostAdviceService.getByProject(sidekickId)) ??
+              [];
+              return { sidekickId, advice };
+            })
+          ),
+          Promise.all(
+            sidekickIds.map(async (sidekickId) => {
+              try {
+                const evidenceItems =
+                (await sidekickEvidenceService.getEvidenceByProject(
+                  sidekickId
+                )) ?? [];
+                return { sidekickId, evidenceItems };
+              } catch (e) {
+                console.error(
+                  "[ClaimDetailPage.loadClaim] Error loading client evidence for sidekick project",
+                  { sidekickId, error: e }
+                );
+                return { sidekickId, evidenceItems: [] };
+              }
+            })
+          )]
+          );
 
           const adviceMap = new Map<string, any[]>();
           adviceResults.forEach(({ sidekickId, advice }) => {
@@ -470,8 +470,8 @@ export default function ClaimDetailPage() {
 
           const totalsByType: Record<
             string,
-            { total: number; count: number }
-          > = {};
+            {total: number;count: number;}> =
+          {};
           let overallTotal = 0;
           let overallCount = 0;
 
@@ -479,7 +479,7 @@ export default function ClaimDetailPage() {
             [projectId: string]: {
               total: number;
               count: number;
-              byType: Record<string, { total: number; count: number }>;
+              byType: Record<string, {total: number;count: number;}>;
             };
           } = {};
 
@@ -493,8 +493,8 @@ export default function ClaimDetailPage() {
               createdAt: string;
               externalUrl?: string | null;
               body?: string | null;
-            }>
-          > = {};
+            }>> =
+          {};
 
           claimProjects.forEach((project) => {
             const sidekickId = project.source_sidekick_project_id;
@@ -508,12 +508,12 @@ export default function ClaimDetailPage() {
               let projectCount = 0;
               const projectByType: Record<
                 string,
-                { total: number; count: number }
-              > = {};
+                {total: number;count: number;}> =
+              {};
 
               adviceItems.forEach((item: any) => {
                 const type =
-                  (item.cost_type as string | null | undefined) || "other";
+                item.cost_type as string | null | undefined || "other";
                 const amount = Number(item.amount || 0);
                 if (!Number.isFinite(amount) || amount <= 0) {
                   return;
@@ -543,7 +543,7 @@ export default function ClaimDetailPage() {
                 projectSummaries[project.id] = {
                   total: projectTotal,
                   count: projectCount,
-                  byType: projectByType,
+                  byType: projectByType
                 };
               }
             }
@@ -552,12 +552,12 @@ export default function ClaimDetailPage() {
               projectEvidence[project.id] = evidenceItems.map((item: any) => ({
                 id: item.id as string,
                 projectId: project.id,
-                title: (item.title as string | null | undefined) ?? null,
-                type: (item.type as string) || "note",
+                title: item.title as string | null | undefined ?? null,
+                type: item.type as string || "note",
                 createdAt: item.created_at as string,
                 externalUrl:
-                  (item.external_url as string | null | undefined) ?? null,
-                body: (item.body as string | null | undefined) ?? null,
+                item.external_url as string | null | undefined ?? null,
+                body: item.body as string | null | undefined ?? null
               }));
             }
           });
@@ -582,8 +582,8 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error loading claim",
         description:
-          "We could not load the latest details for this claim. Please try again.",
-        variant: "destructive",
+        "We could not load the latest details for this claim. Please try again.",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -603,7 +603,7 @@ export default function ClaimDetailPage() {
     toast({
       title: "QA workflow",
       description:
-        "Submit for QA is not fully wired yet. The workflow will be completed in a later iteration.",
+      "Submit for QA is not fully wired yet. The workflow will be completed in a later iteration."
     });
   };
 
@@ -615,15 +615,15 @@ export default function ClaimDetailPage() {
       setLoadingAnalysis(true);
 
       const {
-        data: { session },
+        data: { session }
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
         toast({
           title: "Not authenticated",
           description:
-            "You need to be logged in to generate Companion analysis for this claim.",
-          variant: "destructive",
+          "You need to be logged in to generate Companion analysis for this claim.",
+          variant: "destructive"
         });
         setLoadingAnalysis(false);
         return;
@@ -633,11 +633,11 @@ export default function ClaimDetailPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          claimId: claim.id,
-        }),
+          claimId: claim.id
+        })
       });
 
       if (!response.ok) {
@@ -649,14 +649,14 @@ export default function ClaimDetailPage() {
 
       toast({
         title: "Analysis ready",
-        description: "AI Companion analysis has been generated for this claim.",
+        description: "AI Companion analysis has been generated for this claim."
       });
     } catch (error) {
       console.error("Error generating AI analysis:", error);
       toast({
         title: "Error",
         description: "Failed to generate AI analysis for this claim.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoadingAnalysis(false);
@@ -671,7 +671,7 @@ export default function ClaimDetailPage() {
 
       // Get current Supabase session so we can pass the JWT to the API
       const {
-        data: { session },
+        data: { session }
       } = await supabase.auth.getSession();
 
       const response = await fetch(
@@ -680,16 +680,16 @@ export default function ClaimDetailPage() {
         )}/pdf/draft`,
         {
           method: "POST",
-          headers: session?.access_token
-            ? {
-                Authorization: `Bearer ${session.access_token}`,
-              }
-            : undefined,
+          headers: session?.access_token ?
+          {
+            Authorization: `Bearer ${session.access_token}`
+          } :
+          undefined
         }
       );
 
       const text = await response.text();
-      let parsed: { ok: boolean; error?: string; pdf_url?: string } | null = null;
+      let parsed: {ok: boolean;error?: string;pdf_url?: string;} | null = null;
 
       try {
         parsed = JSON.parse(text);
@@ -699,19 +699,19 @@ export default function ClaimDetailPage() {
 
       if (!response.ok || !parsed || !parsed.ok) {
         const message =
-          parsed?.error ||
-          (text && text.length < 500 ? text : "Failed to generate draft pack");
+        parsed?.error || (
+        text && text.length < 500 ? text : "Failed to generate draft pack");
         toast({
           title: "Draft pack generation failed",
           description: message,
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
 
       toast({
         title: "Draft pack generated",
-        description: "The draft R&amp;D claim pack PDF has been saved for this claim.",
+        description: "The draft R&amp;D claim pack PDF has been saved for this claim."
       });
 
       // Optionally refetch claim or update local state if you display draft_pdf_url
@@ -720,8 +720,8 @@ export default function ClaimDetailPage() {
       toast({
         title: "Draft pack generation failed",
         description:
-          error?.message || "An unexpected error occurred while generating the draft pack.",
-        variant: "destructive",
+        error?.message || "An unexpected error occurred while generating the draft pack.",
+        variant: "destructive"
       });
     } finally {
       setGeneratingDraft(false);
@@ -736,15 +736,15 @@ export default function ClaimDetailPage() {
 
     try {
       const {
-        data: { session },
+        data: { session }
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
         toast({
           title: "Not authenticated",
           description:
-            "You need to be logged in again before finalising the claim pack.",
-          variant: "destructive",
+          "You need to be logged in again before finalising the claim pack.",
+          variant: "destructive"
         });
         return;
       }
@@ -754,8 +754,8 @@ export default function ClaimDetailPage() {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+            Authorization: `Bearer ${session.access_token}`
+          }
         }
       );
 
@@ -770,7 +770,7 @@ export default function ClaimDetailPage() {
             "Unexpected non-JSON response from finalise-pack:",
             {
               raw,
-              parseError,
+              parseError
             }
           );
         }
@@ -780,22 +780,22 @@ export default function ClaimDetailPage() {
         toast({
           title: "Not authorised",
           description:
-            (data && (data.error || data.message)) ||
-            "Your session may have expired or you do not have access to finalise this claim.",
-          variant: "destructive",
+          data && (data.error || data.message) ||
+          "Your session may have expired or you do not have access to finalise this claim.",
+          variant: "destructive"
         });
         return;
       }
 
       if (!response.ok || !data || data.ok !== true) {
         const message =
-          (data && (data.error || data.message)) ||
-          `Failed to finalise claim pack (status ${response.status})`;
+        data && (data.error || data.message) ||
+        `Failed to finalise claim pack (status ${response.status})`;
 
         toast({
           title: "Error finalising claim pack",
           description: message,
-          variant: "destructive",
+          variant: "destructive"
         });
 
         return;
@@ -812,8 +812,8 @@ export default function ClaimDetailPage() {
       toast({
         title: "Claim pack finalised",
         description:
-          (data && ((data as any).summaryText || (data as any).message)) ||
-          "Projects locked and claim pack is ready for submission.",
+        data && ((data as any).summaryText || (data as any).message) ||
+        "Projects locked and claim pack is ready for submission."
       });
     } catch (error: any) {
       console.error("Error finalising claim pack:", error);
@@ -821,9 +821,9 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error finalising claim pack",
         description:
-          error?.message ||
-          "An unexpected error occurred while finalising the pack.",
-        variant: "destructive",
+        error?.message ||
+        "An unexpected error occurred while finalising the pack.",
+        variant: "destructive"
       });
     } finally {
       setFinalisingPack(false);
@@ -838,15 +838,15 @@ export default function ClaimDetailPage() {
 
       // Ensure we have a valid Supabase session/JWT for the API call
       const {
-        data: { session },
+        data: { session }
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
         toast({
           title: "Not authenticated",
           description:
-            "You need to be logged in to download the draft claim pack.",
-          variant: "destructive",
+          "You need to be logged in to download the draft claim pack.",
+          variant: "destructive"
         });
         setDownloadingDraftPdf(false);
         return;
@@ -857,8 +857,8 @@ export default function ClaimDetailPage() {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+            Authorization: `Bearer ${session.access_token}`
+          }
         }
       );
 
@@ -873,7 +873,7 @@ export default function ClaimDetailPage() {
             "Unexpected non-JSON response from draft PDF API:",
             {
               raw,
-              parseError,
+              parseError
             }
           );
         }
@@ -881,20 +881,20 @@ export default function ClaimDetailPage() {
 
       if (!response.ok || !data || data.ok !== true) {
         const message =
-          (data && (data.error || data.message)) ||
-          `Failed to generate draft PDF (status ${response.status})`;
+        data && (data.error || data.message) ||
+        `Failed to generate draft PDF (status ${response.status})`;
 
         toast({
           title: "Error downloading draft pack",
           description: message,
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
 
       const signedUrl =
-        (data as { signed_url?: string; signedUrl?: string }).signed_url ??
-        (data as { signedUrl?: string }).signedUrl;
+      (data as {signed_url?: string;signedUrl?: string;}).signed_url ??
+      (data as {signedUrl?: string;}).signedUrl;
 
       if (signedUrl) {
         try {
@@ -918,7 +918,7 @@ export default function ClaimDetailPage() {
 
           toast({
             title: "Draft pack downloaded",
-            description: "Draft claim PDF has been downloaded.",
+            description: "Draft claim PDF has been downloaded."
           });
           return;
         } catch (error: any) {
@@ -929,29 +929,29 @@ export default function ClaimDetailPage() {
           toast({
             title: "Error downloading draft pack",
             description:
-              error?.message ||
-              "Failed to download the draft PDF from the secure link. Trying direct download instead.",
-            variant: "destructive",
+            error?.message ||
+            "Failed to download the draft PDF from the secure link. Trying direct download instead.",
+            variant: "destructive"
           });
           // Fall through to direct storage-based download below if available.
         }
       }
 
-      const pdfPath = (data as { pdf_url?: string }).pdf_url;
+      const pdfPath = (data as {pdf_url?: string;}).pdf_url;
 
       if (!pdfPath) {
         toast({
           title: "Error downloading draft pack",
           description: "Draft PDF generated but no file path was returned.",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
 
       // Draft PDFs are stored in the Draft-Claims bucket
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from("Draft-Claims")
-        .download(pdfPath);
+      const { data: fileData, error: downloadError } = await supabase.storage.
+      from("Draft-Claims").
+      download(pdfPath);
 
       if (downloadError || !fileData) {
         console.error(
@@ -961,9 +961,9 @@ export default function ClaimDetailPage() {
         toast({
           title: "Error downloading draft pack",
           description:
-            downloadError?.message ||
-            "Failed to download the draft PDF from storage.",
-          variant: "destructive",
+          downloadError?.message ||
+          "Failed to download the draft PDF from storage.",
+          variant: "destructive"
         });
         return;
       }
@@ -979,16 +979,16 @@ export default function ClaimDetailPage() {
 
       toast({
         title: "Draft pack downloaded",
-        description: "Draft claim PDF has been downloaded.",
+        description: "Draft claim PDF has been downloaded."
       });
     } catch (error: any) {
       console.error("Unexpected error downloading draft PDF:", error);
       toast({
         title: "Error downloading draft pack",
         description:
-          error?.message ||
-          "An unexpected error occurred while downloading the draft PDF.",
-        variant: "destructive",
+        error?.message ||
+        "An unexpected error occurred while downloading the draft PDF.",
+        variant: "destructive"
       });
     } finally {
       setDownloadingDraftPdf(false);
@@ -1004,7 +1004,7 @@ export default function ClaimDetailPage() {
       const response = await fetch(
         `/api/rd/claims/${claim.id}/pdf/final`,
         {
-          method: "POST",
+          method: "POST"
         }
       );
 
@@ -1019,7 +1019,7 @@ export default function ClaimDetailPage() {
             "Unexpected non-JSON response from final PDF API:",
             {
               raw,
-              parseError,
+              parseError
             }
           );
         }
@@ -1027,31 +1027,31 @@ export default function ClaimDetailPage() {
 
       if (!response.ok || !data || data.ok !== true) {
         const message =
-          (data && (data.error || data.message)) ||
-          `Failed to generate final PDF (status ${response.status})`;
+        data && (data.error || data.message) ||
+        `Failed to generate final PDF (status ${response.status})`;
 
         toast({
           title: "Error downloading final pack",
           description: message,
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
 
-      const pdfPath = (data as { pdf_url?: string }).pdf_url;
+      const pdfPath = (data as {pdf_url?: string;}).pdf_url;
 
       if (!pdfPath) {
         toast({
           title: "Error downloading final pack",
           description: "Final PDF generated but no file path was returned.",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
 
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from("Submitted-Claims")
-        .download(pdfPath);
+      const { data: fileData, error: downloadError } = await supabase.storage.
+      from("Submitted-Claims").
+      download(pdfPath);
 
       if (downloadError || !fileData) {
         console.error(
@@ -1061,9 +1061,9 @@ export default function ClaimDetailPage() {
         toast({
           title: "Error downloading final pack",
           description:
-            downloadError?.message ||
-            "Failed to download the final PDF from storage.",
-          variant: "destructive",
+          downloadError?.message ||
+          "Failed to download the final PDF from storage.",
+          variant: "destructive"
         });
         return;
       }
@@ -1079,16 +1079,16 @@ export default function ClaimDetailPage() {
 
       toast({
         title: "Final pack downloaded",
-        description: "Final claim PDF has been downloaded.",
+        description: "Final claim PDF has been downloaded."
       });
     } catch (error: any) {
       console.error("Unexpected error downloading final PDF:", error);
       toast({
         title: "Error downloading final pack",
         description:
-          error?.message ||
-          "An unexpected error occurred while downloading the final PDF.",
-        variant: "destructive",
+        error?.message ||
+        "An unexpected error occurred while downloading the final PDF.",
+        variant: "destructive"
       });
     } finally {
       setDownloadingFinalPdf(false);
@@ -1102,14 +1102,14 @@ export default function ClaimDetailPage() {
       setLoadingHmrcAnalysis(true);
 
       const {
-        data: { session },
+        data: { session }
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
         toast({
           title: "Not authenticated",
           description: "You need to be logged in to use Companion on HMRC responses.",
-          variant: "destructive",
+          variant: "destructive"
         });
         setLoadingHmrcAnalysis(false);
         return;
@@ -1119,12 +1119,12 @@ export default function ClaimDetailPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
           claimId: claim.id,
-          hmrcResponses,
-        }),
+          hmrcResponses
+        })
       });
 
       if (!response.ok) {
@@ -1136,14 +1136,14 @@ export default function ClaimDetailPage() {
 
       toast({
         title: "Companion ready",
-        description: "HMRC responses have been reviewed. See suggestions below.",
+        description: "HMRC responses have been reviewed. See suggestions below."
       });
     } catch (error) {
       console.error("Error generating HMRC response analysis:", error);
       toast({
         title: "Error",
         description: "Failed to generate Companion suggestions for HMRC responses",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoadingHmrcAnalysis(false);
@@ -1174,7 +1174,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: "Failed to send analysis",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSendingMessage(false);
@@ -1187,7 +1187,7 @@ export default function ClaimDetailPage() {
     try {
       setUploadingDocument(true);
       const projectId =
-        documentProjectId === "none" ? null : documentProjectId || null;
+      documentProjectId === "none" ? null : documentProjectId || null;
 
       // Upload file to Supabase Storage
       const fileExt = selectedFile.name.split(".").pop();
@@ -1195,12 +1195,12 @@ export default function ClaimDetailPage() {
       const filePath = `claim_documents/${fileName}`;
 
       // Upload to evidence-files storage bucket
-      const { error: uploadError } = await supabase.storage
-        .from("evidence-files")
-        .upload(filePath, selectedFile, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+      const { error: uploadError } = await supabase.storage.
+      from("evidence-files").
+      upload(filePath, selectedFile, {
+        cacheControl: "3600",
+        upsert: false
+      });
 
       if (uploadError) throw uploadError;
 
@@ -1214,7 +1214,7 @@ export default function ClaimDetailPage() {
         file_name: selectedFile.name,
         file_path: filePath,
         file_size: selectedFile.size,
-        uploaded_by: profile.id,
+        uploaded_by: profile.id
       });
 
       toast({ title: "Success", description: "Document uploaded successfully" });
@@ -1227,7 +1227,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: error.message || "Failed to upload document",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setUploadingDocument(false);
@@ -1236,9 +1236,9 @@ export default function ClaimDetailPage() {
 
   const handleDownloadDocument = async (doc: ClaimDocument) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("evidence-files")
-        .download(doc.file_path);
+      const { data, error } = await supabase.storage.
+      from("evidence-files").
+      download(doc.file_path);
 
       if (error) throw error;
 
@@ -1258,7 +1258,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: error.message || "Failed to download document",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -1271,25 +1271,25 @@ export default function ClaimDetailPage() {
 
       await claimService.updateClaim(claim.id, {
         status: "final_signoff" as any,
-        qa_completed_at: new Date().toISOString(),
+        qa_completed_at: new Date().toISOString()
       });
 
       const recipients = [
-        claim.bd_owner_id,
-        claim.technical_lead_id,
-        claim.cost_lead_id,
-      ].filter(Boolean) as string[];
+      claim.bd_owner_id,
+      claim.technical_lead_id,
+      claim.cost_lead_id].
+      filter(Boolean) as string[];
 
       if (recipients.length > 0) {
         await messageService.sendMessage(
           claim.org_id,
           recipients,
           `Claim QA approved: ${claim.organisations?.name || ""} - FY ${
-            claim.claim_year
-          }`,
+          claim.claim_year}`,
+
           `QA reviewer has approved this claim for client review.${
-            qaFeedback ? `\n\nQA notes:\n${qaFeedback}` : ""
-          }`,
+          qaFeedback ? `\n\nQA notes:\n${qaFeedback}` : ""}`,
+
           undefined,
           { entity_type: "claim", entity_id: claim.id }
         );
@@ -1297,7 +1297,7 @@ export default function ClaimDetailPage() {
 
       toast({
         title: "QA approved",
-        description: "Claim is now ready to be issued to the client for comment.",
+        description: "Claim is now ready to be issued to the client for comment."
       });
 
       setQaFeedback("");
@@ -1309,7 +1309,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: "Failed to record QA approval",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setQaActionLoading(false);
@@ -1323,7 +1323,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Add feedback",
         description: "Please add comments before returning the claim.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -1333,22 +1333,22 @@ export default function ClaimDetailPage() {
 
       await claimService.updateClaim(claim.id, {
         status: "in_progress" as any,
-        qa_completed_at: new Date().toISOString(),
+        qa_completed_at: new Date().toISOString()
       });
 
       const recipients = [
-        claim.bd_owner_id,
-        claim.technical_lead_id,
-        claim.cost_lead_id,
-      ].filter(Boolean) as string[];
+      claim.bd_owner_id,
+      claim.technical_lead_id,
+      claim.cost_lead_id].
+      filter(Boolean) as string[];
 
       if (recipients.length > 0) {
         await messageService.sendMessage(
           claim.org_id,
           recipients,
           `Claim returned with QA comments: ${claim.organisations?.name || ""} - FY ${
-            claim.claim_year
-          }`,
+          claim.claim_year}`,
+
           qaFeedback,
           undefined,
           { entity_type: "claim", entity_id: claim.id }
@@ -1357,7 +1357,7 @@ export default function ClaimDetailPage() {
 
       toast({
         title: "Returned with comments",
-        description: "QA feedback has been sent to the delivery team.",
+        description: "QA feedback has been sent to the delivery team."
       });
 
       setQaFeedback("");
@@ -1369,7 +1369,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: "Failed to return claim with comments",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setQaActionLoading(false);
@@ -1384,12 +1384,12 @@ export default function ClaimDetailPage() {
 
       await claimService.updateClaim(claim.id, {
         status: "client_review" as any,
-        client_review_requested_at: new Date().toISOString(),
+        client_review_requested_at: new Date().toISOString()
       });
 
       toast({
         title: "Issued to client",
-        description: "Claim has been issued to the client for comment.",
+        description: "Claim has been issued to the client for comment."
       });
 
       if (id && typeof id === "string") {
@@ -1400,7 +1400,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: "Failed to issue claim to client",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setClientActionLoading(false);
@@ -1415,12 +1415,12 @@ export default function ClaimDetailPage() {
 
       await claimService.updateClaim(claim.id, {
         status: "ready_to_file" as any,
-        client_review_completed_at: new Date().toISOString(),
+        client_review_completed_at: new Date().toISOString()
       });
 
       toast({
         title: "Client approved",
-        description: "Client approval recorded. Claim is ready to file with HMRC.",
+        description: "Client approval recorded. Claim is ready to file with HMRC."
       });
 
       setClientFeedback("");
@@ -1432,7 +1432,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: "Failed to record client approval",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setClientActionLoading(false);
@@ -1446,7 +1446,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Add client comments",
         description: "Please add the client feedback before recording.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -1456,22 +1456,22 @@ export default function ClaimDetailPage() {
 
       await claimService.updateClaim(claim.id, {
         status: "in_progress" as any,
-        client_review_completed_at: new Date().toISOString(),
+        client_review_completed_at: new Date().toISOString()
       });
 
       const recipients = [
-        claim.bd_owner_id,
-        claim.technical_lead_id,
-        claim.cost_lead_id,
-      ].filter(Boolean) as string[];
+      claim.bd_owner_id,
+      claim.technical_lead_id,
+      claim.cost_lead_id].
+      filter(Boolean) as string[];
 
       if (recipients.length > 0) {
         await messageService.sendMessage(
           claim.org_id,
           recipients,
           `Client comments on claim: ${claim.organisations?.name || ""} - FY ${
-            claim.claim_year
-          }`,
+          claim.claim_year}`,
+
           clientFeedback,
           undefined,
           { entity_type: "claim", entity_id: claim.id }
@@ -1480,7 +1480,7 @@ export default function ClaimDetailPage() {
 
       toast({
         title: "Client comments recorded",
-        description: "Client feedback has been logged. Claim moved back to draft.",
+        description: "Client feedback has been logged. Claim moved back to draft."
       });
 
       setClientFeedback("");
@@ -1492,7 +1492,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: "Failed to record client comments",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setClientActionLoading(false);
@@ -1507,14 +1507,14 @@ export default function ClaimDetailPage() {
 
       await claimService.updateClaim(claim.id, {
         status: "submitted_hmrc" as any,
-        actual_submission_date: new Date().toISOString().slice(0, 10),
+        actual_submission_date: new Date().toISOString().slice(0, 10)
       });
 
       try {
         const response = await fetch(
           `/api/claims/${claim.id}/export-submission`,
           {
-            method: "POST",
+            method: "POST"
           }
         );
 
@@ -1528,8 +1528,8 @@ export default function ClaimDetailPage() {
           toast({
             title: "Submission exported with warning",
             description:
-              "Claim was marked as submitted to HMRC, but the submission PDF could not be generated.",
-            variant: "destructive",
+            "Claim was marked as submitted to HMRC, but the submission PDF could not be generated.",
+            variant: "destructive"
           });
         } else {
           const data = await response.json();
@@ -1538,7 +1538,7 @@ export default function ClaimDetailPage() {
           toast({
             title: "Issued to HMRC",
             description:
-              "Claim has been marked as submitted to HMRC and a submission PDF has been generated.",
+            "Claim has been marked as submitted to HMRC and a submission PDF has been generated."
           });
         }
       } catch (exportError) {
@@ -1546,8 +1546,8 @@ export default function ClaimDetailPage() {
         toast({
           title: "Submission exported with warning",
           description:
-            "Claim was marked as submitted to HMRC, but the submission PDF could not be generated.",
-          variant: "destructive",
+          "Claim was marked as submitted to HMRC, but the submission PDF could not be generated.",
+          variant: "destructive"
         });
       }
 
@@ -1559,7 +1559,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: "Failed to mark claim as submitted to HMRC",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setHmrcActionLoading(false);
@@ -1573,7 +1573,7 @@ export default function ClaimDetailPage() {
       const response = await fetch(
         `/api/claims/${claim.id}/export-response`,
         {
-          method: "POST",
+          method: "POST"
         }
       );
 
@@ -1587,7 +1587,7 @@ export default function ClaimDetailPage() {
         toast({
           title: "Error",
           description: "Failed to export HMRC response PDF",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
@@ -1598,7 +1598,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Response PDF exported",
         description:
-          "HMRC response pack has been generated and stored in submitted claims.",
+        "HMRC response pack has been generated and stored in submitted claims."
       });
 
       if (id && typeof id === "string") {
@@ -1609,23 +1609,23 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: "Unexpected error generating HMRC response PDF",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
 
   const handleAddHmrcResponseRow = () => {
     setHmrcResponses((prev) => [
-      ...prev,
-      { question: "", team_response: "" },
-    ]);
+    ...prev,
+    { question: "", team_response: "" }]
+    );
   };
 
   const handleHmrcResponseChange = (
-    index: number,
-    field: "question" | "team_response",
-    value: string
-  ) => {
+  index: number,
+  field: "question" | "team_response",
+  value: string) =>
+  {
     setHmrcResponses((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
@@ -1639,20 +1639,20 @@ export default function ClaimDetailPage() {
     try {
       const cleaned = hmrcResponses.filter(
         (item) =>
-          item.question.trim() !== "" || item.team_response.trim() !== ""
+        item.question.trim() !== "" || item.team_response.trim() !== ""
       );
 
       await claimService.updateClaim(claim.id, {
         hmrc_responses: cleaned as any,
         status:
-          claim.status === "submitted_hmrc"
-            ? ("hmrc_feedback" as any)
-            : ((claim.status || "hmrc_feedback") as any),
+        claim.status === "submitted_hmrc" ?
+        "hmrc_feedback" as any :
+        (claim.status || "hmrc_feedback") as any
       });
 
       toast({
         title: "HMRC responses saved",
-        description: "Responses have been saved to this claim.",
+        description: "Responses have been saved to this claim."
       });
 
       if (id && typeof id === "string") {
@@ -1663,7 +1663,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: "Failed to save HMRC responses",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -1673,22 +1673,22 @@ export default function ClaimDetailPage() {
 
     try {
       const submitted =
-        outcomeSubmittedValue.trim() === ""
-          ? null
-          : Number.parseFloat(outcomeSubmittedValue);
+      outcomeSubmittedValue.trim() === "" ?
+      null :
+      Number.parseFloat(outcomeSubmittedValue);
       const received =
-        outcomeReceivedValue.trim() === ""
-          ? null
-          : Number.parseFloat(outcomeReceivedValue);
+      outcomeReceivedValue.trim() === "" ?
+      null :
+      Number.parseFloat(outcomeReceivedValue);
 
       await claimService.updateClaim(claim.id, {
         submitted_claim_value: submitted as any,
-        received_claim_value: received as any,
+        received_claim_value: received as any
       });
 
       toast({
         title: "Outcome saved",
-        description: "Submitted and received values have been updated.",
+        description: "Submitted and received values have been updated."
       });
 
       if (id && typeof id === "string") {
@@ -1699,7 +1699,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: "Failed to save outcome values",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -1709,13 +1709,13 @@ export default function ClaimDetailPage() {
 
     try {
       await claimService.updateClaim(claim.id, {
-        status: "completed" as any,
+        status: "completed" as any
       });
 
       toast({
         title: "Claim completed",
         description:
-          "Claim has been marked as completed and archived in the system.",
+        "Claim has been marked as completed and archived in the system."
       });
 
       if (id && typeof id === "string") {
@@ -1726,7 +1726,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Error",
         description: "Failed to mark claim as completed",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -1738,7 +1738,7 @@ export default function ClaimDetailPage() {
       toast({
         title: "Select scheme",
         description: "Please choose a scheme type before saving.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -1752,23 +1752,23 @@ export default function ClaimDetailPage() {
         claim.id,
         {
           scheme_type: nextScheme,
-          scheme: nextScheme,
+          scheme: nextScheme
         } as any
       );
 
       setClaim((previous) =>
-        previous
-          ? ({
-              ...previous,
-              scheme_type: updated.scheme_type ?? nextScheme,
-              scheme: (updated as any).scheme ?? nextScheme,
-            } as ClaimWithDetails)
-          : previous
+      previous ?
+      {
+        ...previous,
+        scheme_type: updated.scheme_type ?? nextScheme,
+        scheme: (updated as any).scheme ?? nextScheme
+      } as ClaimWithDetails :
+      previous
       );
 
       toast({
         title: "Scheme updated",
-        description: `R&amp;D scheme type has been set to ${nextScheme}.`,
+        description: `R&amp;D scheme type has been set to ${nextScheme}.`
       });
 
       if (id && typeof id === "string") {
@@ -1777,13 +1777,13 @@ export default function ClaimDetailPage() {
     } catch (error: any) {
       console.error("Error saving scheme type:", error);
       const message =
-        error?.message ||
-        error?.details ||
-        "Failed to update scheme type";
+      error?.message ||
+      error?.details ||
+      "Failed to update scheme type";
       toast({
         title: "Error",
         description: message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSavingScheme(false);
@@ -1805,7 +1805,7 @@ export default function ClaimDetailPage() {
         description: costForm.description?.trim() || null,
         amount: Number(costForm.amount || 0),
         cost_date: costForm.cost_date || null,
-        project_id: costForm.project_id || null,
+        project_id: costForm.project_id || null
       };
 
       if (editingCost) {
@@ -1818,7 +1818,7 @@ export default function ClaimDetailPage() {
 
       toast({
         title: editingCost ? "Cost updated" : "Cost added",
-        description: "The cost entry has been saved for this claim.",
+        description: "The cost entry has been saved for this claim."
       });
 
       setShowCostDialog(false);
@@ -1828,15 +1828,15 @@ export default function ClaimDetailPage() {
         description: "",
         amount: "",
         cost_date: "",
-        project_id: "",
+        project_id: ""
       });
     } catch (error) {
       console.error("Error saving cost:", error);
       toast({
         title: "Error saving cost",
         description:
-          "We could not save this cost entry. Please try again.",
-        variant: "destructive",
+        "We could not save this cost entry. Please try again.",
+        variant: "destructive"
       });
     } finally {
       setSaving(false);
@@ -1844,8 +1844,8 @@ export default function ClaimDetailPage() {
   };
 
   const getSchemeMultipliers = (
-    scheme: string
-  ): { lowMultiplier: number; highMultiplier: number } => {
+  scheme: string)
+  : {lowMultiplier: number;highMultiplier: number;} => {
     switch (scheme) {
       case "SME":
         return { lowMultiplier: 0.18, highMultiplier: 0.26 };
@@ -1859,21 +1859,21 @@ export default function ClaimDetailPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; className: string }> = {
+    const statusConfig: Record<string, {label: string;className: string;}> = {
       intake: { label: "Intake", className: "bg-blue-100 text-blue-800" },
       in_progress: { label: "In Progress", className: "bg-purple-100 text-purple-800" },
       review: { label: "Review", className: "bg-orange-100 text-orange-800" },
       submitted: { label: "Submitted", className: "bg-green-100 text-green-800" },
-      approved: { label: "Approved", className: "bg-emerald-100 text-emerald-800" },
+      approved: { label: "Approved", className: "bg-emerald-100 text-emerald-800" }
     };
 
     const config =
-      statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-800" };
+    statusConfig[status] || { label: status, className: "bg-gray-100 text-gray-800" };
     return (
       <Badge variant="secondary" className={config.className}>
         {config.label}
-      </Badge>
-    );
+      </Badge>);
+
   };
 
   const projectEvidenceCount = Object.values(clientEvidenceByProject).reduce(
@@ -1882,10 +1882,10 @@ export default function ClaimDetailPage() {
   );
 
   const totalDocumentsCount =
-    (claim?.documents?.length ?? 0) + projectEvidenceCount;
+  (claim?.documents?.length ?? 0) + projectEvidenceCount;
 
   const [inspectorSummary, setInspectorSummary] =
-    useState<ClaimInspectorSummary | null>(null);
+  useState<ClaimInspectorSummary | null>(null);
 
   if (loading) {
     return (
@@ -1896,8 +1896,8 @@ export default function ClaimDetailPage() {
             <p className="text-slate-600">Loading claim details...</p>
           </div>
         </div>
-      </StaffLayout>
-    );
+      </StaffLayout>);
+
   }
 
   if (!claim) {
@@ -1910,8 +1910,8 @@ export default function ClaimDetailPage() {
             Back to Claims
           </Button>
         </div>
-      </StaffLayout>
-    );
+      </StaffLayout>);
+
   }
 
   return (
@@ -1923,23 +1923,23 @@ export default function ClaimDetailPage() {
             <Button
               variant="ghost"
               onClick={() => router.push("/staff/claims")}
-              className="text-slate-200 hover:text-white hover:bg-slate-800/80"
-            >
+              className="text-slate-200 hover:text-white hover:bg-slate-800/80" style={{ color: "#1a1a1a" }}>
+              
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-50" style={{ color: "#1a1a1a" }}>
                   {claim.organisations?.name || "Unknown Client"}
                 </h1>
                 <MessageWidget
                   entityType="claim"
                   entityId={claim.id}
-                  entityName={`${claim.organisations?.name || "Claim"} - FY ${claim.claim_year}`}
-                />
+                  entityName={`${claim.organisations?.name || "Claim"} - FY ${claim.claim_year}`} />
+                
               </div>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-400" style={{ color: "#1a1a1a" }}>
                 FY {claim.claim_year} • {claim.organisations?.organisation_code}
               </p>
             </div>
@@ -1948,12 +1948,12 @@ export default function ClaimDetailPage() {
             <Button
               asChild
               size="sm"
-              variant="outline"
-            >
+              variant="outline">
+              
               <Link href={`/staff/claims/${claim.id}/inspector`}>
-                {inspectorSummary && inspectorSummary.latestStatus !== "not_run"
-                  ? "Open Inspector Review"
-                  : "Run Inspector"}
+                {inspectorSummary && inspectorSummary.latestStatus !== "not_run" ?
+                "Open Inspector Review" :
+                "Run Inspector"}
               </Link>
             </Button>
             {getStatusBadge(claim.status || "draft")}
@@ -2066,9 +2066,9 @@ export default function ClaimDetailPage() {
                       Created
                     </dt>
                     <dd className="mt-1 text-sm font-semibold">
-                      {claim.created_at
-                        ? format(new Date(claim.created_at), "PPP")
-                        : "N/A"}
+                      {claim.created_at ?
+                      format(new Date(claim.created_at), "PPP") :
+                      "N/A"}
                     </dd>
                   </div>
                   <div>
@@ -2076,9 +2076,9 @@ export default function ClaimDetailPage() {
                       Last Updated
                     </dt>
                     <dd className="mt-1 text-sm font-semibold">
-                      {claim.updated_at
-                        ? format(new Date(claim.updated_at), "PPP")
-                        : "N/A"}
+                      {claim.updated_at ?
+                      format(new Date(claim.updated_at), "PPP") :
+                      "N/A"}
                     </dd>
                   </div>
                 </dl>
@@ -2127,80 +2127,80 @@ export default function ClaimDetailPage() {
                         size="sm"
                         variant="secondary"
                         onClick={handleGenerateDraftPack}
-                        disabled={generatingDraft}
-                      >
-                        {generatingDraft ? (
-                          <>
+                        disabled={generatingDraft}>
+                        
+                        {generatingDraft ?
+                        <>
                             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                             Generating drafts...
-                          </>
-                        ) : (
-                          <>
+                          </> :
+
+                        <>
                             <FileText className="mr-2 h-4 w-4" />
                             Generate draft claim
                           </>
-                        )}
+                        }
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={handleFinaliseClaimPack}
-                        disabled={finalisingPack}
-                      >
-                        {finalisingPack ? (
-                          <>
+                        disabled={finalisingPack}>
+                        
+                        {finalisingPack ?
+                        <>
                             <Lock className="mr-2 h-4 w-4 animate-spin" />
                             Finalising...
-                          </>
-                        ) : (
-                          <>
+                          </> :
+
+                        <>
                             <Lock className="mr-2 h-4 w-4" />
                             Finalise claim pack
                           </>
-                        )}
+                        }
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={handleDownloadDraftPdf}
-                        disabled={downloadingDraftPdf}
-                      >
-                        {downloadingDraftPdf ? (
-                          <>
+                        disabled={downloadingDraftPdf}>
+                        
+                        {downloadingDraftPdf ?
+                        <>
                             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                             Downloading draft...
-                          </>
-                        ) : (
-                          <>
+                          </> :
+
+                        <>
                             <Download className="mr-2 h-4 w-4" />
                             Download draft pack
                           </>
-                        )}
+                        }
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={handleDownloadFinalPdf}
-                        disabled={downloadingFinalPdf}
-                      >
-                        {downloadingFinalPdf ? (
-                          <>
+                        disabled={downloadingFinalPdf}>
+                        
+                        {downloadingFinalPdf ?
+                        <>
                             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                             Downloading final...
-                          </>
-                        ) : (
-                          <>
+                          </> :
+
+                        <>
                             <Download className="mr-2 h-4 w-4" />
                             Download final pack
                           </>
-                        )}
+                        }
                       </Button>
                     </div>
                   </div>
-                  {(draftSummary || finaliseSummary) && (
-                    <div className="mt-2 grid gap-3 text-xs text-muted-foreground md:grid-cols-2">
-                      {draftSummary && (
-                        <div>
+                  {(draftSummary || finaliseSummary) &&
+                  <div className="mt-2 grid gap-3 text-xs text-muted-foreground md:grid-cols-2">
+                      {draftSummary &&
+                    <div>
                           <p className="font-semibold text-foreground">
                             Draft generation summary
                           </p>
@@ -2211,9 +2211,9 @@ export default function ClaimDetailPage() {
                             Errors: {draftSummary.error_count ?? 0}
                           </p>
                         </div>
-                      )}
-                      {finaliseSummary && (
-                        <div>
+                    }
+                      {finaliseSummary &&
+                    <div>
                           <p className="font-semibold text-foreground">
                             Finalisation summary
                           </p>
@@ -2225,9 +2225,9 @@ export default function ClaimDetailPage() {
                             Missing: {finaliseSummary.missing_count ?? 0}
                           </p>
                         </div>
-                      )}
+                    }
                     </div>
-                  )}
+                  }
                 </div>
 
                 {/* Step 1 – Internal QA signoff */}
@@ -2246,17 +2246,17 @@ export default function ClaimDetailPage() {
                       <Label htmlFor="qa-admin">Assign QA reviewer (admin)</Label>
                       <Select
                         value={selectedQaAdmin}
-                        onValueChange={setSelectedQaAdmin}
-                      >
+                        onValueChange={setSelectedQaAdmin}>
+                        
                         <SelectTrigger id="qa-admin">
                           <SelectValue placeholder="Select admin reviewer" />
                         </SelectTrigger>
                         <SelectContent>
-                          {qaAdmins.map((admin) => (
-                            <SelectItem key={admin.id} value={admin.id}>
+                          {qaAdmins.map((admin) =>
+                          <SelectItem key={admin.id} value={admin.id}>
                               {admin.full_name ?? admin.email ?? "Admin"}
                             </SelectItem>
-                          ))}
+                          )}
                         </SelectContent>
                       </Select>
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -2267,8 +2267,8 @@ export default function ClaimDetailPage() {
                     <Button
                       variant="secondary"
                       disabled={submittingQa || !selectedQaAdmin}
-                      onClick={handleSubmitForQa}
-                    >
+                      onClick={handleSubmitForQa}>
+                      
                       {submittingQa ? "Submitting..." : "Submit for QA signoff"}
                     </Button>
                   </div>
@@ -2286,40 +2286,40 @@ export default function ClaimDetailPage() {
                     </p>
                   </div>
 
-                  {claim.status === "final_signoff" && (
-                    <Button
+                  {claim.status === "final_signoff" &&
+                  <Button
+                    variant="secondary"
+                    disabled={clientActionLoading}
+                    onClick={handleIssueToClient}>
+                    
+                      {clientActionLoading ?
+                    "Issuing..." :
+                    "Issue to client for comment"}
+                    </Button>
+                  }
+
+                  {claim.status === "client_review" &&
+                  <div className="flex flex-col gap-3 md:w-56">
+                      <Button
                       variant="secondary"
                       disabled={clientActionLoading}
-                      onClick={handleIssueToClient}
-                    >
-                      {clientActionLoading
-                        ? "Issuing..."
-                        : "Issue to client for comment"}
-                    </Button>
-                  )}
-
-                  {claim.status === "client_review" && (
-                    <div className="flex flex-col gap-3 md:w-56">
-                      <Button
-                        variant="secondary"
-                        disabled={clientActionLoading}
-                        onClick={handleClientApprove}
-                      >
-                        {clientActionLoading
-                          ? "Saving..."
-                          : "Client approved – ready to file"}
+                      onClick={handleClientApprove}>
+                      
+                        {clientActionLoading ?
+                      "Saving..." :
+                      "Client approved – ready to file"}
                       </Button>
                       <Button
-                        variant="outline"
-                        disabled={
-                          clientActionLoading || !clientFeedback.trim()
-                        }
-                        onClick={handleClientComments}
-                      >
+                      variant="outline"
+                      disabled={
+                      clientActionLoading || !clientFeedback.trim()
+                      }
+                      onClick={handleClientComments}>
+                      
                         Client comments – back to draft
                       </Button>
                     </div>
-                  )}
+                  }
                 </div>
 
                 {/* Step 3 – HMRC submission */}
@@ -2335,26 +2335,26 @@ export default function ClaimDetailPage() {
                   </div>
 
                   <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                    {claim.status === "ready_to_file" && (
-                      <Button
-                        variant="secondary"
-                        disabled={hmrcActionLoading}
-                        onClick={handleIssueToHmrc}
-                      >
+                    {claim.status === "ready_to_file" &&
+                    <Button
+                      variant="secondary"
+                      disabled={hmrcActionLoading}
+                      onClick={handleIssueToHmrc}>
+                      
                         {hmrcActionLoading ? "Submitting..." : "Issue to HMRC"}
                       </Button>
-                    )}
-                    {claim.actual_submission_date && (
-                      <p className="text-xs text-muted-foreground">
+                    }
+                    {claim.actual_submission_date &&
+                    <p className="text-xs text-muted-foreground">
                         Submitted to HMRC on{" "}
                         <span className="font-semibold">
                           {format(
-                            new Date(claim.actual_submission_date),
-                            "PPP"
-                          )}
+                          new Date(claim.actual_submission_date),
+                          "PPP"
+                        )}
                         </span>
                       </p>
-                    )}
+                    }
                   </div>
 
                   {/* HMRC responses section */}
@@ -2377,15 +2377,15 @@ export default function ClaimDetailPage() {
                         disabled={loadingHmrcAnalysis}
                         onClick={() => {
                           void handleHmrcCompanion();
-                        }}
-                      >
+                        }}>
+                        
                         <Sparkles className="mr-2 h-4 w-4" />
                         {loadingHmrcAnalysis ? "Reviewing..." : "Ask Companion"}
                       </Button>
                     </div>
 
-                    {hmrcAnalysis && (
-                      <div className="rounded-lg border border-border/60 bg-background/40 p-3 text-sm">
+                    {hmrcAnalysis &&
+                    <div className="rounded-lg border border-border/60 bg-background/40 p-3 text-sm">
                         <p className="mb-1 text-xs font-semibold text-muted-foreground">
                           Companion suggestions on HMRC responses
                         </p>
@@ -2393,20 +2393,20 @@ export default function ClaimDetailPage() {
                           {hmrcAnalysis}
                         </p>
                       </div>
-                    )}
+                    }
 
-                    {loadingHmrcAnalysis && !hmrcAnalysis && (
-                      <p className="text-xs text-muted-foreground">
+                    {loadingHmrcAnalysis && !hmrcAnalysis &&
+                    <p className="text-xs text-muted-foreground">
                         Reviewing HMRC responses...
                       </p>
-                    )}
+                    }
 
                     <div className="space-y-3">
-                      {hmrcResponses.map((item, index) => (
-                        <div
-                          key={index}
-                          className="space-y-2 rounded-lg border border-border/50 bg-background/40 p-3"
-                        >
+                      {hmrcResponses.map((item, index) =>
+                      <div
+                        key={index}
+                        className="space-y-2 rounded-lg border border-border/50 bg-background/40 p-3">
+                        
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-medium text-muted-foreground">
                               Exchange {index + 1}
@@ -2418,60 +2418,60 @@ export default function ClaimDetailPage() {
                                 HMRC question / point
                               </Label>
                               <Textarea
-                                rows={3}
-                                value={item.question}
-                                onChange={(e) =>
-                                  handleHmrcResponseChange(
-                                    index,
-                                    "question",
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="Paste the HMRC question or point here..."
-                              />
+                              rows={3}
+                              value={item.question}
+                              onChange={(e) =>
+                              handleHmrcResponseChange(
+                                index,
+                                "question",
+                                e.target.value
+                              )
+                              }
+                              placeholder="Paste the HMRC question or point here..." />
+                            
                             </div>
                             <div className="space-y-1">
                               <Label className="text-xs">
                                 Team response / counter
                               </Label>
                               <Textarea
-                                rows={3}
-                                value={item.team_response}
-                                onChange={(e) =>
-                                  handleHmrcResponseChange(
-                                    index,
-                                    "team_response",
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="Draft your response to HMRC..."
-                              />
+                              rows={3}
+                              value={item.team_response}
+                              onChange={(e) =>
+                              handleHmrcResponseChange(
+                                index,
+                                "team_response",
+                                e.target.value
+                              )
+                              }
+                              placeholder="Draft your response to HMRC..." />
+                            
                             </div>
                           </div>
                         </div>
-                      ))}
+                      )}
                     </div>
 
                     <div className="flex flex-wrap gap-3">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleAddHmrcResponseRow}
-                      >
+                        onClick={handleAddHmrcResponseRow}>
+                        
                         Add another response
                       </Button>
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={handleSaveHmrcResponses}
-                      >
+                        onClick={handleSaveHmrcResponses}>
+                        
                         Save responses
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleExportHmrcResponsePdf}
-                      >
+                        onClick={handleExportHmrcResponsePdf}>
+                        
                         Export response PDF
                       </Button>
                     </div>
@@ -2498,9 +2498,9 @@ export default function ClaimDetailPage() {
                           type="number"
                           value={outcomeSubmittedValue}
                           onChange={(e) =>
-                            setOutcomeSubmittedValue(e.target.value)
-                          }
-                        />
+                          setOutcomeSubmittedValue(e.target.value)
+                          } />
+                        
                       </div>
                       <div>
                         <Label htmlFor="received-value">
@@ -2511,49 +2511,49 @@ export default function ClaimDetailPage() {
                           type="number"
                           value={outcomeReceivedValue}
                           onChange={(e) =>
-                            setOutcomeReceivedValue(e.target.value)
-                          }
-                        />
+                          setOutcomeReceivedValue(e.target.value)
+                          } />
+                        
                       </div>
                       <div className="flex flex-col justify-end">
-                        {outcomeSubmittedValue && outcomeReceivedValue ? (
-                          <div>
+                        {outcomeSubmittedValue && outcomeReceivedValue ?
+                        <div>
                             <p className="text-xs text-muted-foreground">
                               Realisation vs submitted
                             </p>
                             <p className="text-lg font-semibold">
                               {(
-                                (Number(outcomeReceivedValue) /
-                                  Math.max(
-                                    Number(outcomeSubmittedValue),
-                                    1
-                                  )) *
-                                100
-                              ).toFixed(1)}
+                            Number(outcomeReceivedValue) /
+                            Math.max(
+                              Number(outcomeSubmittedValue),
+                              1
+                            ) *
+                            100).
+                            toFixed(1)}
                               %
                             </p>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">
+                          </div> :
+
+                        <p className="text-xs text-muted-foreground">
                             Enter both values to see the realised percentage.
                           </p>
-                        )}
+                        }
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-3">
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={handleSaveOutcome}
-                      >
+                        onClick={handleSaveOutcome}>
+                        
                         Save outcome
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         disabled={claim.status === "completed"}
-                        onClick={handleMarkClaimCompleted}
-                      >
+                        onClick={handleMarkClaimCompleted}>
+                        
                         Mark claim completed
                       </Button>
                     </div>
@@ -2574,46 +2574,46 @@ export default function ClaimDetailPage() {
                 <div className="flex items-center justify-between text-xs">
                   <span>Status</span>
                   <span className="font-medium">
-                    {inspectorSummary
-                      ? inspectorSummary.latestStatus === "completed"
-                        ? "Completed"
-                        : "In progress"
-                      : "Not run"}
+                    {inspectorSummary ?
+                    inspectorSummary.latestStatus === "completed" ?
+                    "Completed" :
+                    "In progress" :
+                    "Not run"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span>Latest score</span>
                   <span>
-                    {inspectorSummary?.latestScore != null
-                      ? `${inspectorSummary.latestScore}/100`
-                      : "—"}
+                    {inspectorSummary?.latestScore != null ?
+                    `${inspectorSummary.latestScore}/100` :
+                    "—"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span>Risk level</span>
                   <span>
-                    {inspectorSummary?.latestRiskLevel
-                      ? inspectorSummary.latestRiskLevel
-                      : "—"}
+                    {inspectorSummary?.latestRiskLevel ?
+                    inspectorSummary.latestRiskLevel :
+                    "—"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span>Last run</span>
                   <span>
-                    {inspectorSummary?.lastRunAt
-                      ? new Date(
-                          inspectorSummary.lastRunAt
-                        ).toLocaleDateString()
-                      : "—"}
+                    {inspectorSummary?.lastRunAt ?
+                    new Date(
+                      inspectorSummary.lastRunAt
+                    ).toLocaleDateString() :
+                    "—"}
                   </span>
                 </div>
                 <div className="mt-3 flex flex-col gap-2">
                   <Button asChild size="sm">
                     <Link href={`/staff/claims/${claim.id}/inspector`}>
                       {inspectorSummary &&
-                      inspectorSummary.latestStatus !== "not_run"
-                        ? "Open Inspector Review"
-                        : "Run Inspector"}
+                      inspectorSummary.latestStatus !== "not_run" ?
+                      "Open Inspector Review" :
+                      "Run Inspector"}
                     </Link>
                   </Button>
                 </div>
@@ -2630,28 +2630,28 @@ export default function ClaimDetailPage() {
                 Add project
               </Button>
             </div>
-            {loadingProjects ? (
-              <div className="flex items-center justify-center py-8">
+            {loadingProjects ?
+            <div className="flex items-center justify-center py-8">
                 <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
-              </div>
-            ) : projects.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
+              </div> :
+            projects.length === 0 ?
+            <p className="py-8 text-center text-sm text-muted-foreground">
                 No projects linked to this claim yet.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {projects.map((project) => (
-                  <ProjectCard key={project.id} project={project} />
-                ))}
+              </p> :
+
+            <div className="space-y-3">
+                {projects.map((project) =>
+              <ProjectCard key={project.id} project={project} />
+              )}
               </div>
-            )}
+            }
           </TabsContent>
 
           {/* COSTS – editable with summary */}
           <TabsContent value="costs" className="mt-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Costs</h2>
-              <Button size="sm" onClick={() => { setEditingCost(null); setCostForm({ cost_type: "staff", description: "", amount: "", cost_date: "", project_id: "" }); setShowCostDialog(true); }}>
+              <Button size="sm" onClick={() => {setEditingCost(null);setCostForm({ cost_type: "staff", description: "", amount: "", cost_date: "", project_id: "" });setShowCostDialog(true);}}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add cost
               </Button>
@@ -2661,64 +2661,64 @@ export default function ClaimDetailPage() {
               const hasClaimCosts = costs.length > 0;
 
               const costTotalsByTypeFromClaim = costs.reduce<
-                Record<string, { total: number; count: number }>
-              >((acc, cost) => {
-                const type = (cost.cost_type as string) || "other";
-                const amount = Number(cost.amount || 0);
+                Record<string, {total: number;count: number;}>>(
+                (acc, cost) => {
+                  const type = cost.cost_type as string || "other";
+                  const amount = Number(cost.amount || 0);
 
-                if (!acc[type]) {
-                  acc[type] = { total: 0, count: 0 };
-                }
+                  if (!acc[type]) {
+                    acc[type] = { total: 0, count: 0 };
+                  }
 
-                acc[type].total += amount;
-                acc[type].count += 1;
-                return acc;
-              }, {});
+                  acc[type].total += amount;
+                  acc[type].count += 1;
+                  return acc;
+                }, {});
 
               const totalClaimCostFromClaim =
-                (claim?.total_costs as number | null | undefined) ??
-                Object.values(costTotalsByTypeFromClaim).reduce(
-                  (sum, entry) => sum + entry.total,
-                  0
-                );
+              claim?.total_costs as number | null | undefined ??
+              Object.values(costTotalsByTypeFromClaim).reduce(
+                (sum, entry) => sum + entry.total,
+                0
+              );
 
-              const effectiveCostTotalsByType = hasClaimCosts
-                ? costTotalsByTypeFromClaim
-                : clientCostTotalsByType;
+              const effectiveCostTotalsByType = hasClaimCosts ?
+              costTotalsByTypeFromClaim :
+              clientCostTotalsByType;
 
-              const effectiveTotalClaimCost = hasClaimCosts
-                ? totalClaimCostFromClaim
-                : clientTotalCost;
+              const effectiveTotalClaimCost = hasClaimCosts ?
+              totalClaimCostFromClaim :
+              clientTotalCost;
 
-              const effectiveCostEntryCount = hasClaimCosts
-                ? costs.length
-                : clientCostEntryCount;
+              const effectiveCostEntryCount = hasClaimCosts ?
+              costs.length :
+              clientCostEntryCount;
 
               const costTypeLabels: Record<string, string> = {
                 staff: "Staff",
                 subcontractor: "Subcontractors",
                 consumables: "Consumables",
                 software: "Software",
-                other: "Other",
+                other: "Other"
               };
 
               const orderedCostTypes: string[] = [
-                "staff",
-                "subcontractor",
-                "consumables",
-                "software",
-                "other",
-              ];
+              "staff",
+              "subcontractor",
+              "consumables",
+              "software",
+              "other"];
+
 
               const schemeType =
-                ((claim as any)?.scheme_type as string | null | undefined) ??
-                ((claim as any)?.scheme as string | null | undefined) ??
-                "";
+              (claim as any)?.scheme_type as string | null | undefined ??
+              (claim as any)?.scheme as string | null | undefined ??
+              "";
 
               const schemeForCalc = schemeType || schemeDraft || "";
 
               const { lowMultiplier, highMultiplier } =
-                getSchemeMultipliers(schemeForCalc);
+              getSchemeMultipliers(schemeForCalc);
 
               const indicativeLow = effectiveTotalClaimCost * lowMultiplier;
               const indicativeHigh = effectiveTotalClaimCost * highMultiplier;
@@ -2728,26 +2728,26 @@ export default function ClaimDetailPage() {
                 {
                   total: number;
                   count: number;
-                  byType: Record<string, { total: number; count: number }>;
-                }
-              > = {};
+                  byType: Record<string, {total: number;count: number;}>;
+                }> =
+              {};
 
               if (hasClaimCosts) {
                 (costs as any[]).forEach((cost) => {
                   const projectId =
-                    (cost.project_id as string | null | undefined) || null;
+                  cost.project_id as string | null | undefined || null;
                   if (!projectId) return;
 
                   const amount = Number(cost.amount || 0);
                   const type =
-                    ((cost.cost_type as string | null | undefined) ||
-                      "other") as string;
+                  (cost.cost_type as string | null | undefined ||
+                  "other") as string;
 
                   if (!projectSummaries[projectId]) {
                     projectSummaries[projectId] = {
                       total: 0,
                       count: 0,
-                      byType: {},
+                      byType: {}
                     };
                   }
 
@@ -2757,7 +2757,7 @@ export default function ClaimDetailPage() {
                   if (!projectSummaries[projectId].byType[type]) {
                     projectSummaries[projectId].byType[type] = {
                       total: 0,
-                      count: 0,
+                      count: 0
                     };
                   }
 
@@ -2770,14 +2770,14 @@ export default function ClaimDetailPage() {
                     projectSummaries[projectId] = {
                       total: summary.total,
                       count: summary.count,
-                      byType: summary.byType || {},
+                      byType: summary.byType || {}
                     };
                   }
                 );
               }
 
               const hasProjectLevelCosts =
-                Object.keys(projectSummaries).length > 0;
+              Object.keys(projectSummaries).length > 0;
 
               return (
                 <>
@@ -2799,12 +2799,12 @@ export default function ClaimDetailPage() {
                           <p className="mt-1 text-sm font-semibold">
                             {schemeType || "Not set"}
                           </p>
-                          {!schemeType && (
-                            <p className="mt-1 text-xs text-muted-foreground">
+                          {!schemeType &&
+                          <p className="mt-1 text-xs text-muted-foreground">
                               Once scheme type is recorded on the claim it will
                               show here.
                             </p>
-                          )}
+                          }
                         </div>
                         <div>
                           <p className="text-xs font-medium text-muted-foreground">
@@ -2828,13 +2828,13 @@ export default function ClaimDetailPage() {
                         <p className="text-xs font-medium text-muted-foreground">
                           Totals by cost heading
                         </p>
-                        {effectiveCostEntryCount === 0 ? (
-                          <p className="text-sm text-muted-foreground">
+                        {effectiveCostEntryCount === 0 ?
+                        <p className="text-sm text-muted-foreground">
                             No cost entries have been recorded for this claim
                             yet.
-                          </p>
-                        ) : (
-                          <div className="overflow-hidden rounded-md border bg-background/40">
+                          </p> :
+
+                        <div className="overflow-hidden rounded-md border bg-background/40">
                             <Table>
                               <TableHeader>
                                 <TableRow>
@@ -2849,10 +2849,10 @@ export default function ClaimDetailPage() {
                               </TableHeader>
                               <TableBody>
                                 {orderedCostTypes.map((type) => {
-                                  const entry = effectiveCostTotalsByType[type];
-                                  if (!entry) return null;
-                                  return (
-                                    <TableRow key={type}>
+                                const entry = effectiveCostTotalsByType[type];
+                                if (!entry) return null;
+                                return (
+                                  <TableRow key={type}>
                                       <TableCell className="font-medium">
                                         {costTypeLabels[type] || type}
                                       </TableCell>
@@ -2862,26 +2862,26 @@ export default function ClaimDetailPage() {
                                       <TableCell className="text-right">
                                         {formatCurrency(entry.total)}
                                       </TableCell>
-                                    </TableRow>
-                                  );
-                                })}
+                                    </TableRow>);
+
+                              })}
                               </TableBody>
                             </Table>
                           </div>
-                        )}
+                        }
                       </div>
 
                       <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
                         <p className="text-xs font-medium text-muted-foreground">
                           Totals by project
                         </p>
-                        {!hasProjectLevelCosts ? (
-                          <p className="text-sm text-muted-foreground">
+                        {!hasProjectLevelCosts ?
+                        <p className="text-sm text-muted-foreground">
                             No project-level costs have been recorded for this
                             claim yet.
-                          </p>
-                        ) : (
-                          <div className="overflow-hidden rounded-md border bg-background/40">
+                          </p> :
+
+                        <div className="overflow-hidden rounded-md border bg-background/40">
                             <Table>
                               <TableHeader>
                                 <TableRow>
@@ -2905,89 +2905,89 @@ export default function ClaimDetailPage() {
                               </TableHeader>
                               <TableBody>
                                 {projects.map((project) => {
-                                  const summary = projectSummaries[project.id];
-                                  if (!summary) return null;
+                                const summary = projectSummaries[project.id];
+                                if (!summary) return null;
 
-                                  const staffTotal =
-                                    summary.byType["staff"]?.total ?? 0;
-                                  const subcontractorTotal =
-                                    summary.byType["subcontractor"]?.total ?? 0;
-                                  const consumablesTotal =
-                                    summary.byType["consumables"]?.total ?? 0;
+                                const staffTotal =
+                                summary.byType["staff"]?.total ?? 0;
+                                const subcontractorTotal =
+                                summary.byType["subcontractor"]?.total ?? 0;
+                                const consumablesTotal =
+                                summary.byType["consumables"]?.total ?? 0;
 
-                                  const projectLow =
-                                    summary.total * lowMultiplier;
-                                  const projectHigh =
-                                    summary.total * highMultiplier;
+                                const projectLow =
+                                summary.total * lowMultiplier;
+                                const projectHigh =
+                                summary.total * highMultiplier;
 
-                                  return (
-                                    <TableRow key={project.id}>
+                                return (
+                                  <TableRow key={project.id}>
                                       <TableCell className="font-medium">
                                         {project.name}
                                       </TableCell>
                                       <TableCell className="text-right">
-                                        {staffTotal > 0
-                                          ? formatCurrency(staffTotal)
-                                          : "—"}
+                                        {staffTotal > 0 ?
+                                      formatCurrency(staffTotal) :
+                                      "—"}
                                       </TableCell>
                                       <TableCell className="text-right">
-                                        {subcontractorTotal > 0
-                                          ? formatCurrency(subcontractorTotal)
-                                          : "—"}
+                                        {subcontractorTotal > 0 ?
+                                      formatCurrency(subcontractorTotal) :
+                                      "—"}
                                       </TableCell>
                                       <TableCell className="text-right">
-                                        {consumablesTotal > 0
-                                          ? formatCurrency(consumablesTotal)
-                                          : "—"}
+                                        {consumablesTotal > 0 ?
+                                      formatCurrency(consumablesTotal) :
+                                      "—"}
                                       </TableCell>
                                       <TableCell className="text-right">
                                         {formatCurrency(summary.total)}
                                       </TableCell>
                                       <TableCell className="text-right text-xs">
-                                        {summary.total > 0 ? (
-                                          <>
+                                        {summary.total > 0 ?
+                                      <>
                                             {formatCurrency(projectLow)} –{" "}
                                             {formatCurrency(projectHigh)}
-                                          </>
-                                        ) : (
-                                          "—"
-                                        )}
+                                          </> :
+
+                                      "—"
+                                      }
                                       </TableCell>
-                                    </TableRow>
-                                  );
-                                })}
+                                    </TableRow>);
+
+                              })}
                               </TableBody>
                             </Table>
                           </div>
-                        )}
+                        }
                       </div>
 
                       <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
                         <p className="text-xs font-medium text-muted-foreground">
                           Indicative R&amp;D benefit for this claim
                         </p>
-                        {effectiveTotalClaimCost > 0 ? (
-                          <>
+                        {effectiveTotalClaimCost > 0 ?
+                        <>
                             <p className="text-sm font-semibold">
                               {formatCurrency(indicativeLow)} –{" "}
                               {formatCurrency(indicativeHigh)}
                             </p>
                             <p className="text-[11px] text-muted-foreground">
                               Based on typical relief levels
-                              {schemeForCalc
-                                ? ` for the ${schemeForCalc} scheme`
-                                : ""}{" "}
+                              {schemeForCalc ?
+                            ` for the ${schemeForCalc} scheme` :
+                            ""}{" "}
                               applied to the total qualifying costs recorded on
                               this tab. Actual benefit will depend on the
                               company&apos;s detailed tax position.
                             </p>
-                          </>
-                        ) : (
-                          <p className="text-[11px] text-muted-foreground">
+                          </> :
+
+                        <p className="text-[11px] text-muted-foreground">
                             Add costs to this claim to see an indicative R&amp;D
                             benefit range based on the selected scheme.
                           </p>
-                        )}
+                        }
                       </div>
 
                       <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
@@ -3002,9 +3002,9 @@ export default function ClaimDetailPage() {
                             <Select
                               value={schemeDraft}
                               onValueChange={(value) =>
-                                setSchemeDraft(value)
-                              }
-                            >
+                              setSchemeDraft(value)
+                              }>
+                              
                               <SelectTrigger id="scheme-type-select">
                                 <SelectValue placeholder="Select scheme type" />
                               </SelectTrigger>
@@ -3021,8 +3021,8 @@ export default function ClaimDetailPage() {
                             variant="secondary"
                             className="md:self-end"
                             disabled={savingScheme || !schemeDraft}
-                            onClick={handleSaveScheme}
-                          >
+                            onClick={handleSaveScheme}>
+                            
                             {savingScheme ? "Saving..." : "Save scheme"}
                           </Button>
                         </div>
@@ -3044,13 +3044,13 @@ export default function ClaimDetailPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {costs.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
+                      {costs.length === 0 ?
+                      <p className="text-sm text-muted-foreground">
                           No costs recorded yet. Use &quot;Add cost&quot; to
                           start capturing qualifying expenditure.
-                        </p>
-                      ) : (
-                        <div className="overflow-hidden rounded-md border bg-background/40">
+                        </p> :
+
+                      <div className="overflow-hidden rounded-md border bg-background/40">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -3064,40 +3064,40 @@ export default function ClaimDetailPage() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {costs.map((cost: any) => (
-                                <TableRow key={cost.id}>
+                              {costs.map((cost: any) =>
+                            <TableRow key={cost.id}>
                                   <TableCell>
-                                    {cost.cost_date
-                                      ? format(
-                                          new Date(cost.cost_date),
-                                          "dd MMM yyyy"
-                                        )
-                                      : "—"}
+                                    {cost.cost_date ?
+                                format(
+                                  new Date(cost.cost_date),
+                                  "dd MMM yyyy"
+                                ) :
+                                "—"}
                                   </TableCell>
                                   <TableCell className="max-w-xs truncate">
                                     {cost.description || "—"}
                                   </TableCell>
                                   <TableCell>
                                     {costTypeLabels[
-                                      (cost.cost_type as string) || "other"
-                                    ] || cost.cost_type || "Other"}
+                                cost.cost_type as string || "other"] ||
+                                cost.cost_type || "Other"}
                                   </TableCell>
                                   <TableCell>
                                     {projects.find(
-                                      (p) => p.id === cost.project_id
-                                    )?.name || "—"}
+                                  (p) => p.id === cost.project_id
+                                )?.name || "—"}
                                   </TableCell>
                                   <TableCell className="text-right">
                                     {formatCurrency(
-                                      Number(cost.amount || 0)
-                                    )}
+                                  Number(cost.amount || 0)
+                                )}
                                   </TableCell>
                                 </TableRow>
-                              ))}
+                            )}
                             </TableBody>
                           </Table>
                         </div>
-                      )}
+                      }
                     </CardContent>
                   </Card>
 
@@ -3118,12 +3118,12 @@ export default function ClaimDetailPage() {
                           <Select
                             value={costForm.cost_type}
                             onValueChange={(value) =>
-                              setCostForm((prev) => ({
-                                ...prev,
-                                cost_type: value,
-                              }))
-                            }
-                          >
+                            setCostForm((prev) => ({
+                              ...prev,
+                              cost_type: value
+                            }))
+                            }>
+                            
                             <SelectTrigger>
                               <SelectValue placeholder="Select type" />
                             </SelectTrigger>
@@ -3145,13 +3145,13 @@ export default function ClaimDetailPage() {
                           <Input
                             value={costForm.description}
                             onChange={(e) =>
-                              setCostForm((prev) => ({
-                                ...prev,
-                                description: e.target.value,
-                              }))
+                            setCostForm((prev) => ({
+                              ...prev,
+                              description: e.target.value
+                            }))
                             }
-                            placeholder="Short description of the cost"
-                          />
+                            placeholder="Short description of the cost" />
+                          
                         </div>
                         <div className="grid gap-4 md:grid-cols-2">
                           <div>
@@ -3160,12 +3160,12 @@ export default function ClaimDetailPage() {
                               type="number"
                               value={costForm.amount}
                               onChange={(e) =>
-                                setCostForm((prev) => ({
-                                  ...prev,
-                                  amount: e.target.value,
-                                }))
-                              }
-                            />
+                              setCostForm((prev) => ({
+                                ...prev,
+                                amount: e.target.value
+                              }))
+                              } />
+                            
                           </div>
                           <div>
                             <Label>Date</Label>
@@ -3173,12 +3173,12 @@ export default function ClaimDetailPage() {
                               type="date"
                               value={costForm.cost_date}
                               onChange={(e) =>
-                                setCostForm((prev) => ({
-                                  ...prev,
-                                  cost_date: e.target.value,
-                                }))
-                              }
-                            />
+                              setCostForm((prev) => ({
+                                ...prev,
+                                cost_date: e.target.value
+                              }))
+                              } />
+                            
                           </div>
                         </div>
                         <div>
@@ -3186,12 +3186,12 @@ export default function ClaimDetailPage() {
                           <Select
                             value={costForm.project_id}
                             onValueChange={(value) =>
-                              setCostForm((prev) => ({
-                                ...prev,
-                                project_id: value,
-                              }))
-                            }
-                          >
+                            setCostForm((prev) => ({
+                              ...prev,
+                              project_id: value
+                            }))
+                            }>
+                            
                             <SelectTrigger>
                               <SelectValue placeholder="Select project" />
                             </SelectTrigger>
@@ -3199,11 +3199,11 @@ export default function ClaimDetailPage() {
                               <SelectItem value="none">
                                 Not linked to a specific project
                               </SelectItem>
-                              {projects.map((project) => (
-                                <SelectItem key={project.id} value={project.id}>
+                              {projects.map((project) =>
+                              <SelectItem key={project.id} value={project.id}>
                                   {project.name}
                                 </SelectItem>
-                              ))}
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
@@ -3211,8 +3211,8 @@ export default function ClaimDetailPage() {
                       <DialogFooter>
                         <Button
                           variant="outline"
-                          onClick={() => setShowCostDialog(false)}
-                        >
+                          onClick={() => setShowCostDialog(false)}>
+                          
                           Cancel
                         </Button>
                         <Button onClick={handleSaveCost}>
@@ -3221,8 +3221,8 @@ export default function ClaimDetailPage() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                </>
-              );
+                </>);
+
             })()}
           </TabsContent>
 
@@ -3243,12 +3243,12 @@ export default function ClaimDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {!claim.documents || claim.documents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
+                {!claim.documents || claim.documents.length === 0 ?
+                <p className="text-sm text-muted-foreground">
                     No documents uploaded for this claim yet.
-                  </p>
-                ) : (
-                  <div className="overflow-hidden rounded-md border bg-background/40">
+                  </p> :
+
+                <div className="overflow-hidden rounded-md border bg-background/40">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -3261,8 +3261,8 @@ export default function ClaimDetailPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {claim.documents.map((doc: any) => (
-                          <TableRow key={doc.id}>
+                        {claim.documents.map((doc: any) =>
+                      <TableRow key={doc.id}>
                             <TableCell className="max-w-xs truncate">
                               {doc.title || doc.file_name || "Untitled"}
                             </TableCell>
@@ -3271,26 +3271,26 @@ export default function ClaimDetailPage() {
                             </TableCell>
                             <TableCell>
                               {projects.find(
-                                (p) => p.id === doc.project_id
-                              )?.name || "—"}
+                            (p) => p.id === doc.project_id
+                          )?.name || "—"}
                             </TableCell>
                             <TableCell className="text-right">
                               <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() =>
-                                  handleDownloadDocument(doc as any)
-                                }
-                              >
+                            size="icon"
+                            variant="ghost"
+                            onClick={() =>
+                            handleDownloadDocument(doc as any)
+                            }>
+                            
                                 <Download className="h-4 w-4" />
                               </Button>
                             </TableCell>
                           </TableRow>
-                        ))}
+                      )}
                       </TableBody>
                     </Table>
                   </div>
-                )}
+                }
                 <div className="mt-6 space-y-4">
                   <h3 className="text-sm font-semibold">
                     Client evidence from Sidekick
@@ -3300,73 +3300,73 @@ export default function ClaimDetailPage() {
                     projects. These are read-only here; update them from the
                     client project workspace.
                   </p>
-                  {Object.keys(clientEvidenceByProject).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
+                  {Object.keys(clientEvidenceByProject).length === 0 ?
+                  <p className="text-sm text-muted-foreground">
                       No client-side evidence has been recorded for the linked
                       projects yet.
-                    </p>
-                  ) : (
-                    <div className="space-y-4">
+                    </p> :
+
+                  <div className="space-y-4">
                       {projects.map((project) => {
-                        const items = clientEvidenceByProject[project.id];
-                        if (!items || items.length === 0) return null;
-                        return (
-                          <div
-                            key={project.id}
-                            className="rounded-md border border-border/60 bg-background/40 p-3"
-                          >
+                      const items = clientEvidenceByProject[project.id];
+                      if (!items || items.length === 0) return null;
+                      return (
+                        <div
+                          key={project.id}
+                          className="rounded-md border border-border/60 bg-background/40 p-3">
+                          
                             <p className="text-xs font-semibold mb-2">
                               {project.name}
                             </p>
                             <div className="space-y-2">
-                              {items.map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="rounded border border-border/40 bg-background/60 p-2 text-xs"
-                                >
+                              {items.map((item) =>
+                            <div
+                              key={item.id}
+                              className="rounded border border-border/40 bg-background/60 p-2 text-xs">
+                              
                                   <div className="flex items-center justify-between gap-2 mb-1">
                                     <div className="flex items-center gap-2">
                                       <Badge
-                                        variant="secondary"
-                                        className="text-[10px] capitalize"
-                                      >
+                                    variant="secondary"
+                                    className="text-[10px] capitalize">
+                                    
                                         {item.type}
                                       </Badge>
-                                      {item.title && (
-                                        <span className="font-medium truncate max-w-[220px]">
+                                      {item.title &&
+                                  <span className="font-medium truncate max-w-[220px]">
                                           {item.title}
                                         </span>
-                                      )}
+                                  }
                                     </div>
                                     <span className="text-[10px] text-muted-foreground">
                                       {new Date(item.createdAt).toLocaleDateString(
-                                        "en-GB"
-                                      )}
+                                    "en-GB"
+                                  )}
                                     </span>
                                   </div>
-                                  {item.body && (
-                                    <p className="text-[11px] text-muted-foreground whitespace-pre-wrap">
+                                  {item.body &&
+                              <p className="text-[11px] text-muted-foreground whitespace-pre-wrap">
                                       {item.body}
                                     </p>
-                                  )}
-                                  {item.externalUrl && (
-                                    <a
-                                      href={item.externalUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="mt-1 inline-block text-[11px] text-blue-500 hover:underline break-all"
-                                    >
+                              }
+                                  {item.externalUrl &&
+                              <a
+                                href={item.externalUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-1 inline-block text-[11px] text-blue-500 hover:underline break-all">
+                                
                                       {item.externalUrl}
                                     </a>
-                                  )}
+                              }
                                 </div>
-                              ))}
+                            )}
                             </div>
-                          </div>
-                        );
-                      })}
+                          </div>);
+
+                    })}
                     </div>
-                  )}
+                  }
                 </div>
               </CardContent>
             </Card>
@@ -3374,8 +3374,8 @@ export default function ClaimDetailPage() {
             {/* Upload document dialog */}
             <Dialog
               open={showDocumentDialog}
-              onOpenChange={setShowDocumentDialog}
-            >
+              onOpenChange={setShowDocumentDialog}>
+              
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Upload document</DialogTitle>
@@ -3390,16 +3390,16 @@ export default function ClaimDetailPage() {
                     <Input
                       type="file"
                       onChange={(e) =>
-                        setSelectedFile(e.target.files?.[0] || null)
-                      }
-                    />
+                      setSelectedFile(e.target.files?.[0] || null)
+                      } />
+                    
                   </div>
                   <div>
                     <Label>Document type</Label>
                     <Select
                       value={documentType}
-                      onValueChange={setDocumentType}
-                    >
+                      onValueChange={setDocumentType}>
+                      
                       <SelectTrigger>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
@@ -3420,8 +3420,8 @@ export default function ClaimDetailPage() {
                     <Label>Project (optional)</Label>
                     <Select
                       value={documentProjectId}
-                      onValueChange={setDocumentProjectId}
-                    >
+                      onValueChange={setDocumentProjectId}>
+                      
                       <SelectTrigger>
                         <SelectValue placeholder="Link to a project (optional)" />
                       </SelectTrigger>
@@ -3429,11 +3429,11 @@ export default function ClaimDetailPage() {
                         <SelectItem value="none">
                           Not linked to a specific project
                         </SelectItem>
-                        {projects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
+                        {projects.map((project) =>
+                        <SelectItem key={project.id} value={project.id}>
                             {project.name}
                           </SelectItem>
-                        ))}
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -3441,16 +3441,16 @@ export default function ClaimDetailPage() {
                 <DialogFooter>
                   <Button
                     variant="outline"
-                    onClick={() => setShowDocumentDialog(false)}
-                  >
+                    onClick={() => setShowDocumentDialog(false)}>
+                    
                     Cancel
                   </Button>
                   <Button
                     disabled={uploadingDocument || !selectedFile}
                     onClick={() => {
                       void handleDocumentUpload();
-                    }}
-                  >
+                    }}>
+                    
                     {uploadingDocument ? "Uploading..." : "Upload"}
                   </Button>
                 </DialogFooter>
@@ -3469,11 +3469,11 @@ export default function ClaimDetailPage() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  {aiAnalysis && (
-                    <Dialog
-                      open={showSendAnalysisDialog}
-                      onOpenChange={setShowSendAnalysisDialog}
-                    >
+                  {aiAnalysis &&
+                  <Dialog
+                    open={showSendAnalysisDialog}
+                    onOpenChange={setShowSendAnalysisDialog}>
+                    
                       <DialogTrigger asChild>
                         <Button variant="outline" size="sm">
                           <Users className="mr-2 h-4 w-4" />
@@ -3495,21 +3495,21 @@ export default function ClaimDetailPage() {
                                 <SelectValue placeholder="Select recipient..." />
                               </SelectTrigger>
                               <SelectContent>
-                                {claim.bd_owner_id && (
-                                  <SelectItem value={claim.bd_owner_id}>
+                                {claim.bd_owner_id &&
+                              <SelectItem value={claim.bd_owner_id}>
                                     BD owner
                                   </SelectItem>
-                                )}
-                                {claim.technical_lead_id && (
-                                  <SelectItem value={claim.technical_lead_id}>
+                              }
+                                {claim.technical_lead_id &&
+                              <SelectItem value={claim.technical_lead_id}>
                                     Technical lead
                                   </SelectItem>
-                                )}
-                                {claim.cost_lead_id && (
-                                  <SelectItem value={claim.cost_lead_id}>
+                              }
+                                {claim.cost_lead_id &&
+                              <SelectItem value={claim.cost_lead_id}>
                                     Cost lead
                                   </SelectItem>
-                                )}
+                              }
                               </SelectContent>
                             </Select>
                           </div>
@@ -3522,63 +3522,63 @@ export default function ClaimDetailPage() {
                         </div>
                         <DialogFooter>
                           <Button
-                            variant="outline"
-                            onClick={() => setShowSendAnalysisDialog(false)}
-                          >
+                          variant="outline"
+                          onClick={() => setShowSendAnalysisDialog(false)}>
+                          
                             Cancel
                           </Button>
                           <Button
-                            onClick={handleSendAnalysis}
-                            disabled={!sendTo || sendingMessage}
-                          >
+                          onClick={handleSendAnalysis}
+                          disabled={!sendTo || sendingMessage}>
+                          
                             {sendingMessage ? "Sending..." : "Send"}
                           </Button>
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
-                  )}
+                  }
                   <Button
                     size="sm"
                     onClick={handleGenerateAnalysis}
-                    disabled={loadingAnalysis}
-                  >
-                    {loadingAnalysis ? (
-                      <>
+                    disabled={loadingAnalysis}>
+                    
+                    {loadingAnalysis ?
+                    <>
                         <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                         Analyzing...
-                      </>
-                    ) : (
-                      <>
+                      </> :
+
+                    <>
                         <RefreshCw className="mr-2 h-4 w-4" />
                         Generate analysis
                       </>
-                    )}
+                    }
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                {!aiAnalysis && !loadingAnalysis && (
-                  <p className="text-sm text-muted-foreground">
+                {!aiAnalysis && !loadingAnalysis &&
+                <p className="text-sm text-muted-foreground">
                     No analysis yet. Click &quot;Generate analysis&quot; to
                     create an AI summary of this claim for internal or client
                     use.
                   </p>
-                )}
-                {loadingAnalysis && (
-                  <p className="text-sm text-muted-foreground">
+                }
+                {loadingAnalysis &&
+                <p className="text-sm text-muted-foreground">
                     Generating analysis...
                   </p>
-                )}
-                {aiAnalysis && !loadingAnalysis && (
-                  <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap">
+                }
+                {aiAnalysis && !loadingAnalysis &&
+                <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap">
                     {aiAnalysis}
                   </div>
-                )}
+                }
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-    </StaffLayout>
-  );
+    </StaffLayout>);
+
 }
