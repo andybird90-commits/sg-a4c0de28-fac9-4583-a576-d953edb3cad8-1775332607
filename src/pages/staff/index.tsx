@@ -781,7 +781,7 @@ export default function StaffHomePage() {
                             className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
                           >
                             <div
-                              className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-[#0F1D2D]"
+                              className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-transparent"
                               title={hoverTitle}
                             >
                               {total > 0 && (
@@ -1153,7 +1153,7 @@ export default function StaffHomePage() {
                             className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
                           >
                             <div
-                              className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-[#0F1D2D]"
+                              className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-transparent"
                               title={hoverTitle}
                             >
                               {totalCount > 0 && (
