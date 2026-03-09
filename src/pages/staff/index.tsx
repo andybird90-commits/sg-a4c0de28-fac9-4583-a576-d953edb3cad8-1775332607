@@ -1073,11 +1073,11 @@ export default function StaffHomePage() {
               </CardHeader>
               <CardContent>
                 <div className="w-full overflow-x-auto">
-                  <Table className="min-w-[360px]">
+                  <Table className="w-full table-fixed">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Project</TableHead>
-                        <TableHead className="text-right">
+                        <TableHead className="break-words">Project</TableHead>
+                        <TableHead className="w-24 text-right whitespace-nowrap">
                           Innovation Score
                         </TableHead>
                       </TableRow>
@@ -1085,10 +1085,10 @@ export default function StaffHomePage() {
                     <TableBody>
                       {emergingSignals.map((item) => (
                         <TableRow key={item.projectId}>
-                          <TableCell className="font-medium">
+                          <TableCell className="font-medium break-words">
                             {item.projectName}
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="w-24 text-right align-middle">
                             {item.innovationDensity}
                           </TableCell>
                         </TableRow>
