@@ -22,8 +22,8 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
     return (
       <Card className="bg-slate-950/60 border-slate-800">
         <CardHeader style={{ backgroundColor: "#ffffff" }}>
-          <CardTitle className="flex items-center gap-2 text-sm text-slate-100" style={{ backgroundColor: "#ffffff" }}>
-            <Wallet className="h-4 w-4 text-emerald-400" />
+          <CardTitle className="flex items-center gap-2 text-sm text-slate-100" style={{ backgroundColor: "#f97316" }}>
+            <Wallet className="h-4 w-4 text-emerald-400" style={{ backgroundColor: "#00000000" }} />
             Project Costs
           </CardTitle>
         </CardHeader>
