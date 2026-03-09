@@ -6,8 +6,8 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  CardTitle } from
+"@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useApp } from "@/contexts/AppContext";
@@ -18,8 +18,8 @@ import {
   Briefcase,
   TrendingUp,
   Calendar,
-  ArrowRight,
-} from "lucide-react";
+  ArrowRight } from
+"lucide-react";
 import { pipelineService } from "@/services/pipelineService";
 import type { PipelineWithDetails } from "@/services/pipelineService";
 import type { Database } from "@/integrations/supabase/types";
@@ -30,11 +30,11 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  TableRow } from
+"@/components/ui/table";
 
 type InspectorSessionRow =
-  Database["public"]["Tables"]["hmrc_inspector_sessions"]["Row"];
+Database["public"]["Tables"]["hmrc_inspector_sessions"]["Row"];
 
 export default function StaffHomePage() {
   const router = useRouter();
@@ -52,7 +52,7 @@ export default function StaffHomePage() {
     averageInnovationDensity: null,
     activeProjects: 0,
     documentationGaps: 0,
-    loading: true,
+    loading: true
   });
 
   const [portfolioProjects, setPortfolioProjects] = useState<
@@ -63,8 +63,8 @@ export default function StaffHomePage() {
       documentationStrength: number | null;
       overallHealth: number | null;
       lastActivity: string | null;
-    }[]
-  >([]);
+    }[]>(
+    []);
 
   const [claimReadiness, setClaimReadiness] = useState<{
     draftClaims: number;
@@ -77,7 +77,7 @@ export default function StaffHomePage() {
     readyForFinalisation: 0,
     submittedClaims: 0,
     simulatorPassCount: null,
-    loading: true,
+    loading: true
   });
 
   const [defenceStatus, setDefenceStatus] = useState<{
@@ -87,7 +87,7 @@ export default function StaffHomePage() {
   }>({
     claimsWithDefencePacks: null,
     simulatorRiskFlags: null,
-    narrativeAlignmentIssues: null,
+    narrativeAlignmentIssues: null
   });
 
   const [emergingSignals, setEmergingSignals] = useState<
@@ -98,8 +98,8 @@ export default function StaffHomePage() {
       documentationStrength: number | null;
       overallHealth: number | null;
       lastUpdated: string | null;
-    }[]
-  >([]);
+    }[]>(
+    []);
 
   useEffect(() => {
     if (isStaff) {
@@ -138,7 +138,7 @@ export default function StaffHomePage() {
         const warmRes = await fetch(
           "/api/projects/health-score/warm-cache",
           {
-            method: "POST",
+            method: "POST"
           }
         );
 
@@ -158,10 +158,10 @@ export default function StaffHomePage() {
       }
 
       // Project health / innovation metrics
-      const { data: healthRows, error: healthError } = await supabase
-        .from("project_health_scores")
-        .select(
-          `
+      const { data: healthRows, error: healthError } = await supabase.
+      from("project_health_scores").
+      select(
+        `
           project_id,
           innovation_density_score,
           documentation_strength,
@@ -172,8 +172,8 @@ export default function StaffHomePage() {
             name,
             updated_at
           )
-        `,
-        );
+        `
+      );
 
       if (healthError) {
         console.error("Failed to load project health data:", healthError);
@@ -196,9 +196,9 @@ export default function StaffHomePage() {
         const byProjectKey = new Map<string, (typeof rows)[number]>();
 
         for (const row of rows) {
-          const key = (row.project?.name || "Untitled project")
-            .trim()
-            .toLowerCase();
+          const key = (row.project?.name || "Untitled project").
+          trim().
+          toLowerCase();
 
           const existing = byProjectKey.get(key);
           if (!existing) {
@@ -216,19 +216,19 @@ export default function StaffHomePage() {
 
         const scoredRows = uniqueRows.filter(
           (r) =>
-            typeof r.innovation_density_score === "number" &&
-            !Number.isNaN(r.innovation_density_score as number)
+          typeof r.innovation_density_score === "number" &&
+          !Number.isNaN(r.innovation_density_score as number)
         );
 
         const averageInnovationDensity =
-          scoredRows.length > 0
-            ? Math.round(
-                scoredRows.reduce(
-                  (sum, r) => sum + (r.innovation_density_score || 0),
-                  0
-                ) / scoredRows.length
-              )
-            : null;
+        scoredRows.length > 0 ?
+        Math.round(
+          scoredRows.reduce(
+            (sum, r) => sum + (r.innovation_density_score || 0),
+            0
+          ) / scoredRows.length
+        ) :
+        null;
 
         const activeProjects = uniqueRows.filter(
           (r) => (r.innovation_density_score || 0) >= 60
@@ -236,20 +236,20 @@ export default function StaffHomePage() {
 
         const documentationGaps = uniqueRows.filter(
           (r) =>
-            (r.innovation_density_score || 0) >= 60 &&
-            (r.documentation_strength || 0) < 50
+          (r.innovation_density_score || 0) >= 60 &&
+          (r.documentation_strength || 0) < 50
         ).length;
 
         setInnovationMetrics({
           averageInnovationDensity,
           activeProjects,
           documentationGaps,
-          loading: false,
+          loading: false
         });
 
         const sorted = [...uniqueRows].sort(
           (a, b) =>
-            (b.overall_health_score || 0) - (a.overall_health_score || 0)
+          (b.overall_health_score || 0) - (a.overall_health_score || 0)
         );
 
         const top = sorted.slice(0, 8).map((r) => ({
@@ -258,51 +258,51 @@ export default function StaffHomePage() {
           innovationDensity: r.innovation_density_score,
           documentationStrength: r.documentation_strength,
           overallHealth: r.overall_health_score,
-          lastActivity: r.project?.updated_at || r.updated_at || null,
+          lastActivity: r.project?.updated_at || r.updated_at || null
         }));
 
         setPortfolioProjects(top);
 
-        const emerging = scoredRows
-          .map((r) => ({
-            projectId: r.project_id,
-            projectName: r.project?.name || "Untitled project",
-            innovationDensity: r.innovation_density_score,
-            documentationStrength: r.documentation_strength,
-            overallHealth: r.overall_health_score,
-            lastUpdated: r.updated_at,
-          }))
-          .filter((r) => {
-            const innovation = r.innovationDensity || 0;
-            const docs = r.documentationStrength || 0;
-            const overall = r.overallHealth || 0;
-            return (
-              innovation >= 60 &&
-              (docs < 60 || overall < 75)
-            );
-          })
-          .sort((a, b) => {
-            const innovDiff =
-              (b.innovationDensity || 0) - (a.innovationDensity || 0);
-            if (innovDiff !== 0) return innovDiff;
-            return (a.documentationStrength || 0) - (b.documentationStrength || 0);
-          })
-          .slice(0, 6);
+        const emerging = scoredRows.
+        map((r) => ({
+          projectId: r.project_id,
+          projectName: r.project?.name || "Untitled project",
+          innovationDensity: r.innovation_density_score,
+          documentationStrength: r.documentation_strength,
+          overallHealth: r.overall_health_score,
+          lastUpdated: r.updated_at
+        })).
+        filter((r) => {
+          const innovation = r.innovationDensity || 0;
+          const docs = r.documentationStrength || 0;
+          const overall = r.overallHealth || 0;
+          return (
+            innovation >= 60 && (
+            docs < 60 || overall < 75));
+
+        }).
+        sort((a, b) => {
+          const innovDiff =
+          (b.innovationDensity || 0) - (a.innovationDensity || 0);
+          if (innovDiff !== 0) return innovDiff;
+          return (a.documentationStrength || 0) - (b.documentationStrength || 0);
+        }).
+        slice(0, 6);
 
         setEmergingSignals(emerging);
       } else {
         setInnovationMetrics((prev) => ({
           ...prev,
-          loading: false,
+          loading: false
         }));
         setPortfolioProjects([]);
       }
 
       // load inspector-based simulator metrics
-      const { data: inspectorSessions } = await supabase
-        .from("hmrc_inspector_sessions")
-        .select("*")
-        .eq("status", "completed");
+      const { data: inspectorSessions } = await supabase.
+      from("hmrc_inspector_sessions").
+      select("*").
+      eq("status", "completed");
 
       let claimsPassingInspector = 0;
       if (inspectorSessions && inspectorSessions.length > 0) {
@@ -311,9 +311,9 @@ export default function StaffHomePage() {
           if (!row.claim_id) continue;
           const existing = byClaim.get(row.claim_id);
           if (
-            !existing ||
-            (existing.updated_at || "") < (row.updated_at || "")
-          ) {
+          !existing ||
+          (existing.updated_at || "") < (row.updated_at || ""))
+          {
             byClaim.set(row.claim_id, row);
           }
         }
@@ -327,25 +327,25 @@ export default function StaffHomePage() {
 
       setInnovationMetrics((prev) => ({
         ...prev,
-        claimsPassingInspector,
+        claimsPassingInspector
       }));
 
       // Claim readiness metrics – use cached claim status only
-      const { data: claims, error: claimsError } = await supabase
-        .from("claims")
-        .select("id, status");
+      const { data: claims, error: claimsError } = await supabase.
+      from("claims").
+      select("id, status");
 
       if (claimsError) {
         console.error("Failed to load claim readiness data:", claimsError);
         setClaimReadiness((prev) => ({
           ...prev,
-          loading: false,
+          loading: false
         }));
       } else {
-        const claimRows = (claims || []) as { id: string; status: string }[];
+        const claimRows = (claims || []) as {id: string;status: string;}[];
 
         const draftClaims = claimRows.filter((c) =>
-          ["intake", "data_gathering", "draft_in_progress"].includes(c.status)
+        ["intake", "data_gathering", "draft_in_progress"].includes(c.status)
         ).length;
 
         const readyForFinalisation = claimRows.filter(
@@ -353,7 +353,7 @@ export default function StaffHomePage() {
         ).length;
 
         const submittedClaims = claimRows.filter((c) =>
-          ["submitted_hmrc", "completed"].includes(c.status)
+        ["submitted_hmrc", "completed"].includes(c.status)
         ).length;
 
         setClaimReadiness({
@@ -361,7 +361,7 @@ export default function StaffHomePage() {
           readyForFinalisation,
           submittedClaims,
           simulatorPassCount: null,
-          loading: false,
+          loading: false
         });
       }
 
@@ -370,17 +370,17 @@ export default function StaffHomePage() {
       setDefenceStatus({
         claimsWithDefencePacks: null,
         simulatorRiskFlags: null,
-        narrativeAlignmentIssues: null,
+        narrativeAlignmentIssues: null
       });
     } catch (error) {
       console.error("Error loading innovation intelligence metrics:", error);
       setInnovationMetrics((prev) => ({
         ...prev,
-        loading: false,
+        loading: false
       }));
       setClaimReadiness((prev) => ({
         ...prev,
-        loading: false,
+        loading: false
       }));
     }
   };
@@ -405,12 +405,12 @@ export default function StaffHomePage() {
   const initialBuckets: MonthlyBucket[] = months.map((date) => ({
     date,
     onboarded: 0,
-    notOnboarded: 0,
+    notOnboarded: 0
   }));
 
-  const visiblePipeline = securedOnly
-    ? pipelineData.filter((entry) => Boolean(entry.claim_id))
-    : pipelineData;
+  const visiblePipeline = securedOnly ?
+  pipelineData.filter((entry) => Boolean(entry.claim_id)) :
+  pipelineData;
 
   const expandedPipeline = useMemo(() => {
     const endYear = months[months.length - 1]?.getFullYear();
@@ -430,9 +430,9 @@ export default function StaffHomePage() {
           result.push({
             ...entry,
             id: `${entry.id}-repeat-${nextYear}`,
-            expected_accounts_filing_date: nextExpected
-              .toISOString()
-              .split("T")[0],
+            expected_accounts_filing_date: nextExpected.
+            toISOString().
+            split("T")[0]
           } as PipelineWithDetails);
         }
       }
@@ -448,8 +448,8 @@ export default function StaffHomePage() {
       const filingDate = new Date(entry.expected_accounts_filing_date);
       const monthIndex = months.findIndex(
         (m) =>
-          m.getFullYear() === filingDate.getFullYear() &&
-          m.getMonth() === filingDate.getMonth()
+        m.getFullYear() === filingDate.getFullYear() &&
+        m.getMonth() === filingDate.getMonth()
       );
       if (monthIndex === -1) return buckets;
 
@@ -479,8 +479,8 @@ export default function StaffHomePage() {
 
   const thisMonthBucket = monthlyBuckets[0];
   const thisMonthRevenue =
-    (thisMonthBucket?.onboarded || 0) +
-    (thisMonthBucket?.notOnboarded || 0);
+  (thisMonthBucket?.onboarded || 0) + (
+  thisMonthBucket?.notOnboarded || 0);
 
   const activeItems = visiblePipeline.length;
 
@@ -493,12 +493,12 @@ export default function StaffHomePage() {
 
   const tickStep = 50000;
   const maxScaleValue =
-    maxMonthTotal > 0
-      ? Math.max(
-          tickStep,
-          Math.ceil(maxMonthTotal / tickStep) * tickStep
-        )
-      : tickStep;
+  maxMonthTotal > 0 ?
+  Math.max(
+    tickStep,
+    Math.ceil(maxMonthTotal / tickStep) * tickStep
+  ) :
+  tickStep;
 
   const yAxisTicks: number[] = [];
   for (let value = 0; value <= maxScaleValue; value += tickStep) {
@@ -514,7 +514,7 @@ export default function StaffHomePage() {
   const initialClientBuckets: MonthlyClientsBucket[] = months.map((date) => ({
     date,
     onboardedCount: 0,
-    notOnboardedCount: 0,
+    notOnboardedCount: 0
   }));
 
   const monthlyClientsBuckets: MonthlyClientsBucket[] = expandedPipeline.reduce(
@@ -524,8 +524,8 @@ export default function StaffHomePage() {
       const filingDate = new Date(entry.expected_accounts_filing_date);
       const monthIndex = months.findIndex(
         (m) =>
-          m.getFullYear() === filingDate.getFullYear() &&
-          m.getMonth() === filingDate.getMonth()
+        m.getFullYear() === filingDate.getFullYear() &&
+        m.getMonth() === filingDate.getMonth()
       );
       if (monthIndex === -1) return buckets;
 
@@ -559,9 +559,9 @@ export default function StaffHomePage() {
     clientYAxisTicks.push(0, 1);
   } else {
     const clientTickStep =
-      maxClientsCount <= 5 ? 1 : maxClientsCount <= 20 ? 2 : 5;
+    maxClientsCount <= 5 ? 1 : maxClientsCount <= 20 ? 2 : 5;
     const clientMaxScale =
-      Math.ceil(maxClientsCount / clientTickStep) * clientTickStep;
+    Math.ceil(maxClientsCount / clientTickStep) * clientTickStep;
 
     for (let value = 0; value <= clientMaxScale; value += clientTickStep) {
       clientYAxisTicks.push(value);
@@ -581,14 +581,14 @@ export default function StaffHomePage() {
       style: "currency",
       currency: "GBP",
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   };
 
   const formatMonthYear = (date: Date) => {
     return date.toLocaleDateString("en-GB", {
       month: "short",
-      year: "numeric",
+      year: "numeric"
     });
   };
 
@@ -600,7 +600,7 @@ export default function StaffHomePage() {
       year: "numeric",
       month: "short",
       day: "2-digit",
-      timeZone: "UTC",
+      timeZone: "UTC"
     });
   };
 
@@ -626,8 +626,8 @@ export default function StaffHomePage() {
             You do not have permission to access the staff area.
           </p>
         </div>
-      </StaffLayout>
-    );
+      </StaffLayout>);
+
   }
 
   return (
@@ -653,49 +653,49 @@ export default function StaffHomePage() {
           {/* Revenue Summary Cards (Next 12 Months) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-              <CardHeader>
+              <CardHeader style={{ backgroundColor: "#ffffff" }}>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <TrendingUp className="h-5 w-5 text-orange-400" />
                   Total Forecasted Revenue
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">
+              <CardContent style={{ backgroundColor: "#ffffff" }}>
+                <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
                   {formatCurrency(totalForecastedRevenue)}
                 </p>
-                <p className="text-sm text-slate-400 mt-1">
+                <p className="text-sm text-slate-400 mt-1" style={{ color: "#1a1a1a" }}>
                   Next 24 months
                 </p>
               </CardContent>
             </Card>
 
             <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-              <CardHeader>
+              <CardHeader style={{ backgroundColor: "#ffffff" }}>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Calendar className="h-5 w-5 text-orange-400" />
                   Active Pipeline Items
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">{activeItems}</p>
-                <p className="text-sm text-slate-400 mt-1">
+              <CardContent style={{ backgroundColor: "#ffffff" }}>
+                <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>{activeItems}</p>
+                <p className="text-sm text-slate-400 mt-1" style={{ color: "#1a1a1a" }}>
                   Clients in pipeline
                 </p>
               </CardContent>
             </Card>
 
             <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-              <CardHeader>
+              <CardHeader style={{ backgroundColor: "#ffffff" }}>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Briefcase className="h-5 w-5 text-orange-400" />
                   This Month
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-bold">
+              <CardContent style={{ backgroundColor: "#ffffff" }}>
+                <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
                   {formatCurrency(thisMonthRevenue)}
                 </p>
-                <p className="text-sm text-slate-400 mt-1">
+                <p className="text-sm text-slate-400 mt-1" style={{ color: "#1a1a1a" }}>
                   Expected revenue
                 </p>
               </CardContent>
@@ -704,13 +704,13 @@ export default function StaffHomePage() {
 
           {/* 12-Month Pipeline Chart */}
           <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between" style={{ backgroundColor: "#ffffff" }}>
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-orange-400" />
                   12-Month Pipeline
                 </CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-slate-400" style={{ color: "#1a1a1a" }}>
                   Revenue forecast and budget analysis (onboarded vs not yet
                   onboarded)
                 </CardDescription>
@@ -721,111 +721,111 @@ export default function StaffHomePage() {
                   size="sm"
                   onClick={() => setSecuredOnly((prev) => !prev)}
                   className={
-                    securedOnly
-                      ? "bg-orange-500 text-slate-950 hover:bg-orange-400"
-                      : "border-slate-700 text-slate-100 hover:bg-slate-900"
-                  }
-                >
+                  securedOnly ?
+                  "bg-orange-500 text-slate-950 hover:bg-orange-400" :
+                  "border-slate-700 text-slate-100 hover:bg-slate-900"
+                  } style={{ color: "#1a1a1a" }}>
+                  
                   Secured Only
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => router.push("/staff/pipeline")}
-                  className="border-slate-700 text-slate-100 hover:bg-slate-900"
-                >
+                  className="border-slate-700 text-slate-100 hover:bg-slate-900" style={{ color: "#1a1a1a" }}>
+                  
                   View Gantt
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8 text-slate-400">
+            <CardContent style={{ backgroundColor: "#ffffff" }}>
+              {loading ?
+              <div className="text-center py-8 text-slate-400">
                   Loading pipeline data...
-                </div>
-              ) : monthlyBuckets.every(
+                </div> :
+              monthlyBuckets.every(
                 (bucket) =>
-                  bucket.onboarded === 0 && bucket.notOnboarded === 0
-              ) ? (
-                <div className="text-center py-8 text-slate-400">
+                bucket.onboarded === 0 && bucket.notOnboarded === 0
+              ) ?
+              <div className="text-center py-8 text-slate-400">
                   No pipeline entries in the next 12 months. Enable claims or
                   import clients to build your pipeline forecast.
-                </div>
-              ) : (
-                <>
+                </div> :
+
+              <>
                   <div className="flex gap-4 h-72 pb-6">
                     <div className="flex flex-col justify-between h-48 text-xs text-slate-500 pr-2">
-                      {yAxisTicks
-                        .slice()
-                        .reverse()
-                        .map((value) => (
-                          <span key={value}>{formatCurrency(value)}</span>
-                        ))}
+                      {yAxisTicks.
+                    slice().
+                    reverse().
+                    map((value) =>
+                    <span key={value}>{formatCurrency(value)}</span>
+                    )}
                     </div>
                     <div className="flex items-end gap-3 h-72 flex-1 border-l border-b border-slate-800 pl-4 pb-6 overflow-x-auto">
                       {monthlyBuckets.map((bucket, idx) => {
-                        const total =
-                          bucket.onboarded + bucket.notOnboarded;
+                      const total =
+                      bucket.onboarded + bucket.notOnboarded;
 
-                        const hoverTitle = `Total: ${formatCurrency(
-                          total
-                        )}\nOnboarded: ${formatCurrency(
-                          bucket.onboarded
-                        )}\nNot onboarded: ${formatCurrency(
-                          bucket.notOnboarded
-                        )}`;
+                      const hoverTitle = `Total: ${formatCurrency(
+                        total
+                      )}\nOnboarded: ${formatCurrency(
+                        bucket.onboarded
+                      )}\nNot onboarded: ${formatCurrency(
+                        bucket.notOnboarded
+                      )}`;
 
-                        const onboardedHeight =
-                          maxMonthTotal > 0
-                            ? (bucket.onboarded / maxMonthTotal) * 100
-                            : 0;
-                        const notOnboardedHeight =
-                          maxMonthTotal > 0
-                            ? (bucket.notOnboarded / maxMonthTotal) * 100
-                            : 0;
+                      const onboardedHeight =
+                      maxMonthTotal > 0 ?
+                      bucket.onboarded / maxMonthTotal * 100 :
+                      0;
+                      const notOnboardedHeight =
+                      maxMonthTotal > 0 ?
+                      bucket.notOnboarded / maxMonthTotal * 100 :
+                      0;
 
-                        return (
-                          <div
-                            key={idx}
-                            className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
-                          >
+                      return (
+                        <div
+                          key={idx}
+                          className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]">
+                          
                             <div
-                              className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-slate-900"
-                              title={hoverTitle}
-                            >
-                              {total > 0 && (
-                                <>
-                                  {bucket.onboarded > 0 && (
-                                    <div
-                                      className="bg-emerald-500"
-                                      style={{
-                                        height: `${onboardedHeight}%`,
-                                      }}
-                                      title={`Onboarded: ${formatCurrency(
-                                        bucket.onboarded
-                                      )}`}
-                                    />
-                                  )}
-                                  {bucket.notOnboarded > 0 && (
-                                    <div
-                                      className="bg-orange-400"
-                                      style={{
-                                        height: `${notOnboardedHeight}%`,
-                                      }}
-                                      title={`Not onboarded: ${formatCurrency(
-                                        bucket.notOnboarded
-                                      )}`}
-                                    />
-                                  )}
+                            className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-slate-900"
+                            title={hoverTitle}>
+                            
+                              {total > 0 &&
+                            <>
+                                  {bucket.onboarded > 0 &&
+                              <div
+                                className="bg-emerald-500"
+                                style={{
+                                  height: `${onboardedHeight}%`
+                                }}
+                                title={`Onboarded: ${formatCurrency(
+                                  bucket.onboarded
+                                )}`} />
+
+                              }
+                                  {bucket.notOnboarded > 0 &&
+                              <div
+                                className="bg-orange-400"
+                                style={{
+                                  height: `${notOnboardedHeight}%`
+                                }}
+                                title={`Not onboarded: ${formatCurrency(
+                                  bucket.notOnboarded
+                                )}`} />
+
+                              }
                                 </>
-                              )}
+                            }
                             </div>
                             <span className="mt-2 text-xs text-slate-500 rotate-[-30deg] origin-top">
                               {formatMonthYear(bucket.date)}
                             </span>
-                          </div>
-                        );
-                      })}
+                          </div>);
+
+                    })}
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
@@ -837,14 +837,14 @@ export default function StaffHomePage() {
                       <span className="w-3 h-3 rounded-sm bg-orange-400" />
                       <span>Not yet onboarded</span>
                     </div>
-                    {securedOnly && (
-                      <span className="text-xs text-slate-500">
+                    {securedOnly &&
+                  <span className="text-xs text-slate-500">
                         Showing secured (onboarded) revenue only.
                       </span>
-                    )}
+                  }
                   </div>
                 </>
-              )}
+              }
             </CardContent>
           </Card>
 
@@ -860,60 +860,60 @@ export default function StaffHomePage() {
             {/* Row 1 – Innovation Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-                <CardHeader>
+                <CardHeader style={{ backgroundColor: "#ffffff" }}>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <TrendingUp className="h-5 w-5 text-orange-400" />
                     Innovation Density
                   </CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardDescription className="text-slate-400" style={{ color: "#1a1a1a" }}>
                     Average R&amp;D activity score
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold">
-                    {innovationMetrics.loading
-                      ? "—"
-                      : innovationMetrics.averageInnovationDensity !== null
-                      ? innovationMetrics.averageInnovationDensity
-                      : "—"}
+                <CardContent style={{ backgroundColor: "#ffffff" }}>
+                  <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
+                    {innovationMetrics.loading ?
+                    "—" :
+                    innovationMetrics.averageInnovationDensity !== null ?
+                    innovationMetrics.averageInnovationDensity :
+                    "—"}
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-                <CardHeader>
+                <CardHeader style={{ backgroundColor: "#ffffff" }}>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Briefcase className="h-5 w-5 text-orange-400" />
                     Active R&amp;D Projects
                   </CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardDescription className="text-slate-400" style={{ color: "#1a1a1a" }}>
                     Projects showing strong R&amp;D signals
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold">
-                    {innovationMetrics.loading
-                      ? "—"
-                      : innovationMetrics.activeProjects}
+                <CardContent style={{ backgroundColor: "#ffffff" }}>
+                  <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
+                    {innovationMetrics.loading ?
+                    "—" :
+                    innovationMetrics.activeProjects}
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-                <CardHeader>
+                <CardHeader style={{ backgroundColor: "#ffffff" }}>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <FileText className="h-5 w-5 text-orange-400" />
                     Documentation Gaps
                   </CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardDescription className="text-slate-400" style={{ color: "#1a1a1a" }}>
                     Projects needing stronger evidence
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold">
-                    {innovationMetrics.loading
-                      ? "—"
-                      : innovationMetrics.documentationGaps}
+                <CardContent style={{ backgroundColor: "#ffffff" }}>
+                  <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
+                    {innovationMetrics.loading ?
+                    "—" :
+                    innovationMetrics.documentationGaps}
                   </p>
                 </CardContent>
               </Card>
@@ -932,22 +932,22 @@ export default function StaffHomePage() {
                   variant="outline"
                   size="sm"
                   onClick={() => router.push("/staff/claims")}
-                  className="border-slate-700 text-slate-100 hover:bg-slate-900"
-                >
+                  className="border-slate-700 text-slate-100 hover:bg-slate-900">
+                  
                   View All Projects
                 </Button>
               </CardHeader>
               <CardContent>
-                {innovationMetrics.loading ? (
-                  <div className="text-center py-6 text-slate-400">
+                {innovationMetrics.loading ?
+                <div className="text-center py-6 text-slate-400">
                     Loading portfolio…
-                  </div>
-                ) : portfolioProjects.length === 0 ? (
-                  <div className="text-center py-6 text-slate-400">
+                  </div> :
+                portfolioProjects.length === 0 ?
+                <div className="text-center py-6 text-slate-400">
                     No project health scores available yet.
-                  </div>
-                ) : (
-                  <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#020617]">
+                  </div> :
+
+                <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#020617]">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -959,14 +959,14 @@ export default function StaffHomePage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {portfolioProjects.map((p) => (
-                          <TableRow
-                            key={p.projectId}
-                            className="cursor-pointer hover:bg-slate-900/60"
-                            onClick={() =>
-                              router.push(`/staff/claims/projects/${p.projectId}`)
-                            }
-                          >
+                        {portfolioProjects.map((p) =>
+                      <TableRow
+                        key={p.projectId}
+                        className="cursor-pointer hover:bg-slate-900/60"
+                        onClick={() =>
+                        router.push(`/staff/claims/projects/${p.projectId}`)
+                        }>
+                        
                             <TableCell className="font-medium">
                               {p.projectName}
                             </TableCell>
@@ -978,24 +978,24 @@ export default function StaffHomePage() {
                             </TableCell>
                             <TableCell>
                               <span
-                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
-                                  p.overallHealth
-                                )}`}
-                              >
-                                {p.overallHealth !== null
-                                  ? `${p.overallHealth}`
-                                  : "No score"}
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
+                              p.overallHealth
+                            )}`}>
+                            
+                                {p.overallHealth !== null ?
+                            `${p.overallHealth}` :
+                            "No score"}
                               </span>
                             </TableCell>
                             <TableCell className="text-xs text-slate-400">
                               {formatDateShort(p.lastActivity)}
                             </TableCell>
                           </TableRow>
-                        ))}
+                      )}
                       </TableBody>
                     </Table>
                   </div>
-                )}
+                }
               </CardContent>
             </Card>
 
@@ -1008,12 +1008,12 @@ export default function StaffHomePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {claimReadiness.loading ? (
-                  <div className="text-center py-4 text-slate-400">
+                {claimReadiness.loading ?
+                <div className="text-center py-4 text-slate-400">
                     Loading claim readiness…
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  </div> :
+
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <div>
                       <div className="text-xs text-slate-400">Draft Claims</div>
                       <div className="text-2xl font-semibold mt-1">
@@ -1041,18 +1041,18 @@ export default function StaffHomePage() {
                         Claims Passing HMRC Simulator
                       </div>
                       <div className="text-2xl font-semibold mt-1">
-                        {claimReadiness.simulatorPassCount !== null
-                          ? claimReadiness.simulatorPassCount
-                          : "—"}
+                        {claimReadiness.simulatorPassCount !== null ?
+                      claimReadiness.simulatorPassCount :
+                      "—"}
                       </div>
-                      {claimReadiness.simulatorPassCount === null && (
-                        <div className="mt-1 text-[11px] text-slate-500">
+                      {claimReadiness.simulatorPassCount === null &&
+                    <div className="mt-1 text-[11px] text-slate-500">
                           Simulator integration not yet configured.
                         </div>
-                      )}
+                    }
                     </div>
                   </div>
-                )}
+                }
               </CardContent>
             </Card>
 
@@ -1065,18 +1065,18 @@ export default function StaffHomePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {innovationMetrics.loading ? (
-                  <div className="text-center py-4 text-slate-400">
+                {innovationMetrics.loading ?
+                <div className="text-center py-4 text-slate-400">
                     Analysing project health signals…
-                  </div>
-                ) : emergingSignals.length === 0 ? (
-                  <div className="text-sm text-slate-400">
+                  </div> :
+                emergingSignals.length === 0 ?
+                <div className="text-sm text-slate-400">
                     No emerging R&amp;D opportunities detected yet. Once projects
                     start to show strong innovation signals but weaker documentation,
                     they will appear here for follow-up.
-                  </div>
-                ) : (
-                  <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#020617]">
+                  </div> :
+
+                <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#020617]">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -1088,14 +1088,14 @@ export default function StaffHomePage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {emergingSignals.map((s) => (
-                          <TableRow
-                            key={s.projectId}
-                            className="cursor-pointer hover:bg-slate-900/60"
-                            onClick={() =>
-                              router.push(`/staff/claims/projects/${s.projectId}`)
-                            }
-                          >
+                        {emergingSignals.map((s) =>
+                      <TableRow
+                        key={s.projectId}
+                        className="cursor-pointer hover:bg-slate-900/60"
+                        onClick={() =>
+                        router.push(`/staff/claims/projects/${s.projectId}`)
+                        }>
+                        
                             <TableCell className="font-medium">
                               {s.projectName}
                             </TableCell>
@@ -1107,24 +1107,24 @@ export default function StaffHomePage() {
                             </TableCell>
                             <TableCell>
                               <span
-                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
-                                  s.overallHealth
-                                )}`}
-                              >
-                                {s.overallHealth !== null
-                                  ? `${s.overallHealth}`
-                                  : "No score"}
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
+                              s.overallHealth
+                            )}`}>
+                            
+                                {s.overallHealth !== null ?
+                            `${s.overallHealth}` :
+                            "No score"}
                               </span>
                             </TableCell>
                             <TableCell className="text-xs text-slate-400">
                               {formatDateShort(s.lastUpdated)}
                             </TableCell>
                           </TableRow>
-                        ))}
+                      )}
                       </TableBody>
                     </Table>
                   </div>
-                )}
+                }
               </CardContent>
             </Card>
 
@@ -1185,87 +1185,87 @@ export default function StaffHomePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="text-center py-8 text-slate-400">
+              {loading ?
+              <div className="text-center py-8 text-slate-400">
                   Loading submission data...
-                </div>
-              ) : monthlyClientsBuckets.every(
+                </div> :
+              monthlyClientsBuckets.every(
                 (bucket) =>
-                  bucket.onboardedCount === 0 &&
-                  bucket.notOnboardedCount === 0
-              ) ? (
-                <div className="text-center py-8 text-slate-400">
+                bucket.onboardedCount === 0 &&
+                bucket.notOnboardedCount === 0
+              ) ?
+              <div className="text-center py-8 text-slate-400">
                   No predicted submissions in the next 24 months.
-                </div>
-              ) : (
-                <>
+                </div> :
+
+              <>
                   <div className="flex gap-4 h-64 pb-6">
                     <div className="flex flex-col justify-between h-40 text-xs text-slate-500 pr-2">
-                      {clientYAxisTicks
-                        .slice()
-                        .reverse()
-                        .map((value) => (
-                          <span key={value}>{value}</span>
-                        ))}
+                      {clientYAxisTicks.
+                    slice().
+                    reverse().
+                    map((value) =>
+                    <span key={value}>{value}</span>
+                    )}
                     </div>
                     <div className="flex items-end gap-3 h-64 flex-1 border-l border-b border-slate-800 pl-4 pb-6 overflow-x-auto">
                       {monthlyClientsBuckets.map((bucket, idx) => {
-                        const totalCount =
-                          bucket.onboardedCount + bucket.notOnboardedCount;
+                      const totalCount =
+                      bucket.onboardedCount + bucket.notOnboardedCount;
 
-                        const onboardedHeight =
-                          maxClientsCount > 0
-                            ? (bucket.onboardedCount / maxClientsCount) * 100
-                            : 0;
-                        const notOnboardedHeight =
-                          maxClientsCount > 0
-                            ? (bucket.notOnboardedCount / maxClientsCount) * 100
-                            : 0;
+                      const onboardedHeight =
+                      maxClientsCount > 0 ?
+                      bucket.onboardedCount / maxClientsCount * 100 :
+                      0;
+                      const notOnboardedHeight =
+                      maxClientsCount > 0 ?
+                      bucket.notOnboardedCount / maxClientsCount * 100 :
+                      0;
 
-                        const hoverTitle = `Total: ${totalCount} client${
-                          totalCount === 1 ? "" : "s"
-                        }\nOnboarded: ${
-                          bucket.onboardedCount
-                        }\nNot onboarded: ${bucket.notOnboardedCount}`;
+                      const hoverTitle = `Total: ${totalCount} client${
+                      totalCount === 1 ? "" : "s"}\nOnboarded: ${
 
-                        return (
-                          <div
-                            key={idx}
-                            className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
-                          >
+                      bucket.onboardedCount}\nNot onboarded: ${
+                      bucket.notOnboardedCount}`;
+
+                      return (
+                        <div
+                          key={idx}
+                          className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]">
+                          
                             <div
-                              className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-slate-900"
-                              title={hoverTitle}
-                            >
-                              {totalCount > 0 && (
-                                <>
-                                  {bucket.onboardedCount > 0 && (
-                                    <div
-                                      className="bg-emerald-500"
-                                      style={{
-                                        height: `${onboardedHeight}%`,
-                                      }}
-                                      title={`Onboarded: ${bucket.onboardedCount}`}
-                                    />
-                                  )}
-                                  {bucket.notOnboardedCount > 0 && (
-                                    <div
-                                      className="bg-orange-400"
-                                      style={{
-                                        height: `${notOnboardedHeight}%`,
-                                      }}
-                                      title={`Not onboarded: ${bucket.notOnboardedCount}`}
-                                    />
-                                  )}
+                            className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-slate-900"
+                            title={hoverTitle}>
+                            
+                              {totalCount > 0 &&
+                            <>
+                                  {bucket.onboardedCount > 0 &&
+                              <div
+                                className="bg-emerald-500"
+                                style={{
+                                  height: `${onboardedHeight}%`
+                                }}
+                                title={`Onboarded: ${bucket.onboardedCount}`} />
+
+                              }
+                                  {bucket.notOnboardedCount > 0 &&
+                              <div
+                                className="bg-orange-400"
+                                style={{
+                                  height: `${notOnboardedHeight}%`
+                                }}
+                                title={`Not onboarded: ${bucket.notOnboardedCount}`} />
+
+                              }
                                 </>
-                              )}
+                            }
                             </div>
                             <span className="mt-2 text-xs text-slate-500 rotate-[-30deg] origin-top">
                               {formatMonthYear(bucket.date)}
                             </span>
-                          </div>
-                        );
-                      })}
+                          </div>);
+
+                    })}
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
@@ -1279,7 +1279,7 @@ export default function StaffHomePage() {
                     </div>
                   </div>
                 </>
-              )}
+              }
             </CardContent>
           </Card>
 
@@ -1287,8 +1287,8 @@ export default function StaffHomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card
               className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
-              onClick={() => router.push("/staff/claims")}
-            >
+              onClick={() => router.push("/staff/claims")}>
+              
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5 text-orange-400" />
@@ -1302,8 +1302,8 @@ export default function StaffHomePage() {
 
             <Card
               className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
-              onClick={() => router.push("/staff/cif")}
-            >
+              onClick={() => router.push("/staff/cif")}>
+              
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Briefcase className="h-5 w-5 text-orange-400" />
@@ -1317,8 +1317,8 @@ export default function StaffHomePage() {
 
             <Card
               className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
-              onClick={() => router.push("/staff/clients")}
-            >
+              onClick={() => router.push("/staff/clients")}>
+              
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5 text-orange-400" />
@@ -1332,8 +1332,8 @@ export default function StaffHomePage() {
 
             <Card
               className="hover:shadow-lg transition-shadow cursor-pointer bg-[#050b16] border-slate-800 text-slate-100"
-              onClick={() => router.push("/staff/admin")}
-            >
+              onClick={() => router.push("/staff/admin")}>
+              
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="h-5 w-5 text-orange-400" />
@@ -1347,6 +1347,6 @@ export default function StaffHomePage() {
           </div>
         </div>
       </div>
-    </StaffLayout>
-  );
+    </StaffLayout>);
+
 }
