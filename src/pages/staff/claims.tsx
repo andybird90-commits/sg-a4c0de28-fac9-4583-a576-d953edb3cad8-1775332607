@@ -146,10 +146,10 @@ export default function ClaimsPage() {
       <div className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-slate-100">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-100" style={{ color: "#1a1a1a" }}>
               Claims
             </h2>
-            <p className="text-slate-300">
+            <p className="text-slate-300" style={{ color: "#525252" }}>
               Manage R&D tax claims, track progress, and coordinate delivery.
             </p>
           </div>
@@ -175,25 +175,25 @@ export default function ClaimsPage() {
               <div className="flex gap-2">
                 <Button
                   variant={statusFilter === "all" ? "default" : "outline"}
-                  onClick={() => setStatusFilter("all")}>
+                  onClick={() => setStatusFilter("all")} style={{ color: "#1a1a1a" }}>
                   
                   All
                 </Button>
                 <Button
                   variant={statusFilter === "intake" ? "default" : "outline"}
-                  onClick={() => setStatusFilter("intake")}>
+                  onClick={() => setStatusFilter("intake")} style={{ color: "#1a1a1a" }}>
                   
                   Intake
                 </Button>
                 <Button
                   variant={statusFilter === "in_progress" ? "default" : "outline"}
-                  onClick={() => setStatusFilter("in_progress")}>
+                  onClick={() => setStatusFilter("in_progress")} style={{ color: "#1a1a1a" }}>
                   
                   In Progress
                 </Button>
                 <Button
                   variant={statusFilter === "review" ? "default" : "outline"}
-                  onClick={() => setStatusFilter("review")}>
+                  onClick={() => setStatusFilter("review")} style={{ color: "#1a1a1a" }}>
                   
                   Review
                 </Button>
@@ -255,32 +255,32 @@ export default function ClaimsPage() {
                   onClick={() => router.push(`/staff/claims/${claim.id}`)}>
                   
                       <TableCell>
-                        <div className="font-medium">{claim.organisations?.name || "Unknown Client"}</div>
+                        <div className="font-medium" style={{ color: "#1a1a1a" }}>{claim.organisations?.name || "Unknown Client"}</div>
                         <div className="text-xs text-muted-foreground">{claim.organisations?.organisation_code}</div>
                       </TableCell>
-                      <TableCell>{claim.claim_year}</TableCell>
+                      <TableCell style={{ color: "#1a1a1a" }}>{claim.claim_year}</TableCell>
                       <TableCell>{getStatusBadge(claim.status || "draft")}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <FileText className="h-4 w-4 text-muted-foreground" />
-                          <span>{claim.projects?.length || 0}</span>
+                          <span style={{ color: "#1a1a1a" }}>{claim.projects?.length || 0}</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                          <span>{claim.document_count || 0}</span>
+                          <span style={{ color: "#1a1a1a" }}>{claim.document_count || 0}</span>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 font-medium">
+                        <div className="flex items-center gap-2 font-medium" style={{ color: "#1a1a1a" }}>
                           {formatCurrency(claim.total_costs || 0)}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex -space-x-2">
                           {claim.bd_owner &&
-                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center border-2 border-background text-xs" title={`BD: ${claim.bd_owner.full_name}`}>
+                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center border-2 border-background text-xs" title={`BD: ${claim.bd_owner.full_name}`} style={{ color: "#1a1a1a" }}>
                               {claim.bd_owner.full_name?.charAt(0)}
                             </div>
                       }
