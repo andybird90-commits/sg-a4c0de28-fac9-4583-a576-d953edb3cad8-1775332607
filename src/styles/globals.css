@@ -6,33 +6,33 @@
 
 @layer base {
   :root {
-    /* Dark-first Color System (DesignR-style) */
-    --background: 222 47% 7%;          /* Deep navy background */
-    --foreground: 213 31% 91%;         /* Soft off-white text */
+    /* RD Tax brand - light mode (site-like) */
+    --background: 210 40% 98%;          /* Very light background, similar to site sections */
+    --foreground: 215 35% 15%;          /* Dark navy text */
 
-    /* Orange primary accent */
-    --primary: 24 94% 53%;             /* Vivid orange */
+    /* Orange primary accent (brand) */
+    --primary: 24 94% 53%;              /* Vivid RD Tax orange */
     --primary-foreground: 0 0% 100%;
 
     /* Navy secondary surfaces */
-    --secondary: 221 39% 16%;
-    --secondary-foreground: 213 31% 91%;
+    --secondary: 215 40% 16%;           /* Deep navy for headers / panels */
+    --secondary-foreground: 210 40% 98%;
 
-    /* Accent colors (orange emphasis) */
+    /* Accent colours (orange emphasis) */
     --accent: 24 94% 53%;
-    --accent-foreground: 222 47% 7%;
+    --accent-foreground: 210 40% 98%;
 
-    /* Muted backgrounds */
-    --muted: 222 47% 11%;
-    --muted-foreground: 215 20% 70%;
+    /* Muted backgrounds (borders, subtle fills) */
+    --muted: 210 40% 96%;               /* Light grey-blue, close to site */
+    --muted-foreground: 215 15% 40%;
 
     /* UI Elements */
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --border: 222 47% 18%;
-    --input: 222 47% 18%;
+    --card: 0 0% 100%;                  /* White cards */
+    --card-foreground: 215 35% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 35% 15%;
+    --border: 215 25% 85%;              /* Soft border */
+    --input: 210 40% 96%;
     --ring: 24 94% 53%;
 
     /* Status colors */
@@ -46,22 +46,28 @@
   }
 
   .dark {
-    --background: 222 47% 7%;
-    --foreground: 213 31% 91%;
+    /* RD Tax brand - dark mode (navy panels, orange accents) */
+    --background: 215 40% 8%;           /* Deep navy */
+    --foreground: 210 40% 98%;          /* Light text */
+
     --primary: 24 94% 53%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 221 39% 16%;
-    --secondary-foreground: 213 31% 91%;
-    --muted: 222 47% 11%;
-    --muted-foreground: 215 20% 70%;
+
+    --secondary: 215 35% 14%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 215 32% 12%;
+    --muted-foreground: 215 20% 75%;
+
     --accent: 24 94% 53%;
-    --accent-foreground: 222 47% 7%;
-    --card: 222 47% 11%;
+    --accent-foreground: 215 40% 8%;
+
+    --card: 215 40% 10%;
     --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
+    --popover: 215 40% 10%;
     --popover-foreground: 210 40% 98%;
-    --border: 222 47% 18%;
-    --input: 222 47% 18%;
+    --border: 215 32% 22%;
+    --input: 215 32% 22%;
     --ring: 24 94% 53%;
   }
 }
