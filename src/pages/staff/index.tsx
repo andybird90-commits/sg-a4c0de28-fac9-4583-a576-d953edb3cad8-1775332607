@@ -630,7 +630,7 @@ export default function StaffHomePage() {
 
   return (
     <StaffLayout title="Dashboard">
-      <div className="w-full max-w-full bg-background text-foreground overflow-x-hidden">
+      <div className="w-full max-w-full bg-background text-foreground">
         <div className="mx-auto flex w-full max-w-full flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
           {/* Welcome Section */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -1064,74 +1064,38 @@ export default function StaffHomePage() {
             </Card>
 
             {/* Row 4 – Emerging R&D Signals */}
-            <Card className="shadow-professional-md">
+            <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg text-foreground">
-                  Emerging R&amp;D Opportunities
-                </CardTitle>
-                <CardDescription className="text-muted-foreground">
+                <CardTitle>Emerging R&D Opportunities</CardTitle>
+                <CardDescription>
                   Latest innovation signals detected across projects
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {innovationMetrics.loading ? (
-                  <div className="text-center py-4 text-muted-foreground">
-                    Analysing project health signals…
-                  </div>
-                ) : emergingSignals.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">
-                    No emerging R&amp;D opportunities detected yet. Once projects
-                    start to show strong innovation signals but weaker documentation,
-                    they will appear here for follow-up.
-                  </div>
-                ) : (
-                  <div className="border border-border rounded-xl bg-card overflow-x-auto">
-                    <div className="min-w-[720px]">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[35%]">Project</TableHead>
-                            <TableHead>Innovation</TableHead>
-                            <TableHead>Documentation</TableHead>
-                            <TableHead>Health</TableHead>
-                            <TableHead className="w-[20%]">Last Updated</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {emergingSignals.map((s) => (
-                            <TableRow
-                              key={s.projectId}
-                              className="cursor-pointer hover:bg-muted"
-                              onClick={() =>
-                                router.push(`/staff/claims/projects/${s.projectId}`)
-                              }
-                            >
-                              <TableCell className="font-medium">
-                                {s.projectName}
-                              </TableCell>
-                              <TableCell>{s.innovationDensity ?? "—"}</TableCell>
-                              <TableCell>
-                                {s.documentationStrength ?? "—"}
-                              </TableCell>
-                              <TableCell>
-                                <span
-                                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
-                                    s.overallHealth
-                                  )}`}
-                                >
-                                  {s.overallHealth !== null ? `${s.overallHealth}` : "No score"}
-                                </span>
-                              </TableCell>
-                              <TableCell className="text-xs text-muted-foreground">
-                                {formatDateShort(s.lastUpdated)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                )}
+                <div className="w-full overflow-x-auto">
+                  <Table className="min-w-[360px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Project</TableHead>
+                        <TableHead className="text-right">
+                          Innovation Score
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {emergingSignals.map((item) => (
+                        <TableRow key={item.projectId}>
+                          <TableCell className="font-medium">
+                            {item.projectName}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {item.innovationDensity}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </section>
