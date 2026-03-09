@@ -703,16 +703,15 @@ export default function StaffHomePage() {
           </div>
 
           {/* 12-Month Pipeline Chart */}
-          <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between" style={{ backgroundColor: "#ffffff" }}>
+          <Card className="shadow-professional-md">
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-orange-400" />
+                <CardTitle className="flex items-center gap-2 text-foreground">
+                  <Calendar className="h-5 w-5 text-primary" />
                   12-Month Pipeline
                 </CardTitle>
-                <CardDescription className="text-slate-400" style={{ color: "#1a1a1a" }}>
-                  Revenue forecast and budget analysis (onboarded vs not yet
-                  onboarded)
+                <CardDescription className="text-muted-foreground">
+                  Revenue forecast and budget analysis (onboarded vs not yet onboarded)
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
@@ -720,138 +719,130 @@ export default function StaffHomePage() {
                   variant={securedOnly ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSecuredOnly((prev) => !prev)}
-                  className={
-                  securedOnly ?
-                  "bg-orange-500 text-slate-950 hover:bg-orange-400" :
-                  "border-slate-700 text-slate-100 hover:bg-slate-900"
-                  } style={{ color: "#1a1a1a" }}>
-                  
+                >
                   Secured Only
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => router.push("/staff/pipeline")}
-                  className="border-slate-700 text-slate-100 hover:bg-slate-900" style={{ color: "#1a1a1a" }}>
-                  
+                >
                   View Gantt
                 </Button>
               </div>
             </CardHeader>
-            <CardContent style={{ backgroundColor: "#ffffff" }}>
-              {loading ?
-              <div className="text-center py-8 text-slate-400">
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">
                   Loading pipeline data...
-                </div> :
-              monthlyBuckets.every(
-                (bucket) =>
-                bucket.onboarded === 0 && bucket.notOnboarded === 0
-              ) ?
-              <div className="text-center py-8 text-slate-400">
+                </div>
+              ) : monthlyBuckets.every(
+                (bucket) => bucket.onboarded === 0 && bucket.notOnboarded === 0
+              ) ? (
+                <div className="text-center py-8 text-muted-foreground">
                   No pipeline entries in the next 12 months. Enable claims or
                   import clients to build your pipeline forecast.
-                </div> :
-
-              <>
+                </div>
+              ) : (
+                <>
                   <div className="flex gap-4 h-72 pb-6">
-                    <div className="flex flex-col justify-between h-48 text-xs text-slate-500 pr-2">
-                      {yAxisTicks.
-                    slice().
-                    reverse().
-                    map((value) =>
-                    <span key={value}>{formatCurrency(value)}</span>
-                    )}
+                    <div className="flex flex-col justify-between h-48 text-xs text-muted-foreground pr-2">
+                      {yAxisTicks
+                        .slice()
+                        .reverse()
+                        .map((value) => (
+                          <span key={value}>{formatCurrency(value)}</span>
+                        ))}
                     </div>
-                    <div className="flex items-end gap-3 h-72 flex-1 border-l border-b border-slate-800 pl-4 pb-6 overflow-x-auto">
+                    <div className="flex items-end gap-3 h-72 flex-1 border-l border-border border-b pl-4 pb-6 overflow-x-auto">
                       {monthlyBuckets.map((bucket, idx) => {
-                      const total =
-                      bucket.onboarded + bucket.notOnboarded;
+                        const total = bucket.onboarded + bucket.notOnboarded;
 
-                      const hoverTitle = `Total: ${formatCurrency(
-                        total
-                      )}\nOnboarded: ${formatCurrency(
-                        bucket.onboarded
-                      )}\nNot onboarded: ${formatCurrency(
-                        bucket.notOnboarded
-                      )}`;
+                        const hoverTitle = `Total: ${formatCurrency(
+                          total
+                        )}\nOnboarded: ${formatCurrency(
+                          bucket.onboarded
+                        )}\nNot onboarded: ${formatCurrency(
+                          bucket.notOnboarded
+                        )}`;
 
-                      const onboardedHeight =
-                      maxMonthTotal > 0 ?
-                      bucket.onboarded / maxMonthTotal * 100 :
-                      0;
-                      const notOnboardedHeight =
-                      maxMonthTotal > 0 ?
-                      bucket.notOnboarded / maxMonthTotal * 100 :
-                      0;
+                        const onboardedHeight =
+                          maxMonthTotal > 0
+                            ? (bucket.onboarded / maxMonthTotal) * 100
+                            : 0;
+                        const notOnboardedHeight =
+                          maxMonthTotal > 0
+                            ? (bucket.notOnboarded / maxMonthTotal) * 100
+                            : 0;
 
-                      return (
-                        <div
-                          key={idx}
-                          className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]">
-                          
+                        return (
+                          <div
+                            key={idx}
+                            className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
+                          >
                             <div
-                            className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-slate-900"
-                            title={hoverTitle}>
-                            
-                              {total > 0 &&
-                            <>
-                                  {bucket.onboarded > 0 &&
-                              <div
-                                className="bg-emerald-500"
-                                style={{
-                                  height: `${onboardedHeight}%`
-                                }}
-                                title={`Onboarded: ${formatCurrency(
-                                  bucket.onboarded
-                                )}`} />
-
-                              }
-                                  {bucket.notOnboarded > 0 &&
-                              <div
-                                className="bg-orange-400"
-                                style={{
-                                  height: `${notOnboardedHeight}%`
-                                }}
-                                title={`Not onboarded: ${formatCurrency(
-                                  bucket.notOnboarded
-                                )}`} />
-
-                              }
+                              className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-[#0F1D2D]"
+                              title={hoverTitle}
+                            >
+                              {total > 0 && (
+                                <>
+                                  {bucket.onboarded > 0 && (
+                                    <div
+                                      className="bg-orange-500"
+                                      style={{
+                                        height: `${onboardedHeight}%`,
+                                      }}
+                                      title={`Onboarded: ${formatCurrency(
+                                        bucket.onboarded
+                                      )}`}
+                                    />
+                                  )}
+                                  {bucket.notOnboarded > 0 && (
+                                    <div
+                                      className="bg-[#0F1D2D]"
+                                      style={{
+                                        height: `${notOnboardedHeight}%`,
+                                      }}
+                                      title={`Not onboarded: ${formatCurrency(
+                                        bucket.notOnboarded
+                                      )}`}
+                                    />
+                                  )}
                                 </>
-                            }
+                              )}
                             </div>
-                            <span className="mt-2 text-xs text-slate-500 rotate-[-30deg] origin-top">
+                            <span className="mt-2 text-xs text-muted-foreground rotate-[-30deg] origin-top">
                               {formatMonthYear(bucket.date)}
                             </span>
-                          </div>);
-
-                    })}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                  <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
+                  <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded-sm bg-emerald-500" />
+                      <span className="w-3 h-3 rounded-sm bg-orange-500" />
                       <span>Onboarded clients (has claim)</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded-sm bg-orange-400" />
+                      <span className="w-3 h-3 rounded-sm bg-[#0F1D2D]" />
                       <span>Not yet onboarded</span>
                     </div>
-                    {securedOnly &&
-                  <span className="text-xs text-slate-500">
+                    {securedOnly && (
+                      <span className="text-xs text-muted-foreground">
                         Showing secured (onboarded) revenue only.
                       </span>
-                  }
+                    )}
                   </div>
                 </>
-              }
+              )}
             </CardContent>
           </Card>
 
           {/* Innovation & Claim Intelligence */}
           <section className="space-y-6 border-t border-border pt-8">
             <div>
-              <h2 className="text-2xl font-semibold">Innovation & Claim Intelligence</h2>
+              <h2 className="text-2xl font-semibold">Innovation &amp; Claim Intelligence</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Real-time insight into innovation activity, claim readiness and documentation health.
               </p>
@@ -901,11 +892,11 @@ export default function StaffHomePage() {
             </div>
 
             {/* Row 2 – R&D Portfolio Map */}
-            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
+            <Card className="shadow-professional-md">
               <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <CardTitle className="text-lg">R&amp;D Portfolio Overview</CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardTitle className="text-lg text-foreground">R&amp;D Portfolio Overview</CardTitle>
+                  <CardDescription className="text-muted-foreground">
                     Distribution of R&amp;D activity and documentation across projects
                   </CardDescription>
                 </div>
@@ -913,22 +904,21 @@ export default function StaffHomePage() {
                   variant="outline"
                   size="sm"
                   onClick={() => router.push("/staff/claims")}
-                  className="border-slate-700 text-slate-100 hover:bg-slate-900">
-                  
+                >
                   View All Projects
                 </Button>
               </CardHeader>
               <CardContent>
-                {innovationMetrics.loading ?
-                <div className="text-center py-6 text-slate-400">
+                {innovationMetrics.loading ? (
+                  <div className="text-center py-6 text-muted-foreground">
                     Loading portfolio…
-                  </div> :
-                portfolioProjects.length === 0 ?
-                <div className="text-center py-6 text-slate-400">
+                  </div>
+                ) : portfolioProjects.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
                     No project health scores available yet.
-                  </div> :
-
-                <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#020617]">
+                  </div>
+                ) : (
+                  <div className="border border-border rounded-xl overflow-hidden bg-card">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -940,124 +930,120 @@ export default function StaffHomePage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {portfolioProjects.map((p) =>
-                      <TableRow
-                        key={p.projectId}
-                        className="cursor-pointer hover:bg-slate-900/60"
-                        onClick={() =>
-                        router.push(`/staff/claims/projects/${p.projectId}`)
-                        }>
-                        
+                        {portfolioProjects.map((p) => (
+                          <TableRow
+                            key={p.projectId}
+                            className="cursor-pointer hover:bg-muted"
+                            onClick={() =>
+                              router.push(`/staff/claims/projects/${p.projectId}`)
+                            }
+                          >
                             <TableCell className="font-medium">
                               {p.projectName}
                             </TableCell>
-                            <TableCell>
-                              {p.innovationDensity ?? "—"}
-                            </TableCell>
-                            <TableCell>
-                              {p.documentationStrength ?? "—"}
-                            </TableCell>
+                            <TableCell>{p.innovationDensity ?? "—"}</TableCell>
+                            <TableCell>{p.documentationStrength ?? "—"}</TableCell>
                             <TableCell>
                               <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
-                              p.overallHealth
-                            )}`}>
-                            
-                                {p.overallHealth !== null ?
-                            `${p.overallHealth}` :
-                            "No score"}
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
+                                  p.overallHealth
+                                )}`}
+                              >
+                                {p.overallHealth !== null ? `${p.overallHealth}` : "No score"}
                               </span>
                             </TableCell>
-                            <TableCell className="text-xs text-slate-400">
+                            <TableCell className="text-xs text-muted-foreground">
                               {formatDateShort(p.lastActivity)}
                             </TableCell>
                           </TableRow>
-                      )}
+                        ))}
                       </TableBody>
                     </Table>
                   </div>
-                }
+                )}
               </CardContent>
             </Card>
 
             {/* Row 3 – Claim Readiness */}
-            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
+            <Card className="shadow-professional-md">
               <CardHeader>
-                <CardTitle className="text-lg">Claim Readiness</CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardTitle className="text-lg text-foreground">Claim Readiness</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Pipeline of claims from draft through to submission
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {claimReadiness.loading ?
-                <div className="text-center py-4 text-slate-400">
+                {claimReadiness.loading ? (
+                  <div className="text-center py-4 text-muted-foreground">
                     Loading claim readiness…
-                  </div> :
-
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <div>
-                      <div className="text-xs text-slate-400">Draft Claims</div>
-                      <div className="text-2xl font-semibold mt-1">
+                      <div className="text-xs text-muted-foreground">Draft Claims</div>
+                      <div className="text-2xl font-semibold mt-1 text-foreground">
                         {claimReadiness.draftClaims}
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-slate-400">
+                      <div className="text-xs text-muted-foreground">
                         Ready for Finalisation
                       </div>
-                      <div className="text-2xl font-semibold mt-1">
+                      <div className="text-2xl font-semibold mt-1 text-foreground">
                         {claimReadiness.readyForFinalisation}
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-slate-400">
+                      <div className="text-xs text-muted-foreground">
                         Submitted Claims
                       </div>
-                      <div className="text-2xl font-semibold mt-1">
+                      <div className="text-2xl font-semibold mt-1 text-foreground">
                         {claimReadiness.submittedClaims}
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-slate-400">
+                      <div className="text-xs text-muted-foreground">
                         Claims Passing HMRC Simulator
                       </div>
-                      <div className="text-2xl font-semibold mt-1">
-                        {claimReadiness.simulatorPassCount !== null ?
-                      claimReadiness.simulatorPassCount :
-                      "—"}
+                      <div className="text-2xl font-semibold mt-1 text-foreground">
+                        {claimReadiness.simulatorPassCount !== null
+                          ? claimReadiness.simulatorPassCount
+                          : "—"}
                       </div>
-                      {claimReadiness.simulatorPassCount === null &&
-                    <div className="mt-1 text-[11px] text-slate-500">
+                      {claimReadiness.simulatorPassCount === null && (
+                        <div className="mt-1 text-[11px] text-muted-foreground">
                           Simulator integration not yet configured.
                         </div>
-                    }
+                      )}
                     </div>
                   </div>
-                }
+                )}
               </CardContent>
             </Card>
 
             {/* Row 4 – Emerging R&D Signals */}
-            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
+            <Card className="shadow-professional-md">
               <CardHeader>
-                <CardTitle className="text-lg">Emerging R&amp;D Opportunities</CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardTitle className="text-lg text-foreground">
+                  Emerging R&amp;D Opportunities
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Latest innovation signals detected across projects
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {innovationMetrics.loading ?
-                <div className="text-center py-4 text-slate-400">
+                {innovationMetrics.loading ? (
+                  <div className="text-center py-4 text-muted-foreground">
                     Analysing project health signals…
-                  </div> :
-                emergingSignals.length === 0 ?
-                <div className="text-sm text-slate-400">
+                  </div>
+                ) : emergingSignals.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
                     No emerging R&amp;D opportunities detected yet. Once projects
                     start to show strong innovation signals but weaker documentation,
                     they will appear here for follow-up.
-                  </div> :
-
-                <div className="border border-slate-800 rounded-xl overflow-hidden bg-[#020617]">
+                  </div>
+                ) : (
+                  <div className="border border-border rounded-xl overflow-hidden bg-card">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -1069,198 +1055,150 @@ export default function StaffHomePage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {emergingSignals.map((s) =>
-                      <TableRow
-                        key={s.projectId}
-                        className="cursor-pointer hover:bg-slate-900/60"
-                        onClick={() =>
-                        router.push(`/staff/claims/projects/${s.projectId}`)
-                        }>
-                        
+                        {emergingSignals.map((s) => (
+                          <TableRow
+                            key={s.projectId}
+                            className="cursor-pointer hover:bg-muted"
+                            onClick={() =>
+                              router.push(`/staff/claims/projects/${s.projectId}`)
+                            }
+                          >
                             <TableCell className="font-medium">
                               {s.projectName}
                             </TableCell>
-                            <TableCell>
-                              {s.innovationDensity ?? "—"}
-                            </TableCell>
+                            <TableCell>{s.innovationDensity ?? "—"}</TableCell>
                             <TableCell>
                               {s.documentationStrength ?? "—"}
                             </TableCell>
                             <TableCell>
                               <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
-                              s.overallHealth
-                            )}`}>
-                            
-                                {s.overallHealth !== null ?
-                            `${s.overallHealth}` :
-                            "No score"}
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
+                                  s.overallHealth
+                                )}`}
+                              >
+                                {s.overallHealth !== null ? `${s.overallHealth}` : "No score"}
                               </span>
                             </TableCell>
-                            <TableCell className="text-xs text-slate-400">
+                            <TableCell className="text-xs text-muted-foreground">
                               {formatDateShort(s.lastUpdated)}
                             </TableCell>
                           </TableRow>
-                      )}
+                        ))}
                       </TableBody>
                     </Table>
                   </div>
-                }
-              </CardContent>
-            </Card>
-
-            {/* Row 5 – Defence Readiness */}
-            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-              <CardHeader>
-                <CardTitle className="text-lg">Claim Defence Status</CardTitle>
-                <CardDescription className="text-slate-400">
-                  Readiness of claims for enquiry defence and HMRC challenge
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <div className="text-xs text-slate-400">
-                      Claims with Defence Packs
-                    </div>
-                    <div className="text-2xl font-semibold mt-1">
-                      {defenceStatus.claimsWithDefencePacks ?? "—"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-400">
-                      Simulator Risk Flags
-                    </div>
-                    <div className="text-2xl font-semibold mt-1">
-                      {defenceStatus.simulatorRiskFlags ?? "—"}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-slate-400">
-                      Narrative Alignment Issues
-                    </div>
-                    <div className="text-2xl font-semibold mt-1">
-                      {defenceStatus.narrativeAlignmentIssues ?? "—"}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 text-[11px] text-slate-500">
-                  Defence pack, simulator and narrative check metrics will
-                  automatically populate once corresponding cached tables
-                  (e.g. defence packs, simulator results, claim_narrative_checks)
-                  are connected to this dashboard.
-                </div>
+                )}
               </CardContent>
             </Card>
           </section>
 
           {/* Monthly Predicted Submissions Chart */}
-          <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
+          <Card className="shadow-professional-md">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-orange-400" />
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Calendar className="h-5 w-5 text-primary" />
                 Monthly Predicted Submissions
               </CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardDescription className="text-muted-foreground">
                 Number of clients expected to submit in each month
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {loading ?
-              <div className="text-center py-8 text-slate-400">
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">
                   Loading submission data...
-                </div> :
-              monthlyClientsBuckets.every(
+                </div>
+              ) : monthlyClientsBuckets.every(
                 (bucket) =>
-                bucket.onboardedCount === 0 &&
-                bucket.notOnboardedCount === 0
-              ) ?
-              <div className="text-center py-8 text-slate-400">
+                  bucket.onboardedCount === 0 &&
+                  bucket.notOnboardedCount === 0
+              ) ? (
+                <div className="text-center py-8 text-muted-foreground">
                   No predicted submissions in the next 24 months.
-                </div> :
-
-              <>
+                </div>
+              ) : (
+                <>
                   <div className="flex gap-4 h-64 pb-6">
-                    <div className="flex flex-col justify-between h-40 text-xs text-slate-500 pr-2">
-                      {clientYAxisTicks.
-                    slice().
-                    reverse().
-                    map((value) =>
-                    <span key={value}>{value}</span>
-                    )}
+                    <div className="flex flex-col justify-between h-40 text-xs text-muted-foreground pr-2">
+                      {clientYAxisTicks
+                        .slice()
+                        .reverse()
+                        .map((value) => (
+                          <span key={value}>{value}</span>
+                        ))}
                     </div>
-                    <div className="flex items-end gap-3 h-64 flex-1 border-l border-b border-slate-800 pl-4 pb-6 overflow-x-auto">
+                    <div className="flex items-end gap-3 h-64 flex-1 border-l border-border border-b pl-4 pb-6 overflow-x-auto">
                       {monthlyClientsBuckets.map((bucket, idx) => {
-                      const totalCount =
-                      bucket.onboardedCount + bucket.notOnboardedCount;
+                        const totalCount =
+                          bucket.onboardedCount + bucket.notOnboardedCount;
 
-                      const onboardedHeight =
-                      maxClientsCount > 0 ?
-                      bucket.onboardedCount / maxClientsCount * 100 :
-                      0;
-                      const notOnboardedHeight =
-                      maxClientsCount > 0 ?
-                      bucket.notOnboardedCount / maxClientsCount * 100 :
-                      0;
+                        const onboardedHeight =
+                          maxClientsCount > 0
+                            ? (bucket.onboardedCount / maxClientsCount) * 100
+                            : 0;
+                        const notOnboardedHeight =
+                          maxClientsCount > 0
+                            ? (bucket.notOnboardedCount / maxClientsCount) * 100
+                            : 0;
 
-                      const hoverTitle = `Total: ${totalCount} client${
-                      totalCount === 1 ? "" : "s"}\nOnboarded: ${
+                        const hoverTitle = `Total: ${totalCount} client${
+                          totalCount === 1 ? "" : "s"
+                        }\nOnboarded: ${
+                          bucket.onboardedCount
+                        }\nNot onboarded: ${bucket.notOnboardedCount}`;
 
-                      bucket.onboardedCount}\nNot onboarded: ${
-                      bucket.notOnboardedCount}`;
-
-                      return (
-                        <div
-                          key={idx}
-                          className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]">
-                          
+                        return (
+                          <div
+                            key={idx}
+                            className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
+                          >
                             <div
-                            className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-slate-900"
-                            title={hoverTitle}>
-                            
-                              {totalCount > 0 &&
-                            <>
-                                  {bucket.onboardedCount > 0 &&
-                              <div
-                                className="bg-emerald-500"
-                                style={{
-                                  height: `${onboardedHeight}%`
-                                }}
-                                title={`Onboarded: ${bucket.onboardedCount}`} />
-
-                              }
-                                  {bucket.notOnboardedCount > 0 &&
-                              <div
-                                className="bg-orange-400"
-                                style={{
-                                  height: `${notOnboardedHeight}%`
-                                }}
-                                title={`Not onboarded: ${bucket.notOnboardedCount}`} />
-
-                              }
+                              className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-[#0F1D2D]"
+                              title={hoverTitle}
+                            >
+                              {totalCount > 0 && (
+                                <>
+                                  {bucket.onboardedCount > 0 && (
+                                    <div
+                                      className="bg-orange-500"
+                                      style={{
+                                        height: `${onboardedHeight}%`,
+                                      }}
+                                      title={`Onboarded: ${bucket.onboardedCount}`}
+                                    />
+                                  )}
+                                  {bucket.notOnboardedCount > 0 && (
+                                    <div
+                                      className="bg-[#0F1D2D]"
+                                      style={{
+                                        height: `${notOnboardedHeight}%`,
+                                      }}
+                                      title={`Not onboarded: ${bucket.notOnboardedCount}`}
+                                    />
+                                  )}
                                 </>
-                            }
+                              )}
                             </div>
-                            <span className="mt-2 text-xs text-slate-500 rotate-[-30deg] origin-top">
+                            <span className="mt-2 text-xs text-muted-foreground rotate-[-30deg] origin-top">
                               {formatMonthYear(bucket.date)}
                             </span>
-                          </div>);
-
-                    })}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                  <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
+                  <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded-sm bg-emerald-500" />
+                      <span className="w-3 h-3 rounded-sm bg-orange-500" />
                       <span>Onboarded clients (has claim)</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="w-3 h-3 rounded-sm bg-orange-400" />
+                      <span className="w-3 h-3 rounded-sm bg-[#0F1D2D]" />
                       <span>Not yet onboarded</span>
                     </div>
                   </div>
                 </>
-              }
+              )}
             </CardContent>
           </Card>
 

@@ -172,7 +172,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
         className={`group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
           isActive
             ? "bg-primary text-primary-foreground shadow-professional-md"
-            : "text-secondary-foreground/80 hover:bg-muted"
+            : "text-secondary-foreground/80 hover:bg-secondary/70 hover:text-secondary-foreground"
         }`}
       >
         <span
