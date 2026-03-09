@@ -144,7 +144,7 @@ export default function ClaimsPage() {
   return (
     <StaffLayout>
       <div className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-3xl font-bold tracking-tight text-slate-100" style={{ color: "#1a1a1a" }}>
               Claims
@@ -162,7 +162,7 @@ export default function ClaimsPage() {
         {/* Filters */}
         <Card className="bg-[#0F1D2D] border border-border text-secondary-foreground shadow-professional-md">
           <CardContent className="p-4" style={{ backgroundColor: "#f3f4f6" }}>
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -172,7 +172,7 @@ export default function ClaimsPage() {
                   onChange={(e) => setSearchQuery(e.target.value)} />
                 
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 sm:flex-nowrap">
                 <Button
                   variant={statusFilter === "all" ? "default" : "outline"}
                   onClick={() => setStatusFilter("all")} style={{ color: "#1a1a1a" }}>
@@ -218,7 +218,8 @@ export default function ClaimsPage() {
                 No claims found matching your criteria.
               </div> :
 
-            <Table>
+            <div className="w-full overflow-x-auto">
+              <Table className="min-w-[720px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs font-semibold tracking-wide text-foreground">
@@ -346,6 +347,7 @@ export default function ClaimsPage() {
                 )}
                 </TableBody>
               </Table>
+            </div>
             }
           </CardContent>
         </Card>
