@@ -165,7 +165,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
 
             <div className="flex items-center gap-2 cursor-default">
               <img
-                src="/RDTAXHEADER_1_.png"
+                src="/rd_tax_white_wording.png"
                 alt="RD TAX"
                 className="h-8 sm:h-9 w-auto flex-shrink-0"
               />

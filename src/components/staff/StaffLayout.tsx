@@ -206,9 +206,13 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
               <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2">
-              
-
-              
+              <div className="flex h-8 items-center">
+                <img
+                  src="/rd_tax_white_wording.png"
+                  alt="RD TAX"
+                  className="h-6 w-auto"
+                />
+              </div>
               <div className="hidden sm:block">
                 <div className="text-sm font-semibold">RD Companion</div>
                 <div className="text-xs text-secondary-foreground/80">Staff Portal</div>
@@ -270,14 +274,14 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
       {/* Layout body */}
       <div className="flex w-full max-w-full overflow-x-hidden">
         {/* Sidebar - desktop */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r border-border bg-[#0F1D2D] text-secondary-foreground sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r border-border bg-[#0F1D2D] text-secondary-foreground fixed top-14 bottom-0 left-0 overflow-y-auto">
           <div className="px-3 py-4 space-y-1">
             {staffNavItems.map((item) => renderNavItem(item.path, item.label, item.icon))}
           </div>
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 bg-background min-h-[calc(100vh-3.5rem)] overflow-x-hidden">
+        <main className="flex-1 bg-background min-h-[calc(100vh-3.5rem)] overflow-x-hidden lg:ml-64">
           <div className="px-4 sm:px-6 lg:px-8 py-6">
             <div className="max-w-7xl mx-auto space-y-6">{children}</div>
           </div>
