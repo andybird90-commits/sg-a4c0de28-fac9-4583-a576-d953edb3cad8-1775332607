@@ -118,7 +118,7 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
-                <img src="/rdtax-logo.png" alt="RD TAX" className="h-8 sm:h-10 w-auto flex-shrink-0" />
+                <img src="/RDTAXHEADER_1_.png" alt="RD TAX" className="h-8 sm:h-10 w-auto flex-shrink-0" />
                 <span className="text-base sm:text-lg lg:text-xl font-bold text-foreground truncate">
                   RD Companion
                 </span>
