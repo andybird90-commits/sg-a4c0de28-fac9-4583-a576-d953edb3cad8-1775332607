@@ -9,15 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Sparkles, ArrowRight, History } from "lucide-react";
+import { Loader2, Sparkles, ArrowRight } from "lucide-react";
 
 export default function FeasibilityPage() {
   const router = useRouter();
-  const { user, currentOrg } = useApp();
+  const { user } = useApp();
   const [formData, setFormData] = useState<FeasibilityInput>({
     ideaDescription: "",
     sector: "",
-    stage: ""
+    stage: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -59,94 +59,110 @@ export default function FeasibilityPage() {
         description="Submit your idea for AI-powered feasibility assessment"
       />
       <Layout>
-        <div className="min-h-screen bg-[#020617] text-slate-100">
-          <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="min-h-screen bg-background text-foreground">
+          <div className="mx-auto max-w-4xl px-4 py-8">
             <div className="mb-8 text-center">
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-slate-950 px-4 py-2 rounded-full text-sm font-semibold mb-4 shadow-professional-md">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] px-4 py-2 text-sm font-semibold text-slate-950 shadow-professional-md">
                 <Sparkles size={16} />
                 Companion Enabled
               </div>
-              <h1 className="text-4xl font-bold text-slate-50 mb-2">
-                Feasibility Analysis
-              </h1>
-              <p className="text-slate-400 text-lg">
+              <h1 className="mb-2 text-4xl font-bold text-foreground">Feasibility Analysis</h1>
+              <p className="text-lg text-muted-foreground">
                 Get structured, expert-backed assessment of your idea in seconds
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <Card className="bg-[#050b16] border border-slate-800 text-slate-100 shadow-professional-md">
+            <div className="mb-8 grid gap-6 md:grid-cols-3">
+              <Card className="bg-card text-foreground shadow-professional-md">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg">Technical</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-slate-400">Engineering feasibility, constraints, and buildability</p>
+                  <p className="text-sm text-muted-foreground">
+                    Engineering feasibility, constraints, and buildability
+                  </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#050b16] border border-slate-800 text-slate-100 shadow-professional-md">
+              <Card className="bg-card text-foreground shadow-professional-md">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg">Commercial</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-slate-400">Market fit, customers, and revenue potential</p>
+                  <p className="text-sm text-muted-foreground">
+                    Market fit, customers, and revenue potential
+                  </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#050b16] border border-slate-800 text-slate-100 shadow-professional-md">
+              <Card className="bg-card text-foreground shadow-professional-md">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg">Delivery</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-slate-400">Timeline, complexity, and resource requirements</p>
+                  <p className="text-sm text-muted-foreground">
+                    Timeline, complexity, and resource requirements
+                  </p>
                 </CardContent>
               </Card>
             </div>
 
-            <Card className="bg-[#050b16] border border-slate-800 text-slate-100 shadow-professional-md">
+            <Card className="bg-card text-foreground shadow-professional-md">
               <CardHeader>
                 <CardTitle>Submit Your Idea</CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardDescription className="text-muted-foreground">
                   Describe your idea and we'll provide a comprehensive feasibility assessment
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
-                    <Label htmlFor="ideaDescription" className="text-slate-200">Idea Description *</Label>
+                    <Label htmlFor="ideaDescription" className="text-foreground">
+                      Idea Description *
+                    </Label>
                     <Textarea
                       id="ideaDescription"
                       placeholder="Describe your idea in detail. What problem does it solve? How does it work? Who is it for?"
                       value={formData.ideaDescription}
-                      onChange={(e) => setFormData({ ...formData, ideaDescription: e.target.value })}
-                      className="min-h-[150px] mt-2 bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                      onChange={(e) =>
+                        setFormData({ ...formData, ideaDescription: e.target.value })
+                      }
+                      className="mt-2 min-h-[150px] border-border bg-background text-foreground placeholder:text-muted-foreground"
                       required
                     />
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <Label htmlFor="sector" className="text-slate-200">Sector (optional)</Label>
+                      <Label htmlFor="sector" className="text-foreground">
+                        Sector (optional)
+                      </Label>
                       <Input
                         id="sector"
                         placeholder="e.g., Construction, Energy, SaaS"
                         value={formData.sector}
-                        onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                        className="mt-2 bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                        onChange={(e) =>
+                          setFormData({ ...formData, sector: e.target.value })
+                        }
+                        className="mt-2 border-border bg-background text-foreground placeholder:text-muted-foreground"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="stage" className="text-slate-200">Stage (optional)</Label>
+                      <Label htmlFor="stage" className="text-foreground">
+                        Stage (optional)
+                      </Label>
                       <Input
                         id="stage"
                         placeholder="e.g., Concept, Prototype, MVP"
                         value={formData.stage}
-                        onChange={(e) => setFormData({ ...formData, stage: e.target.value })}
-                        className="mt-2 bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                        onChange={(e) =>
+                          setFormData({ ...formData, stage: e.target.value })
+                        }
+                        className="mt-2 border-border bg-background text-foreground placeholder:text-muted-foreground"
                       />
                     </div>
                   </div>
 
                   {error && (
-                    <div className="bg-red-950/40 border border-red-500/60 text-red-200 px-4 py-3 rounded-lg">
+                    <div className="rounded-lg border border-red-500/60 bg-red-50 px-4 py-3 text-sm text-red-700">
                       {error}
                     </div>
                   )}
@@ -155,7 +171,7 @@ export default function FeasibilityPage() {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="bg-[#ff6b35] hover:bg-[#ff8c42] text-slate-950 shadow-professional-md"
+                      className="bg-[#ff6b35] text-slate-950 shadow-professional-md hover:bg-[#ff8c42]"
                     >
                       {loading ? (
                         <>
@@ -174,12 +190,12 @@ export default function FeasibilityPage() {
               </CardContent>
             </Card>
 
-            <div className="mt-8 p-6 bg-[#050b16] border border-slate-800 rounded-lg shadow-professional-md">
-              <h3 className="font-semibold text-slate-100 mb-2">What to expect</h3>
-              <ul className="space-y-2 text-sm text-slate-300">
+            <div className="mt-8 rounded-lg border border-border bg-card p-6 shadow-professional-md">
+              <h3 className="mb-2 font-semibold text-foreground">What to expect</h3>
+              <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>• Clear assessment of technical, commercial, and delivery feasibility</li>
                 <li>• Identification of key risks, constraints, and regulatory considerations</li>
-                <li>• Preliminary R&D tax credit potential (high-level only)</li>
+                <li>• Preliminary R&amp;D tax credit potential (high-level only)</li>
                 <li>• 3-7 practical next steps to move your idea forward</li>
                 <li>• UK-focused, pragmatic guidance backed by RD expertise</li>
               </ul>

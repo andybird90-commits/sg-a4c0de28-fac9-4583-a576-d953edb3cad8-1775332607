@@ -28,12 +28,12 @@ interface CombinedProject {
 }
 
 const statusColors: Record<string, string> = {
-  draft: "bg-gray-500",
-  ready_for_review: "bg-blue-500",
-  in_review: "bg-yellow-500",
-  needs_changes: "bg-orange-500",
-  rejected: "bg-red-500",
-  transferred: "bg-green-500",
+  draft: "bg-muted text-foreground",
+  ready_for_review: "bg-sky-100 text-sky-800",
+  in_review: "bg-amber-100 text-amber-800",
+  needs_changes: "bg-orange-100 text-orange-800",
+  rejected: "bg-red-100 text-red-800",
+  transferred: "bg-emerald-100 text-emerald-800",
 };
 
 const statusLabels: Record<string, string> = {
@@ -63,19 +63,17 @@ export default function ProjectsPage() {
 
     const fetchProjects = async () => {
       try {
-        // Fetch both sidekick projects and regular projects
         const [sidekickData, regularData] = await Promise.all([
           sidekickProjectService.getProjectsByOrganisation(currentOrg.id),
           supabase
             .from("projects")
             .select("*")
             .eq("org_id", currentOrg.id)
-            .order("created_at", { ascending: false })
+            .order("created_at", { ascending: false }),
         ]);
 
-        // Combine both types
         const combined: CombinedProject[] = [
-          ...sidekickData.map(p => ({
+          ...sidekickData.map((p) => ({
             id: p.id,
             name: p.name || "Untitled Project",
             description: p.description,
@@ -85,18 +83,19 @@ export default function ProjectsPage() {
             sector: p.sector,
             stage: p.stage,
           })),
-          ...(regularData.data || []).map(p => ({
+          ...(regularData.data || []).map((p: RegularProject) => ({
             id: p.id,
             name: p.name || "Untitled Project",
             description: p.description,
             created_at: p.created_at,
             type: "regular" as const,
-          }))
+          })),
         ];
 
-        // Sort by created_at
-        combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        
+        combined.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
+
         setProjects(combined);
       } catch (error) {
         console.error("Error fetching projects:", error);
@@ -117,37 +116,37 @@ export default function ProjectsPage() {
         description="Manage your R&D projects and feasibility analyses"
       />
       <Layout>
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
-          <div className="flex items-center justify-between mb-6">
+        <div className="container mx-auto max-w-6xl px-4 py-8">
+          <div className="mb-6 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-slate-50">Projects</h1>
-              <p className="mt-1 text-sm text-slate-400">
+              <h1 className="text-3xl font-bold text-foreground">Projects</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
                 Manage your R&amp;D project ideas and feasibility analyses
               </p>
             </div>
             <Link href="/projects/new">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
+              <Button className="shadow-professional-md">
+                <Plus className="mr-2 h-4 w-4" />
                 New Project
               </Button>
             </Link>
           </div>
 
           {loading ? (
-            <div className="text-center py-12">
-              <p className="text-slate-400">Loading projects...</p>
+            <div className="py-12 text-center">
+              <p className="text-muted-foreground">Loading projects...</p>
             </div>
           ) : projects.length === 0 ? (
-            <Card>
+            <Card className="bg-card shadow-professional-md">
               <CardContent className="py-12 text-center">
-                <FolderOpen className="w-16 h-16 mx-auto text-slate-500 mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No projects yet</h3>
-                <p className="text-slate-400 mb-4">
+                <FolderOpen className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+                <h3 className="mb-2 text-xl font-semibold text-foreground">No projects yet</h3>
+                <p className="mb-4 text-sm text-muted-foreground">
                   Create your first project to start tracking R&amp;D ideas and feasibility
                 </p>
                 <Link href="/projects/new">
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
+                  <Button className="shadow-professional-md">
+                    <Plus className="mr-2 h-4 w-4" />
                     Create First Project
                   </Button>
                 </Link>
@@ -158,23 +157,23 @@ export default function ProjectsPage() {
               {projects.map((project) => (
                 <Card
                   key={project.id}
-                  className="relative h-full group bg-[#050b16] border border-slate-800 shadow-professional-md hover:border-[#ff6b35]/60 transition-colors"
+                  className="group relative h-full border border-border bg-card shadow-professional-md transition-colors hover:border-[#ff6b35]/60"
                 >
                   <Link
                     href={`/projects/${project.id}`}
-                    className="absolute inset-0 z-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-lg"
+                    className="absolute inset-0 z-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
                     <span className="sr-only">View {project.name}</span>
                   </Link>
-                  <CardHeader className="relative z-10 pointer-events-none pb-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <CardTitle className="text-lg flex items-center gap-2 text-slate-50">
+                  <CardHeader className="pointer-events-none relative pb-4">
+                    <div className="mb-2 flex items-start justify-between">
+                      <CardTitle className="flex items-center gap-2 text-lg text-foreground">
                         {project.type === "sidekick" && (
-                          <Lightbulb className="w-4 h-4 text-[#ff6b35]" />
+                          <Lightbulb className="h-4 w-4 text-[#ff6b35]" />
                         )}
                         {project.name}
                       </CardTitle>
-                      <div className="flex items-center gap-2 pointer-events-auto">
+                      <div className="pointer-events-auto flex items-center gap-2">
                         {project.status && (
                           <Badge className={statusColors[project.status]}>
                             {statusLabels[project.status]}
@@ -187,26 +186,26 @@ export default function ProjectsPage() {
                         />
                       </div>
                     </div>
-                    <CardDescription className="line-clamp-2 text-sm text-slate-200">
+                    <CardDescription className="line-clamp-2 text-sm text-muted-foreground">
                       {project.description || "No description"}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="relative z-10 pointer-events-none">
-                    <div className="flex items-center gap-4 text-sm text-slate-200 flex-wrap">
+                  <CardContent className="pointer-events-none relative">
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                       <Badge
                         variant="outline"
-                        className="bg-slate-900 text-slate-100 border-slate-700/80 text-[11px] px-2 py-0.5 rounded-full"
+                        className="rounded-full border-border bg-muted px-2 py-0.5 text-[11px]"
                       >
                         {project.type === "sidekick" ? "Companion" : "Project"}
                       </Badge>
                       {project.sector && (
-                        <span className="inline-flex items-center">
+                        <span className="inline-flex items-center text-xs font-medium text-muted-foreground">
                           {project.sector}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-3 text-xs text-slate-300">
-                      <Clock className="w-3 h-3" />
+                    <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
                       {new Date(project.created_at).toLocaleDateString()}
                     </div>
                   </CardContent>
