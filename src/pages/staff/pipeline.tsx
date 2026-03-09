@@ -547,9 +547,9 @@ export default function PipelinePage() {
                     }
                   }}>
                   
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-semibold text-lg" style={{ fontSize: "12px" }}>
                             {entry.organisation?.name || "Unknown Organisation"}
                           </h3>
@@ -566,7 +566,7 @@ export default function PipelinePage() {
                         }
                         </div>
                         <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                          <div className="flex items-center space-x-4">
+                          <div className="flex flex-wrap items-center gap-4">
                             {yearEndDate &&
                           <span>
                                 Year End:{" "}
@@ -580,23 +580,25 @@ export default function PipelinePage() {
                               </span>
                           }
                           </div>
-                          <div className="flex items-center space-x-4">
+                          <div className="flex flex-wrap items-center gap-4">
                             <span>Avg Filing Lag: <strong>{entry.average_filing_lag_days || 0} days</strong></span>
                             <span>Years Trading: <strong>{entry.years_trading || 0}</strong></span>
                           </div>
                         </div>
                       </div>
-                      <div className="text-right flex flex-col items-end">
-                        <div className="text-2xl font-bold">
-                          £{(entry.predicted_revenue || 0).toLocaleString()}
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1 mb-2">
-                          Predicted Revenue
+                      <div className="w-full md:w-auto flex flex-row md:flex-col items-end justify-between md:justify-start gap-2">
+                        <div className="text-right md:text-right">
+                          <div className="text-2xl font-bold">
+                            £{(entry.predicted_revenue || 0).toLocaleString()}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1 mb-2">
+                            Predicted Revenue
+                          </div>
                         </div>
                         <Button
                         variant="ghost"
                         size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                         onClick={(e) => handleEditClick(entry, e)}>
                         
                           <Pencil className="w-4 h-4 mr-2" />
