@@ -18,7 +18,11 @@ import {
   Briefcase,
   TrendingUp,
   Calendar,
-  ArrowRight } from
+  ArrowRight,
+  CalendarDays,
+  Zap,
+  Lightbulb,
+  FileWarning } from
 "lucide-react";
 import { pipelineService } from "@/services/pipelineService";
 import type { PipelineWithDetails } from "@/services/pipelineService";
@@ -651,54 +655,50 @@ export default function StaffHomePage() {
           </div>
 
           {/* Revenue Summary Cards (Next 12 Months) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-              <CardHeader style={{ backgroundColor: "#ffffff" }}>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <TrendingUp className="h-5 w-5 text-orange-400" />
-                  Total Forecasted Revenue
-                </CardTitle>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="shadow-professional-md">
+              <CardHeader className="space-y-1">
+                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  <span className="text-foreground">Total Forecasted Revenue</span>
+                </div>
+                <div>
+                  <div className="text-3xl font-semibold text-foreground">
+                    {formatCurrency(totalForecastedRevenue)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Next 24 months</p>
+                </div>
               </CardHeader>
-              <CardContent style={{ backgroundColor: "#ffffff" }}>
-                <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
-                  {formatCurrency(totalForecastedRevenue)}
-                </p>
-                <p className="text-sm text-slate-400 mt-1" style={{ color: "#1a1a1a" }}>
-                  Next 24 months
-                </p>
-              </CardContent>
             </Card>
 
-            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-              <CardHeader style={{ backgroundColor: "#ffffff" }}>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Calendar className="h-5 w-5 text-orange-400" />
-                  Active Pipeline Items
-                </CardTitle>
+            <Card className="shadow-professional-md">
+              <CardHeader className="space-y-1">
+                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <CalendarDays className="h-4 w-4 text-primary" />
+                  <span className="text-foreground">Active Pipeline Items</span>
+                </div>
+                <div>
+                  <div className="text-3xl font-semibold text-foreground">
+                    {activeItems}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Clients in pipeline</p>
+                </div>
               </CardHeader>
-              <CardContent style={{ backgroundColor: "#ffffff" }}>
-                <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>{activeItems}</p>
-                <p className="text-sm text-slate-400 mt-1" style={{ color: "#1a1a1a" }}>
-                  Clients in pipeline
-                </p>
-              </CardContent>
             </Card>
 
-            <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-              <CardHeader style={{ backgroundColor: "#ffffff" }}>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Briefcase className="h-5 w-5 text-orange-400" />
-                  This Month
-                </CardTitle>
+            <Card className="shadow-professional-md">
+              <CardHeader className="space-y-1">
+                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <Briefcase className="h-4 w-4 text-primary" />
+                  <span className="text-foreground">This Month</span>
+                </div>
+                <div>
+                  <div className="text-3xl font-semibold text-foreground">
+                    {formatCurrency(thisMonthRevenue)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Expected revenue</p>
+                </div>
               </CardHeader>
-              <CardContent style={{ backgroundColor: "#ffffff" }}>
-                <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
-                  {formatCurrency(thisMonthRevenue)}
-                </p>
-                <p className="text-sm text-slate-400 mt-1" style={{ color: "#1a1a1a" }}>
-                  Expected revenue
-                </p>
-              </CardContent>
             </Card>
           </div>
 
@@ -860,14 +860,9 @@ export default function StaffHomePage() {
             {/* Row 1 – Innovation Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-                <CardHeader style={{ backgroundColor: "#ffffff" }}>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <TrendingUp className="h-5 w-5 text-orange-400" />
-                    Innovation Density
-                  </CardTitle>
-                  <CardDescription className="text-slate-400" style={{ color: "#1a1a1a" }}>
-                    Average R&amp;D activity score
-                  </CardDescription>
+                <CardHeader className="flex items-center gap-2 text-lg">
+                  <Zap className="h-5 w-5 text-orange-400" />
+                  Innovation Density
                 </CardHeader>
                 <CardContent style={{ backgroundColor: "#ffffff" }}>
                   <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
@@ -881,14 +876,9 @@ export default function StaffHomePage() {
               </Card>
 
               <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-                <CardHeader style={{ backgroundColor: "#ffffff" }}>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Briefcase className="h-5 w-5 text-orange-400" />
-                    Active R&amp;D Projects
-                  </CardTitle>
-                  <CardDescription className="text-slate-400" style={{ color: "#1a1a1a" }}>
-                    Projects showing strong R&amp;D signals
-                  </CardDescription>
+                <CardHeader className="flex items-center gap-2 text-lg">
+                  <Lightbulb className="h-5 w-5 text-orange-400" />
+                  Active R&amp;D Projects
                 </CardHeader>
                 <CardContent style={{ backgroundColor: "#ffffff" }}>
                   <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>
@@ -900,14 +890,9 @@ export default function StaffHomePage() {
               </Card>
 
               <Card className="bg-[#050b16] border-slate-800 text-slate-100 shadow-professional-md">
-                <CardHeader style={{ backgroundColor: "#ffffff" }}>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <FileText className="h-5 w-5 text-orange-400" />
-                    Documentation Gaps
-                  </CardTitle>
-                  <CardDescription className="text-slate-400" style={{ color: "#1a1a1a" }}>
-                    Projects needing stronger evidence
-                  </CardDescription>
+                <CardHeader className="flex items-center gap-2 text-lg">
+                  <FileWarning className="h-5 w-5 text-orange-400" />
+                  Documentation Gaps
                 </CardHeader>
                 <CardContent style={{ backgroundColor: "#ffffff" }}>
                   <p className="text-3xl font-bold" style={{ color: "#1a1a1a" }}>

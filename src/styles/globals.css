@@ -206,13 +206,6 @@
   .border-slate-900 {
     @apply border-border;
   }
-
-  /* Muted text on dark cards – make it readable */
-  .text-slate-300,
-  .text-slate-400,
-  .text-slate-100 {
-    @apply text-secondary-foreground;
-  }
 }
 
 /* Scrollbar styling */
