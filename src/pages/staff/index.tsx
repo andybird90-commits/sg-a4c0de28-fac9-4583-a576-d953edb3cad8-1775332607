@@ -1072,13 +1072,15 @@ export default function StaffHomePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="w-full overflow-x-auto">
+                <div className="w-full min-w-0">
                   <Table className="w-full table-fixed">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="break-words">Project</TableHead>
-                        <TableHead className="w-24 text-right whitespace-nowrap">
-                          Innovation Score
+                        <TableHead className="break-words">
+                          Project
+                        </TableHead>
+                        <TableHead className="w-20 text-right text-xs sm:w-24 sm:text-sm whitespace-nowrap">
+                          Score
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1088,7 +1090,7 @@ export default function StaffHomePage() {
                           <TableCell className="font-medium break-words">
                             {item.projectName}
                           </TableCell>
-                          <TableCell className="w-24 text-right align-middle">
+                          <TableCell className="w-20 text-right align-middle text-xs sm:w-24 sm:text-sm whitespace-nowrap">
                             {item.innovationDensity}
                           </TableCell>
                         </TableRow>
