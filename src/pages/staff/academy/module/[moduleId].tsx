@@ -205,7 +205,7 @@ const MODULES: ModuleConfig[] = [
       overview:
         "This module focuses on structuring R&D narratives so that HMRC can clearly see how each BEIS test is satisfied.",
       keyConcepts: [
-        "Effective narratives separate context, baseline, advance, and technological uncertainty.",
+        "Effective narratives separate context, baseline, advance and technological uncertainty.",
         "HMRC readers skim; headers, signposting and concise explanations materially affect enquiry risk.",
         "Narratives must be anchored in evidence and cost schedules, not written in isolation.",
       ],
@@ -707,7 +707,7 @@ const MODULES: ModuleConfig[] = [
             label: "Use AI to draft and submit narratives without human review.",
           },
           {
-            id: "b",
+            "b",
             label:
               "Use AI to generate suggestions and critique, then have a qualified adviser review and edit the final narrative.",
           },
@@ -1911,17 +1911,17 @@ export default function StaffAcademyModulePage() {
   if (!moduleConfig) {
     return (
       <StaffLayout title="RD Agent Academy">
-        <div className="min-h-screen bg-[#020617] text-slate-100">
+        <div className="min-h-screen bg-background text-foreground">
           <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-            <Card className="border-slate-800 bg-[#020817]">
+            <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle className="text-lg text-slate-50">Module not found</CardTitle>
-                <CardDescription className="text-slate-400">
+                <CardTitle className="text-lg text-foreground">Module not found</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   We could not find this RD Agent Academy module.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button asChild className="bg-[#ff6b35] text-slate-950 hover:bg-[#ff8c42]">
+                <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <Link href="/staff/academy">Back to RD Agent Academy</Link>
                 </Button>
               </CardContent>
@@ -1939,54 +1939,54 @@ export default function StaffAcademyModulePage() {
         description={moduleConfig.description}
       />
       <StaffLayout title={moduleConfig.title}>
-        <div className="min-h-screen bg-[#020617] text-slate-100">
+        <div className="min-h-screen bg-background text-foreground">
           <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#ff6b35]">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                   RD Agent Academy ·{" "}
                   {moduleConfig.level === "foundation" ? "Foundation" : "Advanced"}
                 </p>
-                <h1 className="text-2xl font-semibold text-slate-50 sm:text-3xl">
+                <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
                   {moduleConfig.title}
                 </h1>
-                <p className="max-w-3xl text-sm text-slate-400 sm:text-base">
+                <p className="max-w-3xl text-sm text-muted-foreground sm:text-base">
                   {moduleConfig.description}
                 </p>
-                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                   <span>
                     Estimated time:{" "}
-                    <span className="font-medium text-slate-200">
+                    <span className="font-medium text-foreground">
                       {moduleConfig.estimatedTime}
                     </span>
                   </span>
-                  <span className="hidden h-1 w-1 rounded-full bg-slate-600 sm:inline-block" />
+                  <span className="hidden h-1 w-1 rounded-full bg-muted sm:inline-block" />
                   <span>
                     Module status:{" "}
-                    <span className="font-medium text-slate-200">
+                    <span className="font-medium text-foreground">
                       {certificationStatusLabel}
                     </span>
                   </span>
                 </div>
               </div>
               <div className="flex flex-col items-stretch gap-2 sm:items-end">
-                <div className="w-full min-w-[220px] max-w-xs rounded-xl border border-slate-800 bg-[#020817] p-3 shadow-professional-md">
-                  <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+                <div className="w-full min-w-[220px] max-w-xs rounded-xl border border-border bg-card p-3 shadow-professional-md">
+                  <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
                     <span>Module progress</span>
-                    <span className="font-semibold text-slate-100">
+                    <span className="font-semibold text-foreground">
                       {progressPercent}%
                     </span>
                   </div>
                   <Progress
                     value={progressPercent}
-                    className="h-2 bg-slate-900 [&>div]:bg-[#ff6b35]"
+                    className="h-2 bg-muted [&>div]:bg-primary"
                   />
                 </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     onClick={() => router.push("/staff/academy")}
-                    className="border-slate-700 text-xs text-slate-200 hover:bg-slate-800"
+                    className="border-border text-xs text-foreground hover:bg-muted"
                   >
                     Back to Academy
                   </Button>
@@ -1995,8 +1995,8 @@ export default function StaffAcademyModulePage() {
             </div>
 
             {advancedViewOnly && (
-              <div className="mb-6 rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-xs text-amber-100">
-                <p className="font-medium text-amber-200">
+              <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+                <p className="font-medium text-amber-900">
                   View‑only mode for Advanced module
                 </p>
                 <p className="mt-1">
@@ -2009,18 +2009,18 @@ export default function StaffAcademyModulePage() {
 
             <div className="grid gap-6 lg:grid-cols-[minmax(0,2.5fr)_minmax(260px,1fr)]">
               <div className="space-y-6">
-                <Card className="border-slate-800 bg-[#020817]">
+                <Card className="border-border bg-card">
                   <CardHeader>
-                    <CardTitle className="text-base text-slate-50 sm:text-lg">
+                    <CardTitle className="text-base text-foreground sm:text-lg">
                       Lesson Content
                     </CardTitle>
-                    <CardDescription className="text-slate-400">
+                    <CardDescription className="text-muted-foreground">
                       Work through the key concepts, then apply what you have learned in the
                       scenario, exercise and quiz.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4 text-sm text-slate-200">
-                    <p className="text-slate-200">{moduleConfig.lesson.overview}</p>
+                  <CardContent className="space-y-4 text-sm text-foreground">
+                    <p>{moduleConfig.lesson.overview}</p>
 
                     <Accordion type="multiple" className="mt-2 space-y-2">
                       <AccordionItem value="key-concepts" className="border-slate-800">
@@ -2065,20 +2065,20 @@ export default function StaffAcademyModulePage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-slate-800 bg-[#020817]">
+                <Card className="border-border bg-card">
                   <CardHeader>
-                    <CardTitle className="text-base text-slate-50 sm:text-lg">
+                    <CardTitle className="text-base text-foreground sm:text-lg">
                       Interactive Scenario
                     </CardTitle>
-                    <CardDescription className="text-slate-400">
+                    <CardDescription className="text-muted-foreground">
                       Read the scenario and choose the best answer. You will see an AI‑style
                       explanation after you respond.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4 text-sm text-slate-200">
-                    <div className="rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+                  <CardContent className="space-y-4 text-sm text-foreground">
+                    <div className="rounded-lg border border-border bg-muted p-4">
                       <div className="mb-2 flex items-center justify-between gap-2">
-                        <h3 className="text-sm font-semibold text-slate-100">
+                        <h3 className="text-sm font-semibold text-foreground">
                           {moduleConfig.scenario.title}
                         </h3>
                         <Badge
@@ -2086,8 +2086,8 @@ export default function StaffAcademyModulePage() {
                           className={cn(
                             "text-[11px]",
                             scenarioState.selectedOptionId
-                              ? "border-emerald-500/60 text-emerald-300"
-                              : "border-slate-700 text-slate-300",
+                              ? "border-emerald-500/60 text-emerald-700 bg-emerald-50"
+                              : "border-border text-muted-foreground bg-muted",
                           )}
                         >
                           {scenarioState.selectedOptionId ? "Answered" : "Not answered yet"}
@@ -2108,23 +2108,23 @@ export default function StaffAcademyModulePage() {
                               "flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
                               isSelected
                                 ? option.isCorrect
-                                  ? "border-emerald-500/70 bg-emerald-500/5"
-                                  : "border-red-500/70 bg-red-500/5"
-                                : "border-slate-800 bg-slate-950/40 hover:border-slate-600",
+                                  ? "border-emerald-500 bg-emerald-50"
+                                  : "border-red-500 bg-red-50"
+                                : "border-border bg-muted hover:border-muted-foreground/60",
                             )}
                           >
-                            <span className="mt-0.5 text-xs text-slate-400">
+                            <span className="mt-0.5 text-xs text-muted-foreground">
                               {option.id.toUpperCase()}
                             </span>
-                            <span className="text-slate-100">{option.label}</span>
+                            <span className="text-foreground">{option.label}</span>
                           </button>
                         );
                       })}
                     </div>
 
                     {scenarioState.showExplanation && (
-                      <div className="mt-3 rounded-lg border border-slate-800 bg-slate-950/60 p-4 text-xs text-slate-200">
-                        <p className="mb-2 font-semibold text-slate-100">
+                      <div className="mt-3 rounded-lg border border-border bg-muted p-4 text-xs text-foreground">
+                        <p className="mb-2 font-semibold text-foreground">
                           AI explanation
                         </p>
                         {moduleConfig.scenario.options
@@ -2134,7 +2134,7 @@ export default function StaffAcademyModulePage() {
                               {o.explanation}
                             </p>
                           ))}
-                        <p className="text-[11px] text-slate-500">
+                        <p className="text-[11px] text-muted-foreground">
                           This explanation is generated using local scoring rules to mimic how an
                           AI tutor would justify the answer.
                         </p>
@@ -2143,26 +2143,26 @@ export default function StaffAcademyModulePage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-slate-800 bg-[#020817]">
+                <Card className="border-border bg-card">
                   <CardHeader>
-                    <CardTitle className="text-base text-slate-50 sm:text-lg">
+                    <CardTitle className="text-base text-foreground sm:text-lg">
                       Practical Exercise
                     </CardTitle>
-                    <CardDescription className="text-slate-400">
+                    <CardDescription className="text-muted-foreground">
                       Practice writing R&amp;D‑style explanations. Submit your answer to receive
                       structured AI‑style feedback.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4 text-sm text-slate-200">
+                  <CardContent className="space-y-4 text-sm text-foreground">
                     <p>{moduleConfig.exercisePrompt}</p>
                     <textarea
                       value={exerciseText}
                       onChange={(e) => setExerciseText(e.target.value)}
-                      className="min-h-[140px] w-full rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#ff6b35] focus:outline-none focus:ring-1 focus:ring-[#ff6b35]"
+                      className="min-h-[140px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       placeholder="Type your response here..."
                     />
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-muted-foreground">
                         This exercise is not stored in your file – it is for practice and
                         immediate feedback.
                       </p>
@@ -2170,18 +2170,18 @@ export default function StaffAcademyModulePage() {
                         size="sm"
                         onClick={handleExerciseSubmit}
                         disabled={!exerciseText.trim()}
-                        className="bg-[#ff6b35] text-slate-950 hover:bg-[#ff8c42]"
+                        className="bg-primary text-primary-foreground hover:bg-primary/90"
                       >
                         Get AI Feedback
                       </Button>
                     </div>
 
                     {exerciseFeedback && (
-                      <div className="mt-4 rounded-lg border border-slate-800 bg-slate-950/60 p-4 text-xs text-slate-200">
-                        <p className="mb-2 font-semibold text-slate-100">
+                      <div className="mt-4 rounded-lg border border-border bg-muted p-4 text-xs text-foreground">
+                        <p className="mb-2 font-semibold text-foreground">
                           AI‑style feedback
                         </p>
-                        <p className="mb-3 text-slate-300">{exerciseFeedback.summary}</p>
+                        <p className="mb-3 text-muted-foreground">{exerciseFeedback.summary}</p>
                         <div className="mb-3 grid gap-2 sm:grid-cols-2">
                           <div className="space-y-1">
                             <div className="flex items-center justify-between">
@@ -2192,7 +2192,7 @@ export default function StaffAcademyModulePage() {
                             </div>
                             <Progress
                               value={(exerciseFeedback.technicalClarity / 4) * 100}
-                              className="h-1.5 bg-slate-900 [&>div]:bg-[#ff6b35]"
+                              className="h-1.5 bg-muted [&>div]:bg-primary"
                             />
                           </div>
                           <div className="space-y-1">
@@ -2204,7 +2204,7 @@ export default function StaffAcademyModulePage() {
                             </div>
                             <Progress
                               value={(exerciseFeedback.uncertaintyEvidence / 4) * 100}
-                              className="h-1.5 bg-slate-900 [&>div]:bg-[#ff6b35]"
+                              className="h-1.5 bg-muted [&>div]:bg-primary"
                             />
                           </div>
                           <div className="space-y-1">
@@ -2216,7 +2216,7 @@ export default function StaffAcademyModulePage() {
                             </div>
                             <Progress
                               value={(exerciseFeedback.scientificExplanation / 4) * 100}
-                              className="h-1.5 bg-slate-900 [&>div]:bg-[#ff6b35]"
+                              className="h-1.5 bg-muted [&>div]:bg-primary"
                             />
                           </div>
                           <div className="space-y-1">
@@ -2228,23 +2228,23 @@ export default function StaffAcademyModulePage() {
                             </div>
                             <Progress
                               value={(exerciseFeedback.marketingLanguage / 4) * 100}
-                              className="h-1.5 bg-slate-900 [&>div]:bg-[#ff6b35]"
+                              className="h-1.5 bg-muted [&>div]:bg-primary"
                             />
                           </div>
                         </div>
                         {exerciseFeedback.suggestions.length > 0 && (
                           <div>
-                            <p className="mb-1 font-medium text-slate-100">
+                            <p className="mb-1 font-medium text-foreground">
                               Suggestions for improvement
                             </p>
-                            <ul className="list-inside list-disc space-y-1 text-slate-300">
+                            <ul className="list-inside list-disc space-y-1 text-muted-foreground">
                               {exerciseFeedback.suggestions.map((s) => (
                                 <li key={s}>{s}</li>
                               ))}
                             </ul>
                           </div>
                         )}
-                        <p className="mt-3 text-[11px] text-slate-500">
+                        <p className="mt-3 text-[11px] text-muted-foreground">
                           This feedback is generated using local scoring rules to mimic how an AI
                           tutor would respond. We can later connect this to a live AI endpoint.
                         </p>
@@ -2253,35 +2253,35 @@ export default function StaffAcademyModulePage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-slate-800 bg-[#020817]">
+                <Card className="border-border bg-card">
                   <CardHeader>
-                    <CardTitle className="text-base text-slate-50 sm:text-lg">
+                    <CardTitle className="text-base text-foreground sm:text-lg">
                       Assessment Quiz
                     </CardTitle>
-                    <CardDescription className="text-slate-400">
+                    <CardDescription className="text-muted-foreground">
                       Answer the questions to check your understanding. A score of 70% or higher
                       will mark this module as passed. For advanced modules, scores are only stored
                       once you have completed Foundation.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4 text-sm text-slate-200">
+                  <CardContent className="space-y-4 text-sm text-foreground">
                     <div className="space-y-4">
                       {moduleConfig.quiz.map((q, index) => (
                         <div
                           key={q.id}
-                          className="rounded-lg border border-slate-800 bg-slate-950/40 p-4"
+                          className="rounded-lg border border-border bg-muted p-4"
                         >
                           <div className="mb-2 flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
-                              <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[11px] text-slate-300">
+                              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
                                 Question {index + 1}
                               </span>
-                              <span className="text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                              <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                                 {q.type === "multiple_choice" ? "Multiple choice" : "True / False"}
                               </span>
                             </div>
                           </div>
-                          <p className="mb-3 text-slate-100">{q.question}</p>
+                          <p className="mb-3 text-foreground">{q.question}</p>
 
                           {q.type === "multiple_choice" ? (
                             <div className="space-y-2">
@@ -2298,16 +2298,16 @@ export default function StaffAcademyModulePage() {
                                     className={cn(
                                       "flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
                                       selected
-                                        ? "border-[#ff6b35] bg-[#ff6b35]/10"
-                                        : "border-slate-800 bg-slate-950/40 hover:border-slate-600",
+                                        ? "border-primary bg-primary/10"
+                                        : "border-border bg-background hover:border-muted-foreground/60",
                                     )}
                                   >
-                                    <span className="mt-0.5 text-xs text-slate-400">
+                                    <span className="mt-0.5 text-xs text-muted-foreground">
                                       {opt.id.toUpperCase()}
                                     </span>
-                                    <span className="text-slate-100">{opt.label}</span>
+                                    <span className="text-foreground">{opt.label}</span>
                                     {showResult && isCorrect && (
-                                      <span className="ml-auto text-[11px] font-semibold text-emerald-400">
+                                      <span className="ml-auto text-[11px] font-semibold text-emerald-700">
                                         Correct
                                       </span>
                                     )}
@@ -2324,8 +2324,8 @@ export default function StaffAcademyModulePage() {
                                 className={cn(
                                   "px-4 text-xs",
                                   quizState.answers[q.id] === true
-                                    ? "bg-[#ff6b35] text-slate-950 hover:bg-[#ff8c42]"
-                                    : "border-slate-700 text-slate-200 hover:bg-slate-800",
+                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    : "border-border text-foreground hover:bg-muted",
                                 )}
                               >
                                 True
@@ -2337,8 +2337,8 @@ export default function StaffAcademyModulePage() {
                                 className={cn(
                                   "px-4 text-xs",
                                   quizState.answers[q.id] === false
-                                    ? "bg-[#ff6b35] text-slate-950 hover:bg-[#ff8c42]"
-                                    : "border-slate-700 text-slate-200 hover:bg-slate-800",
+                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    : "border-border text-foreground hover:bg-muted",
                                 )}
                               >
                                 False
@@ -2347,7 +2347,7 @@ export default function StaffAcademyModulePage() {
                           )}
 
                           {quizState.submitted && (
-                            <p className="mt-3 text-xs text-slate-300">
+                            <p className="mt-3 text-xs text-muted-foreground">
                               {q.explanation}
                             </p>
                           )}
@@ -2356,12 +2356,12 @@ export default function StaffAcademyModulePage() {
                     </div>
 
                     <div className="flex items-center justify-between gap-4">
-                      <div className="space-y-1 text-xs text-slate-400">
+                      <div className="space-y-1 text-xs text-muted-foreground">
                         {quizState.submitted ? (
                           <>
                             <p>
                               Score:{" "}
-                              <span className="font-semibold text-slate-100">
+                              <span className="font-semibold text-foreground">
                                 {quizState.scorePercent}%
                               </span>
                             </p>
@@ -2370,7 +2370,7 @@ export default function StaffAcademyModulePage() {
                               <span
                                 className={cn(
                                   "font-semibold",
-                                  quizState.passed ? "text-emerald-400" : "text-amber-300",
+                                  quizState.passed ? "text-emerald-700" : "text-amber-700",
                                 )}
                               >
                                 {quizState.passed ? "Passed" : "Below pass threshold (70%)"}
@@ -2394,7 +2394,7 @@ export default function StaffAcademyModulePage() {
                       <Button
                         size="sm"
                         onClick={handleQuizSubmit}
-                        className="bg-[#ff6b35] text-slate-950 hover:bg-[#ff8c42]"
+                        className="bg-primary text-primary-foreground hover:bg-primary/90"
                       >
                         Submit Quiz
                       </Button>
@@ -2404,16 +2404,16 @@ export default function StaffAcademyModulePage() {
               </div>
 
               <aside className="space-y-4">
-                <Card className="border-slate-800 bg-[#020817] shadow-professional-md">
+                <Card className="border-border bg-card shadow-professional-md">
                   <CardHeader>
-                    <CardTitle className="text-base text-slate-50">
+                    <CardTitle className="text-base text-foreground">
                       Module Overview
                     </CardTitle>
-                    <CardDescription className="text-slate-400">
+                    <CardDescription className="text-muted-foreground">
                       Track your progress through this RD Agent Academy module.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4 text-xs text-slate-200">
+                  <CardContent className="space-y-4 text-xs text-foreground">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span>Lesson</span>
@@ -2426,19 +2426,19 @@ export default function StaffAcademyModulePage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span>Scenario</span>
-                        <span className="text-[11px] text-slate-300">
+                        <span className="text-[11px] text-muted-foreground">
                           {scenarioState.selectedOptionId ? "Answered" : "Pending"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span>Exercise</span>
-                        <span className="text-[11px] text-slate-300">
+                        <span className="text-[11px] text-muted-foreground">
                           {exerciseSubmitted ? "Submitted" : "Pending"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span>Quiz</span>
-                        <span className="text-[11px] text-slate-300">
+                        <span className="text-[11px] text-muted-foreground">
                           {quizState.submitted
                             ? quizState.passed
                               ? "Passed"
@@ -2449,14 +2449,14 @@ export default function StaffAcademyModulePage() {
                     </div>
 
                     <div className="pt-2">
-                      <p className="mb-1 text-xs font-medium text-slate-100">
+                      <p className="mb-1 text-xs font-medium text-foreground">
                         Module completion
                       </p>
                       <Progress
                         value={progressPercent}
-                        className="h-2 bg-slate-900 [&>div]:bg-[#ff6b35]"
+                        className="h-2 bg-muted [&>div]:bg-primary"
                       />
-                      <p className="mt-1 text-[11px] text-slate-400">
+                      <p className="mt-1 text-[11px] text-muted-foreground">
                         This page tracks your progress through lesson, scenario, exercise and quiz.
                         For advanced modules, quiz results are only written to your academy record
                         once you hold the Foundation Certification.
