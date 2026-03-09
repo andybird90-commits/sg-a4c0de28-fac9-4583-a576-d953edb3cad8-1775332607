@@ -425,9 +425,9 @@ const MODULES: ModuleConfig[] = [
         "Separating cloud spend on R&D test environments from steady‑state production usage.",
       ],
       commonMistakes: [
-        "Including sales and general admin salaries as R&D staff costs.",
-        "Treating all subcontractor spend as qualifying by default.",
-        "Using arbitrary percentages with no documented basis.",
+        "Relying mainly on marketing decks as 'evidence'.",
+        "Forgetting to tie apportionment logic back to R&D projects and narratives.",
+        "Sending unfiltered file dumps without explanation or indexing.",
       ],
     },
     scenario: {
@@ -1462,7 +1462,7 @@ const MODULES: ModuleConfig[] = [
       ],
       realExamples: [
         "Using AI to pre‑structure client discovery notes and map them to BEIS tests.",
-        "Deploying an internal 'AI playbook' that documents allowed and disallowed uses.",
+        "Deploying an internal 'AI playbook' that documents approved and disallowed uses.",
       ],
       commonMistakes: [
         "Allowing uncontrolled AI use with no audit trail.",
@@ -1916,11 +1916,13 @@ export default function StaffAcademyModulePage() {
     return (
       <StaffLayout title="RD Agent Academy">
         <div className="min-h-screen bg-background text-foreground">
-          <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
             <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle className="text-lg text-foreground">Module not found</CardTitle>
-                <CardDescription className="text-muted-foreground">
+                <CardTitle className="text-lg text-foreground text-foreground sm:text-xl">
+                  Module not found
+                </CardTitle>
+                <CardDescription className="text-muted-foreground text-muted-foreground sm:text-xl">
                   We could not find this RD Agent Academy module.
                 </CardDescription>
               </CardHeader>
@@ -1944,10 +1946,10 @@ export default function StaffAcademyModulePage() {
       />
       <StaffLayout title={moduleConfig.title}>
         <div className="min-h-screen bg-background text-foreground">
-          <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
                   RD Agent Academy ·{" "}
                   {moduleConfig.level === "foundation" ? "Foundation" : "Advanced"}
                 </p>
@@ -1974,17 +1976,14 @@ export default function StaffAcademyModulePage() {
                 </div>
               </div>
               <div className="flex flex-col items-stretch gap-2 sm:items-end">
-                <div className="w-full min-w-[220px] max-w-xs rounded-xl border border-amber-200 bg-amber-50 p-3 shadow-professional-md">
-                  <div className="mb-1 flex items-center justify-between text-xs text-amber-900">
+                <div className="w-full min-w-[220px] max-w-xs rounded-xl border border-amber-200 bg-card p-3 shadow-sm">
+                  <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
                     <span>Module progress</span>
-                    <span className="font-semibold text-amber-900">
+                    <span className="font-semibold text-foreground">
                       {progressPercent}%
                     </span>
                   </div>
-                  <Progress
-                    value={progressPercent}
-                    className="h-2 bg-muted [&>div]:bg-primary"
-                  />
+                  <Progress value={progressPercent} className="h-2 [&>div]:bg-emerald-500" />
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -2000,7 +1999,7 @@ export default function StaffAcademyModulePage() {
 
             {advancedViewOnly && (
               <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-                <p className="font-medium text-amber-900">
+                <p className="font-medium">
                   View‑only mode for Advanced module
                 </p>
                 <p className="mt-1">
@@ -2013,7 +2012,7 @@ export default function StaffAcademyModulePage() {
 
             <div className="grid gap-6 lg:grid-cols-[minmax(0,2.5fr)_minmax(260px,1fr)]">
               <div className="space-y-6">
-                <Card className="border-border bg-card">
+                <Card className="border-border bg-card shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-base text-foreground sm:text-lg">
                       Lesson Content
@@ -2027,7 +2026,7 @@ export default function StaffAcademyModulePage() {
                     <p>{moduleConfig.lesson.overview}</p>
 
                     <Accordion type="multiple" className="mt-2 space-y-2">
-                      <AccordionItem value="key-concepts" className="border-border">
+                      <AccordionItem value="key-concepts" className="border-slate-200">
                         <AccordionTrigger className="text-sm text-foreground">
                           Key Concepts
                         </AccordionTrigger>
@@ -2040,7 +2039,7 @@ export default function StaffAcademyModulePage() {
                         </AccordionContent>
                       </AccordionItem>
 
-                      <AccordionItem value="real-examples" className="border-border">
+                      <AccordionItem value="real-examples" className="border-slate-200">
                         <AccordionTrigger className="text-sm text-foreground">
                           Real Claim Examples
                         </AccordionTrigger>
@@ -2053,7 +2052,7 @@ export default function StaffAcademyModulePage() {
                         </AccordionContent>
                       </AccordionItem>
 
-                      <AccordionItem value="common-mistakes" className="border-border">
+                      <AccordionItem value="common-mistakes" className="border-slate-200">
                         <AccordionTrigger className="text-sm text-foreground">
                           Common Mistakes
                         </AccordionTrigger>
@@ -2069,7 +2068,7 @@ export default function StaffAcademyModulePage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card">
+                <Card className="border-border bg-card shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-base text-foreground sm:text-lg">
                       Interactive Scenario
@@ -2116,7 +2115,7 @@ export default function StaffAcademyModulePage() {
                                 ? option.isCorrect
                                   ? "border-emerald-500 bg-emerald-50"
                                   : "border-red-500 bg-red-50"
-                                : "border-border bg-muted hover:border-muted-foreground/60",
+                                : "border-border bg-card hover:border-muted-foreground",
                             )}
                           >
                             <span className="mt-0.5 text-xs text-muted-foreground">
@@ -2149,7 +2148,7 @@ export default function StaffAcademyModulePage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card">
+                <Card className="border-border bg-card shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-base text-foreground sm:text-lg">
                       Practical Exercise
@@ -2164,7 +2163,7 @@ export default function StaffAcademyModulePage() {
                     <textarea
                       value={exerciseText}
                       onChange={(e) => setExerciseText(e.target.value)}
-                      className="min-h-[140px] w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="min-h-[140px] w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       placeholder="Type your response here..."
                     />
                     <div className="flex items-center justify-between gap-3">
@@ -2176,7 +2175,7 @@ export default function StaffAcademyModulePage() {
                         size="sm"
                         onClick={handleExerciseSubmit}
                         disabled={!exerciseText.trim()}
-                        className="bg-primary text-primary-foreground hover:bg-primary/90"
+                        className="bg-emerald-600 text-white hover:bg-emerald-700"
                       >
                         Get AI Feedback
                       </Button>
@@ -2259,7 +2258,7 @@ export default function StaffAcademyModulePage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border bg-card">
+                <Card className="border-border bg-card shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-base text-foreground sm:text-lg">
                       Assessment Quiz
@@ -2304,8 +2303,8 @@ export default function StaffAcademyModulePage() {
                                     className={cn(
                                       "flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
                                       selected
-                                        ? "border-primary bg-primary/10"
-                                        : "border-border bg-background hover:border-muted-foreground/60",
+                                        ? "border-emerald-500 bg-emerald-50"
+                                        : "border-border bg-card hover:border-muted-foreground",
                                     )}
                                   >
                                     <span className="mt-0.5 text-xs text-muted-foreground">
@@ -2330,7 +2329,7 @@ export default function StaffAcademyModulePage() {
                                 className={cn(
                                   "px-4 text-xs",
                                   quizState.answers[q.id] === true
-                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
                                     : "border-border text-foreground hover:bg-muted",
                                 )}
                               >
@@ -2343,7 +2342,7 @@ export default function StaffAcademyModulePage() {
                                 className={cn(
                                   "px-4 text-xs",
                                   quizState.answers[q.id] === false
-                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
                                     : "border-border text-foreground hover:bg-muted",
                                 )}
                               >
@@ -2400,7 +2399,7 @@ export default function StaffAcademyModulePage() {
                       <Button
                         size="sm"
                         onClick={handleQuizSubmit}
-                        className="bg-primary text-primary-foreground hover:bg-primary/90"
+                        className="bg-emerald-600 text-white hover:bg-emerald-700"
                       >
                         Submit Quiz
                       </Button>
@@ -2410,7 +2409,7 @@ export default function StaffAcademyModulePage() {
               </div>
 
               <aside className="space-y-4">
-                <Card className="border-border bg-card shadow-professional-md">
+                <Card className="border-border bg-card shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-base text-foreground">
                       Module Overview
@@ -2422,28 +2421,28 @@ export default function StaffAcademyModulePage() {
                   <CardContent className="space-y-4 text-xs text-foreground">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span>Lesson</span>
+                        <span className="text-muted-foreground">Lesson</span>
                         <Badge
                           variant="outline"
-                          className="border-emerald-500/60 text-[11px] text-emerald-300"
+                          className="border-emerald-500/60 text-[11px] text-emerald-700 bg-emerald-50"
                         >
                           Completed on view
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Scenario</span>
+                        <span className="text-muted-foreground">Scenario</span>
                         <span className="text-[11px] text-muted-foreground">
                           {scenarioState.selectedOptionId ? "Answered" : "Pending"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Exercise</span>
+                        <span className="text-muted-foreground">Exercise</span>
                         <span className="text-[11px] text-muted-foreground">
                           {exerciseSubmitted ? "Submitted" : "Pending"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Quiz</span>
+                        <span className="text-muted-foreground">Quiz</span>
                         <span className="text-[11px] text-muted-foreground">
                           {quizState.submitted
                             ? quizState.passed
