@@ -30,27 +30,27 @@ export default function SettingsPage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#020617] border-b border-slate-800 safe-top">
+      <div className="sticky top-0 z-10 bg-background border-b border-border safe-top">
         <div className="px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-4">
           <Button
             variant="ghost"
-            className="rounded-full w-9 h-9 sm:w-10 sm:h-10 p-0 -ml-1 sm:-ml-2 flex-shrink-0 text-slate-200 hover:bg-slate-800"
+            className="rounded-full w-9 h-9 sm:w-10 sm:h-10 p-0 -ml-1 sm:-ml-2 flex-shrink-0 text-foreground hover:bg-muted"
             onClick={() => router.push("/home")}
           >
             <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
-          <h1 className="text-lg sm:text-xl font-bold text-slate-50 truncate">Settings</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">Settings</h1>
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
         {/* Profile Section */}
-        <Card className="evidence-card bg-[#050b16] border border-slate-800 text-slate-100 shadow-professional-md">
+        <Card className="evidence-card bg-card border border-border text-foreground shadow-professional-md">
           <CardHeader className="pb-3 sm:pb-4">
-            <CardTitle className="text-base sm:text-lg font-bold text-slate-50">Profile</CardTitle>
+            <CardTitle className="text-base sm:text-lg font-bold text-foreground">Profile</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 sm:space-y-6">
             <div className="flex items-center gap-3 sm:gap-4">
@@ -96,9 +96,9 @@ export default function SettingsPage() {
         </Card>
 
         {/* Organisation Section */}
-        <Card className="evidence-card bg-[#050b16] border border-slate-800 text-slate-100 shadow-professional-md">
+        <Card className="evidence-card bg-card border border-border text-foreground shadow-professional-md">
           <CardHeader className="pb-3 sm:pb-4">
-            <CardTitle className="text-base sm:text-lg font-bold text-slate-50">Organisation</CardTitle>
+            <CardTitle className="text-base sm:text-lg font-bold text-foreground">Organisation</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 sm:space-y-5">
             <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl text-white">
@@ -137,9 +137,9 @@ export default function SettingsPage() {
         </Card>
 
         {/* App Settings */}
-        <Card className="evidence-card bg-[#050b16] border border-slate-800 text-slate-100 shadow-professional-md">
+        <Card className="evidence-card bg-card border border-border text-foreground shadow-professional-md">
           <CardHeader className="pb-3 sm:pb-4">
-            <CardTitle className="text-base sm:text-lg font-bold text-slate-50">App Settings</CardTitle>
+            <CardTitle className="text-base sm:text-lg font-bold text-foreground">App Settings</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 sm:space-y-6">
             <div className="flex items-center justify-between p-2.5 sm:p-3 bg-slate-900/60 rounded-xl">
@@ -174,7 +174,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <div className="text-center text-xs text-slate-500 py-3 sm:py-4">
+        <div className="text-center text-xs text-muted-foreground py-3 sm:py-4">
           RD Companion v1.0.0
         </div>
       </div>

@@ -71,7 +71,7 @@ export default function LoginPage() {
   return (
     <Layout showNav={false}>
       <SEO title="Login - RD Companion" />
-      <div className="min-h-screen hero-gradient flex items-center justify-center p-4" style={{ backgroundImage: "none", backgroundColor: "rgb(255, 255, 255)" }}>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-orange-500 mb-4 shadow-professional-lg">
@@ -84,18 +84,18 @@ export default function LoginPage() {
                 
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-slate-50 mb-2" style={{ color: "#1a1a1a" }}>Welcome Back</h1>
-            <p className="text-sm text-slate-400" style={{ color: "#1a1a1a" }}>Sign in to your RD Companion account</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
+            <p className="text-sm text-muted-foreground">Sign in to your RD Companion account</p>
           </div>
 
-          <Card className="border border-slate-800 bg-slate-900/80 shadow-professional-lg">
-            <CardHeader className="space-y-1 pb-6" style={{ backgroundColor: "#f3f4f6" }}>
-              <CardTitle className="text-2xl font-semibold text-slate-50" style={{ color: "#1a1a1a" }}>Sign In</CardTitle>
-              <CardDescription className="text-slate-400" style={{ color: "#1a1a1a" }}>
+          <Card className="border border-border bg-card shadow-professional-lg">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="text-2xl font-semibold text-foreground">Sign In</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 Enter your credentials to access your account
               </CardDescription>
             </CardHeader>
-            <CardContent style={{ backgroundColor: "#f3f4f6" }}>
+            <CardContent>
               <form onSubmit={handleLogin} className="space-y-5">
                 {error &&
                 <Alert variant="destructive" className="border-error/20 bg-error/10 text-error-foreground">
@@ -105,7 +105,7 @@ export default function LoginPage() {
                 }
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium text-slate-200" style={{ color: "#1a1a1a" }}>
+                  <Label htmlFor="email" className="text-sm font-medium text-foreground">
                     Email Address
                   </Label>
                   <div className="relative">
@@ -117,13 +117,14 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="pl-10 h-11 border-slate-800 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500" style={{ backgroundColor: "#ffffff" }} />
+                      className="pl-10 h-11 border-border bg-background text-foreground placeholder:text-muted-foreground focus:border-orange-500 focus:ring-orange-500"
+                    />
                     
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-slate-200" style={{ color: "#1a1a1a" }}>
+                  <Label htmlFor="password" className="text-sm font-medium text-foreground">
                     Password
                   </Label>
                   <div className="relative">
@@ -135,7 +136,8 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="pl-10 h-11 border-slate-800 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500" style={{ backgroundColor: "#ffffff" }} />
+                      className="pl-10 h-11 border-border bg-background text-foreground placeholder:text-muted-foreground focus:border-orange-500 focus:ring-orange-500"
+                    />
                     
                   </div>
                 </div>
@@ -160,7 +162,7 @@ export default function LoginPage() {
               </form>
 
               <div className="mt-6 text-center">
-                <p className="text-sm text-slate-400" style={{ color: "#1a1a1a" }}>
+                <p className="text-sm text-muted-foreground">
                   Do not have an account?{" "}
                   <button
                     onClick={() => router.push("/auth/signup")}
@@ -173,7 +175,7 @@ export default function LoginPage() {
             </CardContent>
           </Card>
 
-          <p className="text-center text-xs text-slate-500 mt-6" style={{ color: "#1a1a1a" }}>
+          <p className="text-center text-xs text-muted-foreground mt-6">
             © {new Date().getFullYear()} RD Companion. All rights reserved.
           </p>
         </div>
