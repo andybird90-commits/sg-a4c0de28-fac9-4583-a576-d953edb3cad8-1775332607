@@ -2,35 +2,35 @@ import React, { useEffect, useState } from "react";
 import { StaffLayout } from "@/components/staff/StaffLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle } from
+"@/components/ui/card";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  TableRow } from
+"@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  FileText, 
-  Clock, 
+import {
+  Plus,
+  Search,
+  Filter,
+  FileText,
+  Clock,
   AlertCircle,
   Building2,
   Calendar,
   ChevronRight,
   PoundSterling,
-  Trash2
-} from "lucide-react";
+  Trash2 } from
+"lucide-react";
 import { useRouter } from "next/router";
 import { useToast } from "@/hooks/use-toast";
 import { claimService, ClaimWithDetails } from "@/services/claimService";
@@ -46,15 +46,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+  AlertDialogTrigger } from
+"@/components/ui/alert-dialog";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'GBP',
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 0
   }).format(amount);
 };
 
@@ -73,9 +73,9 @@ export default function ClaimsPage() {
       setLoading(true);
       try {
         const [activeClaims, deletedClaims] = await Promise.all([
-          claimService.getAllClaims(),
-          claimService.getDeletedClaims(),
-        ]);
+        claimService.getAllClaims(),
+        claimService.getDeletedClaims()]
+        );
         setClaims(activeClaims);
         setDeletedClaims(deletedClaims);
       } catch (err) {
@@ -83,7 +83,7 @@ export default function ClaimsPage() {
         toast({
           title: "Error loading claims",
           description: "We could not load the claims list. Please try again.",
-          variant: "destructive",
+          variant: "destructive"
         });
       } finally {
         setLoading(false);
@@ -93,11 +93,11 @@ export default function ClaimsPage() {
     loadData();
   }, [toast]);
 
-  const filteredClaims = claims.filter(claim => {
-    const matchesSearch = 
-      claim.organisations?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      claim.status?.toLowerCase().includes(searchQuery.toLowerCase());
-    
+  const filteredClaims = claims.filter((claim) => {
+    const matchesSearch =
+    claim.organisations?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    claim.status?.toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesStatus = statusFilter === "all" || claim.status === statusFilter;
 
     return matchesSearch && matchesStatus;
@@ -110,14 +110,14 @@ export default function ClaimsPage() {
       setClaims((prev) => prev.filter((c) => c.id !== claimId));
       toast({
         title: "Claim deleted",
-        description: "The claim has been permanently removed.",
+        description: "The claim has been permanently removed."
       });
     } catch (error) {
       console.error("Error deleting claim:", error);
       toast({
         title: "Error",
         description: "Failed to delete claim.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setDeletingId(null);
@@ -161,7 +161,7 @@ export default function ClaimsPage() {
 
         {/* Filters */}
         <Card className="bg-[#0F1D2D] border border-border text-secondary-foreground shadow-professional-md">
-          <CardContent className="p-4">
+          <CardContent className="p-4" style={{ backgroundColor: "#f3f4f6" }}>
             <div className="flex gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -169,32 +169,32 @@ export default function ClaimsPage() {
                   placeholder="Search claims..."
                   className="pl-8"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+                  onChange={(e) => setSearchQuery(e.target.value)} />
+                
               </div>
               <div className="flex gap-2">
-                <Button 
+                <Button
                   variant={statusFilter === "all" ? "default" : "outline"}
-                  onClick={() => setStatusFilter("all")}
-                >
+                  onClick={() => setStatusFilter("all")}>
+                  
                   All
                 </Button>
-                <Button 
+                <Button
                   variant={statusFilter === "intake" ? "default" : "outline"}
-                  onClick={() => setStatusFilter("intake")}
-                >
+                  onClick={() => setStatusFilter("intake")}>
+                  
                   Intake
                 </Button>
-                <Button 
+                <Button
                   variant={statusFilter === "in_progress" ? "default" : "outline"}
-                  onClick={() => setStatusFilter("in_progress")}
-                >
+                  onClick={() => setStatusFilter("in_progress")}>
+                  
                   In Progress
                 </Button>
-                <Button 
+                <Button
                   variant={statusFilter === "review" ? "default" : "outline"}
-                  onClick={() => setStatusFilter("review")}
-                >
+                  onClick={() => setStatusFilter("review")}>
+                  
                   Review
                 </Button>
               </div>
@@ -204,21 +204,21 @@ export default function ClaimsPage() {
 
         {/* Claims List */}
         <Card className="bg-[#0F1D2D] border border-border text-secondary-foreground shadow-professional-md">
-          <CardHeader>
+          <CardHeader style={{ backgroundColor: "#ffffff" }}>
             <CardTitle className="text-foreground">Active Claims</CardTitle>
             <CardDescription className="text-muted-foreground">
               {filteredClaims.length} claims found
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8">Loading claims...</div>
-            ) : filteredClaims.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+          <CardContent style={{ backgroundColor: "#ffffff" }}>
+            {loading ?
+            <div className="text-center py-8">Loading claims...</div> :
+            filteredClaims.length === 0 ?
+            <div className="text-center py-8 text-muted-foreground">
                 No claims found matching your criteria.
-              </div>
-            ) : (
-              <Table>
+              </div> :
+
+            <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs font-semibold tracking-wide text-foreground">
@@ -248,12 +248,12 @@ export default function ClaimsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredClaims.map((claim) => (
-                    <TableRow 
-                      key={claim.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => router.push(`/staff/claims/${claim.id}`)}
-                    >
+                  {filteredClaims.map((claim) =>
+                <TableRow
+                  key={claim.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => router.push(`/staff/claims/${claim.id}`)}>
+                  
                       <TableCell>
                         <div className="font-medium">{claim.organisations?.name || "Unknown Client"}</div>
                         <div className="text-xs text-muted-foreground">{claim.organisations?.organisation_code}</div>
@@ -279,37 +279,37 @@ export default function ClaimsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex -space-x-2">
-                          {claim.bd_owner && (
-                            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center border-2 border-background text-xs" title={`BD: ${claim.bd_owner.full_name}`}>
+                          {claim.bd_owner &&
+                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center border-2 border-background text-xs" title={`BD: ${claim.bd_owner.full_name}`}>
                               {claim.bd_owner.full_name?.charAt(0)}
                             </div>
-                          )}
-                          {claim.technical_lead && (
-                            <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center border-2 border-background text-xs" title={`Tech: ${claim.technical_lead.full_name}`}>
+                      }
+                          {claim.technical_lead &&
+                      <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center border-2 border-background text-xs" title={`Tech: ${claim.technical_lead.full_name}`}>
                               {claim.technical_lead.full_name?.charAt(0)}
                             </div>
-                          )}
-                          {claim.cost_lead && (
-                            <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center border-2 border-background text-xs" title={`Cost: ${claim.cost_lead.full_name}`}>
+                      }
+                          {claim.cost_lead &&
+                      <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center border-2 border-background text-xs" title={`Cost: ${claim.cost_lead.full_name}`}>
                               {claim.cost_lead.full_name?.charAt(0)}
                             </div>
-                          )}
+                      }
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div
-                          className="flex items-center justify-end gap-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                      className="flex items-center justify-end gap-2"
+                      onClick={(e) => e.stopPropagation()}>
+                      
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive"
-                                onClick={(e) => e.stopPropagation()}
-                                disabled={deletingId === claim.id}
-                              >
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={(e) => e.stopPropagation()}
+                            disabled={deletingId === claim.id}>
+                            
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
@@ -323,30 +323,30 @@ export default function ClaimsPage() {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  onClick={async () => {
-                                    await handleDeleteClaim(claim.id);
-                                  }}
-                                  disabled={deletingId === claim.id}
-                                >
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={async () => {
+                                await handleDeleteClaim(claim.id);
+                              }}
+                              disabled={deletingId === claim.id}>
+                              
                                   Delete
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
                           <MessageWidget
-                            entityType="claim"
-                            entityId={claim.id}
-                            entityName={`${claim.organisations?.name || "Claim"} - FY ${claim.claim_year}`}
-                          />
+                        entityType="claim"
+                        entityId={claim.id}
+                        entityName={`${claim.organisations?.name || "Claim"} - FY ${claim.claim_year}`} />
+                      
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                )}
                 </TableBody>
               </Table>
-            )}
+            }
           </CardContent>
         </Card>
 
@@ -355,17 +355,17 @@ export default function ClaimsPage() {
           <p className="text-sm text-muted-foreground">
             Claims in the trash are kept for 28 days and then permanently deleted.
           </p>
-          {deletedClaims.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+          {deletedClaims.length === 0 ?
+          <p className="text-sm text-muted-foreground">
               No claims are currently in the trash.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {deletedClaims.map((claim) => (
-                <div
-                  key={claim.id}
-                  className="rounded-lg border bg-muted/40 p-4 text-sm"
-                >
+            </p> :
+
+          <div className="space-y-3">
+              {deletedClaims.map((claim) =>
+            <div
+              key={claim.id}
+              className="rounded-lg border bg-muted/40 p-4 text-sm">
+              
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <div className="font-medium">
@@ -381,16 +381,16 @@ export default function ClaimsPage() {
                   </div>
                   <div className="mt-2 text-xs text-muted-foreground">
                     Moved to trash{" "}
-                    {claim.deleted_at
-                      ? new Date(claim.deleted_at).toLocaleDateString()
-                      : "recently"}
+                    {claim.deleted_at ?
+                new Date(claim.deleted_at).toLocaleDateString() :
+                "recently"}
                   </div>
                 </div>
-              ))}
+            )}
             </div>
-          )}
+          }
         </section>
       </div>
-    </StaffLayout>
-  );
+    </StaffLayout>);
+
 }
