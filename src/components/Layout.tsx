@@ -1,285 +1,322 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import {
-  Home,
-  Camera,
-  Lightbulb,
-  FolderOpen,
-  Layers,
-  Menu,
-  Settings,
-  LogOut,
-  Building2,
-  MessageSquare,
   Bell,
+  Camera,
+  FolderOpen,
+  Home,
+  Layers,
+  Lightbulb,
+  Menu,
+  MessageSquare,
+  Settings,
+  X,
+  Building2,
+  LogOut,
 } from "lucide-react";
+
 import { useApp } from "@/contexts/AppContext";
-import { authService } from "@/services/authService";
-import { NotificationToast } from "./NotificationToast";
-import { OfflineBanner } from "./OfflineBanner";
-import { SyncIndicator } from "./SyncIndicator";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { NotificationToast } from "@/components/NotificationToast";
+import { OfflineBanner } from "@/components/OfflineBanner";
+import { SyncIndicator } from "@/components/SyncIndicator";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
+import { authService } from "@/services/authService";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 interface LayoutProps {
   children: React.ReactNode;
   showNav?: boolean;
 }
 
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+}
+
 export function Layout({ children, showNav = true }: LayoutProps) {
   const router = useRouter();
-  const { user, currentOrg, organisations, organisationsLoading } = useApp();
+  const { user, currentOrg } = useApp();
+  const isMobile = useIsMobile();
   const { isOnline, syncingCount } = useOfflineQueue();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const navItems: NavItem[] = [
+    { href: "/home", label: "Home", icon: Home },
+    { href: "/messages", label: "Messages", icon: MessageSquare },
+    { href: "/evidence/capture", label: "Capture", icon: Camera },
+    { href: "/evidence", label: "Evidence", icon: Layers },
+    { href: "/projects", label: "Projects", icon: FolderOpen },
+    { href: "/feasibility", label: "Feasibility", icon: Lightbulb },
+    { href: "/settings", label: "Settings", icon: Settings },
+  ];
+
   useEffect(() => {
-    if (user) {
-      const fetchUnreadCount = async () => {
-        try {
-          const { getUnreadCount } = await import("@/services/messageService");
-          const count = await getUnreadCount();
-          setUnreadCount(count);
-        } catch (error) {
-          console.error("Error fetching unread count:", error);
-        }
-      };
-
-      fetchUnreadCount();
-
-      const interval = setInterval(fetchUnreadCount, 30000);
-      return () => clearInterval(interval);
+    if (!user) {
+      setUnreadCount(0);
+      return;
     }
+
+    const fetchUnread = async () => {
+      try {
+        const { getUnreadCount } = await import("@/services/messageService");
+        const count = await getUnreadCount();
+        setUnreadCount(count);
+      } catch (error) {
+        console.error("Error fetching unread message count", error);
+      }
+    };
+
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+
+    return () => {
+      clearInterval(interval);
+    };
   }, [user]);
 
   const handleLogout = async () => {
     await authService.signOut();
-    router.push("/");
+    router.push("/auth/login");
   };
 
-  const navItems = [
-    { href: "/home", icon: Home, label: "Home" },
-    { href: "/messages", icon: MessageSquare, label: "Messages" },
-    { href: "/evidence/capture", icon: Camera, label: "Capture" },
-    { href: "/evidence", icon: Layers, label: "Evidence" },
-    { href: "/projects", icon: FolderOpen, label: "Projects" },
-    { href: "/feasibility", icon: Lightbulb, label: "Feasibility" },
-    { href: "/settings", icon: Settings, label: "Settings" },
-  ];
+  const isActive = (href: string): boolean => {
+    if (href === "/home") {
+      return router.pathname === "/home" || router.pathname === "/";
+    }
+    return router.pathname === href || router.pathname.startsWith(`${href}/`);
+  };
 
-  const publicRoutes = ["/auth/login", "/auth/signup", "/"];
-  const isPublicRoute = publicRoutes.includes(router.pathname);
-
-  if (organisationsLoading) {
+  if (!showNav) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+      <div className="min-h-screen w-full bg-background text-foreground flex flex-col">
+        <main className="flex-1 bg-background">
+          <div className="px-4 py-6 lg:px-8">{children}</div>
+        </main>
+        <SyncIndicator count={syncingCount} />
+        <NotificationToast />
+        <OfflineBanner isOnline={isOnline} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
-      {showNav && user && (
-        <aside className="hidden lg:flex w-64 bg-[#0F1D2D] text-secondary-foreground border-r border-border flex-col">
-          <div className="h-14 flex items-center px-4 border-b border-border/70">
-            <img
-              src="/rd_tax_white_wording.png"
-              alt="RD TAX"
-              className="h-9 w-auto flex-shrink-0"
-            />
+    <div className="min-h-screen w-full max-w-full bg-background text-foreground flex flex-col">
+      {/* Header – aligned with staff style */}
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-[#0F1D2D] text-slate-100">
+        <div className="px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {user && (
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(true)}
+                className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-100"
+                aria-label="Open navigation"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+            )}
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-auto items-center">
+                <span className="text-xl font-extrabold tracking-tight leading-none">
+                  <span className="text-white">RD</span>{" "}
+                  <span className="text-[#f97316]">TAX</span>
+                </span>
+              </div>
+              <div className="hidden sm:flex flex-col">
+                <span className="text-xs font-medium uppercase text-slate-400">
+                  RD Companion
+                </span>
+                <span className="text-sm font-semibold">
+                  {currentOrg?.name ?? "Client workspace"}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <nav className="mt-4 flex-1 space-y-1 px-3">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive =
-                router.pathname === item.href ||
-                router.pathname.startsWith(item.href + "/");
+          {user && (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-700 bg-[#0B1725]"
+                onClick={() => router.push("/messages")}
+                aria-label="Notifications"
+              >
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#f97316] text-[10px] font-semibold text-white px-[3px]">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
 
-              return (
-                <Link key={item.href} href={item.href}>
-                  <Button
-                    variant={isActive ? "default" : "ghost"}
-                    className={`w-full justify-start gap-3 ${
-                      isActive
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                        : "text-secondary-foreground hover:bg-secondary/60"
-                    }`}
-                    size="sm"
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </Button>
-                </Link>
-              );
-            })}
-          </nav>
-
-          {currentOrg && (
-            <div className="px-4 pb-3 pt-2 border-t border-border/70">
-              <div className="flex items-center gap-2 rounded-lg bg-secondary/20 px-3 py-2">
-                <Building2 className="h-4 w-4 opacity-80" />
-                <div className="min-w-0">
-                  <p className="text-[11px] uppercase tracking-wide text-secondary-foreground/70">
-                    Organisation
-                  </p>
-                  <p className="text-sm font-semibold truncate">{currentOrg.name}</p>
-                </div>
-              </div>
               <Button
+                type="button"
                 variant="outline"
                 size="sm"
-                className="mt-3 w-full justify-center gap-2 border-destructive/70 text-destructive hover:bg-destructive/10"
                 onClick={handleLogout}
+                className="border-red-400/70 text-red-400 hover:bg-red-500/10 hover:text-red-200 hidden sm:inline-flex items-center gap-2"
               >
                 <LogOut className="h-4 w-4" />
-                Logout
+                <span>Logout</span>
               </Button>
             </div>
           )}
-        </aside>
-      )}
+        </div>
+      </header>
 
-      <div className="flex-1 flex flex-col min-h-screen">
-        <header className="sticky top-0 z-40 border-b border-border bg-[#0F1D2D] text-secondary-foreground">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {user && showNav && (
-                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="lg:hidden text-secondary-foreground hover:bg-secondary/70"
-                    >
-                      <Menu className="h-5 w-5" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent
-                    side="left"
-                    className="w-[280px] sm:w-[320px] bg-[#0F1D2D] text-secondary-foreground border-r border-border"
+      {/* Body layout – fixed sidebar, scrolling main (like staff) */}
+      <div className="flex w-full max-w-full flex-1 overflow-hidden h-[calc(100vh-3.5rem)]">
+        {/* Sidebar – desktop only */}
+        {user && (
+          <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r border-slate-800 bg-[#071a2e] text-slate-100 fixed top-14 bottom-0 left-0 overflow-y-auto">
+            <div className="px-4 py-4 space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.href);
+                return (
+                  <button
+                    key={item.href}
+                    type="button"
+                    onClick={() => router.push(item.href)}
+                    className={`group flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      active
+                        ? "bg-[#f97316] text-white shadow-sm"
+                        : "text-slate-100 hover:bg-slate-800/80"
+                    }`}
                   >
-                    <SheetHeader>
-                      <SheetTitle className="text-left">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center text-secondary-foreground font-bold text-sm border border-border">
-                            RD
-                          </div>
-                          <span className="font-bold text-lg">RD Companion</span>
-                        </div>
-                      </SheetTitle>
-                    </SheetHeader>
-
-                    <nav className="mt-8 space-y-2">
-                      {navItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive =
-                          router.pathname === item.href ||
-                          router.pathname.startsWith(item.href + "/");
-
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setMobileMenuOpen(false)}
-                          >
-                            <Button
-                              variant={isActive ? "default" : "ghost"}
-                              className={`w-full justify-start gap-3 ${
-                                isActive
-                                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                  : "text-muted-foreground hover:bg-muted"
-                              }`}
-                            >
-                              <Icon className="h-4 w-4" />
-                              {item.label}
-                            </Button>
-                          </Link>
-                        );
-                      })}
-
-                      {currentOrg && (
-                        <div className="pt-4 mt-4 border-t border-border">
-                          <div className="px-3 py-2 rounded-lg bg-muted">
-                            <p className="text-xs font-medium text-muted-foreground">
-                              Organisation
-                            </p>
-                            <p className="text-sm font-semibold">{currentOrg.name}</p>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="pt-4">
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start gap-3 text-destructive border-destructive hover:bg-destructive/10"
-                          onClick={() => {
-                            setMobileMenuOpen(false);
-                            void handleLogout();
-                          }}
-                        >
-                          <LogOut className="h-4 w-4" />
-                          Logout
-                        </Button>
-                      </div>
-                    </nav>
-                  </SheetContent>
-                </Sheet>
-              )}
-
-              <div className="flex items-center gap-2 cursor-default lg:hidden">
-                <img
-                  src="/rd_tax_white_wording.png"
-                  alt="RD TAX"
-                  className="h-9 sm:h-10 w-auto flex-shrink-0"
-                />
-              </div>
-            </div>
-
-            {user && (
-              <div className="flex items-center gap-2">
-                <Link href="/messages">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="relative border-border bg-background text-foreground hover:bg-muted"
-                  >
-                    <Bell className="h-4 w-4" />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
+                    <Icon className="h-4 w-4" />
+                    <span className="truncate">{item.label}</span>
+                    {item.href === "/messages" && unreadCount > 0 && (
+                      <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white/90 px-1 text-[11px] font-semibold leading-none text-[#071a2e]">
                         {unreadCount > 9 ? "9+" : unreadCount}
                       </span>
                     )}
-                  </Button>
-                </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="hidden sm:inline-flex items-center gap-2 border-destructive/70 text-destructive hover:bg-destructive/10"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </Button>
-              </div>
-            )}
+                  </button>
+                );
+              })}
+
+              {/* Divider line kept in nav */}
+              <div className="my-3 border-t border-slate-800" />
+
+              {/* Organisation + logout directly under Settings */}
+              {currentOrg && (
+                <div className="flex items-start gap-2 px-1 py-2">
+                  <Building2 className="h-4 w-4 mt-[2px] text-slate-300" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      Organisation
+                    </p>
+                    <p className="text-sm font-semibold text-slate-50 truncate">
+                      {currentOrg.name}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-400 hover:bg-slate-800/80 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Sign out</span>
+              </button>
+            </div>
+          </aside>
+        )}
+
+        {/* Main content – scrolls within, offset for sidebar on desktop */}
+        <main className="flex-1 bg-background overflow-x-hidden overflow-y-auto lg:ml-64">
+          <div className="px-4 sm:px-6 lg:px-8 py-6">
+            <div className="max-w-7xl mx-auto">{children}</div>
           </div>
-        </header>
-
-        <main className="flex-1 pb-8">
-          {children}
         </main>
-
-        <SyncIndicator count={syncingCount} />
-        <NotificationToast />
-        <OfflineBanner isOnline={isOnline} />
       </div>
+
+      {/* Mobile slide-out navigation */}
+      {user && isMobile && mobileNavOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 lg:hidden">
+          <div className="absolute inset-y-0 left-0 w-72 bg-[#071a2e] text-slate-100 shadow-xl flex flex-col">
+            <div className="flex items-center justify-between px-4 h-14 border-b border-slate-900">
+              <span className="text-sm font-semibold">Menu</span>
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(false)}
+                className="p-2 rounded-lg hover:bg-slate-800 text-slate-100"
+                aria-label="Close navigation"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.href);
+                return (
+                  <button
+                    key={item.href}
+                    type="button"
+                    onClick={() => {
+                      router.push(item.href);
+                      setMobileNavOpen(false);
+                    }}
+                    className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      active
+                        ? "bg-[#f97316] text-white shadow-sm"
+                        : "text-slate-100 hover:bg-slate-800/80"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="truncate">{item.label}</span>
+                    {item.href === "/messages" && unreadCount > 0 && (
+                      <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white/90 px-1 text-[11px] font-semibold leading-none text-[#071a2e]">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+
+              <div className="my-3 border-t border-slate-800" />
+
+              {currentOrg && (
+                <div className="flex items-start gap-2 px-1 py-2">
+                  <Building2 className="h-4 w-4 mt-[2px] text-slate-300" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                      Organisation
+                    </p>
+                    <p className="text-sm font-semibold text-slate-50 truncate">
+                      {currentOrg.name}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="mt-1 w-full justify-center gap-2 border-slate-700 text-slate-100 hover:bg-slate-800/80"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </Button>
+            </nav>
+          </div>
+        </div>
+      )}
+
+      <SyncIndicator count={syncingCount} />
+      <NotificationToast />
+      <OfflineBanner isOnline={isOnline} />
     </div>
   );
 }
