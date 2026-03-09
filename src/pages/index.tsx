@@ -144,7 +144,7 @@ export default function LandingPage() {
           </div>
         </nav>
 
-        <section className="relative pt-24 sm:pt-32 pb-12 sm:pb-20 overflow-hidden hero-gradient">
+        <section className="relative pt-24 sm:pt-32 pb-12 sm:pb-20 overflow-hidden hero-gradient" style={{ backgroundImage: "none", backgroundColor: "#ffffff" }}>
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <div className="max-w-7xl mx-auto">
               <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
@@ -168,9 +168,9 @@ export default function LandingPage() {
                     <span className="text-gradient">Captured Effortlessly</span>
                   </h1>
 
-                  <p className="text-sm sm:text-base md:text-lg lg:text-xl text-slate-300 mb-6 sm:mb-8 lg:mb-10 leading-relaxed">
+                  <p className="text-sm sm:text-base md:text-lg lg:text-xl text-slate-300 mb-6 sm:mb-8 lg:mb-10 leading-relaxed" style={{ color: "#1a1a1a" }}>
                     RD Companion helps you capture, organize, and submit R&D tax evidence on the go.
-                    <strong className="text-slate-50"> Never miss a claimable moment again.</strong>
+                    <strong className="text-slate-50" style={{ color: "#1a1a1a" }}> Never miss a claimable moment again.</strong>
                   </p>
 
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start mb-8 sm:mb-12">
@@ -186,7 +186,7 @@ export default function LandingPage() {
                       size="lg"
                       variant="outline"
                       onClick={() => router.push("/auth/login")}
-                      className="border-2 border-slate-700 text-slate-100 hover:bg-slate-900 text-sm sm:text-base lg:text-lg px-5 sm:px-6 lg:px-10 py-4 sm:py-5 lg:py-7 rounded-xl sm:rounded-2xl transition-all w-full sm:w-auto">
+                      className="border-2 border-slate-700 text-slate-100 hover:bg-slate-900 text-sm sm:text-base lg:text-lg px-5 sm:px-6 lg:px-10 py-4 sm:py-5 lg:py-7 rounded-xl sm:rounded-2xl transition-all w-full sm:w-auto" style={{ color: "#f97316" }}>
                       
                       Log In
                       <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
@@ -197,7 +197,7 @@ export default function LandingPage() {
                     {stats.map((stat, index) =>
                     <div
                       key={index}
-                      className="bg-slate-900/60 rounded-lg sm:rounded-xl lg:rounded-2xl p-2.5 sm:p-3 lg:p-4 border border-slate-800">
+                      className="bg-slate-900/60 rounded-lg sm:rounded-xl lg:rounded-2xl p-2.5 sm:p-3 lg:p-4 border border-slate-800" style={{ backgroundColor: "#1a1a1a" }}>
                       
                         <div className="flex justify-center lg:justify-start mb-1 sm:mb-2">
                           <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-orange-400" />
@@ -286,7 +286,7 @@ export default function LandingPage() {
                     <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-50 mb-2 sm:mb-3 text-center">
                       {step.title}
                     </h3>
-                    <p className="text-xs sm:text-sm lg:text-base text-slate-300 leading-relaxed text-center px-2">
+                    <p className="text-xs sm:text-sm lg:text-base text-slate-300 leading-relaxed text-center px-2" style={{ color: "#1a1a1a" }}>
                       {step.description}
                     </p>
                   </div>
