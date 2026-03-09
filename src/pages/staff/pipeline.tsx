@@ -15,8 +15,8 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DialogTitle } from
+"@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,11 +24,11 @@ import type { Database } from "@/integrations/supabase/types";
 import {
   parseAverageFeeCsv,
   buildInternalClients,
-  reconcileFeesWithClients,
-} from "@/services/clientFeeReconciliationService";
+  reconcileFeesWithClients } from
+"@/services/clientFeeReconciliationService";
 
 type ClientToBeOnboardedRow =
-  Database["public"]["Tables"]["clients_to_be_onboarded"]["Row"];
+Database["public"]["Tables"]["clients_to_be_onboarded"]["Row"];
 
 export default function PipelinePage() {
   const router = useRouter();
@@ -39,7 +39,7 @@ export default function PipelinePage() {
   const [pipeline, setPipeline] = useState<PipelineWithDetails[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [missingCompanies, setMissingCompanies] = useState<MissingCompanyNumberClient[]>([]);
-  
+
   // Filters
   // Default to a very wide date range so the initial view shows all entries.
   // Users can then narrow the range using the filters.
@@ -68,14 +68,14 @@ export default function PipelinePage() {
     try {
       setLoading(true);
       const data = await pipelineService.getPipelineByDateRange(filterStartDate, filterEndDate);
-      const filtered = data.filter(p => (p.filing_confidence_score || 0) >= minConfidence);
+      const filtered = data.filter((p) => (p.filing_confidence_score || 0) >= minConfidence);
       setPipeline(filtered);
     } catch (error) {
       console.error("Error loading pipeline:", error);
       toast({
         title: "Error",
         description: "Failed to load pipeline data",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -109,14 +109,14 @@ export default function PipelinePage() {
       await loadSummary();
       toast({
         title: "Success",
-        description: "Pipeline predictions refreshed",
+        description: "Pipeline predictions refreshed"
       });
     } catch (error) {
       console.error("Error refreshing:", error);
       toast({
         title: "Error",
         description: "Failed to refresh predictions",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setRefreshing(false);
@@ -127,9 +127,9 @@ export default function PipelinePage() {
     try {
       setApplyingFees(true);
 
-      const { data: clientRows, error: clientError } = await supabase
-        .from("clients_to_be_onboarded")
-        .select("id, company_name");
+      const { data: clientRows, error: clientError } = await supabase.
+      from("clients_to_be_onboarded").
+      select("id, company_name");
 
       if (clientError) {
         console.error(
@@ -139,7 +139,7 @@ export default function PipelinePage() {
         toast({
           title: "Error",
           description: "Failed to load clients not yet onboarded",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
@@ -148,7 +148,7 @@ export default function PipelinePage() {
         toast({
           title: "No clients found",
           description:
-            "There are no clients in the 'clients_to_be_onboarded' list to match against.",
+          "There are no clients in the 'clients_to_be_onboarded' list to match against."
         });
         return;
       }
@@ -160,8 +160,8 @@ export default function PipelinePage() {
         toast({
           title: "Error",
           description:
-            "Could not load client_average_claim_fees_for_softgen_v2.csv",
-          variant: "destructive",
+          "Could not load client_average_claim_fees_for_softgen_v2.csv",
+          variant: "destructive"
         });
         return;
       }
@@ -173,7 +173,7 @@ export default function PipelinePage() {
         toast({
           title: "No CSV rows",
           description:
-            "The average fee CSV did not contain any valid rows.",
+          "The average fee CSV did not contain any valid rows."
         });
         return;
       }
@@ -194,11 +194,11 @@ export default function PipelinePage() {
         const fee = match.uploaded.averageClaimFee;
         const placeholderCode = `PL-${clientId.slice(0, 8)}`;
 
-        const { data: org, error: orgError } = await supabase
-          .from("organisations")
-          .select("id")
-          .eq("organisation_code", placeholderCode)
-          .maybeSingle();
+        const { data: org, error: orgError } = await supabase.
+        from("organisations").
+        select("id").
+        eq("organisation_code", placeholderCode).
+        maybeSingle();
 
         if (orgError || !org) {
           console.warn(
@@ -212,11 +212,11 @@ export default function PipelinePage() {
         }
 
         const { data: pipelineEntry, error: pipelineError } =
-          await supabase
-            .from("pipeline_entries")
-            .select("id")
-            .eq("org_id", org.id)
-            .maybeSingle();
+        await supabase.
+        from("pipeline_entries").
+        select("id").
+        eq("org_id", org.id).
+        maybeSingle();
 
         if (pipelineError || !pipelineEntry) {
           console.warn(
@@ -227,10 +227,10 @@ export default function PipelinePage() {
           continue;
         }
 
-        const { error: updateError } = await supabase
-          .from("pipeline_entries")
-          .update({ predicted_revenue: fee })
-          .eq("id", pipelineEntry.id);
+        const { error: updateError } = await supabase.
+        from("pipeline_entries").
+        update({ predicted_revenue: fee }).
+        eq("id", pipelineEntry.id);
 
         if (updateError) {
           console.error(
@@ -253,13 +253,13 @@ export default function PipelinePage() {
         {
           suggestedMatches: result.suggestedMatches,
           ambiguousMatches: result.ambiguousMatches,
-          noMatches: result.noMatches,
+          noMatches: result.noMatches
         }
       );
 
       toast({
         title: "Average fees applied",
-        description: `Updated ${appliedCount} pipeline entries from exact name matches. Check the browser console for ambiguous or unmatched clients and share here to resolve.`,
+        description: `Updated ${appliedCount} pipeline entries from exact name matches. Check the browser console for ambiguous or unmatched clients and share here to resolve.`
       });
 
       await loadPipeline();
@@ -269,7 +269,7 @@ export default function PipelinePage() {
       toast({
         title: "Error",
         description: "Failed to apply average claim fees",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setApplyingFees(false);
@@ -296,7 +296,7 @@ export default function PipelinePage() {
         // Also update pipeline start date based on new filing date (1 month prior)
         pipeline_start_date: pipelineService.calculatePipelineStartDate(new Date(editForm.expected_accounts_filing_date)).toISOString().split('T')[0]
       });
-      
+
       toast({ title: "Saved", description: "Pipeline entry updated successfully" });
       setEditingEntry(null);
       loadPipeline();
@@ -333,12 +333,12 @@ export default function PipelinePage() {
           result.push({
             ...entry,
             id: `${entry.id}-repeat-${nextYear}`,
-            expected_accounts_filing_date: nextExpected
-              .toISOString()
-              .split("T")[0],
-            pipeline_start_date: nextPipelineStart
-              .toISOString()
-              .split("T")[0],
+            expected_accounts_filing_date: nextExpected.
+            toISOString().
+            split("T")[0],
+            pipeline_start_date: nextPipelineStart.
+            toISOString().
+            split("T")[0]
           } as PipelineWithDetails);
         }
       }
@@ -353,11 +353,11 @@ export default function PipelinePage() {
   const months = eachMonthOfInterval({ start: startDate, end: endDate });
 
   // Calculate revenue by month
-  const revenueByMonth = months.map(month => {
+  const revenueByMonth = months.map((month) => {
     const monthStart = startOfMonth(month);
     const monthEnd = endOfMonth(month);
 
-    const monthPipeline = expandedPipeline.filter(p => {
+    const monthPipeline = expandedPipeline.filter((p) => {
       if (!p.expected_accounts_filing_date) return false;
       const expectedDate = parseISO(p.expected_accounts_filing_date);
       return expectedDate >= monthStart && expectedDate <= monthEnd;
@@ -397,16 +397,16 @@ export default function PipelinePage() {
             <Button onClick={handleRefreshAll} disabled={refreshing}>
               <RefreshCw
                 className={`w-4 h-4 mr-2 ${
-                  refreshing ? "animate-spin" : ""
-                }`}
-              />
+                refreshing ? "animate-spin" : ""}`
+                } />
+              
               Refresh Predictions
             </Button>
             <Button
               variant="outline"
               onClick={handleApplyAverageFees}
-              disabled={applyingFees}
-            >
+              disabled={applyingFees}>
+              
               <Save className="w-4 h-4 mr-2" />
               Apply Avg Fees
             </Button>
@@ -414,17 +414,17 @@ export default function PipelinePage() {
         </div>
 
         {/* Summary Cards */}
-        {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {summary &&
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Pipeline</p>
                   <p className="text-3xl font-bold mt-1">
                     £{totalPipelineRevenue.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  })}
                   </p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-blue-500" />
@@ -449,7 +449,7 @@ export default function PipelinePage() {
               </div>
             </Card>
           </div>
-        )}
+        }
 
         {/* Filters */}
         <Card className="p-4">
@@ -460,8 +460,8 @@ export default function PipelinePage() {
                 type="date"
                 value={filterStartDate}
                 onChange={(e) => setFilterStartDate(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border rounded-md"
-              />
+                className="w-full mt-1 px-3 py-2 border rounded-md" />
+              
             </div>
             <div>
               <label className="text-sm font-medium">End Date</label>
@@ -469,16 +469,16 @@ export default function PipelinePage() {
                 type="date"
                 value={filterEndDate}
                 onChange={(e) => setFilterEndDate(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border rounded-md"
-              />
+                className="w-full mt-1 px-3 py-2 border rounded-md" />
+              
             </div>
             <div>
               <label className="text-sm font-medium">Min Confidence</label>
               <select
                 value={minConfidence}
                 onChange={(e) => setMinConfidence(Number(e.target.value))}
-                className="w-full mt-1 px-3 py-2 border rounded-md"
-              >
+                className="w-full mt-1 px-3 py-2 border rounded-md">
+                
                 <option value={0}>All (0%+)</option>
                 <option value={40}>Medium (40%+)</option>
                 <option value={70}>High (70%+)</option>
@@ -496,15 +496,15 @@ export default function PipelinePage() {
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-4">Monthly Revenue Forecast</h2>
           <div className="space-y-3">
-            {revenueByMonth.map(({ month, revenue, count }) => (
-              <div key={month.toISOString()} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            {revenueByMonth.map(({ month, revenue, count }) =>
+            <div key={month.toISOString()} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className="w-24 font-medium">{format(month, "MMM yyyy")}</div>
                   <Badge variant="outline">{count} customers</Badge>
                 </div>
-                <div className="text-lg font-semibold">£{revenue.toLocaleString()}</div>
+                <div className="text-lg font-semibold" style={{ fontSize: "16px" }}>£{revenue.toLocaleString()}</div>
               </div>
-            ))}
+            )}
           </div>
         </Card>
 
@@ -515,38 +515,38 @@ export default function PipelinePage() {
             <Badge variant="outline">{expandedPipeline.length} entries</Badge>
           </div>
           
-          {loading ? (
-            <div className="text-center py-12 text-muted-foreground">Loading pipeline...</div>
-          ) : expandedPipeline.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
+          {loading ?
+          <div className="text-center py-12 text-muted-foreground">Loading pipeline...</div> :
+          expandedPipeline.length === 0 ?
+          <div className="text-center py-12 text-muted-foreground">
               No pipeline entries found. Customers will appear here when their CIF is complete and claim is enabled.
-            </div>
-          ) : (
-            <div className="space-y-2">
+            </div> :
+
+          <div className="space-y-2">
               {expandedPipeline.map((entry) => {
-                const pipelineDate = new Date(entry.pipeline_start_date);
-                const expectedFilingDate = entry.expected_accounts_filing_date 
-                  ? new Date(entry.expected_accounts_filing_date) 
-                  : null;
-                const confidence = entry.filing_confidence_score || 0;
-                const avgLagDays = entry.average_filing_lag_days || 0;
-                let yearEndDate: Date | null = null;
+              const pipelineDate = new Date(entry.pipeline_start_date);
+              const expectedFilingDate = entry.expected_accounts_filing_date ?
+              new Date(entry.expected_accounts_filing_date) :
+              null;
+              const confidence = entry.filing_confidence_score || 0;
+              const avgLagDays = entry.average_filing_lag_days || 0;
+              let yearEndDate: Date | null = null;
 
-                if (expectedFilingDate && avgLagDays > 0) {
-                  yearEndDate = new Date(expectedFilingDate);
-                  yearEndDate.setDate(yearEndDate.getDate() - avgLagDays);
-                }
+              if (expectedFilingDate && avgLagDays > 0) {
+                yearEndDate = new Date(expectedFilingDate);
+                yearEndDate.setDate(yearEndDate.getDate() - avgLagDays);
+              }
 
-                return (
-                  <div
-                    key={entry.id}
-                    className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer group"
-                    onClick={() => {
-                      if (entry.claim_id) {
-                        router.push(`/staff/claims/${entry.claim_id}`);
-                      }
-                    }}
-                  >
+              return (
+                <div
+                  key={entry.id}
+                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer group"
+                  onClick={() => {
+                    if (entry.claim_id) {
+                      router.push(`/staff/claims/${entry.claim_id}`);
+                    }
+                  }}>
+                  
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3">
@@ -557,28 +557,28 @@ export default function PipelinePage() {
                             {confidence}% confident
                           </Badge>
                           <Badge
-                            variant={entry.claim_id ? "outline" : "secondary"}
-                          >
+                          variant={entry.claim_id ? "outline" : "secondary"}>
+                          
                             {entry.claim_id ? "Onboarded client" : "Client not yet onboarded"}
                           </Badge>
-                          {entry.auto_created && (
-                            <Badge variant="outline">Auto</Badge>
-                          )}
+                          {entry.auto_created &&
+                        <Badge variant="outline">Auto</Badge>
+                        }
                         </div>
                         <div className="mt-2 space-y-1 text-sm text-muted-foreground">
                           <div className="flex items-center space-x-4">
-                            {yearEndDate && (
-                              <span>
+                            {yearEndDate &&
+                          <span>
                                 Year End:{" "}
                                 <strong>{format(yearEndDate, "MMM yyyy")}</strong>
                               </span>
-                            )}
-                            {expectedFilingDate && (
-                              <span>
+                          }
+                            {expectedFilingDate &&
+                          <span>
                                 Expected Filing:{" "}
                                 <strong>{format(expectedFilingDate, "dd MMM yyyy")}</strong>
                               </span>
-                            )}
+                          }
                           </div>
                           <div className="flex items-center space-x-4">
                             <span>Avg Filing Lag: <strong>{entry.average_filing_lag_days || 0} days</strong></span>
@@ -593,12 +593,12 @@ export default function PipelinePage() {
                         <div className="text-sm text-muted-foreground mt-1 mb-2">
                           Predicted Revenue
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => handleEditClick(entry, e)}
-                        >
+                        <Button
+                        variant="ghost"
+                        size="sm"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => handleEditClick(entry, e)}>
+                        
                           <Pencil className="w-4 h-4 mr-2" />
                           Edit Manual Entry
                         </Button>
@@ -609,24 +609,24 @@ export default function PipelinePage() {
                     <div className="mt-4">
                       <div className="relative h-2 bg-muted rounded-full overflow-hidden">
                         <div
-                          className={`absolute h-full ${
-                            confidence >= 70 ? "bg-green-500" :
-                            confidence >= 40 ? "bg-yellow-500" :
-                            "bg-red-500"
-                          }`}
-                          style={{ width: `${confidence}%` }}
-                        />
+                        className={`absolute h-full ${
+                        confidence >= 70 ? "bg-green-500" :
+                        confidence >= 40 ? "bg-yellow-500" :
+                        "bg-red-500"}`
+                        }
+                        style={{ width: `${confidence}%` }} />
+                      
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  </div>);
+
+            })}
             </div>
-          )}
+          }
         </Card>
 
-        {missingCompanies.length > 0 && (
-          <Card className="p-6">
+        {missingCompanies.length > 0 &&
+        <Card className="p-6">
             <h2 className="text-xl font-semibold mb-2">
               Clients missing Companies House number
             </h2>
@@ -634,26 +634,26 @@ export default function PipelinePage() {
               These clients were skipped from the revenue pipeline because they do not have a company number set.
             </p>
             <div className="space-y-2">
-              {missingCompanies.map((client) => (
-                <div
-                  key={`${client.source}-${client.id}`}
-                  className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2"
-                >
+              {missingCompanies.map((client) =>
+            <div
+              key={`${client.source}-${client.id}`}
+              className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2">
+              
                   <div>
                     <div className="font-medium">{client.name}</div>
                     <div className="text-xs text-muted-foreground">
                       Source:{" "}
-                      {client.source === "imported"
-                        ? "Imported client"
-                        : "Prospect / onboarded client"}
+                      {client.source === "imported" ?
+                  "Imported client" :
+                  "Prospect / onboarded client"}
                       {client.org_id ? ` · Org: ${client.org_id}` : ""}
                     </div>
                   </div>
                 </div>
-              ))}
+            )}
             </div>
           </Card>
-        )}
+        }
 
         {/* Edit Dialog */}
         <Dialog open={!!editingEntry} onOpenChange={(open) => !open && setEditingEntry(null)}>
@@ -667,28 +667,28 @@ export default function PipelinePage() {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label>Predicted Revenue (£)</Label>
-                <Input 
-                  type="number" 
-                  value={editForm.predicted_revenue} 
-                  onChange={(e) => setEditForm({...editForm, predicted_revenue: Number(e.target.value)})}
-                />
+                <Input
+                  type="number"
+                  value={editForm.predicted_revenue}
+                  onChange={(e) => setEditForm({ ...editForm, predicted_revenue: Number(e.target.value) })} />
+                
               </div>
               <div className="space-y-2">
                 <Label>Expected Filing Date</Label>
-                <Input 
-                  type="date" 
-                  value={editForm.expected_accounts_filing_date} 
-                  onChange={(e) => setEditForm({...editForm, expected_accounts_filing_date: e.target.value})}
-                />
+                <Input
+                  type="date"
+                  value={editForm.expected_accounts_filing_date}
+                  onChange={(e) => setEditForm({ ...editForm, expected_accounts_filing_date: e.target.value })} />
+                
               </div>
               <div className="space-y-2">
                 <Label>Confidence Score (0-100)</Label>
-                <Input 
-                  type="number" 
+                <Input
+                  type="number"
                   min="0" max="100"
-                  value={editForm.filing_confidence_score} 
-                  onChange={(e) => setEditForm({...editForm, filing_confidence_score: Number(e.target.value)})}
-                />
+                  value={editForm.filing_confidence_score}
+                  onChange={(e) => setEditForm({ ...editForm, filing_confidence_score: Number(e.target.value) })} />
+                
                 <p className="text-xs text-muted-foreground">
                   Auto-calculated based on {editingEntry?.years_trading} years trading and filing history.
                 </p>
@@ -701,6 +701,6 @@ export default function PipelinePage() {
           </DialogContent>
         </Dialog>
       </div>
-    </StaffLayout>
-  );
+    </StaffLayout>);
+
 }
