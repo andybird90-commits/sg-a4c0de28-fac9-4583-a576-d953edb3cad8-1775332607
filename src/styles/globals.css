@@ -46,28 +46,28 @@
   }
 
   .dark {
-    /* RD Tax brand - dark mode (navy panels, orange accents) */
-    --background: 215 40% 8%;           /* Deep navy */
-    --foreground: 210 40% 98%;          /* Light text */
+    /* Align dark theme to same RD Tax palette so the app is on-brand even if 'dark' class is present */
+    --background: 210 40% 98%;
+    --foreground: 215 35% 15%;
 
     --primary: 24 94% 53%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 35% 14%;
+    --secondary: 215 40% 16%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 215 32% 12%;
-    --muted-foreground: 215 20% 75%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 15% 40%;
 
     --accent: 24 94% 53%;
-    --accent-foreground: 215 40% 8%;
+    --accent-foreground: 210 40% 98%;
 
-    --card: 215 40% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 215 40% 10%;
-    --popover-foreground: 210 40% 98%;
-    --border: 215 32% 22%;
-    --input: 215 32% 22%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 35% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 35% 15%;
+    --border: 215 25% 85%;
+    --input: 210 40% 96%;
     --ring: 24 94% 53%;
   }
 }
