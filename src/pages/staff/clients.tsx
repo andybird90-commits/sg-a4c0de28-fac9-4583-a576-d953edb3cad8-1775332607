@@ -19,8 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
+  DialogFooter } from
+"@/components/ui/dialog";
 import { SidekickResearchPanel } from "@/components/staff/cif/SidekickResearchPanel";
 import { clientFeeReconciliationService } from "@/services/clientFeeReconciliationService";
 import { organisationNotificationStatusService } from "@/services/organisationNotificationStatusService";
@@ -87,26 +87,26 @@ const getRegisteredAddressFromEnrichment = (data: any): string | null => {
 
   if (data.registered_address) {
     return [
-      data.registered_address.address_line_1,
-      data.registered_address.address_line_2,
-      data.registered_address.locality,
-      data.registered_address.postal_code,
-      data.registered_address.country
-    ]
-      .filter(Boolean)
-      .join(", ");
+    data.registered_address.address_line_1,
+    data.registered_address.address_line_2,
+    data.registered_address.locality,
+    data.registered_address.postal_code,
+    data.registered_address.country].
+
+    filter(Boolean).
+    join(", ");
   }
 
   if (data.registered_office_address) {
     return [
-      data.registered_office_address.address_line_1,
-      data.registered_office_address.address_line_2,
-      data.registered_office_address.locality,
-      data.registered_office_address.postal_code,
-      data.registered_office_address.country
-    ]
-      .filter(Boolean)
-      .join(", ");
+    data.registered_office_address.address_line_1,
+    data.registered_office_address.address_line_2,
+    data.registered_office_address.locality,
+    data.registered_office_address.postal_code,
+    data.registered_office_address.country].
+
+    filter(Boolean).
+    join(", ");
   }
 
   return null;
@@ -136,8 +136,8 @@ export default function StaffClients() {
   const [clientResearchFallbackText, setClientResearchFallbackText] = useState("");
   const [clientSidekickLoading, setClientSidekickLoading] = useState(false);
   const [notificationStatuses, setNotificationStatuses] = useState<
-    Record<string, NotificationStatusState>
-  >({});
+    Record<string, NotificationStatusState>>(
+    {});
 
   const [searchToOnboard, setSearchToOnboard] = useState<string>("");
   const [sortToOnboard, setSortToOnboard] = useState<"name-asc" | "name-desc">("name-asc");
@@ -155,10 +155,10 @@ export default function StaffClients() {
   const loadProspects = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("prospects")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.
+      from("prospects").
+      select("*").
+      order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error loading prospects:", error);
@@ -173,10 +173,10 @@ export default function StaffClients() {
         return;
       }
 
-      const { data: clientsData, error: clientsError } = await supabase
-        .from("clients_to_be_onboarded")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data: clientsData, error: clientsError } = await supabase.
+      from("clients_to_be_onboarded").
+      select("*").
+      order("created_at", { ascending: false });
 
       if (clientsError) {
         console.error("Error loading clients_to_be_onboarded:", clientsError);
@@ -262,9 +262,9 @@ export default function StaffClients() {
           setClientAnalysisData(researchData);
 
           const summary =
-            typeof researchData?.feasibility_summary === "string"
-              ? researchData.feasibility_summary.trim()
-              : "";
+          typeof researchData?.feasibility_summary === "string" ?
+          researchData.feasibility_summary.trim() :
+          "";
           if (summary) {
             setClientResearchFallbackText(summary);
           }
@@ -291,9 +291,9 @@ export default function StaffClients() {
   const handleStartCIF = (prospect: Prospect) => {
     const companyNumber = prospect.company_number || "";
     router.push(
-      companyNumber
-        ? `/staff/cif?companyNumber=${encodeURIComponent(companyNumber)}`
-        : "/staff/cif"
+      companyNumber ?
+      `/staff/cif?companyNumber=${encodeURIComponent(companyNumber)}` :
+      "/staff/cif"
     );
   };
 
@@ -305,7 +305,7 @@ export default function StaffClients() {
   };
 
   const handleClientFieldChange = (field: keyof ClientFormState, value: string) => {
-    setClientForm((prev) => (prev ? { ...prev, [field]: value } : prev));
+    setClientForm((prev) => prev ? { ...prev, [field]: value } : prev);
   };
 
   const handleSaveClient = async () => {
@@ -347,10 +347,10 @@ export default function StaffClients() {
         comments: clientForm.comments.trim() || null
       };
 
-      const { error } = await supabase
-        .from("clients_to_be_onboarded")
-        .update(updatePayload)
-        .eq("id", selectedClient.id);
+      const { error } = await supabase.
+      from("clients_to_be_onboarded").
+      update(updatePayload).
+      eq("id", selectedClient.id);
 
       if (error) {
         console.error("Error updating client_to_be_onboarded:", error);
@@ -394,10 +394,10 @@ export default function StaffClients() {
 
     setClientDeleting(true);
     try {
-      const { error } = await supabase
-        .from("clients_to_be_onboarded")
-        .delete()
-        .eq("id", selectedClient.id);
+      const { error } = await supabase.
+      from("clients_to_be_onboarded").
+      delete().
+      eq("id", selectedClient.id);
 
       if (error) {
         console.error("Error deleting client_to_be_onboarded:", error);
@@ -430,7 +430,7 @@ export default function StaffClients() {
     }
   };
 
-  const enrichProspect = async (prospect: Prospect, options?: { suppressToast?: boolean }) => {
+  const enrichProspect = async (prospect: Prospect, options?: {suppressToast?: boolean;}) => {
     if (!prospect.company_number || !isValidCompaniesHouseNumber(prospect.company_number)) {
       if (!options?.suppressToast) {
         toast({
@@ -462,22 +462,22 @@ export default function StaffClients() {
 
       const lookupData: any = await lookupRes.json();
 
-      const registeredAddress = lookupData.registered_address
-        ? [
-            lookupData.registered_address.address_line_1,
-            lookupData.registered_address.address_line_2,
-            lookupData.registered_address.locality,
-            lookupData.registered_address.postal_code,
-            lookupData.registered_address.country
-          ]
-            .filter(Boolean)
-            .join(", ")
-        : null;
+      const registeredAddress = lookupData.registered_address ?
+      [
+      lookupData.registered_address.address_line_1,
+      lookupData.registered_address.address_line_2,
+      lookupData.registered_address.locality,
+      lookupData.registered_address.postal_code,
+      lookupData.registered_address.country].
+
+      filter(Boolean).
+      join(", ") :
+      null;
 
       const numberOfDirectors =
-        lookupData.officers && lookupData.officers.active_count
-          ? lookupData.officers.active_count
-          : null;
+      lookupData.officers && lookupData.officers.active_count ?
+      lookupData.officers.active_count :
+      null;
 
       // 2. AI research (optional enrichment data)
       let aiResearchData: any = null;
@@ -500,20 +500,20 @@ export default function StaffClients() {
       }
 
       // 3. Update prospect record
-      const { error: updateError } = await supabase
-        .from("prospects")
-        .update({
-          company_name: lookupData.company_name || prospect.company_name,
-          company_status: lookupData.company_status || prospect.company_status,
-          registered_address: registeredAddress,
-          sic_codes: lookupData.sic_codes || prospect.sic_codes,
-          incorporation_date: lookupData.date_of_creation || prospect.incorporation_date,
-          number_of_directors: numberOfDirectors,
-          last_accounts_date: lookupData.last_accounts_date || prospect.last_accounts_date,
-          ai_research_data: aiResearchData || null,
-          last_enriched_at: new Date().toISOString()
-        } as Partial<Prospect>)
-        .eq("id", prospect.id);
+      const { error: updateError } = await supabase.
+      from("prospects").
+      update({
+        company_name: lookupData.company_name || prospect.company_name,
+        company_status: lookupData.company_status || prospect.company_status,
+        registered_address: registeredAddress,
+        sic_codes: lookupData.sic_codes || prospect.sic_codes,
+        incorporation_date: lookupData.date_of_creation || prospect.incorporation_date,
+        number_of_directors: numberOfDirectors,
+        last_accounts_date: lookupData.last_accounts_date || prospect.last_accounts_date,
+        ai_research_data: aiResearchData || null,
+        last_enriched_at: new Date().toISOString()
+      } as Partial<Prospect>).
+      eq("id", prospect.id);
 
       if (updateError) {
         console.error("Error updating prospect after enrichment:", updateError);
@@ -544,9 +544,9 @@ export default function StaffClients() {
   };
 
   const enrichImportedClient = async (
-    client: ClientToBeOnboarded,
-    options?: { suppressToast?: boolean }
-  ) => {
+  client: ClientToBeOnboarded,
+  options?: {suppressToast?: boolean;}) =>
+  {
     if (!client.company_number || !isValidCompaniesHouseNumber(client.company_number)) {
       if (!options?.suppressToast) {
         toast({
@@ -581,17 +581,17 @@ export default function StaffClients() {
 
       const lookupData: any = await lookupRes.json();
 
-      const registeredAddress = lookupData.registered_address
-        ? [
-            lookupData.registered_address.address_line_1,
-            lookupData.registered_address.address_line_2,
-            lookupData.registered_address.locality,
-            lookupData.registered_address.postal_code,
-            lookupData.registered_address.country
-          ]
-            .filter(Boolean)
-            .join(", ")
-        : null;
+      const registeredAddress = lookupData.registered_address ?
+      [
+      lookupData.registered_address.address_line_1,
+      lookupData.registered_address.address_line_2,
+      lookupData.registered_address.locality,
+      lookupData.registered_address.postal_code,
+      lookupData.registered_address.country].
+
+      filter(Boolean).
+      join(", ") :
+      null;
 
       const updatePayload: Partial<ClientToBeOnboarded> = {
         company_name: lookupData.company_name || client.company_name,
@@ -599,10 +599,10 @@ export default function StaffClients() {
         company_number: lookupData.company_number || client.company_number
       };
 
-      const { error: updateError } = await supabase
-        .from("clients_to_be_onboarded")
-        .update(updatePayload)
-        .eq("id", client.id);
+      const { error: updateError } = await supabase.
+      from("clients_to_be_onboarded").
+      update(updatePayload).
+      eq("id", client.id);
 
       if (updateError) {
         console.error("Error updating imported client after enrichment:", updateError);
@@ -660,7 +660,7 @@ export default function StaffClients() {
       toast({
         title: "No clients to enrich",
         description:
-          "Add valid Companies House numbers to clients to be onboarded or RD Companion prospects before running bulk enrichment.",
+        "Add valid Companies House numbers to clients to be onboarded or RD Companion prospects before running bulk enrichment.",
         variant: "destructive"
       });
       return;
@@ -733,7 +733,7 @@ export default function StaffClients() {
       toast({
         title: "Bulk enrichment failed",
         description:
-          "An error occurred while running bulk enrichment. Please check the console for details.",
+        "An error occurred while running bulk enrichment. Please check the console for details.",
         variant: "destructive"
       });
     } finally {
@@ -752,10 +752,10 @@ export default function StaffClients() {
     }
 
     try {
-      const { error } = await supabase
-        .from("prospects")
-        .delete()
-        .eq("id", prospect.id);
+      const { error } = await supabase.
+      from("prospects").
+      delete().
+      eq("id", prospect.id);
 
       if (error) {
         console.error("Error deleting prospect:", error);
@@ -798,41 +798,41 @@ export default function StaffClients() {
     );
   };
 
-  const filteredProspectsOnboarded = prospectsOnboarded
-    .filter((prospect) => {
-      if (!onboardedSearch) return true;
-      const haystack = [
-        prospect.company_name,
-        prospect.company_number,
-        prospect.company_status
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(onboardedSearch);
-    })
-    .sort((a, b) => {
-      const nameA = (a.company_name || "").toLowerCase();
-      const nameB = (b.company_name || "").toLowerCase();
-      if (nameA < nameB) return -1 * sortFactorOnboarded;
-      if (nameA > nameB) return 1 * sortFactorOnboarded;
-      return 0;
-    });
+  const filteredProspectsOnboarded = prospectsOnboarded.
+  filter((prospect) => {
+    if (!onboardedSearch) return true;
+    const haystack = [
+    prospect.company_name,
+    prospect.company_number,
+    prospect.company_status].
+
+    filter(Boolean).
+    join(" ").
+    toLowerCase();
+    return haystack.includes(onboardedSearch);
+  }).
+  sort((a, b) => {
+    const nameA = (a.company_name || "").toLowerCase();
+    const nameB = (b.company_name || "").toLowerCase();
+    if (nameA < nameB) return -1 * sortFactorOnboarded;
+    if (nameA > nameB) return 1 * sortFactorOnboarded;
+    return 0;
+  });
 
   useEffect(() => {
     const loadNotificationStatuses = async () => {
       try {
         const orgIds = Array.from(
           new Set(
-            prospectsOnboarded
-              .map((p) => p.org_id)
-              .filter((id): id is string => Boolean(id))
+            prospectsOnboarded.
+            map((p) => p.org_id).
+            filter((id): id is string => Boolean(id))
           )
         );
         if (orgIds.length === 0) return;
 
         const statuses =
-          await organisationNotificationStatusService.getAllStatusesWithOrg();
+        await organisationNotificationStatusService.getAllStatusesWithOrg();
 
         const map: Record<string, NotificationStatusState> = {};
         for (const row of statuses) {
@@ -861,7 +861,7 @@ export default function StaffClients() {
   }
 
   const bulkProgress =
-    bulkState.total > 0 ? Math.round((bulkState.completed / bulkState.total) * 100) : 0;
+  bulkState.total > 0 ? Math.round(bulkState.completed / bulkState.total * 100) : 0;
 
   const totalToOnboardCount = clientsToOnboard.length + prospectsToOnboard.length;
   const hasClientsToOnboard = clientsToOnboard.length > 0;
@@ -873,55 +873,55 @@ export default function StaffClients() {
   const sortFactorToOnboard = sortToOnboard === "name-asc" ? 1 : -1;
   const sortFactorOnboarded = sortOnboarded === "name-asc" ? 1 : -1;
 
-  const filteredClientsToOnboard = clientsToOnboard
-    .filter((client) => {
-      if (!toOnboardSearch) return true;
-      const haystack = [
-        client.company_name,
-        client.company_number,
-        client.contact_name,
-        client.email
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(toOnboardSearch);
-    })
-    .sort((a, b) => {
-      const nameA = (a.company_name || "").toLowerCase();
-      const nameB = (b.company_name || "").toLowerCase();
-      if (nameA < nameB) return -1 * sortFactorToOnboard;
-      if (nameA > nameB) return 1 * sortFactorToOnboard;
-      return 0;
-    });
+  const filteredClientsToOnboard = clientsToOnboard.
+  filter((client) => {
+    if (!toOnboardSearch) return true;
+    const haystack = [
+    client.company_name,
+    client.company_number,
+    client.contact_name,
+    client.email].
 
-  const filteredProspectsToOnboard = prospectsToOnboard
-    .filter((prospect) => {
-      if (!toOnboardSearch) return true;
-      const haystack = [
-        prospect.company_name,
-        prospect.company_number,
-        prospect.company_status
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(toOnboardSearch);
-    })
-    .sort((a, b) => {
-      const nameA = (a.company_name || "").toLowerCase();
-      const nameB = (b.company_name || "").toLowerCase();
-      if (nameA < nameB) return -1 * sortFactorToOnboard;
-      if (nameA > nameB) return 1 * sortFactorToOnboard;
-      return 0;
-    });
+    filter(Boolean).
+    join(" ").
+    toLowerCase();
+    return haystack.includes(toOnboardSearch);
+  }).
+  sort((a, b) => {
+    const nameA = (a.company_name || "").toLowerCase();
+    const nameB = (b.company_name || "").toLowerCase();
+    if (nameA < nameB) return -1 * sortFactorToOnboard;
+    if (nameA > nameB) return 1 * sortFactorToOnboard;
+    return 0;
+  });
+
+  const filteredProspectsToOnboard = prospectsToOnboard.
+  filter((prospect) => {
+    if (!toOnboardSearch) return true;
+    const haystack = [
+    prospect.company_name,
+    prospect.company_number,
+    prospect.company_status].
+
+    filter(Boolean).
+    join(" ").
+    toLowerCase();
+    return haystack.includes(toOnboardSearch);
+  }).
+  sort((a, b) => {
+    const nameA = (a.company_name || "").toLowerCase();
+    const nameB = (b.company_name || "").toLowerCase();
+    if (nameA < nameB) return -1 * sortFactorToOnboard;
+    if (nameA > nameB) return 1 * sortFactorToOnboard;
+    return 0;
+  });
 
   return (
     <>
       <SEO
         title="Clients - Staff Portal"
-        description="Manage client onboarding and R&D engagement"
-      />
+        description="Manage client onboarding and R&D engagement" />
+      
       <StaffLayout>
         <div className="p-6 lg:p-8 space-y-6">
           <div className="flex items-center justify-between gap-4">
@@ -937,8 +937,8 @@ export default function StaffClients() {
               variant="outline"
               size="sm"
               onClick={() => loadProspects()}
-              disabled={loading}
-            >
+              disabled={loading}>
+              
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
@@ -959,12 +959,12 @@ export default function StaffClients() {
                     </CardDescription>
                   </div>
                 </div>
-                {totalToOnboardCount > 0 && (
-                  <Badge variant="outline" className="ml-2">
+                {totalToOnboardCount > 0 &&
+                <Badge variant="outline" className="ml-2">
                     {totalToOnboardCount} client
                     {totalToOnboardCount === 1 ? "" : "s"}
                   </Badge>
-                )}
+                }
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -972,17 +972,17 @@ export default function StaffClients() {
                     placeholder="Search clients..."
                     value={searchToOnboard}
                     onChange={(e) => setSearchToOnboard(e.target.value)}
-                    className="max-w-xs"
-                  />
+                    className="max-w-xs" />
+                  
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Sort by</span>
                     <select
                       value={sortToOnboard}
                       onChange={(e) =>
-                        setSortToOnboard(e.target.value === "name-desc" ? "name-desc" : "name-asc")
+                      setSortToOnboard(e.target.value === "name-desc" ? "name-desc" : "name-asc")
                       }
-                      className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                    >
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs">
+                      
                       <option value="name-asc">Name A–Z</option>
                       <option value="name-desc">Name Z–A</option>
                     </select>
@@ -997,19 +997,19 @@ export default function StaffClients() {
                       console.log("Bulk Enrich button clicked");
                       void handleBulkEnrich();
                     }}
-                    disabled={loading || bulkState.running}
-                  >
-                    {bulkState.running ? (
-                      <>
+                    disabled={loading || bulkState.running}>
+                    
+                    {bulkState.running ?
+                    <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Bulk enriching...
-                      </>
-                    ) : (
-                      <>
+                      </> :
+
+                    <>
                         <Sparkles className="h-4 w-4 mr-2" />
                         Bulk Enrich
                       </>
-                    )}
+                    }
                   </Button>
                   <p className="text-xs text-muted-foreground">
                     Runs enrichment for all clients to be onboarded (imported and RD Companion prospects) that have a Companies House number.
@@ -1019,76 +1019,76 @@ export default function StaffClients() {
                 <div className="space-y-1">
                   <Progress
                     value={bulkState.total > 0 ? bulkProgress : 0}
-                    className="h-2"
-                  />
+                    className="h-2" />
+                  
                   <p className="text-xs text-muted-foreground">
-                    {bulkState.running
-                      ? `${bulkState.completed} of ${bulkState.total} enriched (${bulkProgress}%)`
-                      : bulkState.total > 0
-                        ? `Last run enriched ${bulkState.total} client${bulkState.total === 1 ? "" : "s"}.`
-                        : "Bulk enrichment has not been run yet."}
+                    {bulkState.running ?
+                    `${bulkState.completed} of ${bulkState.total} enriched (${bulkProgress}%)` :
+                    bulkState.total > 0 ?
+                    `Last run enriched ${bulkState.total} client${bulkState.total === 1 ? "" : "s"}.` :
+                    "Bulk enrichment has not been run yet."}
                   </p>
                 </div>
 
-                {loading ? (
-                  <div className="flex items-center justify-center py-10 text-muted-foreground">
+                {loading ?
+                <div className="flex items-center justify-center py-10 text-muted-foreground">
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                     Loading clients...
-                  </div>
-                ) : !hasClientsToOnboard && !hasProspectsToOnboard ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground">
+                  </div> :
+                !hasClientsToOnboard && !hasProspectsToOnboard ?
+                <div className="py-8 text-center text-sm text-muted-foreground">
                     No clients awaiting onboarding. Add prospects or imported clients to see them here.
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {hasClientsToOnboard && (
-                      <div className="space-y-2">
+                  </div> :
+
+                <div className="space-y-4">
+                    {hasClientsToOnboard &&
+                  <div className="space-y-2">
                         <p className="text-xs font-medium text-slate-700">
                           Imported clients to be onboarded
                         </p>
                         <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-                          {filteredClientsToOnboard.map((client) => (
-                            <Card
-                              key={client.id}
-                              className="border border-border bg-[#0F1D2D] text-secondary-foreground hover:bg-[#14273A] hover:border-border hover:shadow-professional-md transition-colors cursor-pointer"
-                              onClick={() => handleOpenClientDetail(client)}
-                            >
+                          {filteredClientsToOnboard.map((client) =>
+                      <Card
+                        key={client.id}
+                        className="border border-border bg-[#0F1D2D] text-secondary-foreground hover:bg-[#14273A] hover:border-border hover:shadow-professional-md transition-colors cursor-pointer"
+                        onClick={() => handleOpenClientDetail(client)}>
+                        
                               <CardContent className="py-3 px-4">
                                 <div className="flex items-start justify-between gap-4">
                                   <div>
                                     <p className="font-semibold text-sm">
                                       {client.company_name}
                                     </p>
-                                    {client.company_number && (
-                                      <p className="text-xs text-muted-foreground mt-1">
+                                    {client.company_number &&
+                              <p className="text-xs text-muted-foreground mt-1" style={{ color: "#ffffff" }}>
                                         Company no. {client.company_number}
                                       </p>
-                                    )}
-                                    {client.contact_name && (
-                                      <p className="text-xs text-muted-foreground mt-0.5">
+                              }
+                                    {client.contact_name &&
+                              <p className="text-xs text-muted-foreground mt-0.5" style={{ color: "#ffffff" }}>
                                         Contact: {client.contact_name}
                                       </p>
-                                    )}
-                                    {client.email && (
-                                      <p className="text-xs text-muted-foreground mt-0.5 break-all">
+                              }
+                                    {client.email &&
+                              <p className="text-xs text-muted-foreground mt-0.5 break-all" style={{ color: "#ffffff" }}>
                                         {client.email}
                                       </p>
-                                    )}
-                                    {client.address && (
-                                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                              }
+                                    {client.address &&
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2" style={{ color: "#ffffff" }}>
                                         {client.address}
                                       </p>
-                                    )}
+                              }
                                   </div>
                                   <div className="flex flex-col items-end gap-2">
                                     <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleStartImportedClientCIF(client);
-                                      }}
-                                    >
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStartImportedClientCIF(client);
+                                }}>
+                                
                                       <Play className="h-3 w-3 mr-1" />
                                       Start CIF
                                     </Button>
@@ -1096,107 +1096,107 @@ export default function StaffClients() {
                                 </div>
                               </CardContent>
                             </Card>
-                          ))}
+                      )}
                         </div>
                       </div>
-                    )}
+                  }
 
-                    {hasProspectsToOnboard && (
-                      <div className="space-y-2">
-                        {hasClientsToOnboard && (
-                          <p className="text-xs font-medium text-slate-700 pt-2 border-t border-slate-100">
+                    {hasProspectsToOnboard &&
+                  <div className="space-y-2">
+                        {hasClientsToOnboard &&
+                    <p className="text-xs font-medium text-slate-700 pt-2 border-t border-slate-100">
                             Prospects in RD Companion
                           </p>
-                        )}
+                    }
                         <div className="space-y-3">
                           {filteredProspectsToOnboard.map((prospect) => {
-                            const state = enrichmentState[prospect.id] || "idle";
-                            const isEnriched =
-                              !!prospect.company_status ||
-                              !!prospect.registered_address ||
-                              !!prospect.last_accounts_date;
+                        const state = enrichmentState[prospect.id] || "idle";
+                        const isEnriched =
+                        !!prospect.company_status ||
+                        !!prospect.registered_address ||
+                        !!prospect.last_accounts_date;
 
-                            return (
-                              <Card
-                                key={prospect.id}
-                                className="border border-slate-200 hover:shadow-sm transition-shadow"
-                              >
+                        return (
+                          <Card
+                            key={prospect.id}
+                            className="border border-slate-200 hover:shadow-sm transition-shadow">
+                            
                                 <CardContent className="py-3 px-4 flex items-start justify-between gap-4">
                                   <div>
                                     <div className="flex items-center gap-2">
                                       <p className="font-semibold text-sm">
                                         {prospect.company_name}
                                       </p>
-                                      {isEnriched && (
-                                        <Badge variant="outline" className="text-xs">
+                                      {isEnriched &&
+                                  <Badge variant="outline" className="text-xs">
                                           Enriched
                                         </Badge>
-                                      )}
+                                  }
                                     </div>
                                     <p className="text-xs text-muted-foreground mt-1">
-                                      {prospect.company_number
-                                        ? `Company no. ${prospect.company_number}`
-                                        : "No company number set"}
+                                      {prospect.company_number ?
+                                  `Company no. ${prospect.company_number}` :
+                                  "No company number set"}
                                     </p>
-                                    {prospect.company_status && (
-                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                    {prospect.company_status &&
+                                <p className="text-xs text-muted-foreground mt-0.5">
                                         Status: {prospect.company_status}
                                       </p>
-                                    )}
-                                    {prospect.registered_address && (
-                                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                }
+                                    {prospect.registered_address &&
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                                         {prospect.registered_address}
                                       </p>
-                                    )}
+                                }
                                   </div>
                                   <div className="flex flex-col gap-2 items-end">
                                     <Button
-                                      size="sm"
-                                      className="w-36"
-                                      onClick={() => handleStartCIF(prospect)}
-                                    >
+                                  size="sm"
+                                  className="w-36"
+                                  onClick={() => handleStartCIF(prospect)}>
+                                  
                                       <Play className="h-3 w-3 mr-1" />
                                       Start CIF
                                     </Button>
                                     <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="w-36"
-                                      onClick={() => void enrichProspect(prospect)}
-                                      disabled={state === "loading"}
-                                    >
-                                      {state === "loading" ? (
-                                        <>
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-36"
+                                  onClick={() => void enrichProspect(prospect)}
+                                  disabled={state === "loading"}>
+                                  
+                                      {state === "loading" ?
+                                  <>
                                           <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                                           Enriching...
-                                        </>
-                                      ) : (
-                                        <>
+                                        </> :
+
+                                  <>
                                           <Sparkles className="h-3 w-3 mr-1" />
                                           Enrich
                                         </>
-                                      )}
+                                  }
                                     </Button>
-                                    {isAdmin && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="w-36 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        onClick={() => void handleDeleteProspect(prospect)}
-                                      >
+                                    {isAdmin &&
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="w-36 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => void handleDeleteProspect(prospect)}>
+                                  
                                         Delete
                                       </Button>
-                                    )}
+                                }
                                   </div>
                                 </CardContent>
-                              </Card>
-                            );
-                          })}
+                              </Card>);
+
+                      })}
                         </div>
                       </div>
-                    )}
+                  }
                   </div>
-                )}
+                }
               </CardContent>
             </Card>
 
@@ -1214,12 +1214,12 @@ export default function StaffClients() {
                     </CardDescription>
                   </div>
                 </div>
-                {prospectsOnboarded.length > 0 && (
-                  <Badge variant="outline" className="ml-2">
+                {prospectsOnboarded.length > 0 &&
+                <Badge variant="outline" className="ml-2">
                     {prospectsOnboarded.length} client
                     {prospectsOnboarded.length === 1 ? "" : "s"}
                   </Badge>
-                )}
+                }
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1227,87 +1227,87 @@ export default function StaffClients() {
                     placeholder="Search onboarded clients..."
                     value={searchOnboarded}
                     onChange={(e) => setSearchOnboarded(e.target.value)}
-                    className="max-w-xs"
-                  />
+                    className="max-w-xs" />
+                  
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">Sort by</span>
                     <select
                       value={sortOnboarded}
                       onChange={(e) =>
-                        setSortOnboarded(e.target.value === "name-desc" ? "name-desc" : "name-asc")
+                      setSortOnboarded(e.target.value === "name-desc" ? "name-desc" : "name-asc")
                       }
-                      className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                    >
+                      className="h-8 rounded-md border border-input bg-background px-2 text-xs">
+                      
                       <option value="name-asc">Name A–Z</option>
                       <option value="name-desc">Name Z–A</option>
                     </select>
                   </div>
                 </div>
 
-                {loading ? (
-                  <div className="flex items-center justify-center py-10 text-muted-foreground">
+                {loading ?
+                <div className="flex items-center justify-center py-10 text-muted-foreground">
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                     Loading clients...
-                  </div>
-                ) : filteredProspectsOnboarded.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-muted-foreground">
+                  </div> :
+                filteredProspectsOnboarded.length === 0 ?
+                <div className="py-8 text-center text-sm text-muted-foreground">
                     No onboarded clients yet.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {filteredProspectsOnboarded.map((prospect) => (
-                      <Card
-                        key={prospect.id}
-                        className="border border-slate-200 hover:shadow-sm transition-shadow"
-                      >
+                  </div> :
+
+                <div className="space-y-3">
+                    {filteredProspectsOnboarded.map((prospect) =>
+                  <Card
+                    key={prospect.id}
+                    className="border border-slate-200 hover:shadow-sm transition-shadow">
+                    
                         <CardContent className="py-3 px-4 flex items-center justify-between gap-4">
                           <div>
                             <p className="font-semibold text-sm flex items-center gap-2">
                               {prospect.company_name}
                               {prospect.org_id &&
-                                (() => {
-                                  const status = notificationStatuses[prospect.org_id];
-                                  if (
-                                    status === "required" ||
-                                    status === "overdue" ||
-                                    status === "unclear"
-                                  ) {
-                                    return (
-                                      <Badge
-                                        variant="destructive"
-                                        className="text-[10px] px-1.5 py-0.5 rounded-full"
-                                      >
+                          (() => {
+                            const status = notificationStatuses[prospect.org_id];
+                            if (
+                            status === "required" ||
+                            status === "overdue" ||
+                            status === "unclear")
+                            {
+                              return (
+                                <Badge
+                                  variant="destructive"
+                                  className="text-[10px] px-1.5 py-0.5 rounded-full">
+                                  
                                         PRE
-                                      </Badge>
-                                    );
-                                  }
-                                  return null;
-                                })()}
+                                      </Badge>);
+
+                            }
+                            return null;
+                          })()}
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {prospect.company_number
-                                ? `Company no. ${prospect.company_number}`
-                                : "No company number recorded"}
+                              {prospect.company_number ?
+                          `Company no. ${prospect.company_number}` :
+                          "No company number recorded"}
                             </p>
-                            {prospect.company_status && (
-                              <p className="text-xs text-muted-foreground mt-0.5">
+                            {prospect.company_status &&
+                        <p className="text-xs text-muted-foreground mt-0.5">
                                 Status: {prospect.company_status}
                               </p>
-                            )}
+                        }
                           </div>
                           <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => router.push("/staff/cif")}
-                          >
+                        size="sm"
+                        variant="outline"
+                        onClick={() => router.push("/staff/cif")}>
+                        
                             <ArrowRight className="h-3 w-3 mr-1" />
                             View CIFs
                           </Button>
                         </CardContent>
                       </Card>
-                    ))}
+                  )}
                   </div>
-                )}
+                }
               </CardContent>
             </Card>
           </div>
@@ -1325,8 +1325,8 @@ export default function StaffClients() {
             }
           }}>
             <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-              {selectedClient && (
-                <>
+              {selectedClient &&
+              <>
                   <DialogHeader>
                     <DialogTitle>{selectedClient.company_name}</DialogTitle>
                     <DialogDescription>
@@ -1337,201 +1337,201 @@ export default function StaffClients() {
 
                   <div className="mt-2 space-y-4 overflow-y-auto pr-1 flex-1">
                     {/* Sidekick research panel */}
-                    {clientSidekickLoading && (
-                      <div className="rounded-lg border bg-gradient-to-b from-sky-50 to-sky-100 p-4 text-sm text-slate-800 shadow-sm">
+                    {clientSidekickLoading &&
+                  <div className="rounded-lg border bg-gradient-to-b from-sky-50 to-sky-100 p-4 text-sm text-slate-800 shadow-sm">
                         <div className="font-medium mb-1">RD Companion is researching this company…</div>
                         <p className="text-slate-700">
                           Analysing industry, size, and public information to provide background detail similar to the CIF creation flow.
                         </p>
                       </div>
-                    )}
+                  }
 
-                    {clientAnalysisData && (
-                      <div className="rounded-lg border bg-gradient-to-b from-sky-50 to-sky-100 p-4 shadow-sm">
+                    {clientAnalysisData &&
+                  <div className="rounded-lg border bg-gradient-to-b from-sky-50 to-sky-100 p-4 shadow-sm">
                         <SidekickResearchPanel
-                          analysisData={clientAnalysisData}
-                          fallbackText={clientResearchFallbackText}
-                        />
+                      analysisData={clientAnalysisData}
+                      fallbackText={clientResearchFallbackText} />
+                    
                       </div>
-                    )}
+                  }
 
                     {/* Companies House enrichment block */}
                     <div className="rounded-lg border bg-slate-50 p-4 text-sm text-slate-800">
                       <div className="font-semibold mb-2">Enriched company details</div>
-                      {clientEnrichmentLoading && (
-                        <p className="text-slate-700">Looking up Companies House details for this client…</p>
-                      )}
-                      {clientEnrichmentError && (
-                        <p className="text-sm text-red-600">{clientEnrichmentError}</p>
-                      )}
-                      {!clientEnrichmentLoading && !clientEnrichmentError && (
-                        <>
+                      {clientEnrichmentLoading &&
+                    <p className="text-slate-700">Looking up Companies House details for this client…</p>
+                    }
+                      {clientEnrichmentError &&
+                    <p className="text-sm text-red-600">{clientEnrichmentError}</p>
+                    }
+                      {!clientEnrichmentLoading && !clientEnrichmentError &&
+                    <>
                           <p>
                             <span className="font-medium">Company name:</span>{" "}
                             {clientEnrichment?.company_name || selectedClient.company_name || "Not available"}
                           </p>
-                          {(clientEnrichment?.company_number || selectedClient.company_number) && (
-                            <p>
+                          {(clientEnrichment?.company_number || selectedClient.company_number) &&
+                      <p>
                               <span className="font-medium">Company number:</span>{" "}
                               {clientEnrichment?.company_number || selectedClient.company_number}
                             </p>
-                          )}
-                          {clientEnrichment?.company_status && (
-                            <p>
+                      }
+                          {clientEnrichment?.company_status &&
+                      <p>
                               <span className="font-medium">Status:</span>{" "}
                               {clientEnrichment.company_status}
                             </p>
-                          )}
-                          {(clientEnrichment?.registered_office_address || selectedClient.address) && (
-                            <p>
+                      }
+                          {(clientEnrichment?.registered_office_address || selectedClient.address) &&
+                      <p>
                               <span className="font-medium">Registered address:</span>{" "}
-                              {clientEnrichment?.registered_office_address
-                                ? getRegisteredAddressFromEnrichment(clientEnrichment)
-                                : selectedClient.address}
+                              {clientEnrichment?.registered_office_address ?
+                        getRegisteredAddressFromEnrichment(clientEnrichment) :
+                        selectedClient.address}
                             </p>
-                          )}
-                          {clientEnrichment?.date_of_creation && (
-                            <p>
+                      }
+                          {clientEnrichment?.date_of_creation &&
+                      <p>
                               <span className="font-medium">Incorporated:</span>{" "}
                               {clientEnrichment.date_of_creation}
                             </p>
-                          )}
-                          {clientEnrichment?.last_accounts_date && (
-                            <p>
+                      }
+                          {clientEnrichment?.last_accounts_date &&
+                      <p>
                               <span className="font-medium">Last accounts filed:</span>{" "}
                               {clientEnrichment.last_accounts_date}
                             </p>
-                          )}
-                          {!clientEnrichment && !selectedClient.company_number && !selectedClient.address && (
-                            <p className="text-slate-700">
+                      }
+                          {!clientEnrichment && !selectedClient.company_number && !selectedClient.address &&
+                      <p className="text-slate-700">
                               No enrichment data saved yet. Make sure this client has a valid Companies House number
                               and run enrichment from the clients list to pull in details.
                             </p>
-                          )}
+                      }
                         </>
-                      )}
+                    }
                     </div>
 
                     {/* Editable client form */}
-                    {clientForm && (
-                      <div className="space-y-3 py-2">
+                    {clientForm &&
+                  <div className="space-y-3 py-2">
                         <div>
                           <label className="block text-sm font-medium text-slate-700">Company name</label>
                           <Input
-                            value={clientForm.company_name}
-                            onChange={(e) => handleClientFieldChange("company_name", e.target.value)}
-                          />
+                        value={clientForm.company_name}
+                        onChange={(e) => handleClientFieldChange("company_name", e.target.value)} />
+                      
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-sm font-medium text-slate-700">Contact name</label>
                             <Input
-                              value={clientForm.contact_name || ""}
-                              onChange={(e) => handleClientFieldChange("contact_name", e.target.value)}
-                            />
+                          value={clientForm.contact_name || ""}
+                          onChange={(e) => handleClientFieldChange("contact_name", e.target.value)} />
+                        
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-slate-700">Title</label>
                             <Input
-                              value={clientForm.title || ""}
-                              onChange={(e) => handleClientFieldChange("title", e.target.value)}
-                            />
+                          value={clientForm.title || ""}
+                          onChange={(e) => handleClientFieldChange("title", e.target.value)} />
+                        
                           </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-sm font-medium text-slate-700">Email</label>
                             <Input
-                              value={clientForm.email || ""}
-                              onChange={(e) => handleClientFieldChange("email", e.target.value)}
-                            />
+                          value={clientForm.email || ""}
+                          onChange={(e) => handleClientFieldChange("email", e.target.value)} />
+                        
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-slate-700">Phone</label>
                             <Input
-                              value={clientForm.phone || ""}
-                              onChange={(e) => handleClientFieldChange("phone", e.target.value)}
-                            />
+                          value={clientForm.phone || ""}
+                          onChange={(e) => handleClientFieldChange("phone", e.target.value)} />
+                        
                           </div>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-slate-700">Landline</label>
                           <Input
-                            value={clientForm.landline || ""}
-                            onChange={(e) => handleClientFieldChange("landline", e.target.value)}
-                          />
+                        value={clientForm.landline || ""}
+                        onChange={(e) => handleClientFieldChange("landline", e.target.value)} />
+                      
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-slate-700">Address</label>
                           <Textarea
-                            value={clientForm.address || ""}
-                            onChange={(e) => handleClientFieldChange("address", e.target.value)}
-                            rows={3}
-                          />
+                        value={clientForm.address || ""}
+                        onChange={(e) => handleClientFieldChange("address", e.target.value)}
+                        rows={3} />
+                      
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-sm font-medium text-slate-700">Company number</label>
                             <Input
-                              value={clientForm.company_number || ""}
-                              onChange={(e) => handleClientFieldChange("company_number", e.target.value)}
-                            />
+                          value={clientForm.company_number || ""}
+                          onChange={(e) => handleClientFieldChange("company_number", e.target.value)} />
+                        
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-slate-700">UTR</label>
                             <Input
-                              value={clientForm.utr || ""}
-                              onChange={(e) => handleClientFieldChange("utr", e.target.value)}
-                            />
+                          value={clientForm.utr || ""}
+                          onChange={(e) => handleClientFieldChange("utr", e.target.value)} />
+                        
                           </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-sm font-medium text-slate-700">Fee percentage</label>
                             <Input
-                              type="number"
-                              step="0.1"
-                              value={clientForm.fee_percent ?? ""}
-                              onChange={(e) =>
-                                handleClientFieldChange(
-                                  "fee_percent",
-                                  e.target.value
-                                )
-                              }
-                            />
+                          type="number"
+                          step="0.1"
+                          value={clientForm.fee_percent ?? ""}
+                          onChange={(e) =>
+                          handleClientFieldChange(
+                            "fee_percent",
+                            e.target.value
+                          )
+                          } />
+                        
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-slate-700">Year end month</label>
                             <Input
-                              value={clientForm.year_end_month || ""}
-                              onChange={(e) => handleClientFieldChange("year_end_month", e.target.value)}
-                            />
+                          value={clientForm.year_end_month || ""}
+                          onChange={(e) => handleClientFieldChange("year_end_month", e.target.value)} />
+                        
                           </div>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-slate-700">Referred by</label>
                           <Input
-                            value={clientForm.ref_by || ""}
-                            onChange={(e) => handleClientFieldChange("ref_by", e.target.value)}
-                          />
+                        value={clientForm.ref_by || ""}
+                        onChange={(e) => handleClientFieldChange("ref_by", e.target.value)} />
+                      
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-slate-700">Comments</label>
                           <Textarea
-                            value={clientForm.comments || ""}
-                            onChange={(e) => handleClientFieldChange("comments", e.target.value)}
-                            rows={4}
-                          />
+                        value={clientForm.comments || ""}
+                        onChange={(e) => handleClientFieldChange("comments", e.target.value)}
+                        rows={4} />
+                      
                         </div>
                       </div>
-                    )}
+                  }
                   </div>
                 </>
-              )}
+              }
             </DialogContent>
           </Dialog>
         </div>
       </StaffLayout>
-    </>
-  );
+    </>);
+
 }
