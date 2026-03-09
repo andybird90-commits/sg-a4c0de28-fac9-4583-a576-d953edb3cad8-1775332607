@@ -196,7 +196,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
       </Head>
 
       {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-border bg-secondary/95 backdrop-blur-sm text-secondary-foreground">
+      <header className="sticky top-0 z-40 border-b border-border bg-[#0F1D2D] text-secondary-foreground">
         <div className="px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -270,7 +270,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
       {/* Layout body */}
       <div className="flex">
         {/* Sidebar - desktop */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r border-border bg-secondary text-secondary-foreground sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r border-border bg-[#0F1D2D] text-secondary-foreground sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
           <div className="px-3 py-4 space-y-1">
             {staffNavItems.map((item) => renderNavItem(item.path, item.label, item.icon))}
           </div>
@@ -291,7 +291,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
           onClick={() => setMobileMenuOpen(false)}
         >
           <div
-            className="absolute left-0 top-0 bottom-0 w-72 bg-secondary text-secondary-foreground border-r border-border shadow-professional-md"
+            className="absolute left-0 top-0 bottom-0 w-72 bg-[#0F1D2D] text-secondary-foreground border-r border-border shadow-professional-md"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 py-4 border-b border-border">

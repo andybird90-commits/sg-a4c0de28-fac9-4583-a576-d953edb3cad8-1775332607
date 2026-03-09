@@ -160,7 +160,7 @@ export default function ClaimsPage() {
         </div>
 
         {/* Filters */}
-        <Card className="bg-slate-900/70 border border-slate-800">
+        <Card className="bg-card border border-border shadow-professional-md">
           <CardContent className="p-4">
             <div className="flex gap-4">
               <div className="relative flex-1">
@@ -203,10 +203,10 @@ export default function ClaimsPage() {
         </Card>
 
         {/* Claims List */}
-        <Card className="bg-slate-900/80 border border-slate-800 shadow-professional-md">
+        <Card className="bg-card border border-border shadow-professional-md">
           <CardHeader>
-            <CardTitle className="text-slate-100">Active Claims</CardTitle>
-            <CardDescription className="text-slate-300">
+            <CardTitle className="text-foreground">Active Claims</CardTitle>
+            <CardDescription className="text-muted-foreground">
               {filteredClaims.length} claims found
             </CardDescription>
           </CardHeader>
@@ -221,28 +221,28 @@ export default function ClaimsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
+                    <TableHead className="text-xs font-semibold tracking-wide text-foreground">
                       Client
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
+                    <TableHead className="text-xs font-semibold tracking-wide text-foreground">
                       Year
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
+                    <TableHead className="text-xs font-semibold tracking-wide text-foreground">
                       Status
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
+                    <TableHead className="text-xs font-semibold tracking-wide text-foreground">
                       Projects
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
+                    <TableHead className="text-xs font-semibold tracking-wide text-foreground">
                       Documents
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
+                    <TableHead className="text-xs font-semibold tracking-wide text-foreground">
                       Total Cost
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100">
+                    <TableHead className="text-xs font-semibold tracking-wide text-foreground">
                       Team
                     </TableHead>
-                    <TableHead className="text-xs font-semibold tracking-wide text-slate-100 text-right">
+                    <TableHead className="text-xs font-semibold tracking-wide text-foreground text-right">
                       Actions
                     </TableHead>
                   </TableRow>
@@ -351,12 +351,12 @@ export default function ClaimsPage() {
         </Card>
 
         <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-100">Trashed Claims</h2>
-          <p className="text-sm text-slate-300">
+          <h2 className="text-lg font-semibold text-foreground">Trashed Claims</h2>
+          <p className="text-sm text-muted-foreground">
             Claims in the trash are kept for 28 days and then permanently deleted.
           </p>
           {deletedClaims.length === 0 ? (
-            <p className="text-sm text-slate-300">
+            <p className="text-sm text-muted-foreground">
               No claims are currently in the trash.
             </p>
           ) : (
