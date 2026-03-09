@@ -71,7 +71,7 @@ export default function LoginPage() {
   return (
     <Layout showNav={false}>
       <SEO title="Login - RD Companion" />
-      <div className="min-h-screen hero-gradient flex items-center justify-center p-4">
+      <div className="min-h-screen hero-gradient flex items-center justify-center p-4" style={{ backgroundImage: "none", backgroundColor: "rgb(255, 255, 255)" }}>
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-orange-500 mb-4 shadow-professional-lg">
@@ -80,32 +80,32 @@ export default function LoginPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                />
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-slate-50 mb-2">Welcome Back</h1>
-            <p className="text-sm text-slate-400">Sign in to your RD Companion account</p>
+            <h1 className="text-3xl font-bold text-slate-50 mb-2" style={{ color: "#1a1a1a" }}>Welcome Back</h1>
+            <p className="text-sm text-slate-400" style={{ color: "#1a1a1a" }}>Sign in to your RD Companion account</p>
           </div>
 
           <Card className="border border-slate-800 bg-slate-900/80 shadow-professional-lg">
-            <CardHeader className="space-y-1 pb-6">
-              <CardTitle className="text-2xl font-semibold text-slate-50">Sign In</CardTitle>
-              <CardDescription className="text-slate-400">
+            <CardHeader className="space-y-1 pb-6" style={{ backgroundColor: "#f3f4f6" }}>
+              <CardTitle className="text-2xl font-semibold text-slate-50" style={{ color: "#1a1a1a" }}>Sign In</CardTitle>
+              <CardDescription className="text-slate-400" style={{ color: "#1a1a1a" }}>
                 Enter your credentials to access your account
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent style={{ backgroundColor: "#f3f4f6" }}>
               <form onSubmit={handleLogin} className="space-y-5">
-                {error && (
-                  <Alert variant="destructive" className="border-error/20 bg-error/10 text-error-foreground">
+                {error &&
+                <Alert variant="destructive" className="border-error/20 bg-error/10 text-error-foreground">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
-                )}
+                }
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium text-slate-200">
+                  <Label htmlFor="email" className="text-sm font-medium text-slate-200" style={{ color: "#1a1a1a" }}>
                     Email Address
                   </Label>
                   <div className="relative">
@@ -117,13 +117,13 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="pl-10 h-11 border-slate-800 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500"
-                    />
+                      className="pl-10 h-11 border-slate-800 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500" />
+                    
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-slate-200">
+                  <Label htmlFor="password" className="text-sm font-medium text-slate-200" style={{ color: "#1a1a1a" }}>
                     Password
                   </Label>
                   <div className="relative">
@@ -135,37 +135,37 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="pl-10 h-11 border-slate-800 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500"
-                    />
+                      className="pl-10 h-11 border-slate-800 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500" />
+                    
                   </div>
                 </div>
 
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 gradient-primary text-slate-950 font-medium shadow-professional-md hover:shadow-professional-lg transition-professional"
-                >
-                  {loading ? (
-                    <>
+                  className="w-full h-11 gradient-primary text-slate-950 font-medium shadow-professional-md hover:shadow-professional-lg transition-professional">
+                  
+                  {loading ?
+                  <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Signing in...
-                    </>
-                  ) : (
-                    <>
+                    </> :
+
+                  <>
                       Sign In
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </>
-                  )}
+                  }
                 </Button>
               </form>
 
               <div className="mt-6 text-center">
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-slate-400" style={{ color: "#1a1a1a" }}>
                   Do not have an account?{" "}
                   <button
                     onClick={() => router.push("/auth/signup")}
-                    className="font-medium text-orange-400 hover:text-orange-300 transition-colors"
-                  >
+                    className="font-medium text-orange-400 hover:text-orange-300 transition-colors">
+                    
                     Sign up
                   </button>
                 </p>
@@ -173,11 +173,11 @@ export default function LoginPage() {
             </CardContent>
           </Card>
 
-          <p className="text-center text-xs text-slate-500 mt-6">
+          <p className="text-center text-xs text-slate-500 mt-6" style={{ color: "#1a1a1a" }}>
             © {new Date().getFullYear()} RD Companion. All rights reserved.
           </p>
         </div>
       </div>
-    </Layout>
-  );
+    </Layout>);
+
 }
