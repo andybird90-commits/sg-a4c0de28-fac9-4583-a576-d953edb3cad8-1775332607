@@ -169,7 +169,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         <div className="w-full max-w-md space-y-12 text-center">
           <div className="w-32 h-32 mx-auto rounded-3xl accent-gradient flex items-center justify-center shadow-professional-md">
@@ -177,10 +177,10 @@ export default function OnboardingPage() {
           </div>
           
           <div className="space-y-4">
-            <h1 className="text-4xl font-bold text-slate-50 leading-tight">
+            <h1 className="text-4xl font-bold text-foreground leading-tight">
               {slide.title}
             </h1>
-            <p className="text-xl text-slate-400 leading-relaxed">
+            <p className="text-xl text-muted-foreground leading-relaxed">
               {slide.description}
             </p>
           </div>
@@ -200,7 +200,7 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      <div className="p-6 space-y-3 safe-bottom bg-[#020617] border-t border-slate-800">
+      <div className="p-6 space-y-3 safe-bottom bg-background border-t border-border">
         {!isLastSlide ? (
           <Button 
             className="w-full h-14 text-lg font-semibold bg-[#ff6b35] hover:bg-[#ff8c42] text-slate-950 rounded-xl shadow-professional-md"
@@ -217,7 +217,7 @@ export default function OnboardingPage() {
               Log in
             </Button>
             <Button 
-              className="w-full h-14 text-lg font-semibold bg-slate-900 hover:bg-slate-800 text-slate-100 rounded-xl border border-slate-700"
+              className="w-full h-14 text-lg font-semibold bg-card hover:bg-muted text-foreground rounded-xl border border-border"
               onClick={() => router.push("/auth/signup")}
             >
               Sign up
