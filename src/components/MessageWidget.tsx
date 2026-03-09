@@ -42,8 +42,8 @@ export function MessageWidget({
           e.stopPropagation();
           setIsOpen(true);
         }}
-        title="Send message about this item"
-      >
+        title="Send message about this item" style={{ color: "#1a1a1a" }}>
+        
         <MessageCircle className="h-4 w-4" size={iconSizes[size]} />
       </Button>
 
@@ -52,8 +52,8 @@ export function MessageWidget({
         onClose={() => setIsOpen(false)}
         entityType={entityType}
         entityId={entityId}
-        entityName={entityName}
-      />
-    </>
-  );
+        entityName={entityName} />
+      
+    </>);
+
 }
