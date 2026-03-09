@@ -206,11 +206,11 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
               <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 items-center">
+              <div className="flex h-10 sm:h-11 md:h-12 lg:h-[3.25rem] items-center">
                 <img
                   src="/rd_tax_white_wording.png"
                   alt="RD TAX"
-                  className="h-6 w-auto"
+                  className="h-10 sm:h-11 md:h-12 lg:h-[3.25rem] w-auto"
                 />
               </div>
               <div className="hidden sm:block">

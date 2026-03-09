@@ -167,7 +167,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
               <img
                 src="/rd_tax_white_wording.png"
                 alt="RD TAX"
-                className="h-8 sm:h-9 w-auto flex-shrink-0"
+                className="h-10 sm:h-11 md:h-12 lg:h-[3.25rem] w-auto flex-shrink-0"
               />
               <div className="hidden sm:block">
                 <div className="text-sm font-semibold">RD Companion</div>
