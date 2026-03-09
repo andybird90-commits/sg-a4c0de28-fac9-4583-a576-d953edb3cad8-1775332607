@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow } from
 "@/components/ui/table";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type InspectorSessionRow =
 Database["public"]["Tables"]["hmrc_inspector_sessions"]["Row"];
@@ -46,6 +47,7 @@ export default function StaffHomePage() {
   const [pipelineData, setPipelineData] = useState<PipelineWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [securedOnly, setSecuredOnly] = useState(false);
+  const isMobile = useIsMobile();
 
   const [innovationMetrics, setInnovationMetrics] = useState<{
     averageInnovationDensity: number | null;
@@ -740,82 +742,123 @@ export default function StaffHomePage() {
                 </div>
               ) : (
                 <>
-                  <div className="w-full overflow-x-auto">
-                    <div className="flex gap-4 h-72 pb-6 min-w-[720px]">
-                      <div className="flex flex-col justify-between h-48 text-xs text-muted-foreground pr-2 flex-shrink-0">
-                        {yAxisTicks
-                          .slice()
-                          .reverse()
-                          .map((value) => (
-                            <span key={value}>{formatCurrency(value)}</span>
-                          ))}
-                      </div>
-                      <div className="flex items-end gap-3 h-72 flex-1 border-l border-border border-b pl-4 pb-6">
-                        {monthlyBuckets.map((bucket, idx) => {
-                          const total = bucket.onboarded + bucket.notOnboarded;
-
-                          const hoverTitle = `Total: ${formatCurrency(
-                            total
-                          )}\nOnboarded: ${formatCurrency(
-                            bucket.onboarded
-                          )}\nNot onboarded: ${formatCurrency(
-                            bucket.notOnboarded
-                          )}`;
-
-                          const onboardedHeight =
-                            maxMonthTotal > 0
-                              ? (bucket.onboarded / maxMonthTotal) * 100
-                              : 0;
-                          const notOnboardedHeight =
-                            maxMonthTotal > 0
-                              ? (bucket.notOnboarded / maxMonthTotal) * 100
-                              : 0;
-
+                  {isMobile ? (
+                    <div className="space-y-2">
+                      {monthlyBuckets
+                        .filter(
+                          (bucket) =>
+                            bucket.onboarded + bucket.notOnboarded > 0
+                        )
+                        .slice(0, 12)
+                        .map((bucket) => {
+                          const total =
+                            bucket.onboarded + bucket.notOnboarded;
                           return (
                             <div
-                              key={idx}
-                              className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
+                              key={bucket.date.toISOString()}
+                              className="flex items-center justify-between rounded-lg border bg-card px-3 py-2"
                             >
-                              <div
-                                className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-transparent"
-                                title={hoverTitle}
-                              >
-                                {total > 0 && (
-                                  <>
-                                    {bucket.onboarded > 0 && (
-                                      <div
-                                        className="bg-orange-500"
-                                        style={{
-                                          height: `${onboardedHeight}%`,
-                                        }}
-                                        title={`Onboarded: ${formatCurrency(
-                                          bucket.onboarded
-                                        )}`}
-                                      />
-                                    )}
-                                    {bucket.notOnboarded > 0 && (
-                                      <div
-                                        className="bg-[#0F1D2D]"
-                                        style={{
-                                          height: `${notOnboardedHeight}%`,
-                                        }}
-                                        title={`Not onboarded: ${formatCurrency(
-                                          bucket.notOnboarded
-                                        )}`}
-                                      />
-                                    )}
-                                  </>
-                                )}
+                              <div>
+                                <div className="text-xs text-muted-foreground">
+                                  {formatMonthYear(bucket.date)}
+                                </div>
+                                <div className="text-sm font-medium text-foreground">
+                                  {formatCurrency(total)}
+                                </div>
                               </div>
-                              <span className="mt-2 text-[10px] text-muted-foreground sm:rotate-[-30deg] sm:origin-top">
-                                {formatMonthYear(bucket.date)}
-                              </span>
+                              <div className="text-xs text-right text-muted-foreground">
+                                <div>
+                                  Onboarded:{" "}
+                                  {formatCurrency(bucket.onboarded)}
+                                </div>
+                                <div>
+                                  Not onboarded:{" "}
+                                  {formatCurrency(bucket.notOnboarded)}
+                                </div>
+                              </div>
                             </div>
                           );
                         })}
+                    </div>
+                  ) : (
+                    <div className="w-full overflow-x-auto">
+                      <div className="flex gap-4 h-72 pb-6 min-w-[720px]">
+                        <div className="flex flex-col justify-between h-48 text-xs text-muted-foreground pr-2 flex-shrink-0">
+                          {yAxisTicks
+                            .slice()
+                            .reverse()
+                            .map((value) => (
+                              <span key={value}>{formatCurrency(value)}</span>
+                            ))}
+                        </div>
+                        <div className="flex items-end gap-3 h-72 flex-1 border-l border-border border-b pl-4 pb-6">
+                          {monthlyBuckets.map((bucket, idx) => {
+                            const total =
+                              bucket.onboarded + bucket.notOnboarded;
+
+                            const hoverTitle = `Total: ${formatCurrency(
+                              total
+                            )}\nOnboarded: ${formatCurrency(
+                              bucket.onboarded
+                            )}\nNot onboarded: ${formatCurrency(
+                              bucket.notOnboarded
+                            )}`;
+
+                            const onboardedHeight =
+                              maxMonthTotal > 0
+                                ? (bucket.onboarded / maxMonthTotal) * 100
+                                : 0;
+                            const notOnboardedHeight =
+                              maxMonthTotal > 0
+                                ? (bucket.notOnboarded / maxMonthTotal) * 100
+                                : 0;
+
+                            return (
+                              <div
+                                key={idx}
+                                className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
+                              >
+                                <div
+                                  className="flex flex-col-reverse w-6 sm:w-8 h-48 rounded overflow-hidden bg-transparent"
+                                  title={hoverTitle}
+                                >
+                                  {total > 0 && (
+                                    <>
+                                      {bucket.onboarded > 0 && (
+                                        <div
+                                          className="bg-orange-500"
+                                          style={{
+                                            height: `${onboardedHeight}%`,
+                                          }}
+                                          title={`Onboarded: ${formatCurrency(
+                                            bucket.onboarded
+                                          )}`}
+                                        />
+                                      )}
+                                      {bucket.notOnboarded > 0 && (
+                                        <div
+                                          className="bg-[#0F1D2D]"
+                                          style={{
+                                            height: `${notOnboardedHeight}%`,
+                                          }}
+                                          title={`Not onboarded: ${formatCurrency(
+                                            bucket.notOnboarded
+                                          )}`}
+                                        />
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                                <span className="mt-2 text-[10px] text-muted-foreground sm:rotate-[-30deg] sm:origin-top">
+                                  {formatMonthYear(bucket.date)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                   <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <span className="w-3 h-3 rounded-sm bg-orange-500" />
@@ -1119,77 +1162,126 @@ export default function StaffHomePage() {
                 </div>
               ) : (
                 <>
-                  <div className="w-full overflow-x-auto">
-                    <div className="flex gap-4 h-64 pb-6 min-w-[720px]">
-                      <div className="flex flex-col justify-between h-40 text-xs text-muted-foreground pr-2 flex-shrink-0">
-                        {clientYAxisTicks
-                          .slice()
-                          .reverse()
-                          .map((value) => (
-                            <span key={value}>{value}</span>
-                          ))}
-                      </div>
-                      <div className="flex items-end gap-3 h-64 flex-1 border-l border-border border-b pl-4 pb-6">
-                        {monthlyClientsBuckets.map((bucket, idx) => {
+                  {isMobile ? (
+                    <div className="space-y-2">
+                      {monthlyClientsBuckets
+                        .filter(
+                          (bucket) =>
+                            bucket.onboardedCount +
+                              bucket.notOnboardedCount >
+                            0
+                        )
+                        .slice(0, 24)
+                        .map((bucket) => {
                           const totalCount =
-                            bucket.onboardedCount + bucket.notOnboardedCount;
-
-                          const onboardedHeight =
-                            maxClientsCount > 0
-                              ? (bucket.onboardedCount / maxClientsCount) * 100
-                              : 0;
-                          const notOnboardedHeight =
-                            maxClientsCount > 0
-                              ? (bucket.notOnboardedCount / maxClientsCount) * 100
-                              : 0;
-
-                          const hoverTitle = `Total: ${totalCount} client${
-                            totalCount === 1 ? "" : "s"
-                          }\nOnboarded: ${
-                            bucket.onboardedCount
-                          }\nNot onboarded: ${bucket.notOnboardedCount}`;
-
+                            bucket.onboardedCount +
+                            bucket.notOnboardedCount;
                           return (
                             <div
-                              key={idx}
-                              className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
+                              key={bucket.date.toISOString()}
+                              className="flex items-center justify-between rounded-lg border bg-card px-3 py-2"
                             >
-                              <div
-                                className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-transparent"
-                                title={hoverTitle}
-                              >
-                                {totalCount > 0 && (
-                                  <>
-                                    {bucket.onboardedCount > 0 && (
-                                      <div
-                                        className="bg-orange-500"
-                                        style={{
-                                          height: `${onboardedHeight}%`,
-                                        }}
-                                        title={`Onboarded: ${bucket.onboardedCount}`}
-                                      />
-                                    )}
-                                    {bucket.notOnboardedCount > 0 && (
-                                      <div
-                                        className="bg-[#0F1D2D]"
-                                        style={{
-                                          height: `${notOnboardedHeight}%`,
-                                        }}
-                                        title={`Not onboarded: ${bucket.notOnboardedCount}`}
-                                      />
-                                    )}
-                                  </>
-                                )}
+                              <div>
+                                <div className="text-xs text-muted-foreground">
+                                  {formatMonthYear(bucket.date)}
+                                </div>
+                                <div className="text-sm font-medium text-foreground">
+                                  {totalCount} client
+                                  {totalCount === 1 ? "" : "s"}
+                                </div>
                               </div>
-                              <span className="mt-2 text-[10px] text-muted-foreground sm:rotate-[-30deg] sm:origin-top">
-                                {formatMonthYear(bucket.date)}
-                              </span>
+                              <div className="text-xs text-right text-muted-foreground">
+                                <div>
+                                  Onboarded: {bucket.onboardedCount}
+                                </div>
+                                <div>
+                                  Not onboarded: {bucket.notOnboardedCount}
+                                </div>
+                              </div>
                             </div>
                           );
                         })}
+                    </div>
+                  ) : (
+                    <div className="w-full overflow-x-auto">
+                      <div className="flex gap-4 h-64 pb-6 min-w-[720px]">
+                        <div className="flex flex-col justify-between h-40 text-xs text-muted-foreground pr-2 flex-shrink-0">
+                          {clientYAxisTicks
+                            .slice()
+                            .reverse()
+                            .map((value) => (
+                              <span key={value}>{value}</span>
+                            ))}
+                        </div>
+                        <div className="flex items-end gap-3 h-64 flex-1 border-l border-border border-b pl-4 pb-6">
+                          {monthlyClientsBuckets.map((bucket, idx) => {
+                            const totalCount =
+                              bucket.onboardedCount +
+                              bucket.notOnboardedCount;
+
+                            const onboardedHeight =
+                              maxClientsCount > 0
+                                ? (bucket.onboardedCount /
+                                    maxClientsCount) *
+                                  100
+                                : 0;
+                            const notOnboardedHeight =
+                              maxClientsCount > 0
+                                ? (bucket.notOnboardedCount /
+                                    maxClientsCount) *
+                                  100
+                                : 0;
+
+                            const hoverTitle = `Total: ${totalCount} client${
+                              totalCount === 1 ? "" : "s"
+                            }\nOnboarded: ${
+                              bucket.onboardedCount
+                            }\nNot onboarded: ${
+                              bucket.notOnboardedCount
+                            }`;
+
+                            return (
+                              <div
+                                key={idx}
+                                className="flex flex-col items-center min-w-[2.5rem] sm:min-w-[3rem]"
+                              >
+                                <div
+                                  className="flex flex-col-reverse w-6 sm:w-8 h-40 rounded overflow-hidden bg-transparent"
+                                  title={hoverTitle}
+                                >
+                                  {totalCount > 0 && (
+                                    <>
+                                      {bucket.onboardedCount > 0 && (
+                                        <div
+                                          className="bg-orange-500"
+                                          style={{
+                                            height: `${onboardedHeight}%`,
+                                          }}
+                                          title={`Onboarded: ${bucket.onboardedCount}`}
+                                        />
+                                      )}
+                                      {bucket.notOnboardedCount > 0 && (
+                                        <div
+                                          className="bg-[#0F1D2D]"
+                                          style={{
+                                            height: `${notOnboardedHeight}%`,
+                                          }}
+                                          title={`Not onboarded: ${bucket.notOnboardedCount}`}
+                                        />
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                                <span className="mt-2 text-[10px] text-muted-foreground sm:rotate-[-30deg] sm:origin-top">
+                                  {formatMonthYear(bucket.date)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                   <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <span className="w-3 h-3 rounded-sm bg-orange-500" />
