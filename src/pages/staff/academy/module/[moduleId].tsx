@@ -707,7 +707,7 @@ const MODULES: ModuleConfig[] = [
             label: "Use AI to draft and submit narratives without human review.",
           },
           {
-            "b",
+            id: "b",
             label:
               "Use AI to generate suggestions and critique, then have a qualified adviser review and edit the final narrative.",
           },
@@ -769,7 +769,7 @@ const MODULES: ModuleConfig[] = [
         "Clear R&D: designing a new concurrency model to meet latency targets that off‑the‑shelf stacks cannot meet.",
       ],
       commonMistakes: [
-        "Treating any use of AI/ML buzzwords as R&D without understanding the actual work.",
+        "Treating every use of AI/ML buzzwords as R&D without understanding the actual work.",
         "Writing narratives that focus on product features instead of underlying technical problems.",
         "Undervaluing infrastructure work (e.g. observability, resilience) that actually contains the uncertainty.",
       ],
@@ -783,7 +783,7 @@ const MODULES: ModuleConfig[] = [
         {
           id: "a",
           label:
-            "Likely qualifying R&D if competent professionals could not readily predict which architecture would satisfy the latency and query flexibility constraints.",
+            "Likely qualifying R&D if the tolerances were not achievable using known techniques and required systematic experimentation.",
           isCorrect: true,
           explanation:
             "The facts point to genuine uncertainty about achieving the required performance characteristics, beyond routine development.",
@@ -791,7 +791,7 @@ const MODULES: ModuleConfig[] = [
         {
           id: "b",
           label:
-            "Automatically non‑qualifying because it sits inside an existing SaaS product.",
+            "Non‑qualifying because it sits inside an existing SaaS product.",
           isCorrect: false,
           explanation:
             "Being part of an existing product does not rule out R&D; the key is technological uncertainty relative to the field.",
@@ -838,10 +838,10 @@ const MODULES: ModuleConfig[] = [
         id: "sd-q2",
         type: "true_false",
         question:
-          "True or false: Any project involving machine learning automatically qualifies as R&D.",
+          "True or false: A continuous improvement project can sometimes contain qualifying R&D elements.",
         correctAnswer: false,
         explanation:
-          "ML can involve R&D, but routine implementation of known models to well‑understood problems may not involve genuine uncertainty.",
+          "Even within wider CI programmes, specific workstreams cannot involve advances or technological uncertainty.",
       },
       {
         id: "sd-q3",
@@ -1002,7 +1002,7 @@ const MODULES: ModuleConfig[] = [
       ],
       realExamples: [
         "Hybrid sampling using ticket volumes plus manager interviews for teams without perfect timesheets.",
-        "Segmenting staff into activity cohorts (e.g. core R&D, mixed role, BAU) with different evidence requirements.",
+        "Segmenting staff into activity cohorts (e.g. core R&D, mixed roles, BAU) with different evidence requirements.",
       ],
       commonMistakes: [
         "Using a single arbitrary percentage across all staff without justification.",
@@ -1184,10 +1184,10 @@ const MODULES: ModuleConfig[] = [
         id: "rg-q2",
         type: "true_false",
         question:
-          "True or false: A good governance framework should explicitly cover when to disengage from a client or decline borderline work.",
+          "True or false: Lessons from one enquiry should generally be fed back into templates, training and governance for future files.",
         correctAnswer: true,
         explanation:
-          "Clear disengagement and escalation policies are a key part of protecting the firm and advisers in high‑risk situations.",
+          "Treating enquiries as learning opportunities helps improve future file quality and reduce repeat issues.",
       },
       {
         id: "rg-q3",
@@ -1306,27 +1306,25 @@ const MODULES: ModuleConfig[] = [
         id: "ecs-q3",
         type: "multiple_choice",
         question:
-          "In a high‑risk enquiry, which behaviour is most likely to damage your credibility with HMRC?",
+          "Which scenario is most likely to increase the risk of an enquiry being opened?",
         options: [
           {
             id: "a",
-            label:
-              "Conceding weaker elements of the claim while defending stronger elements with good evidence.",
+            label: "Claims are at a similar level to previous years with clear narratives.",
           },
           {
             id: "b",
             label:
-              "Providing clear, structured answers and a curated evidence pack indexed to the questions.",
+              "Qualifying costs have doubled year‑on‑year with minimal explanation of why.",
           },
           {
             id: "c",
-            label:
-              "Issuing emotional, argumentative responses that accuse HMRC of bad faith without addressing the technical points.",
+            label: "The claim was submitted a few days before deadline.",
           },
         ],
-        correctOptionId: "c",
+        correctOptionId: "b",
         explanation:
-          "Emotional or confrontational tone undermines credibility and distracts from the technical merits of the file.",
+          "Large unexplained movements can trigger risk‑based enquiries.",
       },
     ],
   },
@@ -1375,15 +1373,15 @@ const MODULES: ModuleConfig[] = [
             "Quietly include all borderline projects to keep the client happy.",
           isCorrect: false,
           explanation:
-            "Short‑term appeasement can create significant regulatory and reputational risk.",
+            "This creates significant regulatory and reputational risk.",
         },
         {
           id: "c",
           label:
-            "Refuse to discuss pricing; it is a sales issue, not a technical one.",
+            "Delay responding in the hope that HMRC will close the enquiry.",
           isCorrect: false,
           explanation:
-            "Pricing and technical risk are tightly linked; advisers must have a view.",
+            "Missing deadlines or failing to engage increases risk and can lead to adjustments or penalties.",
         },
       ],
     },
@@ -1416,31 +1414,34 @@ const MODULES: ModuleConfig[] = [
         id: "cpc-q2",
         type: "true_false",
         question:
-          "True or false: Scope letters and engagement terms are key tools for aligning pricing with risk and delivery effort.",
-        correctAnswer: true,
+          "True or false: It is acceptable to use client confidential data in any public AI system as long as terms of service mention encryption.",
+        correctAnswer: false,
         explanation:
-          "Clear scope and engagement terms reduce later disputes and help resist pressure to over‑claim.",
+          "Regulatory and professional standards typically require strict control over where client data goes; public AI endpoints may be inappropriate.",
       },
       {
         id: "cpc-q3",
         type: "multiple_choice",
         question:
-          "Which communication approach best supports sustainable, compliant pricing?",
+          "Which metric is most meaningful when assessing the impact of AI on your practice operations?",
         options: [
           {
             id: "a",
-            label:
-              "Explaining to clients how file quality, evidence and governance drive both fees and risk levels.",
+            label: "Number of AI prompts sent per month, regardless of outcome.",
           },
-          { id: "b", label: "Avoiding any discussion of risk so as not to scare clients away from signing." },
+          {
+            id: "b",
+            label:
+              "Reduction in manual drafting/review time while maintaining or improving enquiry outcomes and file quality.",
+          },
           {
             id: "c",
-            label: "Promising that you will 'always maximise the claim' regardless of evidence.",
+            label: "How often staff talk about AI on internal chat channels.",
           },
         ],
-        correctOptionId: "a",
+        correctOptionId: "b",
         explanation:
-          "Transparent communication about quality and risk builds trust and justifies appropriate fee levels.",
+          "Impact should be measured in terms of efficiency and risk/quality, not raw usage or hype.",
       },
     ],
   },
@@ -1508,19 +1509,22 @@ const MODULES: ModuleConfig[] = [
         id: "aiop-q1",
         type: "multiple_choice",
         question:
-          "Which control is most important when using AI at scale in an R&D firm?",
+          "What is the safest way to use AI when preparing an R&D claim narrative?",
         options: [
-          { id: "a", label: "A blanket statement that 'AI was used'." },
+          {
+            id: "a",
+            label: "Use AI to draft and submit narratives without human review.",
+          },
           {
             id: "b",
             label:
-              "A clear policy on where AI can be used, mandatory human review, and logging of key AI‑assisted steps.",
+              "Use AI to generate suggestions and critique, then have a qualified adviser review and edit the final narrative.",
           },
-          { id: "c", label: "Relying on vendor marketing about safety." },
+          { id: "c", label: "Avoid AI completely in R&D tax work." },
         ],
         correctOptionId: "b",
         explanation:
-          "Policies and logs demonstrate that AI is being used under professional control.",
+          "Responsibility for accuracy and compliance always remains with the human adviser.",
       },
       {
         id: "aiop-q2",
@@ -1970,10 +1974,10 @@ export default function StaffAcademyModulePage() {
                 </div>
               </div>
               <div className="flex flex-col items-stretch gap-2 sm:items-end">
-                <div className="w-full min-w-[220px] max-w-xs rounded-xl border border-border bg-card p-3 shadow-professional-md">
-                  <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+                <div className="w-full min-w-[220px] max-w-xs rounded-xl border border-amber-200 bg-amber-50 p-3 shadow-professional-md">
+                  <div className="mb-1 flex items-center justify-between text-xs text-amber-900">
                     <span>Module progress</span>
-                    <span className="font-semibold text-foreground">
+                    <span className="font-semibold text-amber-900">
                       {progressPercent}%
                     </span>
                   </div>
@@ -2023,11 +2027,11 @@ export default function StaffAcademyModulePage() {
                     <p>{moduleConfig.lesson.overview}</p>
 
                     <Accordion type="multiple" className="mt-2 space-y-2">
-                      <AccordionItem value="key-concepts" className="border-slate-800">
-                        <AccordionTrigger className="text-sm text-slate-100">
+                      <AccordionItem value="key-concepts" className="border-border">
+                        <AccordionTrigger className="text-sm text-foreground">
                           Key Concepts
                         </AccordionTrigger>
-                        <AccordionContent className="text-sm text-slate-200">
+                        <AccordionContent className="text-sm text-muted-foreground">
                           <ul className="list-inside list-disc space-y-1">
                             {moduleConfig.lesson.keyConcepts.map((item) => (
                               <li key={item}>{item}</li>
@@ -2036,11 +2040,11 @@ export default function StaffAcademyModulePage() {
                         </AccordionContent>
                       </AccordionItem>
 
-                      <AccordionItem value="real-examples" className="border-slate-800">
-                        <AccordionTrigger className="text-sm text-slate-100">
+                      <AccordionItem value="real-examples" className="border-border">
+                        <AccordionTrigger className="text-sm text-foreground">
                           Real Claim Examples
                         </AccordionTrigger>
-                        <AccordionContent className="text-sm text-slate-200">
+                        <AccordionContent className="text-sm text-muted-foreground">
                           <ul className="list-inside list-disc space-y-1">
                             {moduleConfig.lesson.realExamples.map((item) => (
                               <li key={item}>{item}</li>
@@ -2049,11 +2053,11 @@ export default function StaffAcademyModulePage() {
                         </AccordionContent>
                       </AccordionItem>
 
-                      <AccordionItem value="common-mistakes" className="border-slate-800">
-                        <AccordionTrigger className="text-sm text-slate-100">
+                      <AccordionItem value="common-mistakes" className="border-border">
+                        <AccordionTrigger className="text-sm text-foreground">
                           Common Mistakes
                         </AccordionTrigger>
-                        <AccordionContent className="text-sm text-slate-200">
+                        <AccordionContent className="text-sm text-muted-foreground">
                           <ul className="list-inside list-disc space-y-1">
                             {moduleConfig.lesson.commonMistakes.map((item) => (
                               <li key={item}>{item}</li>
@@ -2093,7 +2097,9 @@ export default function StaffAcademyModulePage() {
                           {scenarioState.selectedOptionId ? "Answered" : "Not answered yet"}
                         </Badge>
                       </div>
-                      <p className="text-slate-200">{moduleConfig.scenario.description}</p>
+                      <p className="text-muted-foreground">
+                        {moduleConfig.scenario.description}
+                      </p>
                     </div>
 
                     <div className="space-y-2">
