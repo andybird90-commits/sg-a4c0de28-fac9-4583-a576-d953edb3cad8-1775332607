@@ -1963,12 +1963,12 @@ export default function ClaimDetailPage() {
         {/* Quick Stats */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           {/* Claim summary */}
-          <Card className="bg-slate-900/80 border-slate-800 shadow-none">
+          <Card className="bg-card border border-border shadow-sm">
             <CardContent className="pt-6 space-y-2">
-              <p className="text-xs uppercase tracking-wide text-slate-400">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
                 Claim summary
               </p>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm font-semibold text-foreground">
                 FY {claim.claim_year}
               </p>
               <div>{getStatusBadge(claim.status || "draft")}</div>
@@ -1976,49 +1976,49 @@ export default function ClaimDetailPage() {
           </Card>
 
           {/* Dates */}
-          <Card className="bg-slate-900/80 border-slate-800 shadow-none">
+          <Card className="bg-card border border-border shadow-sm">
             <CardContent className="pt-6 space-y-2">
-              <p className="text-xs uppercase tracking-wide text-slate-400">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
                 Dates
               </p>
-              <p className="text-xs text-slate-500">Created</p>
-              <p className="text-sm text-slate-300">
+              <p className="text-xs text-muted-foreground">Created</p>
+              <p className="text-sm font-semibold text-foreground">
                 {claim.created_at ? format(new Date(claim.created_at), "PPP") : "N/A"}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Last updated
               </p>
-              <p className="text-sm text-slate-300">
+              <p className="text-sm font-semibold text-foreground">
                 {claim.updated_at ? format(new Date(claim.updated_at), "PPP") : "N/A"}
               </p>
             </CardContent>
           </Card>
 
           {/* Projects */}
-          <Card className="bg-slate-900/80 border-slate-800 shadow-none">
+          <Card className="bg-card border border-border shadow-sm">
             <CardContent className="pt-6 space-y-2">
-              <p className="text-xs uppercase tracking-wide text-slate-400">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
                 Projects
               </p>
-              <p className="text-2xl font-semibold text-slate-50">
+              <p className="text-2xl font-semibold text-foreground">
                 {claim.projects ? claim.projects.length : 0}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 linked to this claim
               </p>
             </CardContent>
           </Card>
 
           {/* Documents */}
-          <Card className="bg-slate-900/80 border-slate-800 shadow-none">
+          <Card className="bg-card border border-border shadow-sm">
             <CardContent className="pt-6 space-y-2">
-              <p className="text-xs uppercase tracking-wide text-slate-400">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
                 Documents
               </p>
-              <p className="text-2xl font-semibold text-slate-50">
+              <p className="text-2xl font-semibold text-foreground">
                 {totalDocumentsCount}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 uploaded against this claim
               </p>
             </CardContent>
