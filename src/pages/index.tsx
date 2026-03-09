@@ -113,13 +113,13 @@ export default function LandingPage() {
         description="The modern way to capture, organize, and submit R&D tax evidence. Never miss a claimable moment again." />
       
 
-      <div className="min-h-screen bg-slate-950 text-slate-100">
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
+      <div className="min-h-screen bg-background text-foreground">
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
           <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2">
                 <img src="/rdtax-logo.png" alt="RD TAX" className="h-8 sm:h-10 w-auto flex-shrink-0" />
-                <span className="text-base sm:text-lg lg:text-xl font-bold text-slate-50 truncate">
+                <span className="text-base sm:text-lg lg:text-xl font-bold text-foreground truncate">
                   RD Companion
                 </span>
               </div>
@@ -127,7 +127,7 @@ export default function LandingPage() {
                 <Button
                   variant="ghost"
                   onClick={() => router.push("/auth/login")}
-                  className="text-slate-100 hover:text-white hover:bg-slate-800 text-xs sm:text-sm lg:text-base px-2 sm:px-3 lg:px-4">
+                  className="text-foreground hover:text-foreground hover:bg-muted text-xs sm:text-sm lg:text-base px-2 sm:px-3 lg:px-4">
                   
                   Log In
                 </Button>
@@ -217,16 +217,16 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="py-12 sm:py-16 lg:py-24 bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
+        <section className="py-12 sm:py-16 lg:py-24 bg-background">
           <div className="container mx-auto px-4 sm:px-6">
             <div className="text-center mb-10 sm:mb-12 lg:mb-16">
               <Badge className="mb-3 sm:mb-4 bg-orange-500/15 text-orange-400 border-orange-500/40 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">
                 FEATURES
               </Badge>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black mb-3 sm:mb-4 px-2 text-slate-50">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black mb-3 sm:mb-4 px-2 text-foreground">
                 Everything You Need
               </h2>
-              <p className="text-sm sm:text-base lg:text-xl text-slate-300 max-w-2xl mx-auto px-4">
+              <p className="text-sm sm:text-base lg:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
                 Built specifically for R&D tax claims, RD Companion makes evidence collection simple, secure, and
                 seamless.
               </p>
@@ -236,7 +236,7 @@ export default function LandingPage() {
               {features.map((feature, index) =>
               <Card
                 key={index}
-                className="p-5 sm:p-6 lg:p-8 border border-slate-800 hover:border-slate-600 feature-card-hover bg-slate-900/80 relative overflow-hidden group">
+                className="p-5 sm:p-6 lg:p-8 border border-border hover:border-primary/40 feature-card-hover bg-card relative overflow-hidden group shadow-sm">
                 
                   <div
                   className={`absolute top-0 right-0 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br ${feature.color} opacity-10 rounded-full -mr-12 -mt-12 sm:-mr-16 sm:-mt-16 group-hover:scale-150 transition-transform duration-500`}>
@@ -246,10 +246,10 @@ export default function LandingPage() {
                   
                     <feature.icon className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-white" />
                   </div>
-                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-50 mb-2 sm:mb-3">
+                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground mb-2 sm:mb-3">
                     {feature.title}
                   </h3>
-                  <p className="text-xs sm:text-sm lg:text-base text-slate-300 leading-relaxed">
+                  <p className="text-xs sm:text-sm lg:text-base text-muted-foreground leading-relaxed">
                     {feature.description}
                   </p>
                 </Card>
@@ -258,16 +258,16 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="py-12 sm:py-16 lg:py-24 bg-slate-950">
+        <section className="py-12 sm:py-16 lg:py-24 bg-background">
           <div className="container mx-auto px-4 sm:px-6">
             <div className="text-center mb-10 sm:mb-12 lg:mb-16">
               <Badge className="mb-3 sm:mb-4 bg-orange-500/15 text-orange-400 border-orange-500/40 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">
                 HOW IT WORKS
               </Badge>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black mb-3 sm:mb-4 px-2 text-slate-50">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-black mb-3 sm:mb-4 px-2 text-foreground">
                 Three Simple Steps
               </h2>
-              <p className="text-sm sm:text-base lg:text-xl text-slate-300">From capture to claim in minutes</p>
+              <p className="text-sm sm:text-base lg:text-xl text-muted-foreground">From capture to claim in minutes</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8 sm:gap-10 lg:gap-12 max-w-6xl mx-auto">
@@ -336,20 +336,20 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <footer className="bg-slate-950 text-white py-8 sm:py-12 border-t border-slate-800">
+        <footer className="bg-background text-foreground py-8 sm:py-12 border-t border-border">
           <div className="container mx-auto px-4 sm:px-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-0">
               <div className="flex items-center gap-3 mb-4 md:mb-0">
                 <div className="text-center md:text-left">
                   <div className="text-lg sm:text-xl font-bold">RD Companion</div>
-                  <div className="text-sm text-slate-400">by RD TAX</div>
+                  <div className="text-sm text-muted-foreground">by RD TAX</div>
                 </div>
               </div>
               <div className="text-center md:text-right">
-                <p className="text-slate-400 text-sm sm:text-base">
+                <p className="text-muted-foreground text-sm sm:text-base">
                   © {new Date().getFullYear()} RD TAX. All rights reserved.
                 </p>
-                <p className="text-slate-500 text-xs sm:text-sm mt-1">
+                <p className="text-muted-foreground text-xs sm:text-sm mt-1">
                   Secure R&D evidence capture for tax claims
                 </p>
               </div>
