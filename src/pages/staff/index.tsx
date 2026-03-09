@@ -740,8 +740,8 @@ export default function StaffHomePage() {
                 </div>
               ) : (
                 <>
-                  <div className="flex gap-4 h-72 pb-6">
-                    <div className="flex flex-col justify-between h-48 text-xs text-muted-foreground pr-2">
+                  <div className="flex gap-4 h-72 pb-6 overflow-x-auto">
+                    <div className="flex flex-col justify-between h-48 text-xs text-muted-foreground pr-2 flex-shrink-0">
                       {yAxisTicks
                         .slice()
                         .reverse()
@@ -806,7 +806,7 @@ export default function StaffHomePage() {
                                 </>
                               )}
                             </div>
-                            <span className="mt-2 text-xs text-muted-foreground rotate-[-30deg] origin-top">
+                            <span className="mt-2 text-[10px] text-muted-foreground sm:rotate-[-30deg] sm:origin-top">
                               {formatMonthYear(bucket.date)}
                             </span>
                           </div>
@@ -1117,8 +1117,8 @@ export default function StaffHomePage() {
                 </div>
               ) : (
                 <>
-                  <div className="flex gap-4 h-64 pb-6">
-                    <div className="flex flex-col justify-between h-40 text-xs text-muted-foreground pr-2">
+                  <div className="flex gap-4 h-64 pb-6 overflow-x-auto">
+                    <div className="flex flex-col justify-between h-40 text-xs text-muted-foreground pr-2 flex-shrink-0">
                       {clientYAxisTicks
                         .slice()
                         .reverse()
@@ -1178,7 +1178,7 @@ export default function StaffHomePage() {
                                 </>
                               )}
                             </div>
-                            <span className="mt-2 text-xs text-muted-foreground rotate-[-30deg] origin-top">
+                            <span className="mt-2 text-[10px] text-muted-foreground sm:rotate-[-30deg] sm:origin-top">
                               {formatMonthYear(bucket.date)}
                             </span>
                           </div>
