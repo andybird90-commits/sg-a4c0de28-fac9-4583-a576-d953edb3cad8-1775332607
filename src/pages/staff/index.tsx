@@ -631,7 +631,7 @@ export default function StaffHomePage() {
       <div className="min-h-screen bg-background text-foreground">
         <div className="mx-auto flex w-full flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
           {/* Welcome Section */}
-          <div className="flex justify-between items-start">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-4xl font-bold">Dashboard</h1>
               <p className="text-lg text-muted-foreground mt-2">
@@ -641,7 +641,10 @@ export default function StaffHomePage() {
                 Role: <span className="font-semibold">{role}</span>
               </p>
             </div>
-            <Button onClick={() => router.push("/staff/pipeline")}>
+            <Button
+              className="self-start sm:self-auto"
+              onClick={() => router.push("/staff/pipeline")}
+            >
               View Full Pipeline <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -910,47 +913,49 @@ export default function StaffHomePage() {
                     No project health scores available yet.
                   </div>
                 ) : (
-                  <div className="border border-border rounded-xl overflow-hidden bg-card">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[30%]">Project</TableHead>
-                          <TableHead>Innovation Density</TableHead>
-                          <TableHead>Documentation Strength</TableHead>
-                          <TableHead>Overall Health</TableHead>
-                          <TableHead className="w-[20%]">Last Activity</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {portfolioProjects.map((p) => (
-                          <TableRow
-                            key={p.projectId}
-                            className="cursor-pointer hover:bg-muted"
-                            onClick={() =>
-                              router.push(`/staff/claims/projects/${p.projectId}`)
-                            }
-                          >
-                            <TableCell className="font-medium">
-                              {p.projectName}
-                            </TableCell>
-                            <TableCell>{p.innovationDensity ?? "—"}</TableCell>
-                            <TableCell>{p.documentationStrength ?? "—"}</TableCell>
-                            <TableCell>
-                              <span
-                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
-                                  p.overallHealth
-                                )}`}
-                              >
-                                {p.overallHealth !== null ? `${p.overallHealth}` : "No score"}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {formatDateShort(p.lastActivity)}
-                            </TableCell>
+                  <div className="border border-border rounded-xl bg-card overflow-x-auto">
+                    <div className="min-w-[720px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[30%]">Project</TableHead>
+                            <TableHead>Innovation Density</TableHead>
+                            <TableHead>Documentation Strength</TableHead>
+                            <TableHead>Overall Health</TableHead>
+                            <TableHead className="w-[20%]">Last Activity</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {portfolioProjects.map((p) => (
+                            <TableRow
+                              key={p.projectId}
+                              className="cursor-pointer hover:bg-muted"
+                              onClick={() =>
+                                router.push(`/staff/claims/projects/${p.projectId}`)
+                              }
+                            >
+                              <TableCell className="font-medium">
+                                {p.projectName}
+                              </TableCell>
+                              <TableCell>{p.innovationDensity ?? "—"}</TableCell>
+                              <TableCell>{p.documentationStrength ?? "—"}</TableCell>
+                              <TableCell>
+                                <span
+                                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
+                                    p.overallHealth
+                                  )}`}
+                                >
+                                  {p.overallHealth !== null ? `${p.overallHealth}` : "No score"}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {formatDateShort(p.lastActivity)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -1035,49 +1040,51 @@ export default function StaffHomePage() {
                     they will appear here for follow-up.
                   </div>
                 ) : (
-                  <div className="border border-border rounded-xl overflow-hidden bg-card">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[35%]">Project</TableHead>
-                          <TableHead>Innovation</TableHead>
-                          <TableHead>Documentation</TableHead>
-                          <TableHead>Health</TableHead>
-                          <TableHead className="w-[20%]">Last Updated</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {emergingSignals.map((s) => (
-                          <TableRow
-                            key={s.projectId}
-                            className="cursor-pointer hover:bg-muted"
-                            onClick={() =>
-                              router.push(`/staff/claims/projects/${s.projectId}`)
-                            }
-                          >
-                            <TableCell className="font-medium">
-                              {s.projectName}
-                            </TableCell>
-                            <TableCell>{s.innovationDensity ?? "—"}</TableCell>
-                            <TableCell>
-                              {s.documentationStrength ?? "—"}
-                            </TableCell>
-                            <TableCell>
-                              <span
-                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
-                                  s.overallHealth
-                                )}`}
-                              >
-                                {s.overallHealth !== null ? `${s.overallHealth}` : "No score"}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-xs text-muted-foreground">
-                              {formatDateShort(s.lastUpdated)}
-                            </TableCell>
+                  <div className="border border-border rounded-xl bg-card overflow-x-auto">
+                    <div className="min-w-[720px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[35%]">Project</TableHead>
+                            <TableHead>Innovation</TableHead>
+                            <TableHead>Documentation</TableHead>
+                            <TableHead>Health</TableHead>
+                            <TableHead className="w-[20%]">Last Updated</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {emergingSignals.map((s) => (
+                            <TableRow
+                              key={s.projectId}
+                              className="cursor-pointer hover:bg-muted"
+                              onClick={() =>
+                                router.push(`/staff/claims/projects/${s.projectId}`)
+                              }
+                            >
+                              <TableCell className="font-medium">
+                                {s.projectName}
+                              </TableCell>
+                              <TableCell>{s.innovationDensity ?? "—"}</TableCell>
+                              <TableCell>
+                                {s.documentationStrength ?? "—"}
+                              </TableCell>
+                              <TableCell>
+                                <span
+                                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getHealthBadgeClass(
+                                    s.overallHealth
+                                  )}`}
+                                >
+                                  {s.overallHealth !== null ? `${s.overallHealth}` : "No score"}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {formatDateShort(s.lastUpdated)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 )}
               </CardContent>
