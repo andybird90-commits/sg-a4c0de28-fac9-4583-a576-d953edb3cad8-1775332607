@@ -74,36 +74,43 @@ export function Layout({ children, showNav = true }: LayoutProps) {
 
   if (organisationsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-950 text-slate-100">
+      <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-          <p className="text-slate-400">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 text-slate-100">
-      <header className="bg-slate-950/90 backdrop-blur-sm border-b border-slate-800 sticky top-0 z-50">
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="bg-secondary/95 text-secondary-foreground backdrop-blur-sm border-b border-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {user && (
                 <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                   <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon" className="lg:hidden text-slate-200 hover:bg-slate-800">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="lg:hidden text-secondary-foreground hover:bg-muted"
+                    >
                       <Menu className="h-5 w-5" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-[280px] sm:w-[320px] bg-slate-950 text-slate-100 border-r border-slate-800">
+                  <SheetContent
+                    side="left"
+                    className="w-[280px] sm:w-[320px] bg-secondary text-secondary-foreground border-r border-border"
+                  >
                     <SheetHeader>
                       <SheetTitle className="text-left">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-gradient-to-br from-slate-700 to-slate-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                          <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center text-secondary-foreground font-bold text-sm border border-border">
                             RD
                           </div>
-                          <span className="font-bold text-lg text-slate-50">RD Companion</span>
+                          <span className="font-bold text-lg">RD Companion</span>
                         </div>
                       </SheetTitle>
                     </SheetHeader>
@@ -119,8 +126,8 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                               variant={isActive ? "default" : "ghost"}
                               className={`w-full justify-start gap-3 ${
                                 isActive
-                                  ? "bg-orange-500 text-slate-950 hover:bg-orange-400"
-                                  : "text-slate-300 hover:bg-slate-900"
+                                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                  : "text-muted-foreground hover:bg-muted"
                               }`}
                             >
                               <Icon className="h-4 w-4" />
@@ -131,10 +138,10 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                       })}
 
                       {currentOrg && (
-                        <div className="pt-4 mt-4 border-t border-slate-800">
-                          <div className="px-3 py-2 rounded-lg bg-slate-900">
-                            <p className="text-xs font-medium text-slate-500">Organisation</p>
-                            <p className="text-sm font-semibold text-slate-100 mt-1">{currentOrg.name}</p>
+                        <div className="pt-4 mt-4 border-t border-border">
+                          <div className="px-3 py-2 rounded-lg bg-muted">
+                            <p className="text-xs font-medium text-muted-foreground">Organisation</p>
+                            <p className="text-sm font-semibold">{currentOrg.name}</p>
                           </div>
                         </div>
                       )}
@@ -142,7 +149,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                       <div className="pt-4">
                         <Button
                           variant="outline"
-                          className="w-full justify-start gap-3 text-red-400 border-red-900 hover:bg-red-900/40"
+                          className="w-full justify-start gap-3 text-destructive border-destructive hover:bg-destructive/10"
                           onClick={() => {
                             setMobileMenuOpen(false);
                             handleLogout();
@@ -158,20 +165,24 @@ export function Layout({ children, showNav = true }: LayoutProps) {
               )}
 
               <div className="flex items-center gap-2 cursor-default">
-                <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-bold text-sm border border-slate-700">
+                <div className="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center text-secondary-foreground font-bold text-sm border border-border">
                   RD
                 </div>
-                <span className="font-bold text-lg text-slate-50 hidden sm:block">RD Companion</span>
+                <span className="font-bold text-lg hidden sm:block">RD Companion</span>
               </div>
             </div>
 
             {user && (
               <div className="hidden lg:flex items-center gap-2">
                 <Link href="/messages">
-                  <Button variant="outline" size="sm" className="relative border-slate-700 text-slate-200">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="relative border-border text-secondary-foreground bg-secondary hover:bg-muted"
+                  >
                     <Bell className="h-4 w-4" />
                     {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center">
                         {unreadCount > 9 ? "9+" : unreadCount}
                       </span>
                     )}
@@ -181,7 +192,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                   variant="outline"
                   size="sm"
                   onClick={handleLogout}
-                  className="flex items-center gap-2 text-red-400 border-red-900 hover:bg-red-900/40"
+                  className="flex items-center gap-2 text-destructive border-destructive hover:bg-destructive/10"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout
@@ -195,7 +206,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
       <main className="flex-1 pb-20">{children}</main>
 
       {showNav && user && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 z-30 hidden md:block">
+        <nav className="fixed bottom-0 left-0 right-0 bg-secondary border-t border-border z-30 hidden md:block">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex items-center justify-around py-2">
               {navItems.map((item) => {
@@ -207,8 +218,8 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                     href={item.href}
                     className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
                       isActive
-                        ? "text-orange-500"
-                        : "text-slate-400 hover:text-slate-100"
+                        ? "text-primary"
+                        : "text-muted-foreground hover:text-secondary-foreground"
                     }`}
                   >
                     <Icon size={24} />

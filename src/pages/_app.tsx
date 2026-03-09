@@ -7,7 +7,7 @@ import { NotificationToast } from "@/components/NotificationToast";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <AppProvider>
         <NotificationProvider>
           <Component {...pageProps} />

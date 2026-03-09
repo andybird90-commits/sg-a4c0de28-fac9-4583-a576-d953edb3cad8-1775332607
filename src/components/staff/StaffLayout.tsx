@@ -120,13 +120,13 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#020617] text-slate-100">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <Head>
           <title>{title ? `${title} | RD Companion` : "RD Companion Staff Portal"}</title>
         </Head>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff6b35] mx-auto mb-4" />
-          <p className="text-slate-400">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -134,20 +134,19 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
 
   if (!isStaff || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#020617] text-slate-100">
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <Head>
           <title>Access Denied | RD Companion</title>
         </Head>
-        <div className="max-w-md w-full bg-[#050b16] rounded-2xl shadow-professional-lg p-8 text-center border border-slate-800">
-          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <X className="h-8 w-8 text-red-400" />
+        <div className="max-w-md w-full bg-card rounded-2xl shadow-professional-lg p-8 text-center border border-border">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="h-8 w-8 text-destructive" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-50 mb-2">Access Denied</h1>
-          <p className="text-slate-400 mb-6">You do not have permission to access the staff area.</p>
-          <Button
-            onClick={() => router.push("/home")}
-            className="bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-slate-950 hover:from-[#ff814f] hover:to-[#ffa25c]"
-          >
+          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+          <p className="text-muted-foreground mb-6">
+            You do not have permission to access the staff area.
+          </p>
+          <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => router.push("/home")}>
             Return to Dashboard
           </Button>
         </div>
@@ -172,18 +171,18 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
         onClick={() => router.push(path)}
         className={`group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
           isActive
-            ? "bg-[#ff6b35] text-slate-950 shadow-professional-md"
-            : "text-slate-200 hover:bg-slate-800/80"
+            ? "bg-primary text-primary-foreground shadow-professional-md"
+            : "text-secondary-foreground/80 hover:bg-muted"
         }`}
       >
         <span
           className={`flex h-8 w-8 items-center justify-center rounded-lg border ${
             isActive
-              ? "border-transparent bg-slate-950/10"
-              : "border-slate-700/70 bg-slate-900/50 group-hover:border-slate-500"
+              ? "border-transparent bg-background/10"
+              : "border-border bg-secondary/60 group-hover:border-primary"
           }`}
         >
-          <Icon className={`h-4 w-4 ${isActive ? "text-slate-950" : "text-slate-200"}`} />
+          <Icon className={`h-4 w-4 ${isActive ? "text-primary-foreground" : "text-secondary-foreground"}`} />
         </span>
         <span className="truncate">{label}</span>
       </button>
@@ -191,28 +190,28 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-100">
+    <div className="min-h-screen bg-background text-foreground">
       <Head>
         <title>{title ? `${title} | RD Companion` : "RD Companion Staff Portal"}</title>
       </Head>
 
       {/* Top bar */}
-      <header className="sticky top-0 z-40 border-b border-slate-800 bg-[#020617]/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-border bg-secondary/95 backdrop-blur-sm text-secondary-foreground">
         <div className="px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-200"
+              className="lg:hidden p-2 rounded-lg hover:bg-muted text-secondary-foreground"
             >
               <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 border border-slate-700">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background border border-border">
                 <img src="/rdtax-logo.png" alt="RD TAX" className="h-6 w-auto" />
               </div>
               <div className="hidden sm:block">
-                <div className="text-sm font-semibold text-slate-50">RD Companion</div>
-                <div className="text-xs text-slate-400">Staff Portal</div>
+                <div className="text-sm font-semibold">RD Companion</div>
+                <div className="text-xs text-secondary-foreground/80">Staff Portal</div>
               </div>
             </div>
           </div>
@@ -222,11 +221,11 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
               <Button
                 variant="outline"
                 size="icon"
-                className="relative border-slate-700 bg-slate-900 text-slate-100 hover:bg-slate-800"
+                className="relative border-border bg-background text-foreground hover:bg-muted"
               >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#ff6b35] text-white text-[10px] flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-primary-foreground text-[10px] flex items-center justify-center">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
@@ -234,20 +233,20 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
             </Link>
 
             <div className="hidden md:flex flex-col items-end">
-              <span className="text-xs font-medium text-slate-100">
+              <span className="text-xs font-medium">
                 {profileWithOrg?.full_name || user.email}
               </span>
               <div className="flex items-center gap-1">
                 <Badge
                   variant="secondary"
-                  className="text-[10px] bg-slate-900 border-slate-700 text-slate-100"
+                  className="text-[10px] bg-background border-border text-foreground"
                 >
                   {getInternalRoleDisplayName(profileWithOrg?.internal_role || null)}
                 </Badge>
                 {profileWithOrg?.organisation_code && (
                   <Badge
                     variant="outline"
-                    className="text-[10px] border-slate-700 text-slate-300"
+                    className="text-[10px] border-border text-secondary-foreground/80"
                   >
                     {profileWithOrg.organisation_code}
                   </Badge>
@@ -259,7 +258,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
               variant="outline"
               size="sm"
               onClick={handleSignOut}
-              className="border-red-900/70 text-red-400 hover:bg-red-900/30 hover:text-red-200"
+              className="border-destructive/70 text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               <LogOut className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">Sign Out</span>
@@ -271,14 +270,14 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
       {/* Layout body */}
       <div className="flex">
         {/* Sidebar - desktop */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r border-slate-900 bg-[#020617] text-slate-50 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 border-r border-border bg-secondary text-secondary-foreground sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
           <div className="px-3 py-4 space-y-1">
             {staffNavItems.map((item) => renderNavItem(item.path, item.label, item.icon))}
           </div>
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 bg-[#020617] min-h-[calc(100vh-3.5rem)]">
+        <main className="flex-1 bg-background min-h-[calc(100vh-3.5rem)]">
           <div className="px-4 sm:px-6 lg:px-8 py-6">
             <div className="max-w-7xl mx-auto space-y-6">{children}</div>
           </div>
@@ -292,22 +291,22 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
           onClick={() => setMobileMenuOpen(false)}
         >
           <div
-            className="absolute left-0 top-0 bottom-0 w-72 bg-[#050b16] border-r border-slate-800 shadow-professional-md"
+            className="absolute left-0 top-0 bottom-0 w-72 bg-secondary text-secondary-foreground border-r border-border shadow-professional-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-4 border-b border-slate-800">
+            <div className="flex items-center justify-between px-4 py-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 border border-slate-700">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background border border-border">
                   <img src="/rdtax-logo.png" alt="RD TAX" className="h-6 w-auto" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-slate-50">RD Companion</div>
-                  <div className="text-xs text-slate-400">Staff Portal</div>
+                  <div className="text-sm font-semibold">RD Companion</div>
+                  <div className="text-xs text-secondary-foreground/80">Staff Portal</div>
                 </div>
               </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-lg hover:bg-slate-800 text-slate-300"
+                className="p-2 rounded-lg hover:bg-muted text-secondary-foreground"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -327,22 +326,22 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
               ))}
             </div>
 
-            <div className="mt-auto px-4 py-4 border-t border-slate-800">
+            <div className="mt-auto px-4 py-4 border-t border-border">
               <div className="mb-3">
-                <div className="text-xs font-medium text-slate-100">
+                <div className="text-xs font-medium">
                   {profileWithOrg?.full_name || user.email}
                 </div>
                 <div className="flex items-center gap-1 mt-1">
                   <Badge
                     variant="secondary"
-                    className="text-[10px] bg-slate-900 border-slate-700 text-slate-100"
+                    className="text-[10px] bg-background border-border text-foreground"
                   >
                     {getInternalRoleDisplayName(profileWithOrg?.internal_role || null)}
                   </Badge>
                   {profileWithOrg?.organisation_code && (
                     <Badge
                       variant="outline"
-                      className="text-[10px] border-slate-700 text-slate-300"
+                      className="text-[10px] border-border text-secondary-foreground/80"
                     >
                       {profileWithOrg.organisation_code}
                     </Badge>
@@ -357,7 +356,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
                   setMobileMenuOpen(false);
                   handleSignOut();
                 }}
-                className="w-full justify-center border-red-900/70 text-red-400 hover:bg-red-900/30 hover:text-red-200"
+                className="w-full justify-center border-destructive/70 text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 <LogOut className="h-4 w-4 mr-1" />
                 Sign Out
