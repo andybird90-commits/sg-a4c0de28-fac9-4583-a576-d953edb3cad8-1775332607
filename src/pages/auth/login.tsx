@@ -117,7 +117,7 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="pl-10 h-11 border-slate-800 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500" />
+                      className="pl-10 h-11 border-slate-800 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500" style={{ backgroundColor: "#ffffff" }} />
                     
                   </div>
                 </div>
@@ -135,7 +135,7 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="pl-10 h-11 border-slate-800 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500" />
+                      className="pl-10 h-11 border-slate-800 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-orange-500 focus:ring-orange-500" style={{ backgroundColor: "#ffffff" }} />
                     
                   </div>
                 </div>
