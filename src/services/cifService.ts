@@ -140,6 +140,7 @@ export const cifService = {
       primary_contact_email?: string;
       primary_contact_phone?: string;
       primary_contact_landline?: string;
+      // make sure this matches what we pass from the popup:
       number_of_employees?: number;
       rd_themes?: string[];
       expected_feasibility_date?: string;
@@ -477,7 +478,7 @@ export const cifService = {
       additional_info?: string;
     }
   ) {
-    const cifUpdates: Partial<CIFUpdate> = {
+    const cifUpdates: Partial<CIFUpdate> & { number_of_employees?: number | null } = {
       current_stage: "awaiting_feasibility",
       section1_completed_at: new Date().toISOString(),
       section1_completed_by: userId,

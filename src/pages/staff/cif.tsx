@@ -339,6 +339,8 @@ function CIFCreationForm({
 
   // Define formData state with explicit initial values for ALL fields
   const [formData, setFormData] = useState({
+    companyName: "",
+    companyNumber: "",
     numberOfEmployees: "",
     primaryContactName: "",
     primaryContactPosition: "",
@@ -561,62 +563,70 @@ function CIFCreationForm({
     setSaving(true);
     try {
       console.log("CIFCreationForm.handleCreateCIF calling cifService.createCIF");
-      const result = await cifService.createCIF({
-        prospectData: {
-          company_name: companyData.company_name,
-          company_number: companyData.company_number,
-          contact_name: formData.primaryContactName,
-          contact_email: formData.primaryContactEmail,
-          contact_phone: formData.primaryContactPhone,
-          registered_address: companyData.registered_office_address?.address_line_1
-            ? [
-                companyData.registered_office_address.address_line_1,
-                companyData.registered_office_address.address_line_2,
-                companyData.registered_office_address.locality,
-                companyData.registered_office_address.postal_code,
-              ]
-                .filter(Boolean)
-                .join(", ")
-            : undefined,
-          sic_codes: companyData.sic_codes || [],
-          incorporation_date: companyData.date_of_creation || undefined,
-          number_of_employees: parseInt(formData.numberOfEmployees) || undefined,
-        },
-        bdmSectionData: {
-          primary_contact_name: formData.primaryContactName,
-          primary_contact_position: formData.primaryContactPosition || undefined,
-          primary_contact_email: formData.primaryContactEmail,
-          primary_contact_phone: formData.primaryContactPhone,
-          primary_contact_landline: formData.primaryContactLandline || undefined,
-          number_of_employees: parseInt(formData.numberOfEmployees) || undefined,
-          can_answer_feasibility: formData.canAnswerFeasibility,
-          alternate_contact_informed: formData.alternateContactInformed || undefined,
-          understands_scheme: formData.understandsScheme,
-          scheme_understanding_details:
-            formData.schemeUnderstandingDetails || undefined,
-          has_claimed_before:
-            formData.hasClaimedBefore === "yes"
-              ? true
-              : formData.hasClaimedBefore === "no"
-              ? false
-              : null,
-          previous_claim_details: formData.previousClaimDetails || undefined,
-          projects_discussed: formData.projectsDiscussed,
-          projects_details: formData.projectsDetails || undefined,
-          fee_terms_discussed: formData.feeTermsDiscussed,
-          fee_terms_details: formData.feeTermsDetails || undefined,
-          additional_info: formData.additionalInfo || undefined,
-          ai_research_data: analysisData || undefined,
-        },
+      const numberOfEmployees =
+        formData.numberOfEmployees && !Number.isNaN(Number(formData.numberOfEmployees))
+          ? Number(formData.numberOfEmployees)
+          : null;
+
+      const prospectData = {
+        company_name: formData.companyName,
+        company_number: formData.companyNumber,
+        contact_name: formData.primaryContactName,
+        contact_email: formData.primaryContactEmail,
+        contact_phone: formData.primaryContactPhone,
+        registered_address: companyData.registered_office_address?.address_line_1
+          ? [
+              companyData.registered_office_address.address_line_1,
+              companyData.registered_office_address.address_line_2,
+              companyData.registered_office_address.locality,
+              companyData.registered_office_address.postal_code,
+            ]
+              .filter(Boolean)
+              .join(", ")
+          : undefined,
+        sic_codes: companyData.sic_codes || [],
+        incorporation_date: companyData.date_of_creation || undefined,
+        number_of_employees: numberOfEmployees,
+      };
+
+      const bdmSectionData = {
+        primary_contact_name: formData.primaryContactName,
+        primary_contact_email: formData.primaryContactEmail,
+        primary_contact_phone: formData.primaryContactPhone,
+        primary_contact_position: formData.primaryContactPosition || undefined,
+        primary_contact_landline: formData.primaryContactLandline || undefined,
+        number_of_employees: numberOfEmployees ?? undefined,
+        can_answer_feasibility: formData.canAnswerFeasibility,
+        alternate_contact_informed: formData.alternateContactInformed,
+        understands_scheme: formData.understandsScheme,
+        scheme_understanding_details: formData.schemeUnderstandingDetails,
+        has_claimed_before:
+          formData.hasClaimedBefore === "yes"
+            ? true
+            : formData.hasClaimedBefore === "no"
+            ? false
+            : null,
+        previous_claim_details: formData.previousClaimDetails,
+        projects_discussed: formData.projectsDiscussed,
+        projects_details: formData.projectsDetails,
+        fee_terms_discussed: formData.feeTermsDiscussed,
+        fee_terms_details: formData.feeTermsDetails,
+        additional_info: formData.additionalInfo,
+        ai_research_data: analysisData,
+      };
+
+      const { cif, prospect } = await cifService.createCIF({
+        prospectData,
+        bdmSectionData,
         createdBy: profile.id,
       });
 
-      console.log("CIFCreationForm.handleCreateCIF result", result);
+      console.log("CIFCreationForm.handleCreateCIF result", { cif, prospect });
 
-      if (result) {
+      if (cif) {
         setCreatedCif({
-          cifId: result.cif.id,
-          prospectId: result.prospect?.id ?? null,
+          cifId: cif.id,
+          prospectId: prospect?.id ?? null,
           primaryContactEmail: formData.primaryContactEmail,
         });
 
@@ -1247,11 +1257,7 @@ function CIFCreationForm({
               disabled={saving}
               className="flex-1"
             >
-              {createdCif
-                ? "Request Feasibility Call"
-                : saving
-                ? "Creating CIF..."
-                : "Create CIF"}
+              {saving ? "Booking feasibility..." : "Book feasibility"}
             </Button>
             <Button onClick={() => setStep("lookup")} variant="outline" disabled={saving}>
               Back

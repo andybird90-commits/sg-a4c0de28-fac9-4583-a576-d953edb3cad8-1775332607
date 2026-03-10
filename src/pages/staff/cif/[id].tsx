@@ -268,12 +268,11 @@ export default function CIFDetailPage() {
       const prospect = Array.isArray(cifData.prospects) ? cifData.prospects[0] : cifData.prospects;
       setCompanyName(prospect?.company_name || "");
       setCompanyNumber(prospect?.company_number || "");
+      // Always read headcount from prospect; cif_records does not have this column
       setNumberOfEmployees(
-        (prospect?.number_of_employees != null
+        prospect?.number_of_employees != null
           ? prospect.number_of_employees.toString()
-          : (cifData as any).number_of_employees != null
-          ? String((cifData as any).number_of_employees)
-          : "") || ""
+          : ""
       );
       
       // Contact Details
