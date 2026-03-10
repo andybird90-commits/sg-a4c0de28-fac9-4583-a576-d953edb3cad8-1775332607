@@ -547,35 +547,29 @@ export default function CIFDetailPage() {
 
     setSaving(true);
     try {
-      // Prepare the data matching the new structure
       const bdmData = {
-        // Contact Details
         primary_contact_name: contactName,
         primary_contact_phone: contactNumber,
         primary_contact_email: contactEmail,
-        
-        // Business Details
         number_of_employees: numberOfEmployees ? parseInt(numberOfEmployees) : undefined,
-        
-        // Start Point Information
         can_answer_feasibility: canAnswerFeasibility as "yes" | "no",
         alternate_contact_informed: alternateContactInformed as "yes" | "no",
         understands_scheme: understandsScheme as "yes" | "no" | "dont_know",
         scheme_understanding_details: schemeUnderstandingDetails,
         previous_claim_details: previousClaimDetails,
-        
-        // Projects & Fee Terms
         projects_discussed: projectsDiscussed as "yes" | "no",
         projects_details: projectsDetails,
         fee_terms_discussed: feeTermsDiscussed as "yes" | "no",
         fee_terms_details: feeTermsDetails,
         additional_info: additionalInfo,
-        
-        // Legacy fields for compatibility
         has_claimed_before: hasClaimedBefore === "yes"
       };
 
-      const result = await cifService.completeBDMSection(cif.id, profile.id, bdmData);
+      const result = await cifService.completeBDMSection({
+        cifId: cif.id,
+        updates: bdmData,
+        userId: profile.id,
+      });
 
       if (result) {
         toast({
