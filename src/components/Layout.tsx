@@ -254,6 +254,19 @@ export function Layout({ children, showNav = true }: LayoutProps) {
             </div>
 
             <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+              <div className="mb-3 px-1">
+                <div className="flex h-10 sm:h-11 md:h-12 items-center">
+                  <Image
+                    src="/rd_tax_white_wording.png"
+                    alt="RD TAX"
+                    width={220}
+                    height={70}
+                    className="h-full w-auto"
+                    priority
+                  />
+                </div>
+              </div>
+
               {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
