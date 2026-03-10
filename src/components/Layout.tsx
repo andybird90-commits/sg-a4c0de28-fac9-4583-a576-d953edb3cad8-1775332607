@@ -170,10 +170,12 @@ export function Layout({ children, showNav = true }: LayoutProps) {
       </header>
 
       {/* Body layout – fixed sidebar, scrolling main (like staff) */}
-      <div className="flex w-full max-w-full flex-1 overflow-hidden h-[calc(100vh-3.5rem)]">
+      <div className="flex w-full max-w-full flex-1 overflow-x-hidden">
         {/* Sidebar – desktop only */}
         {user &&
-        <aside className="hidden lg:flex h-screen w-64 flex-col bg-[#020817] border-r border-slate-800" style={{ backgroundColor: "rgb(15, 29, 45)", backgroundImage: "none" }}>
+        <aside
+            className="hidden lg:flex lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)] w-64 flex-col bg-[#020817] border-r border-slate-800 self-start"
+            style={{ backgroundColor: "rgb(15, 29, 45)", backgroundImage: "none" }}>
             <div className="px-4 py-4 space-y-1" style={{ backgroundColor: "rgba(15, 29, 45, 0)" }}>
               {navItems.map((item) => {
               const Icon = item.icon;
@@ -231,7 +233,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
         }
 
         {/* Main content – scrolls within, offset for sidebar on desktop */}
-        <main className="flex-1 bg-background overflow-x-hidden overflow-y-auto lg:ml-64">
+        <main className="flex-1 bg-background overflow-x-hidden lg:ml-64">
           <div className="px-4 sm:px-6 lg:px-8 py-6">
             <div className="max-w-7xl mx-auto">{children}</div>
           </div>
