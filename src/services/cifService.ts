@@ -525,15 +525,16 @@ export const cifService = {
 
     if (error) throw error;
 
-    if (bdmData?.number_of_employees != null && data?.prospect_id) {
-      const employeeCount = Number.isNaN(bdmData.number_of_employees)
-        ? null
-        : bdmData.number_of_employees;
-
+    // Only sync number_of_employees to the prospect when we have a valid number.
+    if (
+      typeof bdmData?.number_of_employees === "number" &&
+      !Number.isNaN(bdmData.number_of_employees) &&
+      data?.prospect_id
+    ) {
       try {
         await supabase
           .from("prospects")
-          .update({ number_of_employees: employeeCount })
+          .update({ number_of_employees: bdmData.number_of_employees })
           .eq("id", data.prospect_id);
       } catch (syncError) {
         console.error("Failed to sync prospect employee count:", syncError);
