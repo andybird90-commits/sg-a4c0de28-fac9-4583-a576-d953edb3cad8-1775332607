@@ -518,12 +518,8 @@ function CIFCreationForm({
       "Has Claimed Before": formData.hasClaimedBefore,
       "Fee Terms Discussed": formData.feeTermsDiscussed,
       "Additional Information to Help Feasibility Study": formData.additionalInfo,
-      // HMRC notification fields
-      "Accounting Period Start Date": formData.accountingPeriodStart,
-      "Accounting Period End Date": formData.accountingPeriodEnd,
-      "Main Internal R&D Contact Name": formData.internalRdContactName,
-      "Main Internal R&D Contact Email": formData.internalRdContactEmail,
-      "High-level Innovation / R&D Summary": formData.organisationRdSummary,
+      // HMRC notification fields are now optional at this stage
+      // They are used to compute notification status when provided
     };
 
     // Conditional requirements tied directly to on-screen follow-up questions
@@ -537,6 +533,9 @@ function CIFCreationForm({
       requiredFields["Previous Claim Details"] = formData.previousClaimDetails;
       requiredFields["Most Recent Claim Within Last 3 Years"] =
         formData.claimedWithinLast3Years;
+    }
+    if (formData.feeTermsDiscussed === "yes") {
+      requiredFields["Agreed Fee / Terms"] = formData.feeTermsDetails;
     }
 
     const missingFields = Object.entries(requiredFields)
@@ -1039,7 +1038,7 @@ function CIFCreationForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="accounting-period-start">
-                  Accounting period start date <span className="text-red-500">*</span>
+                  Accounting period start date
                 </Label>
                 <Input
                   id="accounting-period-start"
@@ -1055,7 +1054,7 @@ function CIFCreationForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="accounting-period-end">
-                  Accounting period end date <span className="text-red-500">*</span>
+                  Accounting period end date
                 </Label>
                 <Input
                   id="accounting-period-end"
@@ -1075,7 +1074,7 @@ function CIFCreationForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="internal-rd-contact-name">
-                  Main internal R&amp;D contact name <span className="text-red-500">*</span>
+                  Main internal R&amp;D contact name
                 </Label>
                 <Input
                   id="internal-rd-contact-name"
@@ -1091,7 +1090,7 @@ function CIFCreationForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="internal-rd-contact-email">
-                  Main internal R&amp;D contact email <span className="text-red-500">*</span>
+                  Main internal R&amp;D contact email
                 </Label>
                 <Input
                   id="internal-rd-contact-email"
@@ -1110,7 +1109,7 @@ function CIFCreationForm({
 
             <div className="space-y-2">
               <Label htmlFor="organisation-rd-summary">
-                High-level innovation / R&amp;D summary (company-level) <span className="text-red-500">*</span>
+                High-level innovation / R&amp;D summary (company-level)
               </Label>
               <Textarea
                 id="organisation-rd-summary"
@@ -1189,6 +1188,7 @@ function CIFCreationForm({
                     setFormData((prev) => ({
                       ...prev,
                       feeTermsDiscussed: "no",
+                      feeTermsDetails: "",
                     }))
                   }
                 >
@@ -1196,6 +1196,27 @@ function CIFCreationForm({
                 </Button>
               </div>
             </div>
+
+            {formData.feeTermsDiscussed === "yes" && (
+              <div className="space-y-2 pl-4 border-l-4 border-orange-500">
+                <Label htmlFor="fee-terms-details">
+                  Agreed fee / terms (e.g. 20% success fee, minimum fee, payment timing){" "}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <Textarea
+                  id="fee-terms-details"
+                  placeholder="Summarise the agreed fee percentage and any key terms agreed with the client..."
+                  className="min-h-[80px]"
+                  value={formData.feeTermsDetails}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      feeTermsDetails: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="additional-info">
