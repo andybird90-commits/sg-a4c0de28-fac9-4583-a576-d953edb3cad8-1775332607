@@ -180,7 +180,10 @@ function useCertificationStatus(): [CertificationStatus, () => Promise<void>] {
   const refresh = async () => {
     setStatus((prev) => ({ ...prev, loading: true }));
     try {
-      const response = await fetch("/api/academy/certification/status");
+      const headers = await getAcademyAuthHeaders();
+      const response = await fetch("/api/academy/certification/status", {
+        headers,
+      });
       if (!response.ok) {
         setStatus({
           loading: false,
@@ -221,10 +224,27 @@ function useModuleProgress(): [ModuleProgressSummary[], boolean] {
       try {
         const headers = await getAcademyAuthHeaders();
 
-        const [progressRes, statusRes] = await Promise.all([
-          fetch("/api/academy/progress", { headers }),
-          fetch("/api/academy/certification/status", { headers }),
-        ]);
+        const response = await fetch("/api/academy/progress", {
+          headers,
+        });
+
+        if (!response.ok) {
+          setProgress([]);
+          return;
+        }
+
+        const json = await response.json();
+        const modules = Array.isArray(json.modules) ? json.modules : [];
+
+        setProgress(
+          modules.map((item: any) => ({
+            moduleId: item.moduleId,
+            quizPassed: Boolean(item.quizPassed),
+            completedAt: item.completedAt ?? null,
+            lastScore:
+              typeof item.lastScore === "number" ? item.lastScore : item.lastScore ?? null,
+          })),
+        );
       } catch {
         setProgress([]);
       } finally {
