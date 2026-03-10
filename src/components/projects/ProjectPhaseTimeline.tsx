@@ -149,7 +149,7 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
           {phases.map((phase) => {
             const icon =
             phase.status === "complete" ?
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" /> :
+            <CheckCircle2 className="h-4 w-4" style={{ color: "#0f1d2d" }} /> :
             phase.status === "current" ?
             <AlertCircle className="h-4 w-4 text-orange-400" /> :
 
@@ -162,12 +162,17 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
                 className={cn(
                   "rounded-lg border px-3 py-2 h-full",
                   phase.status === "complete" &&
-                  "border-emerald-500/50 bg-emerald-950/40",
+                  "bg-slate-950/40",
                   phase.status === "current" &&
                   "border-orange-500/60 bg-slate-950",
                   phase.status === "upcoming" &&
                   "border-slate-800 bg-slate-950/40"
-                )} style={{ backgroundColor: "#f3f4f6", color: "#1a1a1a" }}>
+                )}
+                style={{
+                  backgroundColor: "#f3f4f6",
+                  color: "#1a1a1a",
+                  borderColor: phase.status === "complete" ? "#0f1d2d" : undefined
+                }}>
                 
                 <div className="flex items-start gap-2">
                   <div className="mt-[2px]">{icon}</div>
@@ -178,14 +183,17 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
                       </span>
                       <span
                         className={cn(
-                          "rounded-full px-2 py-[1px] text-[10px] font-medium",
-                          phase.status === "complete" &&
-                          "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40",
+                          "rounded-full border px-2 py-[1px] text-[10px] font-medium",
                           phase.status === "current" &&
-                          "bg-orange-500/10 text-orange-300 border border-orange-500/60",
+                          "bg-orange-500/10 text-orange-300 border-orange-500/60",
                           phase.status === "upcoming" &&
-                          "bg-slate-800 text-slate-300 border border-slate-700"
-                        )} style={{ color: "#1a1a1a" }}>
+                          "bg-slate-800 text-slate-300 border-slate-700"
+                        )}
+                        style={{
+                          color: phase.status === "complete" ? "#0f1d2d" : "#1a1a1a",
+                          borderColor: phase.status === "complete" ? "#0f1d2d" : undefined,
+                          backgroundColor: phase.status === "complete" ? "rgba(15,29,45,0.06)" : undefined
+                        }}>
                         
                         {phase.status === "complete" ?
                         "Complete" :
