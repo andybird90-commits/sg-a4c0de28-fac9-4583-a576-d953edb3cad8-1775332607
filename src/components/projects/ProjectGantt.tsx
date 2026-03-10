@@ -20,22 +20,22 @@ function parseDate(value: string | null): number | null {
 }
 
 export const ProjectGantt: FC<ProjectGanttProps> = ({ items }) => {
-  const validItems = items
-    .map((item) => {
-      const start = parseDate(item.start_date);
-      const end = parseDate(item.end_date);
-      if (start === null || end === null) return null;
-      return { ...item, start, end };
-    })
-    .filter((item): item is ProjectGanttItem & { start: number; end: number } => Boolean(item))
-    .sort((a, b) => a.start - b.start);
+  const validItems = items.
+  map((item) => {
+    const start = parseDate(item.start_date);
+    const end = parseDate(item.end_date);
+    if (start === null || end === null) return null;
+    return { ...item, start, end };
+  }).
+  filter((item): item is ProjectGanttItem & {start: number;end: number;} => Boolean(item)).
+  sort((a, b) => a.start - b.start);
 
   if (validItems.length === 0) {
     return (
       <p className="text-xs text-muted-foreground">
         No timeline activities yet. Add activities with start and finish dates to see a simple Gantt view.
-      </p>
-    );
+      </p>);
+
   }
 
   const minStart = validItems.reduce((min, item) => Math.min(min, item.start), validItems[0].start);
@@ -47,7 +47,7 @@ export const ProjectGantt: FC<ProjectGanttProps> = ({ items }) => {
     return d.toLocaleDateString("en-GB", {
       year: "2-digit",
       month: "short",
-      day: "2-digit",
+      day: "2-digit"
     });
   };
 
@@ -76,17 +76,17 @@ export const ProjectGantt: FC<ProjectGanttProps> = ({ items }) => {
                 <div className="relative h-3 rounded bg-slate-900/40">
                   <div
                     className="absolute top-0 h-3 rounded bg-blue-500"
-                    style={{
-                      left: `${leftPercent}%`,
-                      width: `${widthPercent}%`,
-                    }}
-                  />
+                    style={{ backgroundColor: "#0f1d2d" }} />
+
+
+
+                  
                 </div>
               </div>
-            </div>
-          );
+            </div>);
+
         })}
       </div>
-    </div>
-  );
+    </div>);
+
 };
