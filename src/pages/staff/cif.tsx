@@ -519,6 +519,7 @@ function CIFCreationForm({
       "Has Claimed Before": formData.hasClaimedBefore,
       "Fee Terms Discussed": formData.feeTermsDiscussed,
       "Additional Information to Help Feasibility Study": formData.additionalInfo,
+      "Projects Discussed": formData.projectsDiscussed,
       // HMRC notification fields are now optional at this stage
       // They are used to compute notification status when provided
     };
@@ -537,6 +538,9 @@ function CIFCreationForm({
     }
     if (formData.feeTermsDiscussed === "yes") {
       requiredFields["Agreed Fee / Terms"] = formData.feeTermsDetails;
+    }
+    if (formData.projectsDiscussed === "yes") {
+      requiredFields["Projects Discussed Details"] = formData.projectsDetails;
     }
 
     const missingFields = Object.entries(requiredFields)
@@ -569,8 +573,8 @@ function CIFCreationForm({
           : null;
 
       const prospectData = {
-        company_name: formData.companyName,
-        company_number: formData.companyNumber,
+        company_name: companyData.company_name,
+        company_number: companyData.company_number,
         contact_name: formData.primaryContactName,
         contact_email: formData.primaryContactEmail,
         contact_phone: formData.primaryContactPhone,
@@ -1047,7 +1051,66 @@ function CIFCreationForm({
             </div>
           )}
 
+          {/* PROJECTS DISCUSSED */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="font-semibold">
+                Have specific R&amp;D projects already been discussed with the client? <span className="text-red-500">*</span>
+              </Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={formData.projectsDiscussed === "yes" ? "default" : "outline"}
+                  onClick={() =>
+                    setFormData(prev => ({
+                      ...prev,
+                      projectsDiscussed: "yes",
+                    }))
+                  }
+                >
+                  YES
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={formData.projectsDiscussed === "no" ? "default" : "outline"}
+                  onClick={() =>
+                    setFormData(prev => ({
+                      ...prev,
+                      projectsDiscussed: "no",
+                      projectsDetails: "",
+                    }))
+                  }
+                >
+                  NO
+                </Button>
+              </div>
+            </div>
+
+            {formData.projectsDiscussed === "yes" && (
+              <div className="space-y-2 pl-4 border-l-4 border-orange-500">
+                <Label htmlFor="projects-details">
+                  If yes, briefly describe the projects discussed <span className="text-red-500">*</span>
+                </Label>
+                <Textarea
+                  id="projects-details"
+                  className="min-h-[80px]"
+                  placeholder="High-level summary of the projects already discussed with the client..."
+                  value={formData.projectsDetails}
+                  onChange={(e) =>
+                    setFormData(prev => ({
+                      ...prev,
+                      projectsDetails: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            )}
+          </div>
+
           {/* HMRC Claim Notification Check */}
+          {/* HMRC CLAIM NOTIFICATION CHECK */}
           <div className="space-y-4 mt-6">
             <div className="bg-orange-500 text-white px-4 py-2 font-semibold rounded">
               HMRC CLAIM NOTIFICATION CHECK
