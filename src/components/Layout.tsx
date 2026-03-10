@@ -53,6 +53,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
   { href: "/evidence", label: "Evidence", icon: Layers },
   { href: "/projects", label: "Projects", icon: FolderOpen },
   { href: "/feasibility", label: "Feasibility", icon: Lightbulb },
+  { href: "/feasibility/history", label: "Feasibility history", icon: Lightbulb },
   { href: "/settings", label: "Settings", icon: Settings }];
 
 
