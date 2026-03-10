@@ -180,17 +180,15 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
                       </span>
                       <span
                         className={cn(
-                          "rounded-full border px-2 py-[1px] text-[10px] font-medium",
+                          "rounded-full border px-2 py-[1px] text-[11px] font-medium",
+                          // Text colour: Neutral 900 when complete, brand orange otherwise
+                          phase.status === "complete"
+                            ? "text-[#111827]"
+                            : "text-[rgb(238,120,37)]",
+                          // Background / border variants
                           phase.status === "current" && "bg-orange-500/10 border-orange-500/60",
-                          phase.status === "upcoming" && "bg-slate-800 border-slate-700"
+                          phase.status === "upcoming" && "bg-slate-100 border-slate-300"
                         )}
-                        style={{
-                          color:
-                            phase.status === "complete"
-                              ? "#111827"
-                              : "rgb(238, 120, 37)",
-                          fontSize: "12px"
-                        }}
                       >
                         {phase.status === "complete"
                           ? "Complete"
