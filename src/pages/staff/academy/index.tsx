@@ -155,6 +155,49 @@ interface AcademyModuleWithStatus extends AcademyModule {
   lastScore: number | null;
 }
 
+function deriveNameFromEmail(email: string | null | undefined): string | undefined {
+  if (!email) {
+    return undefined;
+  }
+  const [localPart] = email.split("@");
+  if (!localPart) {
+    return undefined;
+  }
+  const segments = localPart.split(/[._-]+/).filter(Boolean);
+  if (segments.length === 0) {
+    return undefined;
+  }
+  const capitalised = segments.map((segment) => {
+    const lower = segment.toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  });
+  return capitalised.join(" ");
+}
+
+function derivePersonName(
+  rawFullName: string | null | undefined,
+  email: string | null | undefined,
+): string | undefined {
+  const full = rawFullName?.trim();
+  if (full) {
+    const looksLikeEmail = full.includes("@");
+    const looksLikeHandle = !full.includes(" ") && /[._-]/.test(full);
+
+    if (!looksLikeEmail && !looksLikeHandle) {
+      return full;
+    }
+
+    const fromFull = deriveNameFromEmail(
+      looksLikeEmail ? full : `${full}@placeholder.local`,
+    );
+    if (fromFull) {
+      return fromFull;
+    }
+  }
+
+  return deriveNameFromEmail(email ?? null);
+}
+
 async function getAcademyAuthHeaders(): Promise<Record<string, string>> {
   const {
     data: { session },
@@ -303,6 +346,10 @@ function getModuleStatusFromProgress(
 
 export default function StaffRdAgentAcademyPage() {
   const { user } = useApp();
+  const learnerName = derivePersonName(
+    user?.user_metadata && (user.user_metadata.full_name as string | undefined),
+    user?.email ?? null,
+  );
   const [certStatus, refreshStatus] = useCertificationStatus();
   const [moduleProgress, moduleProgressLoading] = useModuleProgress();
 
@@ -388,8 +435,8 @@ export default function StaffRdAgentAcademyPage() {
                         Your Academy Progress
                       </CardTitle>
                       <CardDescription className="text-muted-foreground">
-                        {user?.email
-                          ? `Learning profile for ${user.email}`
+                        {learnerName
+                          ? `Learning profile for ${learnerName}`
                           : "Track your progress through the RD Agent curriculum."}
                       </CardDescription>
                     </div>

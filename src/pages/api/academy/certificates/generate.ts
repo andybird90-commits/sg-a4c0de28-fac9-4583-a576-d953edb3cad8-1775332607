@@ -5,6 +5,54 @@ import { supabaseServer } from "@/integrations/supabase/serverClient";
 import { getCertificationEligibility, createCertificateRecord } from "@/services/academyCertificationService";
 import { buildAcademyCertificatePdf } from "@/lib/pdf/academyCertificate";
 
+function deriveNameFromEmail(email: string | null): string | undefined {
+  if (!email) {
+    return undefined;
+  }
+  const [localPart] = email.split("@");
+  if (!localPart) {
+    return undefined;
+  }
+  const segments = localPart.split(/[._-]+/).filter(Boolean);
+  if (segments.length === 0) {
+    return undefined;
+  }
+  const capitalised = segments.map((segment) => {
+    const lower = segment.toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  });
+  return capitalised.join(" ");
+}
+
+function derivePersonName(
+  rawFullName: string | undefined | null,
+  email: string | null,
+): string {
+  const full = rawFullName?.trim();
+  if (full) {
+    const looksLikeEmail = full.includes("@");
+    const looksLikeHandle = !full.includes(" ") && /[._-]/.test(full);
+
+    if (!looksLikeEmail && !looksLikeHandle) {
+      return full;
+    }
+
+    const fromFull = deriveNameFromEmail(
+      looksLikeEmail ? full : `${full}@placeholder.local`,
+    );
+    if (fromFull) {
+      return fromFull;
+    }
+  }
+
+  const fromEmail = deriveNameFromEmail(email);
+  if (fromEmail) {
+    return fromEmail;
+  }
+
+  return "Certified Agent";
+}
+
 function generateCertificateId(): string {
   const random = Math.random().toString(36).substring(2, 10).toUpperCase();
   const timestamp = Date.now().toString(36).toUpperCase();
@@ -40,10 +88,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const userId = user.id;
-  const recipientName =
-    (user.user_metadata && (user.user_metadata.full_name as string | undefined)) ||
-    (user.email as string | undefined) ||
-    "Certified Agent";
+  const metadataFullName =
+    (user.user_metadata && (user.user_metadata.full_name as string | undefined)) || undefined;
+  const recipientName = derivePersonName(metadataFullName, user.email ?? null);
 
   const eligibility = await getCertificationEligibility(userId);
 
