@@ -174,7 +174,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
         {/* Sidebar – desktop only */}
         {user &&
         <aside
-            className="hidden lg:flex lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)] w-64 flex-col bg-[#020817] border-r border-slate-800 self-start"
+            className="hidden lg:flex lg:sticky lg:top-0 lg:h-[calc(100vh-3.5rem)] w-64 flex-col bg-[#020817] border-r border-slate-800 self-start"
             style={{ backgroundColor: "rgb(15, 29, 45)", backgroundImage: "none" }}>
             <div className="px-4 py-4 space-y-1" style={{ backgroundColor: "rgba(15, 29, 45, 0)" }}>
               {navItems.map((item) => {
