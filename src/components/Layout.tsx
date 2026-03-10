@@ -109,7 +109,7 @@ export function Layout({ children, showNav = true }: LayoutProps) {
   return (
     <div className="min-h-screen w-full max-w-full bg-background text-foreground flex flex-col">
       {/* Header – aligned with staff style */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-[#0F1D2D] text-slate-100">
+      <header className="sticky top-0 z-40 border-b border-[#0F1D2D] bg-[#0F1D2D] text-slate-100">
         <div className="px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between" style={{ backgroundColor: "#0f1d2d" }}>
           <div className="flex items-center gap-3">
             {user &&
@@ -169,12 +169,12 @@ export function Layout({ children, showNav = true }: LayoutProps) {
         </div>
       </header>
 
-      {/* Body layout – fixed sidebar, scrolling main (like staff) */}
-      <div className="flex w-full max-w-full flex-1 overflow-x-hidden">
+      {/* Body layout – fixed sidebar (like staff), scrolling main */}
+      <div className="flex w-full max-w-full flex-1 overflow-hidden lg:h-[calc(100vh-3.5rem)]">
         {/* Sidebar – desktop only */}
-        {user &&
-        <aside
-            className="hidden lg:flex lg:sticky lg:top-0 lg:h-[calc(100vh-3.5rem)] w-64 flex-col bg-[#020817] border-r border-slate-800 self-start"
+        {user && (
+          <aside
+            className="hidden lg:flex lg:flex-col lg:w-64 border-r border-slate-800 bg-[#020817] text-slate-100 fixed top-14 bottom-0 left-0 overflow-y-auto"
             style={{ backgroundColor: "rgb(15, 29, 45)", backgroundImage: "none" }}>
             <div className="px-4 py-4 space-y-1" style={{ backgroundColor: "rgba(15, 29, 45, 0)" }}>
               {navItems.map((item) => {
@@ -230,10 +230,10 @@ export function Layout({ children, showNav = true }: LayoutProps) {
               </button>
             </div>
           </aside>
-        }
+        )}
 
         {/* Main content – scrolls within, offset for sidebar on desktop */}
-        <main className="flex-1 bg-background overflow-x-hidden lg:ml-64">
+        <main className="flex-1 bg-background overflow-x-hidden overflow-y-auto lg:ml-64">
           <div className="px-4 sm:px-6 lg:px-8 py-6">
             <div className="max-w-7xl mx-auto">{children}</div>
           </div>
