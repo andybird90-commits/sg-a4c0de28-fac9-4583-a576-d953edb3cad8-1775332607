@@ -813,7 +813,13 @@ export default function CIFDetailPage() {
   }
 
   const prospect = Array.isArray(cif.prospects) ? cif.prospects[0] : cif.prospects;
+
+  // Global edit flag: used for Feasibility & Admin sections
+  // Feasibility should remain editable for all stages except approved/rejected.
   const canEdit = cif.current_stage !== "approved" && cif.current_stage !== "rejected";
+
+  // BDM‑specific edit flag: BDM is only editable in the early stages.
+  // Once feasibility is booked or later, BDM becomes read‑only.
   const canEditBDM =
     canEdit &&
     (cif.current_stage === "bdm_section" || cif.current_stage === "awaiting_feasibility");
@@ -1506,7 +1512,7 @@ export default function CIFDetailPage() {
                         value={completedByName}
                         onChange={(e) => setCompletedByName(e.target.value)}
                         placeholder="Feasibility assessor name"
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                       />
                     </div>
                   </div>
@@ -1520,7 +1526,7 @@ export default function CIFDetailPage() {
                         type="datetime-local"
                         value={feasibilityCallDate}
                         onChange={(e) => setFeasibilityCallDate(e.target.value)}
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                       />
                     </div>
                   </div>
@@ -1533,7 +1539,7 @@ export default function CIFDetailPage() {
                         type="button"
                         variant={anyIssuesGatheringInfo === "yes" ? "default" : "outline"}
                         onClick={() => setAnyIssuesGatheringInfo("yes")}
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                         className="flex-1"
                       >
                         YES
@@ -1542,7 +1548,7 @@ export default function CIFDetailPage() {
                         type="button"
                         variant={anyIssuesGatheringInfo === "no" ? "default" : "outline"}
                         onClick={() => setAnyIssuesGatheringInfo("no")}
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                         className="flex-1"
                       >
                         NO
@@ -1558,7 +1564,7 @@ export default function CIFDetailPage() {
                         value={issuesGatheringInfoDetails}
                         onChange={(e) => setIssuesGatheringInfoDetails(e.target.value)}
                         rows={3}
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                       />
                     </div>
                   )}
@@ -1595,7 +1601,7 @@ export default function CIFDetailPage() {
                         value={utr}
                         onChange={(e) => setUtr(e.target.value)}
                         placeholder="Unique Taxpayer Reference"
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                       />
                     </div>
                   </div>
@@ -1609,7 +1615,7 @@ export default function CIFDetailPage() {
                         value={turnover}
                         onChange={(e) => setTurnover(e.target.value)}
                         placeholder="£"
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                       />
                     </div>
                     <div className="space-y-2">
@@ -1620,7 +1626,7 @@ export default function CIFDetailPage() {
                         value={payroll}
                         onChange={(e) => setPayroll(e.target.value)}
                         placeholder="£"
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                       />
                     </div>
                   </div>
@@ -1632,7 +1638,7 @@ export default function CIFDetailPage() {
                         id="vat_number"
                         value={vatNumber}
                         onChange={(e) => setVatNumber(e.target.value)}
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                       />
                     </div>
                     <div className="space-y-2">
@@ -1641,7 +1647,7 @@ export default function CIFDetailPage() {
                         id="paye_reference"
                         value={payeReference}
                         onChange={(e) => setPayeReference(e.target.value)}
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                       />
                     </div>
                   </div>
@@ -1685,7 +1691,7 @@ export default function CIFDetailPage() {
                             id="comp_prof_1_name"
                             value={competentProf1Name}
                             onChange={(e) => setCompetentProf1Name(e.target.value)}
-                            disabled={!canEditBDM}
+                            disabled={!canEdit}
                           />
                         </div>
                         <div className="space-y-2">
@@ -1694,7 +1700,7 @@ export default function CIFDetailPage() {
                             id="comp_prof_1_position"
                             value={competentProf1Position}
                             onChange={(e) => setCompetentProf1Position(e.target.value)}
-                            disabled={!canEditBDM}
+                            disabled={!canEdit}
                           />
                         </div>
                       </div>
@@ -1705,7 +1711,7 @@ export default function CIFDetailPage() {
                             id="comp_prof_1_mobile"
                             value={competentProf1Mobile}
                             onChange={(e) => setCompetentProf1Mobile(e.target.value)}
-                            disabled={!canEditBDM}
+                            disabled={!canEdit}
                           />
                         </div>
                         <div className="space-y-2">
@@ -1715,7 +1721,7 @@ export default function CIFDetailPage() {
                             type="email"
                             value={competentProf1Email}
                             onChange={(e) => setCompetentProf1Email(e.target.value)}
-                            disabled={!canEditBDM}
+                            disabled={!canEdit}
                           />
                         </div>
                       </div>
@@ -1731,7 +1737,7 @@ export default function CIFDetailPage() {
                             id="comp_prof_2_name"
                             value={competentProf2Name}
                             onChange={(e) => setCompetentProf2Name(e.target.value)}
-                            disabled={!canEditBDM}
+                            disabled={!canEdit}
                           />
                         </div>
                         <div className="space-y-2">
@@ -1740,7 +1746,7 @@ export default function CIFDetailPage() {
                             id="comp_prof_2_position"
                             value={competentProf2Position}
                             onChange={(e) => setCompetentProf2Position(e.target.value)}
-                            disabled={!canEditBDM}
+                            disabled={!canEdit}
                           />
                         </div>
                       </div>
@@ -1751,7 +1757,7 @@ export default function CIFDetailPage() {
                             id="comp_prof_2_mobile"
                             value={competentProf2Mobile}
                             onChange={(e) => setCompetentProf2Mobile(e.target.value)}
-                            disabled={!canEditBDM}
+                            disabled={!canEdit}
                           />
                         </div>
                         <div className="space-y-2">
@@ -1761,7 +1767,7 @@ export default function CIFDetailPage() {
                             type="email"
                             value={competentProf2Email}
                             onChange={(e) => setCompetentProf2Email(e.target.value)}
-                            disabled={!canEditBDM}
+                            disabled={!canEdit}
                           />
                         </div>
                       </div>
@@ -1777,7 +1783,7 @@ export default function CIFDetailPage() {
                             id="comp_prof_3_name"
                             value={competentProf3Name}
                             onChange={(e) => setCompetentProf3Name(e.target.value)}
-                            disabled={!canEditBDM}
+                            disabled={!canEdit}
                           />
                         </div>
                         <div className="space-y-2">
@@ -1786,7 +1792,7 @@ export default function CIFDetailPage() {
                             id="comp_prof_3_position"
                             value={competentProf3Position}
                             onChange={(e) => setCompetentProf3Position(e.target.value)}
-                            disabled={!canEditBDM}
+                            disabled={!canEdit}
                           />
                         </div>
                       </div>
@@ -1797,7 +1803,7 @@ export default function CIFDetailPage() {
                             id="comp_prof_3_mobile"
                             value={competentProf3Mobile}
                             onChange={(e) => setCompetentProf3Mobile(e.target.value)}
-                            disabled={!canEditBDM}
+                            disabled={!canEdit}
                           />
                         </div>
                         <div className="space-y-2">
@@ -1807,7 +1813,7 @@ export default function CIFDetailPage() {
                             type="email"
                             value={competentProf3Email}
                             onChange={(e) => setCompetentProf3Email(e.target.value)}
-                            disabled={!canEditBDM}
+                            disabled={!canEdit}
                           />
                         </div>
                       </div>
@@ -1886,7 +1892,7 @@ export default function CIFDetailPage() {
                       value={firstClaimYearForNewClaim}
                       onChange={(e) => setFirstClaimYearForNewClaim(e.target.value)}
                       placeholder="e.g., 2024"
-                      disabled={!canEditBDM}
+                      disabled={!canEdit}
                     />
                   </div>
 
@@ -1899,7 +1905,7 @@ export default function CIFDetailPage() {
                           type="button"
                           variant={accountsFiled === "yes" ? "default" : "outline"}
                           onClick={() => setAccountsFiled("yes")}
-                          disabled={!canEditBDM}
+                          disabled={!canEdit}
                           size="sm"
                           className="flex-1"
                         >
@@ -1909,7 +1915,7 @@ export default function CIFDetailPage() {
                           type="button"
                           variant={accountsFiled === "no" ? "default" : "outline"}
                           onClick={() => setAccountsFiled("no")}
-                          disabled={!canEditBDM}
+                          disabled={!canEdit}
                           size="sm"
                           className="flex-1"
                         >
@@ -1924,7 +1930,7 @@ export default function CIFDetailPage() {
                           type="button"
                           variant={ct600FiledSeen === "yes" ? "default" : "outline"}
                           onClick={() => setCt600FiledSeen("yes")}
-                          disabled={!canEditBDM}
+                          disabled={!canEdit}
                           size="sm"
                           className="flex-1"
                         >
@@ -1934,7 +1940,7 @@ export default function CIFDetailPage() {
                           type="button"
                           variant={ct600FiledSeen === "no" ? "default" : "outline"}
                           onClick={() => setCt600FiledSeen("no")}
-                          disabled={!canEditBDM}
+                          disabled={!canEdit}
                           size="sm"
                           className="flex-1"
                         >
@@ -1949,7 +1955,7 @@ export default function CIFDetailPage() {
                           type="button"
                           variant={preNotificationRequired === "yes" ? "default" : "outline"}
                           onClick={() => setPreNotificationRequired("yes")}
-                          disabled={!canEditBDM}
+                          disabled={!canEdit}
                           size="sm"
                           className="flex-1"
                         >
@@ -1959,7 +1965,7 @@ export default function CIFDetailPage() {
                           type="button"
                           variant={preNotificationRequired === "no" ? "default" : "outline"}
                           onClick={() => setPreNotificationRequired("no")}
-                          disabled={!canEditBDM}
+                          disabled={!canEdit}
                           size="sm"
                           className="flex-1"
                         >
@@ -1986,7 +1992,7 @@ export default function CIFDetailPage() {
                       onChange={(e) => setCostsDetails(e.target.value)}
                       rows={6}
                       placeholder="Detail all R&D costs..."
-                      disabled={!canEditBDM}
+                      disabled={!canEdit}
                     />
                   </div>
 
@@ -1998,7 +2004,7 @@ export default function CIFDetailPage() {
                       onChange={(e) => setProjectsDetailsFeas(e.target.value)}
                       rows={6}
                       placeholder="Detail all R&D projects..."
-                      disabled={!canEditBDM}
+                      disabled={!canEdit}
                     />
                   </div>
 
@@ -2011,7 +2017,7 @@ export default function CIFDetailPage() {
                           type="button"
                           variant={subcontractorsInvolved === "yes" ? "default" : "outline"}
                           onClick={() => setSubcontractorsInvolved("yes")}
-                          disabled={!canEditBDM}
+                          disabled={!canEdit}
                           className="flex-1"
                         >
                           YES
@@ -2020,7 +2026,7 @@ export default function CIFDetailPage() {
                           type="button"
                           variant={subcontractorsInvolved === "no" ? "default" : "outline"}
                           onClick={() => setSubcontractorsInvolved("no")}
-                          disabled={!canEditBDM}
+                          disabled={!canEdit}
                           className="flex-1"
                         >
                           NO
@@ -2034,7 +2040,7 @@ export default function CIFDetailPage() {
                           type="button"
                           variant={timeSensitive === "yes" ? "default" : "outline"}
                           onClick={() => setTimeSensitive("yes")}
-                          disabled={!canEditBDM}
+                          disabled={!canEdit}
                           className="flex-1"
                         >
                           YES
@@ -2043,7 +2049,7 @@ export default function CIFDetailPage() {
                           type="button"
                           variant={timeSensitive === "no" ? "default" : "outline"}
                           onClick={() => setTimeSensitive("no")}
-                          disabled={!canEditBDM}
+                          disabled={!canEdit}
                           className="flex-1"
                         >
                           NO
@@ -2069,7 +2075,7 @@ export default function CIFDetailPage() {
                         value={accountantFirm}
                         onChange={(e) => setAccountantFirm(e.target.value)}
                         placeholder="Accountancy firm name"
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                       />
                     </div>
                     <div className="space-y-2">
@@ -2079,7 +2085,7 @@ export default function CIFDetailPage() {
                         value={accountantName}
                         onChange={(e) => setAccountantName(e.target.value)}
                         placeholder="Contact person name"
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                       />
                     </div>
                   </div>
@@ -2093,7 +2099,7 @@ export default function CIFDetailPage() {
                         value={accountantEmail}
                         onChange={(e) => setAccountantEmail(e.target.value)}
                         placeholder="accountant@firm.com"
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                       />
                     </div>
                     <div className="space-y-2">
@@ -2103,7 +2109,7 @@ export default function CIFDetailPage() {
                         value={accountantPhone}
                         onChange={(e) => setAccountantPhone(e.target.value)}
                         placeholder="+44 20 1234 5678"
-                        disabled={!canEditBDM}
+                        disabled={!canEdit}
                       />
                     </div>
                   </div>
@@ -2125,7 +2131,7 @@ export default function CIFDetailPage() {
                         value={financialYear}
                         onChange={(e) => setFinancialYear(e.target.value)}
                         placeholder="e.g., 31-03-2024"
-                        disabled={!canEditBDM || cif.current_stage !== "financial_section"}
+                        disabled={!canEdit}
                       />
                     </div>
                     <div className="space-y-2">
@@ -2135,7 +2141,7 @@ export default function CIFDetailPage() {
                         value={yearEndMonth}
                         onChange={(e) => setYearEndMonth(e.target.value)}
                         placeholder="e.g., March"
-                        disabled={!canEditBDM || cif.current_stage !== "financial_section" || uploadingLOA}
+                        disabled={!canEdit || uploadingLOA}
                       />
                     </div>
                   </div>
@@ -2148,7 +2154,7 @@ export default function CIFDetailPage() {
                         value={apes}
                         onChange={(e) => setApes(e.target.value)}
                         placeholder="Annual Percentage Estimate"
-                        disabled={!canEditBDM || cif.current_stage !== "financial_section" || uploadingLOA}
+                        disabled={!canEdit || uploadingLOA}
                       />
                     </div>
                     <div className="space-y-2">
@@ -2160,7 +2166,7 @@ export default function CIFDetailPage() {
                         value={feePercentage}
                         onChange={(e) => setFeePercentage(e.target.value)}
                         placeholder="%"
-                        disabled={!canEditBDM || cif.current_stage !== "financial_section" || uploadingASS}
+                        disabled={!canEdit || uploadingASS}
                       />
                     </div>
                     <div className="space-y-2">
@@ -2171,7 +2177,7 @@ export default function CIFDetailPage() {
                         value={minimumFee}
                         onChange={(e) => setMinimumFee(e.target.value)}
                         placeholder="£"
-                        disabled={!canEditBDM || cif.current_stage !== "financial_section" || uploadingLOA}
+                        disabled={!canEdit || uploadingLOA}
                       />
                     </div>
                   </div>
@@ -2184,7 +2190,7 @@ export default function CIFDetailPage() {
                         type="button"
                         variant={introducer === "yes" ? "default" : "outline"}
                         onClick={() => setIntroducer("yes")}
-                        disabled={!canEditBDM || cif.current_stage !== "financial_section" || uploadingLOA}
+                        disabled={!canEdit || uploadingLOA}
                         className="flex-1"
                       >
                         YES
@@ -2193,7 +2199,7 @@ export default function CIFDetailPage() {
                         type="button"
                         variant={introducer === "no" ? "default" : "outline"}
                         onClick={() => setIntroducer("no")}
-                        disabled={!canEditBDM || cif.current_stage !== "financial_section" || uploadingASS}
+                        disabled={!canEdit || uploadingASS}
                         className="flex-1"
                       >
                         NO
@@ -2209,7 +2215,7 @@ export default function CIFDetailPage() {
                         value={introducerDetails}
                         onChange={(e) => setIntroducerDetails(e.target.value)}
                         placeholder="Introducer name/company"
-                        disabled={!canEditBDM || cif.current_stage !== "financial_section" || uploadingLOA}
+                        disabled={!canEdit || uploadingLOA}
                       />
                     </div>
                   )}
@@ -2279,7 +2285,7 @@ export default function CIFDetailPage() {
                             type="file"
                             className="hidden"
                             accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                            disabled={!canEditBDM || uploadingAML || saving}
+                            disabled={!canEdit || uploadingAML || saving}
                             onChange={(event) => {
                               const file = event.target.files?.[0];
                               if (!file) return;
@@ -2349,7 +2355,7 @@ export default function CIFDetailPage() {
                             type="file"
                             className="hidden"
                             accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                            disabled={!canEditBDM || uploadingKYC || saving}
+                            disabled={!canEdit || uploadingKYC || saving}
                             onChange={(event) => {
                               const file = event.target.files?.[0];
                               if (!file) return;
@@ -2380,7 +2386,7 @@ export default function CIFDetailPage() {
                 <Separator />
 
                 {/* Complete Feasibility Button */}
-                {canEditBDM && (
+                {canEdit && (
                   <div className="space-y-2">
                     <Button
                       onClick={handleCompleteTechnical}
