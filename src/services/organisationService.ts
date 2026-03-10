@@ -107,19 +107,28 @@ export const organisationService = {
     return (data || []) as Organisation[];
   },
 
-  async joinOrganisation(orgId: string, role: string = "client"): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
+  async joinOrganisation(orgId: string, role: string = "client", userId?: string): Promise<void> {
+    let targetUserId: string | null = userId ?? null;
+
+    if (!targetUserId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("Not authenticated");
+      }
+      targetUserId = user.id;
+    }
 
     const { error } = await supabase
       .from("organisation_users")
       .insert({
         org_id: orgId,
-        user_id: user.id,
+        user_id: targetUserId,
         role: role
       });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
   },
 
   async getProjects(orgId: string, activeOnly = true): Promise<Project[]> {

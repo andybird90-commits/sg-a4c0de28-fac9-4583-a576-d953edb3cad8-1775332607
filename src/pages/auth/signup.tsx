@@ -82,13 +82,21 @@ export default function SignupPage() {
         throw new Error("RD Companion is not enabled for this organisation");
       }
 
-      await authService.signUp(
+      const { user, error: signUpError } = await authService.signUp(
         formData.email,
         formData.password,
         formData.fullName
       );
 
-      await organisationService.joinOrganisation(org.id, "client");
+      if (signUpError) {
+        throw new Error(signUpError.message || "Failed to create account");
+      }
+
+      if (!user) {
+        throw new Error("Account created but user information is missing. Please try signing in.");
+      }
+
+      await organisationService.joinOrganisation(org.id, "client", user.id);
 
       notify({
         type: "success",
