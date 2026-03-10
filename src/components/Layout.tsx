@@ -122,13 +122,13 @@ export function Layout({ children, showNav = true }: LayoutProps) {
                     <Menu className="h-5 w-5" />
                   </button>
                 <Link href="/home" className="hidden sm:flex items-center gap-3">
-                  <div className="flex h-14 items-center">
+                  <div className="flex h-10 sm:h-11 md:h-12 lg:h-[3.25rem] items-center">
                     <Image
                       src="/rd_tax_white_wording.png"
                       alt="RD TAX"
                       width={260}
                       height={80}
-                      className="h-14 w-auto"
+                      className="h-full w-auto"
                       priority
                     />
                   </div>
