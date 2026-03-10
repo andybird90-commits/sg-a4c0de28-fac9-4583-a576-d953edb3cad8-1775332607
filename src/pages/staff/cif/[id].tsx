@@ -1909,7 +1909,10 @@ export default function CIFDetailPage() {
                         type="text"
                         placeholder="e.g., 2023"
                         value={feasibilityFormData.previous_claim_year || ""}
-                        disabled={!canEdit || feasibilityFormData.have_claimed_before !== true}
+                        disabled={
+                          !canEdit ||
+                          feasibilityFormData.have_claimed_before !== true
+                        }
                         onChange={(e) =>
                           setFeasibilityFormData((prev) => ({
                             ...prev,
@@ -1926,7 +1929,10 @@ export default function CIFDetailPage() {
                         type="text"
                         placeholder="e.g., 100000"
                         value={feasibilityFormData.previous_claim_value || ""}
-                        disabled={!canEdit || feasibilityFormData.have_claimed_before !== true}
+                        disabled={
+                          !canEdit ||
+                          feasibilityFormData.have_claimed_before !== true
+                        }
                         onChange={(e) =>
                           setFeasibilityFormData((prev) => ({
                             ...prev,
@@ -1942,7 +1948,10 @@ export default function CIFDetailPage() {
                         id="previous_claim_submitted_at"
                         type="date"
                         value={feasibilityFormData.previous_claim_submitted_at || ""}
-                        disabled={!canEdit || feasibilityFormData.have_claimed_before !== true}
+                        disabled={
+                          !canEdit ||
+                          feasibilityFormData.have_claimed_before !== true
+                        }
                         onChange={(e) =>
                           setFeasibilityFormData((prev) => ({
                             ...prev,
