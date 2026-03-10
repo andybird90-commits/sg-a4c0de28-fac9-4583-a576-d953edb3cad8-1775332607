@@ -33,9 +33,9 @@ export function ProjectVoiceNotes({ projectId }: ProjectVoiceNotesProps) {
 
         if (currentOrg) {
           const [notes, orgProjects] = await Promise.all([
-            voiceNoteService.getByProject(projectId),
-            organisationService.getProjects(currentOrg.id),
-          ]);
+          voiceNoteService.getByProject(projectId),
+          organisationService.getProjects(currentOrg.id)]
+          );
 
           if (!isMounted) return;
 
@@ -64,7 +64,7 @@ export function ProjectVoiceNotes({ projectId }: ProjectVoiceNotesProps) {
         notify({
           type: "error",
           title: "Voice notes",
-          message,
+          message
         });
       } finally {
         if (isMounted) {
@@ -85,7 +85,7 @@ export function ProjectVoiceNotes({ projectId }: ProjectVoiceNotesProps) {
   const handleTranscriptChange = (id: string, value: string) => {
     setDraftTranscripts((prev) => ({
       ...prev,
-      [id]: value,
+      [id]: value
     }));
   };
 
@@ -95,7 +95,7 @@ export function ProjectVoiceNotes({ projectId }: ProjectVoiceNotesProps) {
       notify({
         type: "error",
         title: "Transcript",
-        message: "Transcript cannot be empty.",
+        message: "Transcript cannot be empty."
       });
       return;
     }
@@ -103,18 +103,18 @@ export function ProjectVoiceNotes({ projectId }: ProjectVoiceNotesProps) {
     setSavingIds((prev) => new Set(prev).add(id));
     try {
       const updated = await voiceNoteService.updateTranscript(id, text.trim());
-      setVoiceNotes((prev) => prev.map((n) => (n.id === id ? updated : n)));
+      setVoiceNotes((prev) => prev.map((n) => n.id === id ? updated : n));
       notify({
         type: "success",
         title: "Transcript updated",
-        message: "Voice note transcript saved.",
+        message: "Voice note transcript saved."
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to save transcript.";
       notify({
         type: "error",
         title: "Transcript",
-        message,
+        message
       });
     } finally {
       setSavingIds((prev) => {
@@ -136,14 +136,14 @@ export function ProjectVoiceNotes({ projectId }: ProjectVoiceNotesProps) {
       notify({
         type: "success",
         title: "Voice note moved",
-        message: "Voice note moved to another project.",
+        message: "Voice note moved to another project."
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to move voice note.";
       notify({
         type: "error",
         title: "Move voice note",
-        message,
+        message
       });
     } finally {
       setMovingIds((prev) => {
@@ -165,14 +165,14 @@ export function ProjectVoiceNotes({ projectId }: ProjectVoiceNotesProps) {
       notify({
         type: "success",
         title: "Voice note deleted",
-        message: "The voice note has been removed.",
+        message: "The voice note has been removed."
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Failed to delete voice note.";
       notify({
         type: "error",
         title: "Delete voice note",
-        message,
+        message
       });
     } finally {
       setDeletingIds((prev) => {
@@ -192,8 +192,8 @@ export function ProjectVoiceNotes({ projectId }: ProjectVoiceNotesProps) {
             <span>Loading voice notes...</span>
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>);
+
   }
 
   if (!voiceNotes.length) {
@@ -202,18 +202,18 @@ export function ProjectVoiceNotes({ projectId }: ProjectVoiceNotesProps) {
         <CardContent className="py-8 text-center text-slate-400">
           No voice notes have been captured for this project yet.
         </CardContent>
-      </Card>
-    );
+      </Card>);
+
   }
 
   return (
     <Card className="bg-slate-950 border-slate-800">
-      <CardHeader>
+      <CardHeader style={{ backgroundColor: "rgba(15, 29, 45, 0)" }}>
         <CardTitle className="text-slate-100 flex items-center gap-2">
           Voice Notes
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4" style={{ backgroundColor: "rgba(15, 29, 45, 0)" }}>
         {voiceNotes.map((note) => {
           const saving = savingIds.has(note.id);
           const moving = movingIds.has(note.id);
@@ -224,63 +224,63 @@ export function ProjectVoiceNotes({ projectId }: ProjectVoiceNotesProps) {
           return (
             <div
               key={note.id}
-              className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3"
-            >
+              className="rounded-lg border border-slate-800 bg-slate-900/60 p-4 space-y-3">
+              
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div className="text-sm text-slate-300">
                   <div className="font-medium text-slate-100">Voice note</div>
                   {createdAt && <div className="text-xs text-slate-500">{createdAt}</div>}
-                  {note.ai_summary && (
-                    <div className="mt-1 text-xs text-slate-400">
+                  {note.ai_summary &&
+                  <div className="mt-1 text-xs text-slate-400">
                       {note.ai_summary}
                     </div>
-                  )}
+                  }
                 </div>
                 <div className="flex flex-wrap gap-2 items-center">
-                  {projects.length > 0 && (
-                    <Select
-                      defaultValue={note.project_id ?? projectId}
-                      onValueChange={(value) => handleMoveToProject(note.id, value)}
-                      disabled={moving || deleting}
-                    >
+                  {projects.length > 0 &&
+                  <Select
+                    defaultValue={note.project_id ?? projectId}
+                    onValueChange={(value) => handleMoveToProject(note.id, value)}
+                    disabled={moving || deleting}>
+                    
                       <SelectTrigger className="w-48 bg-slate-950 border-slate-800 text-xs text-slate-200">
                         <SelectValue placeholder="Move to project" />
                       </SelectTrigger>
                       <SelectContent className="bg-slate-950 border-slate-800">
-                        {projects.map((p) => (
-                          <SelectItem key={p.id} value={p.id} className="text-xs">
+                        {projects.map((p) =>
+                      <SelectItem key={p.id} value={p.id} className="text-xs">
                             {p.name}
                           </SelectItem>
-                        ))}
+                      )}
                       </SelectContent>
                     </Select>
-                  )}
+                  }
                   <Button
                     type="button"
                     variant="outline"
                     size="icon"
                     onClick={() => handleDelete(note.id)}
                     disabled={deleting || moving || saving}
-                    className="border-red-500/60 text-red-400 hover:bg-red-500/10"
-                  >
-                    {deleting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
+                    className="border-red-500/60 text-red-400 hover:bg-red-500/10">
+                    
+                    {deleting ?
+                    <Loader2 className="h-4 w-4 animate-spin" /> :
+
+                    <Trash2 className="h-4 w-4" />
+                    }
                   </Button>
                 </div>
               </div>
 
-              {note.original_audio_url && (
-                <audio
-                  controls
-                  src={note.original_audio_url}
-                  className="w-full"
-                >
+              {note.original_audio_url &&
+              <audio
+                controls
+                src={note.original_audio_url}
+                className="w-full">
+                
                   Your browser does not support audio playback.
                 </audio>
-              )}
+              }
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -290,25 +290,25 @@ export function ProjectVoiceNotes({ projectId }: ProjectVoiceNotesProps) {
                   rows={4}
                   value={draft}
                   onChange={(event) => handleTranscriptChange(note.id, event.target.value)}
-                  className="bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500 text-sm"
-                />
+                  className="bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500 text-sm" />
+                
                 <div className="flex justify-end">
                   <Button
                     type="button"
                     size="sm"
                     onClick={() => handleSaveTranscript(note.id)}
                     disabled={saving || deleting || moving}
-                    className="px-3 py-1 h-8 text-xs"
-                  >
+                    className="px-3 py-1 h-8 text-xs">
+                    
                     {saving && <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />}
                     Save transcript
                   </Button>
                 </div>
               </div>
-            </div>
-          );
+            </div>);
+
         })}
       </CardContent>
-    </Card>
-  );
+    </Card>);
+
 }
