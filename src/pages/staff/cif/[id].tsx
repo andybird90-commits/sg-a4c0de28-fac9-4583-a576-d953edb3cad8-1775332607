@@ -268,7 +268,13 @@ export default function CIFDetailPage() {
       const prospect = Array.isArray(cifData.prospects) ? cifData.prospects[0] : cifData.prospects;
       setCompanyName(prospect?.company_name || "");
       setCompanyNumber(prospect?.company_number || "");
-      setNumberOfEmployees(cifData.number_of_employees?.toString() || "");
+      setNumberOfEmployees(
+        (prospect?.number_of_employees != null
+          ? prospect.number_of_employees.toString()
+          : (cifData as any).number_of_employees != null
+          ? String((cifData as any).number_of_employees)
+          : "") || ""
+      );
       
       // Contact Details
       setContactName(cifData.primary_contact_name || "");
@@ -570,7 +576,7 @@ export default function CIFDetailPage() {
         has_claimed_before: hasClaimedBefore === "yes"
       };
 
-      const result = await cifService.completeBDMSection(cif.id, profile.id);
+      const result = await cifService.completeBDMSection(cif.id, profile.id, bdmData);
 
       if (result) {
         toast({

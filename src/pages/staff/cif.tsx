@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SidekickResearchPanel } from "@/components/staff/cif/SidekickResearchPanel";
+import { BookFeasibilityModal } from "@/components/staff/cif/BookFeasibilityModal";
 
 export default function StaffCIFPage() {
   const router = useRouter();
@@ -327,10 +328,15 @@ function CIFCreationForm({
   const [researchLoading, setResearchLoading] = useState(false);
   const [companyResearch, setCompanyResearch] = useState("");
   const [analysisData, setAnalysisData] = useState<any>(null);
-
   const [notificationStatus, setNotificationStatus] = useState<"required" | "not_required" | "unclear" | null>(null);
   const [notificationDeadline, setNotificationDeadline] = useState<string | null>(null);
-  
+  const [createdCif, setCreatedCif] = useState<{
+    cifId: string;
+    prospectId: string | null;
+    primaryContactEmail: string;
+  } | null>(null);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+
   // Define formData state with explicit initial values for ALL fields
   const [formData, setFormData] = useState({
     numberOfEmployees: "",
@@ -495,6 +501,12 @@ function CIFCreationForm({
       return;
     }
 
+    if (createdCif) {
+      // CIF already created in this session; avoid duplicate records
+      setShowBookingModal(true);
+      return;
+    }
+
     // Only require fields that are actually visible and truly required
     const requiredFields: Record<string, string> = {
       "Number of Employees": formData.numberOfEmployees,
@@ -601,14 +613,19 @@ function CIFCreationForm({
       console.log("CIFCreationForm.handleCreateCIF result", result);
 
       if (result) {
+        setCreatedCif({
+          cifId: result.cif.id,
+          prospectId: result.prospect?.id ?? null,
+          primaryContactEmail: formData.primaryContactEmail,
+        });
+
         toast({
           title: "CIF created successfully!",
-          description: "Redirecting to CIF details...",
+          description: "You can now request a feasibility call or close this window.",
         });
-        setTimeout(() => {
-          router.push(`/staff/cif/${result.cif.id}`);
-        }, 1500);
-        onSuccess();
+
+        // Keep the dialog open so the BDM can immediately book feasibility
+        setShowBookingModal(true);
       }
     } catch (error: any) {
       console.error("CIF creation error:", error);
@@ -1207,11 +1224,40 @@ function CIFCreationForm({
               disabled={saving}
               className="flex-1"
             >
-              {saving ? "Creating CIF..." : "Create CIF"}
+              {createdCif
+                ? "Request Feasibility Call"
+                : saving
+                ? "Creating CIF..."
+                : "Create CIF"}
             </Button>
-            <Button onClick={() => setStep("lookup")} variant="outline">Back</Button>
-            <Button onClick={onCancel} variant="outline">Cancel</Button>
+            <Button onClick={() => setStep("lookup")} variant="outline" disabled={saving}>
+              Back
+            </Button>
+            <Button
+              onClick={() => {
+                onCancel();
+              }}
+              variant="outline"
+              disabled={saving}
+            >
+              Cancel
+            </Button>
           </div>
+
+          {createdCif && (
+            <BookFeasibilityModal
+              isOpen={showBookingModal}
+              onClose={() => setShowBookingModal(false)}
+              cifId={createdCif.cifId}
+              clientId={createdCif.prospectId}
+              clientEmail={createdCif.primaryContactEmail}
+              bdmUserId={profile?.id || ""}
+              onSuccess={() => {
+                setShowBookingModal(false);
+                onSuccess();
+              }}
+            />
+          )}
         </div>
       )}
     </>

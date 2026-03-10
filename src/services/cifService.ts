@@ -445,19 +445,93 @@ export const cifService = {
   /**
    * Complete BDM Section
    */
-  async completeBDMSection(cifId: string, userId: string) {
+  async completeBDMSection(
+    cifId: string,
+    userId: string,
+    bdmData?: {
+      primary_contact_name?: string;
+      primary_contact_email?: string;
+      primary_contact_phone?: string;
+      primary_contact_position?: string;
+      primary_contact_landline?: string;
+      number_of_employees?: number;
+      can_answer_feasibility?: "yes" | "no";
+      alternate_contact_informed?: "yes" | "no" | "";
+      understands_scheme?: "yes" | "no" | "dont_know" | "";
+      scheme_understanding_details?: string;
+      has_claimed_before?: boolean | null;
+      previous_claim_details?: string;
+      projects_discussed?: "yes" | "no" | "";
+      projects_details?: string;
+      fee_terms_discussed?: "yes" | "no" | "";
+      fee_terms_details?: string;
+      additional_info?: string;
+    }
+  ) {
+    // Build update payload for cif_records
+    const cifUpdates: Partial<CIFUpdate> = {
+      current_stage: "awaiting_feasibility",
+      section1_completed_at: new Date().toISOString(),
+      section1_completed_by: userId,
+    };
+
+    if (bdmData) {
+      cifUpdates.primary_contact_name = bdmData.primary_contact_name ?? undefined;
+      cifUpdates.primary_contact_email = bdmData.primary_contact_email ?? undefined;
+      cifUpdates.primary_contact_phone = bdmData.primary_contact_phone ?? undefined;
+      cifUpdates.primary_contact_position = bdmData.primary_contact_position ?? undefined;
+      cifUpdates.primary_contact_landline = bdmData.primary_contact_landline ?? undefined;
+      cifUpdates.can_answer_feasibility = bdmData.can_answer_feasibility ?? null;
+      cifUpdates.alternate_contact_informed =
+        bdmData.alternate_contact_informed && bdmData.alternate_contact_informed !== ""
+          ? bdmData.alternate_contact_informed
+          : null;
+      cifUpdates.understands_scheme = bdmData.understands_scheme ?? null;
+      cifUpdates.scheme_understanding_details =
+        bdmData.scheme_understanding_details ?? null;
+      cifUpdates.has_claimed_before =
+        typeof bdmData.has_claimed_before === "boolean"
+          ? bdmData.has_claimed_before
+          : null;
+      cifUpdates.previous_claim_details = bdmData.previous_claim_details ?? null;
+      cifUpdates.projects_discussed =
+        bdmData.projects_discussed && bdmData.projects_discussed !== ""
+          ? bdmData.projects_discussed
+          : null;
+      cifUpdates.projects_details = bdmData.projects_details ?? null;
+      cifUpdates.fee_terms_discussed =
+        bdmData.fee_terms_discussed && bdmData.fee_terms_discussed !== ""
+          ? bdmData.fee_terms_discussed
+          : null;
+      cifUpdates.fee_terms_details = bdmData.fee_terms_details ?? null;
+      cifUpdates.additional_info = bdmData.additional_info ?? null;
+    }
+
     const { data, error } = await supabase
       .from("cif_records")
-      .update({
-        current_stage: "awaiting_feasibility",
-        section1_completed_at: new Date().toISOString(),
-        section1_completed_by: userId,
-      })
+      .update(cifUpdates)
       .eq("id", cifId)
-      .select()
+      .select("*, prospect_id")
       .single();
 
     if (error) throw error;
+
+    // If we have an updated employee count, sync it back to the prospect record
+    if (bdmData?.number_of_employees != null && data?.prospect_id) {
+      const employeeCount = Number.isNaN(bdmData.number_of_employees)
+        ? null
+        : bdmData.number_of_employees;
+
+      try {
+        await supabase
+          .from("prospects")
+          .update({ number_of_employees: employeeCount })
+          .eq("id", data.prospect_id);
+      } catch (syncError) {
+        console.error("Failed to sync prospect employee count:", syncError);
+      }
+    }
+
     return data;
   },
 
@@ -539,6 +613,7 @@ export const cifService = {
 
   /**
    * Get Job Board A CIFs (BDM Section stage)
+   * Shows CIFs that are still in BDM stage (draft / in-progress)
    */
   async getJobBoardA() {
     const { data, error } = await supabase
@@ -553,17 +628,18 @@ export const cifService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    
-    return (data || []).map(cif => ({
+
+    return (data || []).map((cif) => ({
       ...cif,
-      created_by_profile: Array.isArray(cif.created_by_profile) 
-        ? cif.created_by_profile[0] 
-        : cif.created_by_profile
+      created_by_profile: Array.isArray(cif.created_by_profile)
+        ? cif.created_by_profile[0]
+        : cif.created_by_profile,
     })) as CIFWithDetails[];
   },
 
   /**
-   * Get Job Board B CIFs (Feasibility Pending stage)
+   * Get Job Board B CIFs (Feasibility / Technical stage)
+   * Includes CIFs that are awaiting feasibility, booked, or have completed feasibility and are moving forward.
    */
   async getJobBoardB() {
     const { data, error } = await supabase
@@ -573,17 +649,22 @@ export const cifService = {
         prospects (*),
         created_by_profile:profiles!cif_records_bdm_section_created_by_fkey(full_name, email)
       `)
-      .eq("current_stage", "awaiting_feasibility")
+      .in("current_stage", [
+        "awaiting_feasibility",
+        "feasibility_booked",
+        "tech_feasibility",
+        "feasibility_complete_go",
+      ])
       .eq("archived", false)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    
-    return (data || []).map(cif => ({
+
+    return (data || []).map((cif) => ({
       ...cif,
-      created_by_profile: Array.isArray(cif.created_by_profile) 
-        ? cif.created_by_profile[0] 
-        : cif.created_by_profile
+      created_by_profile: Array.isArray(cif.created_by_profile)
+        ? cif.created_by_profile[0]
+        : cif.created_by_profile,
     })) as CIFWithDetails[];
   },
 
