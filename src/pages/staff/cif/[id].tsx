@@ -21,12 +21,27 @@ import { cifService, type CIFWithDetails } from "@/services/cifService";
 import { MessageWidget } from "@/components/MessageWidget";
 import { BookFeasibilityModal } from "@/components/staff/cif/BookFeasibilityModal";
 import { ArrowLeft, Save, Upload, FileText, XCircle, AlertTriangle, CheckCircle, Sparkles, ChevronDown, ChevronUp, Zap, Loader2, Calendar } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function CIFDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { profileWithOrg: profile, isStaff } = useApp();
   const { toast } = useToast();
+
+  type FeasibilityFormData = {
+    have_claimed_before: boolean | null;
+    previous_claim_year: string;
+    previous_claim_value: string;
+    previous_claim_submitted_at: string;
+  };
+
+  const [feasibilityFormData, setFeasibilityFormData] = useState<FeasibilityFormData>({
+    have_claimed_before: null,
+    previous_claim_year: "",
+    previous_claim_value: "",
+    previous_claim_submitted_at: ""
+  });
 
   const [cif, setCif] = useState<CIFWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1841,49 +1856,102 @@ export default function CIFDetailPage() {
                     FEASIBILITY
                   </h3>
 
-                  {/* Have they Claimed Before */}
-                  <div className="space-y-2">
-                    <Label>Have they Claimed Before?</Label>
-                    <div className="flex gap-4">
-                      <Button
+                  <div className="mb-4">
+                    <Label className="mb-2 block">Have they Claimed Before?</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
                         type="button"
-                        variant={hasClaimedBefore === "yes" ? "default" : "outline"}
-                        onClick={() => setHasClaimedBefore("yes")}
-                        disabled
-                        className="flex-1"
+                        className={cn(
+                          "px-4 py-2 rounded-md border text-sm font-semibold",
+                          feasibilityFormData.have_claimed_before === true
+                            ? "bg-[#FFB480] text-white border-transparent"
+                            : "bg-white text-[#FF7A21] border-[#FFB480]"
+                        )}
+                        disabled={!canEdit}
+                        onClick={() =>
+                          setFeasibilityFormData((prev) => ({
+                            ...prev,
+                            have_claimed_before: true
+                          }))
+                        }
                       >
                         YES
-                      </Button>
-                      <Button
+                      </button>
+                      <button
                         type="button"
-                        variant={hasClaimedBefore === "no" ? "default" : "outline"}
-                        onClick={() => setHasClaimedBefore("no")}
-                        disabled
-                        className="flex-1"
+                        className={cn(
+                          "px-4 py-2 rounded-md border text-sm font-semibold",
+                          feasibilityFormData.have_claimed_before === false
+                            ? "bg-[#FFB480] text-white border-transparent"
+                            : "bg-white text-[#FF7A21] border-[#FFB480]"
+                        )}
+                        disabled={!canEdit}
+                        onClick={() =>
+                          setFeasibilityFormData((prev) => ({
+                            ...prev,
+                            have_claimed_before: false,
+                            previous_claim_year: "",
+                            previous_claim_value: "",
+                            previous_claim_submitted_at: ""
+                          }))
+                        }
                       >
                         NO
-                      </Button>
+                      </button>
                     </div>
                   </div>
 
-                  {hasClaimedBefore === "yes" && (
-                    <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label>Claim Year:</Label>
-                          <Input value={cif.previous_claim_year_end_date || ""} disabled className="bg-muted" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Claim Value:</Label>
-                          <Input value={cif.previous_claim_value ? `£${cif.previous_claim_value}` : ""} disabled className="bg-muted" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Date Submitted:</Label>
-                          <Input value={cif.previous_claim_date_submitted || ""} disabled className="bg-muted" />
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                      <Label htmlFor="previous_claim_year">Claim Year:</Label>
+                      <Input
+                        id="previous_claim_year"
+                        type="text"
+                        placeholder="e.g., 2023"
+                        value={feasibilityFormData.previous_claim_year || ""}
+                        disabled={!canEdit || feasibilityFormData.have_claimed_before !== true}
+                        onChange={(e) =>
+                          setFeasibilityFormData((prev) => ({
+                            ...prev,
+                            previous_claim_year: e.target.value
+                          }))
+                        }
+                      />
                     </div>
-                  )}
+
+                    <div>
+                      <Label htmlFor="previous_claim_value">Claim Value:</Label>
+                      <Input
+                        id="previous_claim_value"
+                        type="text"
+                        placeholder="e.g., 100000"
+                        value={feasibilityFormData.previous_claim_value || ""}
+                        disabled={!canEdit || feasibilityFormData.have_claimed_before !== true}
+                        onChange={(e) =>
+                          setFeasibilityFormData((prev) => ({
+                            ...prev,
+                            previous_claim_value: e.target.value
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="previous_claim_submitted_at">Date Submitted:</Label>
+                      <Input
+                        id="previous_claim_submitted_at"
+                        type="date"
+                        value={feasibilityFormData.previous_claim_submitted_at || ""}
+                        disabled={!canEdit || feasibilityFormData.have_claimed_before !== true}
+                        onChange={(e) =>
+                          setFeasibilityFormData((prev) => ({
+                            ...prev,
+                            previous_claim_submitted_at: e.target.value
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="first_claim_year">First Claim Year for New Claim: *</Label>

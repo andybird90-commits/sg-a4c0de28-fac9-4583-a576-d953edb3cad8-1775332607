@@ -148,9 +148,9 @@ export default function LandingPage() {
               <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
                 <div className="flex flex-col justify-between items-center lg:items-start order-2 lg:order-1 h-full">
                   <img
-                    src="/rdtax-logo.png"
+                    src="/RDTax-logo.png"
                     alt="RD TAX"
-                    className="w-full max-w-[250px] sm:max-w-xs lg:max-w-md h-auto drop-shadow-2xl mb-4 lg:mb-6"
+                    className="w-full max-w-[260px] sm:max-w-xs lg:max-w-md h-auto drop-shadow-2xl mb-4 lg:mb-6"
                   />
                 </div>
 
