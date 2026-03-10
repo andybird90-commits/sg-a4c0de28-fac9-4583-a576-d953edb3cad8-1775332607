@@ -36,7 +36,7 @@ import { ProjectVoiceNotes } from "@/components/projects/ProjectVoiceNotes";
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
 type SidekickEvidenceItem = Database["public"]["Tables"]["sidekick_evidence_items"]["Row"];
 type SidekickProjectComment = Database["public"]["Tables"]["sidekick_project_comments"]["Row"] & {
-  author?: { email: string };
+  author?: {email: string;};
 };
 
 type ClaimProject = Database["public"]["Tables"]["claim_projects"]["Row"];
@@ -56,36 +56,36 @@ const getTechnicalPlaceholders = (sector?: string | null) => {
   if (normalised.includes("software") || normalised.includes("saas")) {
     return {
       baseline:
-        "E.g. Existing web app with monolith backend and basic reporting; users manage data manually in spreadsheets alongside the system...",
+      "E.g. Existing web app with monolith backend and basic reporting; users manage data manually in spreadsheets alongside the system...",
       change:
-        "E.g. Introducing event-driven architecture, new analytics service, or real-time collaboration features...",
+      "E.g. Introducing event-driven architecture, new analytics service, or real-time collaboration features...",
       innovation:
-        "E.g. Solving scaling / performance constraints, complex multi-tenant rules, or novel data processing that goes beyond standard libraries...",
+      "E.g. Solving scaling / performance constraints, complex multi-tenant rules, or novel data processing that goes beyond standard libraries..."
     };
   }
 
   if (
-    normalised.includes("manufacturing") ||
-    normalised.includes("engineering") ||
-    normalised.includes("mechanical")
-  ) {
+  normalised.includes("manufacturing") ||
+  normalised.includes("engineering") ||
+  normalised.includes("mechanical"))
+  {
     return {
       baseline:
-        "E.g. Current machine line uses standard components and manual settings to achieve throughput X with known tolerances...",
+      "E.g. Current machine line uses standard components and manual settings to achieve throughput X with known tolerances...",
       change:
-        "E.g. Redesigning tooling, integrating new sensors, or updating control logic to reach new performance or quality targets...",
+      "E.g. Redesigning tooling, integrating new sensors, or updating control logic to reach new performance or quality targets...",
       innovation:
-        "E.g. New combination of materials, control strategies or process parameters that are not standard in your industry...",
+      "E.g. New combination of materials, control strategies or process parameters that are not standard in your industry..."
     };
   }
 
   return {
     baseline:
-      "Describe how things worked before this project started. Mention key components, technologies, or processes.",
+    "Describe how things worked before this project started. Mention key components, technologies, or processes.",
     change:
-      "Explain what you are changing or creating in this project – the new design, feature, or approach.",
+    "Explain what you are changing or creating in this project – the new design, feature, or approach.",
     innovation:
-      "Explain what makes this technically difficult or different from standard practice in your field.",
+    "Explain what makes this technically difficult or different from standard practice in your field."
   };
 };
 
@@ -95,42 +95,42 @@ const getChallengePlaceholders = (sector?: string | null) => {
   if (normalised.includes("software") || normalised.includes("saas")) {
     return {
       uncertainties:
-        "E.g. Unsure whether the new architecture would meet latency targets under peak load, or how a new algorithm would behave with edge cases...",
+      "E.g. Unsure whether the new architecture would meet latency targets under peak load, or how a new algorithm would behave with edge cases...",
       knowledge:
-        "E.g. Reviewed framework docs, performance benchmarks, prior internal projects, and third‑party blog posts / research...",
+      "E.g. Reviewed framework docs, performance benchmarks, prior internal projects, and third‑party blog posts / research...",
       workDone:
-        "E.g. Built load‑test harnesses, ran A/B tests, created prototypes to validate algorithms, iterated on schema designs...",
+      "E.g. Built load‑test harnesses, ran A/B tests, created prototypes to validate algorithms, iterated on schema designs..."
     };
   }
 
   if (
-    normalised.includes("manufacturing") ||
-    normalised.includes("engineering") ||
-    normalised.includes("mechanical")
-  ) {
+  normalised.includes("manufacturing") ||
+  normalised.includes("engineering") ||
+  normalised.includes("mechanical"))
+  {
     return {
       uncertainties:
-        "E.g. Unsure whether a new material or geometry would handle stresses, or how equipment would perform at new operating points...",
+      "E.g. Unsure whether a new material or geometry would handle stresses, or how equipment would perform at new operating points...",
       knowledge:
-        "E.g. Checked supplier datasheets, design codes, prior builds, and spoke with specialists before committing to the new route...",
+      "E.g. Checked supplier datasheets, design codes, prior builds, and spoke with specialists before committing to the new route...",
       workDone:
-        "E.g. Built and tested prototypes, ran simulations, carried out trial runs at different settings, inspected failures and iterated...",
+      "E.g. Built and tested prototypes, ran simulations, carried out trial runs at different settings, inspected failures and iterated..."
     };
   }
 
   return {
     uncertainties:
-      "What did you not know at the outset? Think performance limits, behaviour under certain conditions, or integration issues.",
+    "What did you not know at the outset? Think performance limits, behaviour under certain conditions, or integration issues.",
     knowledge:
-      "What guidance, standards, previous projects, or supplier information did you look at before starting?",
+    "What guidance, standards, previous projects, or supplier information did you look at before starting?",
     workDone:
-      "Describe the main tests, trials, modelling, or prototyping you carried out and what you were trying to learn from each.",
+    "Describe the main tests, trials, modelling, or prototyping you carried out and what you were trying to learn from each."
   };
 };
 
 export default function ProjectDetailPage() {
   const router = useRouter();
-  const { id } = router.query as { id?: string };
+  const { id } = router.query as {id?: string;};
   const { user } = useApp();
   const [project, setProject] = useState<SidekickProject | null>(null);
   const [claimProject, setClaimProject] = useState<ClaimProject | null>(null);
@@ -174,7 +174,7 @@ export default function ProjectDetailPage() {
     basic_info: "approved",
     technical_understanding: "approved",
     challenges: "approved",
-    qualifying_activities: "approved",
+    qualifying_activities: "approved"
   });
   const [revisionFeedback, setRevisionFeedback] = useState("");
 
@@ -221,7 +221,7 @@ export default function ProjectDetailPage() {
         toast({
           title: "Could not load costs",
           description: "There was a problem loading the costs shared for this project.",
-          variant: "destructive",
+          variant: "destructive"
         });
       } finally {
         setIsLoadingCostAdvice(false);
@@ -246,7 +246,7 @@ export default function ProjectDetailPage() {
             const contentType = response.headers.get("content-type") || "";
 
             if (contentType.includes("application/json")) {
-              const errorBody = (await response.json()) as { error?: string };
+              const errorBody = (await response.json()) as {error?: string;};
               if (errorBody?.error) {
                 errorMessage = errorBody.error;
               }
@@ -267,7 +267,7 @@ export default function ProjectDetailPage() {
           toast({
             title: "Error refreshing claim project",
             description: errorMessage,
-            variant: "destructive",
+            variant: "destructive"
           });
 
           return;
@@ -288,9 +288,9 @@ export default function ProjectDetailPage() {
             data.claimProject.challenges_uncertainties ?? ""
           );
           setRdActivities(
-            Array.isArray(data.claimProject.qualifying_activities)
-              ? data.claimProject.qualifying_activities
-              : []
+            Array.isArray(data.claimProject.qualifying_activities) ?
+            data.claimProject.qualifying_activities :
+            []
           );
         } else {
           setRdTechnicalUnderstanding("");
@@ -301,7 +301,7 @@ export default function ProjectDetailPage() {
         if (data.approvalSections) {
           setApprovalSections((prev) => ({
             ...prev,
-            ...data.approvalSections,
+            ...data.approvalSections
           }));
         }
 
@@ -320,8 +320,8 @@ export default function ProjectDetailPage() {
         toast({
           title: "Error refreshing claim project",
           description:
-            "An unexpected error occurred while refreshing the claim project.",
-          variant: "destructive",
+          "An unexpected error occurred while refreshing the claim project.",
+          variant: "destructive"
         });
       }
     },
@@ -350,29 +350,29 @@ export default function ProjectDetailPage() {
     try {
       // Compose structured text for staff-side fields
       const technical_understanding =
-        `Baseline / current system:\n${technicalBaseline.trim() || "Not provided."}\n\n` +
-        `Change or new development:\n${technicalChange.trim() || "Not provided."}\n\n` +
-        `Innovation / why this is different:\n${technicalInnovation.trim() || "Not provided."}`;
+      `Baseline / current system:\n${technicalBaseline.trim() || "Not provided."}\n\n` +
+      `Change or new development:\n${technicalChange.trim() || "Not provided."}\n\n` +
+      `Innovation / why this is different:\n${technicalInnovation.trim() || "Not provided."}`;
 
       const challenges_uncertainties =
-        `Uncertainties at the start:\n${challengeUncertainties.trim() || "Not provided."}\n\n` +
-        `Existing knowledge and information considered:\n${challengeKnowledge.trim() || "Not provided."}\n\n` +
-        `Work done to resolve the uncertainties (tests, experiments, iterations):\n${challengeWorkDone.trim() || "Not provided."}`;
+      `Uncertainties at the start:\n${challengeUncertainties.trim() || "Not provided."}\n\n` +
+      `Existing knowledge and information considered:\n${challengeKnowledge.trim() || "Not provided."}\n\n` +
+      `Work done to resolve the uncertainties (tests, experiments, iterations):\n${challengeWorkDone.trim() || "Not provided."}`;
 
       const qualifyingActivities =
-        rdActivities && rdActivities.length > 0 ? rdActivities : null;
+      rdActivities && rdActivities.length > 0 ? rdActivities : null;
 
       const response = await fetch("/api/projects/update-rd-details", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           sidekickProjectId: project.id,
           technical_understanding,
           challenges_uncertainties,
-          qualifying_activities: qualifyingActivities,
-        }),
+          qualifying_activities: qualifyingActivities
+        })
       });
 
       const contentType = response.headers.get("content-type") ?? "";
@@ -383,7 +383,7 @@ export default function ProjectDetailPage() {
 
         if (isJson) {
           try {
-            const errorBody = (await response.json()) as { error?: string };
+            const errorBody = (await response.json()) as {error?: string;};
             if (errorBody?.error) {
               errorMessage = errorBody.error;
             }
@@ -404,7 +404,7 @@ export default function ProjectDetailPage() {
         toast({
           title: "Could not save R&D details",
           description: errorMessage,
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
@@ -412,7 +412,7 @@ export default function ProjectDetailPage() {
       let updatedClaim: ClaimProject | null = null;
       if (isJson) {
         try {
-          const data = (await response.json()) as { claimProject?: ClaimProject };
+          const data = (await response.json()) as {claimProject?: ClaimProject;};
           if (data?.claimProject) {
             updatedClaim = data.claimProject;
           }
@@ -427,14 +427,14 @@ export default function ProjectDetailPage() {
 
       toast({
         title: "R&D details saved",
-        description: "Your R&D story has been saved for the R&D team.",
+        description: "Your R&D story has been saved for the R&D team."
       });
     } catch (error) {
       console.error("Unexpected error saving R&D details:", error);
       toast({
         title: "Could not save R&D details",
         description: "Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSavingRdDetails(false);
@@ -447,55 +447,55 @@ export default function ProjectDetailPage() {
     setIsSyncingReadiness(true);
     try {
       const [projectData, evidenceData, commentsData] = await Promise.all([
-        sidekickProjectService.getProjectById(project.id),
-        sidekickEvidenceService.getEvidenceByProject(project.id),
-        sidekickCommentService.getCommentsByProject(project.id),
-      ]);
+      sidekickProjectService.getProjectById(project.id),
+      sidekickEvidenceService.getEvidenceByProject(project.id),
+      sidekickCommentService.getCommentsByProject(project.id)]
+      );
 
       setProject(projectData);
       setEvidence(evidenceData);
       setComments(commentsData);
 
       await Promise.all([
-        refreshClaimProject(project.id),
-        loadCostAdvice(project.id),
-        (async () => {
-          try {
-            const analyses = await feasibilityService.getAnalysesByProject(project.id);
-            if (analyses && analyses.length > 0) {
-              const sortedAnalyses = analyses.sort(
-                (a, b) =>
-                  new Date(b.created_at).getTime() -
-                  new Date(a.created_at).getTime()
-              );
-              setFeasibilityAnalysis(sortedAnalyses[0]);
-            } else {
-              setFeasibilityAnalysis(null);
-            }
-          } catch (feasibilityError) {
-            console.error("Error fetching feasibility analysis in sync:", feasibilityError);
+      refreshClaimProject(project.id),
+      loadCostAdvice(project.id),
+      (async () => {
+        try {
+          const analyses = await feasibilityService.getAnalysesByProject(project.id);
+          if (analyses && analyses.length > 0) {
+            const sortedAnalyses = analyses.sort(
+              (a, b) =>
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
+            );
+            setFeasibilityAnalysis(sortedAnalyses[0]);
+          } else {
+            setFeasibilityAnalysis(null);
           }
-        })(),
-        (async () => {
-          try {
-            const items = await sidekickTimelineService.getByProject(project.id);
-            setTimelineItems(items);
-          } catch (timelineError) {
-            console.error("Error fetching timeline items in sync:", timelineError);
-          }
-        })(),
-      ]);
+        } catch (feasibilityError) {
+          console.error("Error fetching feasibility analysis in sync:", feasibilityError);
+        }
+      })(),
+      (async () => {
+        try {
+          const items = await sidekickTimelineService.getByProject(project.id);
+          setTimelineItems(items);
+        } catch (timelineError) {
+          console.error("Error fetching timeline items in sync:", timelineError);
+        }
+      })()]
+      );
 
       toast({
         title: "Synced with RD Companion",
-        description: "Latest project details and readiness have been updated.",
+        description: "Latest project details and readiness have been updated."
       });
     } catch (error) {
       console.error("Error syncing readiness:", error);
       toast({
         title: "Could not sync",
         description: "Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsSyncingReadiness(false);
@@ -518,10 +518,10 @@ export default function ProjectDetailPage() {
 
         // Fetch project, evidence, and comments
         const [projectData, evidenceData, commentsData] = await Promise.all([
-          sidekickProjectService.getProjectById(id as string),
-          sidekickEvidenceService.getEvidenceByProject(id as string),
-          sidekickCommentService.getCommentsByProject(id as string),
-        ]);
+        sidekickProjectService.getProjectById(id as string),
+        sidekickEvidenceService.getEvidenceByProject(id as string),
+        sidekickCommentService.getCommentsByProject(id as string)]
+        );
 
         setProject(projectData);
         setEvidence(evidenceData);
@@ -536,7 +536,7 @@ export default function ProjectDetailPage() {
           const analyses = await feasibilityService.getAnalysesByProject(id as string);
           if (analyses && analyses.length > 0) {
             const sortedAnalyses = analyses.sort((a, b) =>
-              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             );
             setFeasibilityAnalysis(sortedAnalyses[0]);
           } else {
@@ -577,7 +577,7 @@ export default function ProjectDetailPage() {
         setFeasibilityAnalysis(analysis);
         toast({
           title: "Feasibility analysis complete",
-          description: "You can now review the latest feasibility assessment.",
+          description: "You can now review the latest feasibility assessment."
         });
       }
     } catch (error) {
@@ -585,7 +585,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Could not run feasibility analysis",
         description: "Please try again or contact support if the problem continues.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setRunningFeasibility(false);
@@ -597,7 +597,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Cannot send project",
         description: "Missing project or user information.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -608,12 +608,12 @@ export default function ProjectDetailPage() {
       const response = await fetch("/api/projects/send-to-team", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           sidekickProjectId: project.id,
-          userId: user.id,
-        }),
+          userId: user.id
+        })
       });
 
       const contentType = response.headers.get("content-type") ?? "";
@@ -624,7 +624,7 @@ export default function ProjectDetailPage() {
 
         if (isJson) {
           try {
-            const data = (await response.json()) as { message?: string };
+            const data = (await response.json()) as {message?: string;};
             if (data && typeof data === "object" && data.message) {
               message = data.message;
             }
@@ -638,7 +638,7 @@ export default function ProjectDetailPage() {
 
         toast({
           title: "Project sent",
-          description: message,
+          description: message
         });
 
         await refreshClaimProject(project.id);
@@ -682,15 +682,15 @@ export default function ProjectDetailPage() {
       toast({
         title: "Error sending project to team",
         description: errorMessage,
-        variant: "destructive",
+        variant: "destructive"
       });
     } catch (error) {
       console.error("Network error sending project to team:", error);
       toast({
         title: "Network error",
         description:
-          "There was a problem sending the project to the team. Please try again.",
-        variant: "destructive",
+        "There was a problem sending the project to the team. Please try again.",
+        variant: "destructive"
       });
     } finally {
       setSubmitting(false);
@@ -718,16 +718,16 @@ export default function ProjectDetailPage() {
 
       toast({
         title: allApproved ? "Project approved" : "Feedback sent",
-        description: allApproved
-          ? "The R&D team will now prepare the claim."
-          : "Your revision feedback has been sent to the R&D team.",
+        description: allApproved ?
+        "The R&D team will now prepare the claim." :
+        "Your revision feedback has been sent to the R&D team."
       });
     } catch (error) {
       console.error("Error approving project:", error);
       toast({
         title: "Could not submit review",
         description: "Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSubmitting(false);
@@ -744,19 +744,19 @@ export default function ProjectDetailPage() {
       const response = await fetch("/api/projects/cancel-claim-project", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           claimProjectId: claimProject.id,
           sidekickProjectId: project.id,
-          reason: cancelReason.trim() || null,
-        }),
+          reason: cancelReason.trim() || null
+        })
       });
 
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as
-          | { error?: string }
-          | null;
+        {error?: string;} |
+        null;
         throw new Error(
           data?.error || "Failed to delete project. Please try again."
         );
@@ -765,7 +765,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Project deleted",
         description:
-          "This project and its linked R&D claim have been permanently removed.",
+        "This project and its linked R&D claim have been permanently removed."
       });
 
       setCancelDialog(false);
@@ -775,10 +775,10 @@ export default function ProjectDetailPage() {
       toast({
         title: "Could not delete project",
         description:
-          error instanceof Error
-            ? error.message
-            : "Something went wrong while deleting this project.",
-        variant: "destructive",
+        error instanceof Error ?
+        error.message :
+        "Something went wrong while deleting this project.",
+        variant: "destructive"
       });
     } finally {
       setIsCancelling(false);
@@ -801,14 +801,14 @@ export default function ProjectDetailPage() {
       toast({
         title: "Project brought back to you",
         description:
-          "You can now make changes before sending it to the R&D team again.",
+        "You can now make changes before sending it to the R&D team again."
       });
     } catch (error) {
       console.error("Error recalling project from team:", error);
       toast({
         title: "Could not bring project back",
         description: "Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSubmitting(false);
@@ -822,7 +822,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Title required",
         description: "Please add a short title for this evidence item.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -831,7 +831,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Choose a type",
         description: "Select whether this is a note, file, or link.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -843,28 +843,28 @@ export default function ProjectDetailPage() {
       if (evidenceType === "note") {
         newEvidence = await sidekickEvidenceService.createEvidenceNote(project.id, {
           title: evidenceTitle,
-          body: evidenceBody || null,
+          body: evidenceBody || null
         });
       } else if (evidenceType === "file") {
         if (!evidenceFile) {
           toast({
             title: "File required",
             description: "Choose a file to upload.",
-            variant: "destructive",
+            variant: "destructive"
           });
           setSubmitting(false);
           return;
         }
         newEvidence = await sidekickEvidenceService.createEvidenceFile(project.id, evidenceFile, {
           title: evidenceTitle,
-          description: evidenceBody || null,
+          description: evidenceBody || null
         });
       } else if (evidenceType === "link") {
         if (!evidenceUrl.trim()) {
           toast({
             title: "URL required",
             description: "Enter the external link for this evidence.",
-            variant: "destructive",
+            variant: "destructive"
           });
           setSubmitting(false);
           return;
@@ -872,7 +872,7 @@ export default function ProjectDetailPage() {
         newEvidence = await sidekickEvidenceService.createEvidenceLink(project.id, {
           title: evidenceTitle,
           url: evidenceUrl.trim(),
-          description: evidenceBody || null,
+          description: evidenceBody || null
         });
       }
 
@@ -888,14 +888,14 @@ export default function ProjectDetailPage() {
 
       toast({
         title: "Evidence added",
-        description: "Your evidence has been saved for the R&D team.",
+        description: "Your evidence has been saved for the R&D team."
       });
     } catch (error) {
       console.error("Error adding evidence:", error);
       toast({
         title: "Could not add evidence",
         description: "Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSubmitting(false);
@@ -908,7 +908,7 @@ export default function ProjectDetailPage() {
     try {
       const comment = await sidekickCommentService.addComment(project.id, {
         body: commentBody.trim(),
-        author_role: "client",
+        author_role: "client"
       });
 
       if (comment) {
@@ -918,14 +918,14 @@ export default function ProjectDetailPage() {
 
       toast({
         title: "Comment posted",
-        description: "Your message has been shared with the R&D team.",
+        description: "Your message has been shared with the R&D team."
       });
     } catch (error) {
       console.error("Error adding comment:", error);
       toast({
         title: "Could not add comment",
         description: "Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSubmitting(false);
@@ -941,7 +941,7 @@ export default function ProjectDetailPage() {
         name: editProjectName,
         description: editProjectDescription || null,
         sector: editProjectSector || null,
-        stage: editProjectStage || null,
+        stage: editProjectStage || null
       });
 
       const updated = await sidekickProjectService.getProjectById(project.id);
@@ -949,14 +949,14 @@ export default function ProjectDetailPage() {
       setEditingProject(false);
       toast({
         title: "Project updated",
-        description: "Your project details have been saved.",
+        description: "Your project details have been saved."
       });
     } catch (error) {
       console.error("Error updating project:", error);
       toast({
         title: "Failed to update project",
         description: "Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSubmitting(false);
@@ -1011,7 +1011,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Choose a cost type",
         description: "Please select the type of cost you are advising.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -1020,7 +1020,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Enter an amount",
         description: "Please add an estimated amount for this cost.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -1030,7 +1030,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Amount looks incorrect",
         description: "Please enter a positive number for the amount.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -1042,16 +1042,16 @@ export default function ProjectDetailPage() {
           cost_type: costType,
           amount: numericAmount,
           description: costDescription || null,
-          notes: costNotes || null,
+          notes: costNotes || null
         });
 
         setCostAdvice((prev) =>
-          prev.map((item) => (item.id === updated.id ? updated : item))
+        prev.map((item) => item.id === updated.id ? updated : item)
         );
 
         toast({
           title: "Cost advice updated",
-          description: "Your changes have been saved.",
+          description: "Your changes have been saved."
         });
       } else {
         const created = await sidekickCostAdviceService.createAdvice({
@@ -1060,14 +1060,14 @@ export default function ProjectDetailPage() {
           amount: numericAmount,
           description: costDescription || null,
           notes: costNotes || null,
-          created_by: user.id,
+          created_by: user.id
         });
 
         setCostAdvice((prev) => [created, ...prev]);
 
         toast({
           title: "Cost advice saved",
-          description: "Your estimate has been shared with the R&D team.",
+          description: "Your estimate has been shared with the R&D team."
         });
       }
 
@@ -1077,7 +1077,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Could not save cost advice",
         description: "Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsSubmittingCostAdvice(false);
@@ -1112,14 +1112,14 @@ export default function ProjectDetailPage() {
 
       toast({
         title: "Cost advice deleted",
-        description: "This cost will no longer be used by the R&D team.",
+        description: "This cost will no longer be used by the R&D team."
       });
     } catch (error) {
       console.error("Error deleting cost advice:", error);
       toast({
         title: "Could not delete cost advice",
         description: "Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsSubmittingCostAdvice(false);
@@ -1131,7 +1131,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Cannot add activity",
         description: "You need to be signed in with a valid account to add timeline activities.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -1141,7 +1141,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Add an activity name",
         description: "Give the activity a short, clear label.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -1150,7 +1150,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Start and finish required",
         description: "Choose both a start and finish date for this activity.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -1161,7 +1161,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Dates look invalid",
         description: "Please check the start and finish dates.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -1170,7 +1170,7 @@ export default function ProjectDetailPage() {
       toast({
         title: "Finish before start",
         description: "The finish date must be on or after the start date.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -1182,15 +1182,15 @@ export default function ProjectDetailPage() {
         name,
         start_date: newTimelineStart,
         end_date: newTimelineEnd,
-        created_by: user.id,
+        created_by: user.id
       });
 
       setTimelineItems((prev) =>
-        [...prev, created].sort((a, b) => {
-          const aDate = a.start_date ? new Date(a.start_date).getTime() : 0;
-          const bDate = b.start_date ? new Date(b.start_date).getTime() : 0;
-          return aDate - bDate;
-        })
+      [...prev, created].sort((a, b) => {
+        const aDate = a.start_date ? new Date(a.start_date).getTime() : 0;
+        const bDate = b.start_date ? new Date(b.start_date).getTime() : 0;
+        return aDate - bDate;
+      })
       );
 
       setNewTimelineName("");
@@ -1199,14 +1199,14 @@ export default function ProjectDetailPage() {
 
       toast({
         title: "Activity added",
-        description: "Your project timeline has been updated.",
+        description: "Your project timeline has been updated."
       });
     } catch (error) {
       console.error("Error adding timeline activity:", error);
       toast({
         title: "Could not add activity",
         description: "Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsSavingTimeline(false);
@@ -1221,25 +1221,25 @@ export default function ProjectDetailPage() {
       setTimelineItems((prev) => prev.filter((item) => item.id !== id));
       toast({
         title: "Activity removed",
-        description: "The timeline has been updated.",
+        description: "The timeline has been updated."
       });
     } catch (error) {
       console.error("Error deleting timeline activity:", error);
       toast({
         title: "Could not remove activity",
         description: "Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
 
   const getSLAStatus = () => {
     if (!claimProject?.due_date) return null;
-    
+
     const now = new Date();
     const dueDate = new Date(claimProject.due_date);
     const hoursLeft = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-    
+
     if (hoursLeft < 0) {
       return { label: "Overdue", color: "bg-red-500", icon: XCircle };
     } else if (hoursLeft < 24) {
@@ -1257,8 +1257,8 @@ export default function ProjectDetailPage() {
         <div className="container mx-auto px-4 py-8">
           <p>Loading project...</p>
         </div>
-      </Layout>
-    );
+      </Layout>);
+
   }
 
   if (!project) {
@@ -1270,29 +1270,29 @@ export default function ProjectDetailPage() {
             <Button variant="ghost">Back to Projects</Button>
           </Link>
         </div>
-      </Layout>
-    );
+      </Layout>);
+
   }
 
   const workflowStatus = claimProject?.workflow_status || project.status;
   const isDraftLikeStatus =
-    !claimProject?.workflow_status ||
-    claimProject.workflow_status === "draft" ||
-    claimProject.workflow_status === "revision_requested";
+  !claimProject?.workflow_status ||
+  claimProject.workflow_status === "draft" ||
+  claimProject.workflow_status === "revision_requested";
 
   const canEdit = !claimProject || isDraftLikeStatus;
   const canSendToTeam =
-    workflowStatus === "draft" || workflowStatus === "revision_requested";
+  workflowStatus === "draft" || workflowStatus === "revision_requested";
   const needsClientReview =
-    claimProject && claimProject.workflow_status === "awaiting_client_review";
+  claimProject && claimProject.workflow_status === "awaiting_client_review";
   const isApproved = claimProject && claimProject.workflow_status === "approved";
   const canRecallFromTeam =
-    claimProject?.workflow_status === "submitted_to_team" ||
-    claimProject?.workflow_status === "team_in_progress";
+  claimProject?.workflow_status === "submitted_to_team" ||
+  claimProject?.workflow_status === "team_in_progress";
   const canEditTimeline =
-    !claimProject ||
-    (claimProject.workflow_status !== "approved" &&
-      claimProject.workflow_status !== "cancelled");
+  !claimProject ||
+  claimProject.workflow_status !== "approved" &&
+  claimProject.workflow_status !== "cancelled";
   const slaStatus = getSLAStatus();
 
   const sector = project.sector ?? null;
@@ -1300,14 +1300,14 @@ export default function ProjectDetailPage() {
   const challengePlaceholders = getChallengePlaceholders(sector);
 
   const clientTechnicalChars =
-    technicalBaseline.trim().length +
-    technicalChange.trim().length +
-    technicalInnovation.trim().length;
+  technicalBaseline.trim().length +
+  technicalChange.trim().length +
+  technicalInnovation.trim().length;
 
   const clientChallengeChars =
-    challengeUncertainties.trim().length +
-    challengeKnowledge.trim().length +
-    challengeWorkDone.trim().length;
+  challengeUncertainties.trim().length +
+  challengeKnowledge.trim().length +
+  challengeWorkDone.trim().length;
 
   // Require a reasonable amount of client-entered content before we treat
   // technical story / challenges as "present" for readiness scoring.
@@ -1315,15 +1315,15 @@ export default function ProjectDetailPage() {
   const hasClientChallenges = clientChallengeChars >= 300;
 
   const latestStaffComment =
-    comments && comments.length > 0
-      ? comments
-          .filter((comment) => comment.author_role === "rd_staff")
-          .sort(
-            (a, b) =>
-              new Date(b.created_at).getTime() -
-              new Date(a.created_at).getTime()
-          )[0] ?? null
-      : null;
+  comments && comments.length > 0 ?
+  comments.
+  filter((comment) => comment.author_role === "rd_staff").
+  sort(
+    (a, b) =>
+    new Date(b.created_at).getTime() -
+    new Date(a.created_at).getTime()
+  )[0] ?? null :
+  null;
 
   const statusColors: Record<string, string> = {
     draft: "bg-gray-500",
@@ -1332,7 +1332,7 @@ export default function ProjectDetailPage() {
     awaiting_client_review: "bg-purple-600",
     approved: "bg-green-600",
     revision_requested: "bg-yellow-500",
-    cancelled: "bg-red-500",
+    cancelled: "bg-red-500"
   };
 
   const statusLabels: Record<string, string> = {
@@ -1342,15 +1342,15 @@ export default function ProjectDetailPage() {
     awaiting_client_review: "Awaiting your review",
     approved: "Approved",
     revision_requested: "Revisions requested",
-    cancelled: "Cancelled",
+    cancelled: "Cancelled"
   };
 
   return (
     <>
       <SEO
         title={`${project.name} - RD Sidekick`}
-        description={project.description || "Project details"}
-      />
+        description={project.description || "Project details"} />
+      
       <Layout>
         <div className="container mx-auto px-4 py-8 max-w-6xl">
           <Link href="/projects">
@@ -1363,91 +1363,91 @@ export default function ProjectDetailPage() {
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4 sm:mb-6">
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 break-words">{project.name}</h1>
-              {project.description && (
-                <p className="text-sm sm:text-base text-muted-foreground mb-3 break-words">{project.description}</p>
-              )}
+              {project.description &&
+              <p className="text-sm sm:text-base text-muted-foreground mb-3 break-words">{project.description}</p>
+              }
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className={statusColors[workflowStatus] || "bg-gray-500"}>
                   {statusLabels[workflowStatus] || workflowStatus}
                 </Badge>
-                {slaStatus && claimProject?.workflow_status === "team_in_progress" && (
-                  <Badge className={slaStatus.color} variant="outline">
+                {slaStatus && claimProject?.workflow_status === "team_in_progress" &&
+                <Badge className={slaStatus.color} variant="outline">
                     <slaStatus.icon className="h-3 w-3 mr-1" />
                     {slaStatus.label}
                   </Badge>
-                )}
+                }
                 {project.sector && <Badge variant="outline" className="text-xs">{project.sector}</Badge>}
                 {project.stage && <Badge variant="outline" className="text-xs">{project.stage}</Badge>}
                 <MessageWidget
                   entityType="project"
                   entityId={project.id}
-                  entityName={project.name}
-                />
+                  entityName={project.name} />
+                
               </div>
             </div>
             <div className="flex gap-2 flex-wrap sm:flex-nowrap flex-shrink-0">
-              {canEdit && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    setEditProjectName(project.name ?? "");
-                    setEditProjectDescription(project.description ?? "");
-                    setEditProjectSector(project.sector ?? "");
-                    setEditProjectStage(project.stage ?? "");
-                    setEditingProject(true);
-                  }}
-                  className="flex-1 sm:flex-none"
-                >
+              {canEdit &&
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEditProjectName(project.name ?? "");
+                  setEditProjectDescription(project.description ?? "");
+                  setEditProjectSector(project.sector ?? "");
+                  setEditProjectStage(project.stage ?? "");
+                  setEditingProject(true);
+                }}
+                className="flex-1 sm:flex-none">
+                
                   <Edit className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Edit</span>
                 </Button>
-              )}
-              {canSendToTeam && (
-                <Button 
-                  onClick={() => setSendToTeamDialog(true)}
-                  size="sm"
-                  className="flex-1 sm:flex-none"
-                >
+              }
+              {canSendToTeam &&
+              <Button
+                onClick={() => setSendToTeamDialog(true)}
+                size="sm"
+                className="flex-1 sm:flex-none">
+                
                   <Send className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Send to Team</span>
                   <span className="sm:hidden">Send</span>
                 </Button>
-              )}
-              {needsClientReview && (
-                <Button 
-                  onClick={() => setReviewDialog(true)}
-                  size="sm"
-                  className="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700"
-                >
+              }
+              {needsClientReview &&
+              <Button
+                onClick={() => setReviewDialog(true)}
+                size="sm"
+                className="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700">
+                
                   <CheckCircle className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Review Team's Work</span>
                   <span className="sm:hidden">Review</span>
                 </Button>
-              )}
-              {canRecallFromTeam && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setRecallDialog(true)}
-                  className="flex-1 sm:flex-none"
-                >
+              }
+              {canRecallFromTeam &&
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRecallDialog(true)}
+                className="flex-1 sm:flex-none">
+                
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Bring back to edit</span>
                   <span className="sm:hidden">Take back</span>
                 </Button>
-              )}
-              {claimProject && claimProject.workflow_status !== "cancelled" && (
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => setCancelDialog(true)}
-                  className="flex-1 sm:flex-none"
-                >
+              }
+              {claimProject && claimProject.workflow_status !== "cancelled" &&
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setCancelDialog(true)}
+                className="flex-1 sm:flex-none">
+                
                   <XCircle className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Cancel</span>
                 </Button>
-              )}
+              }
             </div>
           </div>
 
@@ -1457,22 +1457,22 @@ export default function ProjectDetailPage() {
               hasFeasibility={Boolean(feasibilityAnalysis)}
               hasTechnical={Boolean(
                 technicalBaseline ||
-                  technicalChange ||
-                  technicalInnovation ||
-                  rdTechnicalUnderstanding
+                technicalChange ||
+                technicalInnovation ||
+                rdTechnicalUnderstanding
               )}
               hasChallenges={Boolean(
                 challengeUncertainties ||
-                  challengeKnowledge ||
-                  challengeWorkDone ||
-                  rdChallenges
+                challengeKnowledge ||
+                challengeWorkDone ||
+                rdChallenges
               )}
               hasActivities={rdActivities.length > 0}
               hasEvidence={evidence.length > 0}
               hasCosts={costAdvice.length > 0}
               createdAt={project.created_at}
-              dueDate={claimProject?.due_date ?? null}
-            />
+              dueDate={claimProject?.due_date ?? null} />
+            
             <ProjectReadinessPanel
               hasTechnical={hasClientTechnical}
               hasChallenges={hasClientChallenges}
@@ -1482,8 +1482,8 @@ export default function ProjectDetailPage() {
               workflowStatus={workflowStatus}
               isLinkedToCompanion={Boolean(claimProject)}
               onSync={handleSyncReadiness}
-              isSyncing={isSyncingReadiness}
-            />
+              isSyncing={isSyncingReadiness} />
+            
           </div>
 
           <div className="mt-4 sm:mt-6 grid gap-4 lg:gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)]">
@@ -1493,8 +1493,8 @@ export default function ProjectDetailPage() {
               feasibilityCreatedAt={feasibilityAnalysis?.created_at ?? null}
               claimWorkflowStatus={claimProject?.workflow_status ?? null}
               evidence={evidence}
-              costs={costAdvice}
-            />
+              costs={costAdvice} />
+            
           </div>
 
           <Card className="mt-6">
@@ -1508,8 +1508,8 @@ export default function ProjectDetailPage() {
             <CardContent>
               <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1.6fr)] items-start">
                 <div className="space-y-4">
-                  {canEditTimeline && (
-                    <div className="space-y-3 rounded-lg border border-border bg-muted p-3 sm:p-4">
+                  {canEditTimeline &&
+                  <div className="space-y-3 rounded-lg border border-border bg-muted p-3 sm:p-4">
                       <h3 className="text-sm font-semibold text-foreground">Add timeline activity</h3>
                       <p className="text-xs text-muted-foreground">
                         Add design phases, experiments, prototyping rounds, or testing windows. You can keep it high level.
@@ -1519,12 +1519,12 @@ export default function ProjectDetailPage() {
                           Activity name
                         </Label>
                         <Input
-                          id="timeline-name"
-                          value={newTimelineName}
-                          onChange={(e) => setNewTimelineName(e.target.value)}
-                          placeholder="e.g. Prototype rig build, control algorithm testing"
-                          className="text-xs sm:text-sm"
-                        />
+                        id="timeline-name"
+                        value={newTimelineName}
+                        onChange={(e) => setNewTimelineName(e.target.value)}
+                        placeholder="e.g. Prototype rig build, control algorithm testing"
+                        className="text-xs sm:text-sm" />
+                      
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-2">
@@ -1532,97 +1532,97 @@ export default function ProjectDetailPage() {
                             Start date
                           </Label>
                           <Input
-                            id="timeline-start"
-                            type="date"
-                            value={newTimelineStart}
-                            onChange={(e) => setNewTimelineStart(e.target.value)}
-                            className="text-xs sm:text-sm"
-                          />
+                          id="timeline-start"
+                          type="date"
+                          value={newTimelineStart}
+                          onChange={(e) => setNewTimelineStart(e.target.value)}
+                          className="text-xs sm:text-sm" style={{ backgroundColor: "#ffffff" }} />
+                        
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="timeline-end" className="text-xs text-foreground">
                             Finish date
                           </Label>
                           <Input
-                            id="timeline-end"
-                            type="date"
-                            value={newTimelineEnd}
-                            onChange={(e) => setNewTimelineEnd(e.target.value)}
-                            className="text-xs sm:text-sm"
-                          />
+                          id="timeline-end"
+                          type="date"
+                          value={newTimelineEnd}
+                          onChange={(e) => setNewTimelineEnd(e.target.value)}
+                          className="text-xs sm:text-sm" style={{ backgroundColor: "#ffffff" }} />
+                        
                         </div>
                       </div>
                       <div className="flex justify-end">
                         <Button
-                          type="button"
-                          size="sm"
-                          onClick={handleAddTimelineItem}
-                          disabled={isSavingTimeline}
-                        >
+                        type="button"
+                        size="sm"
+                        onClick={handleAddTimelineItem}
+                        disabled={isSavingTimeline}>
+                        
                           {isSavingTimeline ? "Adding..." : "Add activity"}
                         </Button>
                       </div>
                     </div>
-                  )}
+                  }
 
-                  {!canEditTimeline && (
-                    <p className="text-xs text-muted-foreground">
+                  {!canEditTimeline &&
+                  <p className="text-xs text-muted-foreground">
                       The timeline is locked because this project&apos;s claim has been approved or cancelled. 
                       If you need to update activities, please speak to your R&amp;D advisor to reopen the claim.
                     </p>
-                  )}
+                  }
 
                   <div className="space-y-2">
                     <h3 className="text-sm font-semibold text-foreground">Activities</h3>
-                    {timelineItems.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">
+                    {timelineItems.length === 0 ?
+                    <p className="text-xs text-muted-foreground">
                         No activities added yet. Use the form above to add design, build, test, or analysis phases.
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {timelineItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted px-3 py-2"
-                          >
+                      </p> :
+
+                    <div className="space-y-2">
+                        {timelineItems.map((item) =>
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted px-3 py-2">
+                        
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-medium text-foreground truncate">
                                 {item.name || "Untitled activity"}
                               </p>
                               <p className="text-[11px] text-muted-foreground">
-                                {item.start_date
-                                  ? new Date(item.start_date).toLocaleDateString("en-GB", {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric",
-                                    })
-                                  : "No start date"}{" "}
+                                {item.start_date ?
+                            new Date(item.start_date).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric"
+                            }) :
+                            "No start date"}{" "}
                                 –{" "}
-                                {item.end_date
-                                  ? new Date(item.end_date).toLocaleDateString("en-GB", {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric",
-                                    })
-                                  : "No end date"}
+                                {item.end_date ?
+                            new Date(item.end_date).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric"
+                            }) :
+                            "No end date"}
                               </p>
                             </div>
-                            {canEditTimeline && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="flex-shrink-0"
-                                onClick={() => handleDeleteTimelineItem(item.id)}
-                                aria-label="Delete activity"
-                              >
+                            {canEditTimeline &&
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="flex-shrink-0"
+                          onClick={() => handleDeleteTimelineItem(item.id)}
+                          aria-label="Delete activity">
+                          
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
-                            )}
+                        }
                           </div>
-                        ))}
+                      )}
                       </div>
-                    )}
+                    }
                   </div>
                 </div>
 
@@ -1633,9 +1633,9 @@ export default function ProjectDetailPage() {
                       id: item.id,
                       name: item.name || "Untitled activity",
                       start_date: item.start_date,
-                      end_date: item.end_date,
-                    }))}
-                  />
+                      end_date: item.end_date
+                    }))} />
+                  
                 </div>
               </div>
             </CardContent>
@@ -1690,14 +1690,14 @@ export default function ProjectDetailPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {feasibilityLoading ? (
-                    <div className="flex items-center justify-center py-8">
+                  {feasibilityLoading ?
+                  <div className="flex items-center justify-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                    </div>
-                  ) : feasibilityAnalysis ? (
-                    <div className="space-y-4">
-                      {feasibilityAnalysis.summary && (
-                        <div className="p-3 sm:p-4 rounded-lg bg-card border border-border">
+                    </div> :
+                  feasibilityAnalysis ?
+                  <div className="space-y-4">
+                      {feasibilityAnalysis.summary &&
+                    <div className="p-3 sm:p-4 rounded-lg bg-card border border-border">
                           <h3 className="font-semibold text-sm sm:text-base mb-2 flex items-center gap-2 text-foreground">
                             <Sparkles className="h-4 w-4 text-[#ff6b35]" />
                             Analysis Summary
@@ -1706,86 +1706,86 @@ export default function ProjectDetailPage() {
                             {feasibilityAnalysis.summary}
                           </p>
                         </div>
-                      )}
+                    }
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                        {feasibilityAnalysis.technical_rating && (
-                          <div className="p-3 sm:p-4 border rounded-lg">
+                        {feasibilityAnalysis.technical_rating &&
+                      <div className="p-3 sm:p-4 border rounded-lg">
                             <div className="text-xs text-muted-foreground mb-1">
                               Technical Feasibility
                             </div>
                             <div className="text-lg sm:text-xl font-bold">
                               {feasibilityAnalysis.technical_rating}
                             </div>
-                            {feasibilityAnalysis.technical_reasoning && (
-                              <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">
+                            {feasibilityAnalysis.technical_reasoning &&
+                        <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">
                                 {feasibilityAnalysis.technical_reasoning}
                               </p>
-                            )}
+                        }
                           </div>
-                        )}
-                        {feasibilityAnalysis.commercial_rating && (
-                          <div className="p-3 sm:p-4 border rounded-lg">
+                      }
+                        {feasibilityAnalysis.commercial_rating &&
+                      <div className="p-3 sm:p-4 border rounded-lg">
                             <div className="text-xs text-muted-foreground mb-1">
                               Commercial Viability
                             </div>
                             <div className="text-lg sm:text-xl font-bold">
                               {feasibilityAnalysis.commercial_rating}
                             </div>
-                            {feasibilityAnalysis.commercial_reasoning && (
-                              <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">
+                            {feasibilityAnalysis.commercial_reasoning &&
+                        <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">
                                 {feasibilityAnalysis.commercial_reasoning}
                               </p>
-                            )}
+                        }
                           </div>
-                        )}
-                        {feasibilityAnalysis.rd_tax_flag && (
-                          <div className="p-3 sm:p-4 border rounded-lg">
+                      }
+                        {feasibilityAnalysis.rd_tax_flag &&
+                      <div className="p-3 sm:p-4 border rounded-lg">
                             <div className="text-xs text-muted-foreground mb-1">
                               R&D Tax Eligibility
                             </div>
                             <div className="text-lg sm:text-xl font-bold">
                               {feasibilityAnalysis.rd_tax_flag}
                             </div>
-                            {feasibilityAnalysis.rd_tax_reasoning && (
-                              <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">
+                            {feasibilityAnalysis.rd_tax_reasoning &&
+                        <p className="text-xs text-muted-foreground mt-2 break-words line-clamp-3">
                                 {feasibilityAnalysis.rd_tax_reasoning}
                               </p>
-                            )}
+                        }
                           </div>
-                        )}
+                      }
                       </div>
 
                       <Button
-                        variant="outline"
-                        onClick={() => router.push(`/feasibility/${feasibilityAnalysis.id}`)}
-                        className="w-full sm:w-auto"
-                        size="sm"
-                      >
+                      variant="outline"
+                      onClick={() => router.push(`/feasibility/${feasibilityAnalysis.id}`)}
+                      className="w-full sm:w-auto"
+                      size="sm">
+                      
                         <ExternalLink className="h-4 w-4 mr-2" />
                         View Full Feasibility Report
                       </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 space-y-4">
+                    </div> :
+
+                  <div className="text-center py-8 space-y-4">
                       <p className="text-sm text-muted-foreground">
                         No feasibility analysis yet
                       </p>
                       <Button onClick={handleRunFeasibility} disabled={runningFeasibility} size="sm">
-                        {runningFeasibility ? (
-                          <>
+                        {runningFeasibility ?
+                      <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
                             Running Analysis...
-                          </>
-                        ) : (
-                          <>
+                          </> :
+
+                      <>
                             <Sparkles className="h-4 w-4 mr-2" />
                             Run Feasibility Analysis
                           </>
-                        )}
+                      }
                       </Button>
                     </div>
-                  )}
+                  }
                 </CardContent>
               </Card>
             </TabsContent>
@@ -1838,8 +1838,8 @@ export default function ProjectDetailPage() {
                           className="mt-2 min-h-[120px]"
                           placeholder="E.g. Existing setup, current tools or systems in use, and any limitations you are aware of."
                           value={technicalBaseline}
-                          onChange={(e) => setTechnicalBaseline(e.target.value)}
-                        />
+                          onChange={(e) => setTechnicalBaseline(e.target.value)} />
+                        
                       </div>
 
                       <div>
@@ -1851,8 +1851,8 @@ export default function ProjectDetailPage() {
                           className="mt-2 min-h-[120px]"
                           placeholder="E.g. New feature, architecture, component, control logic, or process you are introducing."
                           value={technicalChange}
-                          onChange={(e) => setTechnicalChange(e.target.value)}
-                        />
+                          onChange={(e) => setTechnicalChange(e.target.value)} />
+                        
                       </div>
 
                       <div>
@@ -1864,8 +1864,8 @@ export default function ProjectDetailPage() {
                           className="mt-2 min-h-[120px]"
                           placeholder="E.g. Why this goes beyond routine work or standard configurations in your field."
                           value={technicalInnovation}
-                          onChange={(e) => setTechnicalInnovation(e.target.value)}
-                        />
+                          onChange={(e) => setTechnicalInnovation(e.target.value)} />
+                        
                       </div>
                     </TabsContent>
 
@@ -1879,8 +1879,8 @@ export default function ProjectDetailPage() {
                           className="mt-2 min-h-[120px]"
                           placeholder="E.g. Key technical questions you were unsure about before starting."
                           value={challengeUncertainties}
-                          onChange={(e) => setChallengeUncertainties(e.target.value)}
-                        />
+                          onChange={(e) => setChallengeUncertainties(e.target.value)} />
+                        
                       </div>
 
                       <div>
@@ -1892,8 +1892,8 @@ export default function ProjectDetailPage() {
                           className="mt-2 min-h-[120px]"
                           placeholder="E.g. Design codes, datasheets, internal knowledge, previous projects, or external research you drew on."
                           value={challengeKnowledge}
-                          onChange={(e) => setChallengeKnowledge(e.target.value)}
-                        />
+                          onChange={(e) => setChallengeKnowledge(e.target.value)} />
+                        
                       </div>
 
                       <div>
@@ -1907,8 +1907,8 @@ export default function ProjectDetailPage() {
                           className="mt-2 min-h-[120px]"
                           placeholder="E.g. Prototypes built, simulations run, trial runs at different settings, inspected failures and iterated..."
                           value={challengeWorkDone}
-                          onChange={(e) => setChallengeWorkDone(e.target.value)}
-                        />
+                          onChange={(e) => setChallengeWorkDone(e.target.value)} />
+                        
                       </div>
                     </TabsContent>
 
@@ -1922,29 +1922,29 @@ export default function ProjectDetailPage() {
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        {rdActivities.length === 0 ? (
-                          <p className="text-xs text-muted-foreground">
+                        {rdActivities.length === 0 ?
+                        <p className="text-xs text-muted-foreground">
                             No activities added yet. Use the box below to add activities such as
                             experiments, design iterations, or investigations.
-                          </p>
-                        ) : (
-                          rdActivities.map((activity, index) => (
-                            <span
-                              key={`${activity}-${index}`}
-                              className="inline-flex items-center rounded-full border px-3 py-1 text-xs bg-background/40"
-                            >
+                          </p> :
+
+                        rdActivities.map((activity, index) =>
+                        <span
+                          key={`${activity}-${index}`}
+                          className="inline-flex items-center rounded-full border px-3 py-1 text-xs bg-background/40">
+                          
                               <span className="mr-2">{activity}</span>
                               <button
-                                type="button"
-                                onClick={() => handleRemoveActivity(index)}
-                                className="text-muted-foreground hover:text-destructive transition-colors"
-                                aria-label="Remove activity"
-                              >
+                            type="button"
+                            onClick={() => handleRemoveActivity(index)}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                            aria-label="Remove activity">
+                            
                                 ×
                               </button>
                             </span>
-                          ))
-                        )}
+                        )
+                        }
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-2">
@@ -1952,14 +1952,14 @@ export default function ProjectDetailPage() {
                           value={newActivity}
                           onChange={(e) => setNewActivity(e.target.value)}
                           placeholder="e.g. Prototype engine mounting tests, CFD simulations, control algorithm tuning"
-                          className="text-sm"
-                        />
+                          className="text-sm" />
+                        
                         <Button
                           type="button"
                           onClick={handleAddActivity}
                           disabled={!newActivity.trim()}
-                          size="sm"
-                        >
+                          size="sm">
+                          
                           Add activity
                         </Button>
                       </div>
@@ -1977,8 +1977,8 @@ export default function ProjectDetailPage() {
 
             <TabsContent value="evidence">
               <div className="space-y-4 sm:space-y-6">
-                {canEdit && (
-                  <Card>
+                {canEdit &&
+                <Card>
                     <CardHeader>
                       <CardTitle className="text-lg sm:text-xl">Add Evidence</CardTitle>
                       <CardDescription className="text-sm">
@@ -1988,32 +1988,32 @@ export default function ProjectDetailPage() {
                     <CardContent className="space-y-4">
                       <div className="flex gap-2 flex-wrap">
                         <Button
-                          type="button"
-                          variant={evidenceType === "note" ? "default" : "outline"}
-                          onClick={() => setEvidenceType("note")}
-                          size="sm"
-                          className="flex-1 sm:flex-none"
-                        >
+                        type="button"
+                        variant={evidenceType === "note" ? "default" : "outline"}
+                        onClick={() => setEvidenceType("note")}
+                        size="sm"
+                        className="flex-1 sm:flex-none">
+                        
                           <FileText className="h-4 w-4 mr-2" />
                           Note
                         </Button>
                         <Button
-                          type="button"
-                          variant={evidenceType === "file" ? "default" : "outline"}
-                          onClick={() => setEvidenceType("file")}
-                          size="sm"
-                          className="flex-1 sm:flex-none"
-                        >
+                        type="button"
+                        variant={evidenceType === "file" ? "default" : "outline"}
+                        onClick={() => setEvidenceType("file")}
+                        size="sm"
+                        className="flex-1 sm:flex-none">
+                        
                           <Upload className="h-4 w-4 mr-2" />
                           File
                         </Button>
                         <Button
-                          type="button"
-                          variant={evidenceType === "link" ? "default" : "outline"}
-                          onClick={() => setEvidenceType("link")}
-                          size="sm"
-                          className="flex-1 sm:flex-none"
-                        >
+                        type="button"
+                        variant={evidenceType === "link" ? "default" : "outline"}
+                        onClick={() => setEvidenceType("link")}
+                        size="sm"
+                        className="flex-1 sm:flex-none">
+                        
                           <LinkIcon className="h-4 w-4 mr-2" />
                           Link
                         </Button>
@@ -2025,71 +2025,71 @@ export default function ProjectDetailPage() {
                             Title
                           </Label>
                           <Input
-                            id="evidenceTitle"
-                            value={evidenceTitle}
-                            onChange={(e) => setEvidenceTitle(e.target.value)}
-                            placeholder="Brief title for this evidence"
-                            className="text-sm"
-                          />
+                          id="evidenceTitle"
+                          value={evidenceTitle}
+                          onChange={(e) => setEvidenceTitle(e.target.value)}
+                          placeholder="Brief title for this evidence"
+                          className="text-sm" />
+                        
                         </div>
 
-                        {evidenceType === "note" && (
-                          <div>
+                        {evidenceType === "note" &&
+                      <div>
                             <Label htmlFor="evidenceBody" className="text-sm">
                               Description
                             </Label>
                             <Textarea
-                              id="evidenceBody"
-                              value={evidenceBody}
-                              onChange={(e) => setEvidenceBody(e.target.value)}
-                              placeholder="Describe your evidence..."
-                              rows={4}
-                              className="text-sm resize-none"
-                            />
+                          id="evidenceBody"
+                          value={evidenceBody}
+                          onChange={(e) => setEvidenceBody(e.target.value)}
+                          placeholder="Describe your evidence..."
+                          rows={4}
+                          className="text-sm resize-none" />
+                        
                           </div>
-                        )}
+                      }
 
-                        {evidenceType === "file" && (
-                          <div>
+                        {evidenceType === "file" &&
+                      <div>
                             <Label htmlFor="evidenceFile" className="text-sm">
                               Upload File
                             </Label>
                             <Input
-                              id="evidenceFile"
-                              type="file"
-                              onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
-                              className="text-sm"
-                            />
+                          id="evidenceFile"
+                          type="file"
+                          onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
+                          className="text-sm" />
+                        
                           </div>
-                        )}
+                      }
 
-                        {evidenceType === "link" && (
-                          <div>
+                        {evidenceType === "link" &&
+                      <div>
                             <Label htmlFor="evidenceUrl" className="text-sm">
                               External URL
                             </Label>
                             <Input
-                              id="evidenceUrl"
-                              value={evidenceUrl}
-                              onChange={(e) => setEvidenceUrl(e.target.value)}
-                              placeholder="https://..."
-                              className="text-sm"
-                            />
+                          id="evidenceUrl"
+                          value={evidenceUrl}
+                          onChange={(e) => setEvidenceUrl(e.target.value)}
+                          placeholder="https://..."
+                          className="text-sm" />
+                        
                           </div>
-                        )}
+                      }
 
                         <Button
-                          onClick={handleAddEvidence}
-                          disabled={submitting}
-                          className="w-full sm:w-auto"
-                          size="sm"
-                        >
+                        onClick={handleAddEvidence}
+                        disabled={submitting}
+                        className="w-full sm:w-auto"
+                        size="sm">
+                        
                           {submitting ? "Adding..." : "Add Evidence"}
                         </Button>
                       </div>
                     </CardContent>
                   </Card>
-                )}
+                }
 
                 <Card>
                   <CardHeader>
@@ -2098,79 +2098,79 @@ export default function ProjectDetailPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {evidence.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-8">
+                    {evidence.length === 0 ?
+                    <p className="text-sm text-muted-foreground text-center py-8">
                         No evidence yet. Add your first evidence item above.
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {evidence.map((item) => (
-                          <div
-                            key={item.id}
-                            className="p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                          >
+                      </p> :
+
+                    <div className="space-y-3">
+                        {evidence.map((item) =>
+                      <div
+                        key={item.id}
+                        className="p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors">
+                        
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                                   <Badge variant="secondary" className="text-xs">
                                     {item.type}
                                   </Badge>
-                                  {item.title && (
-                                    <h4 className="font-medium text-sm break-words">
+                                  {item.title &&
+                              <h4 className="font-medium text-sm break-words">
                                       {item.title}
                                     </h4>
-                                  )}
+                              }
                                 </div>
-                                {item.body && (
-                                  <p className="text-xs sm:text-sm text-muted-foreground mb-2 break-words line-clamp-2">
+                                {item.body &&
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-2 break-words line-clamp-2">
                                     {item.body}
                                   </p>
-                                )}
-                                {item.external_url && (
-                                  <a
-                                    href={item.external_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-blue-600 hover:underline break-all"
-                                  >
+                            }
+                                {item.external_url &&
+                            <a
+                              href={item.external_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline break-all">
+                              
                                     {item.external_url}
                                   </a>
-                                )}
+                            }
                                 <p className="text-xs text-muted-foreground mt-2">
                                   {new Date(item.created_at).toLocaleDateString()}
                                 </p>
                               </div>
-                              {canEdit && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteEvidence(item.id)}
-                                  disabled={deletingEvidence === item.id}
-                                  className="flex-shrink-0"
-                                >
+                              {canEdit &&
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteEvidence(item.id)}
+                            disabled={deletingEvidence === item.id}
+                            className="flex-shrink-0">
+                            
                                   <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
-                              )}
+                          }
                             </div>
                           </div>
-                        ))}
+                      )}
                       </div>
-                    )}
+                    }
                   </CardContent>
                 </Card>
               </div>
             </TabsContent>
 
             <TabsContent value="voice-notes" className="mt-6">
-              {project && (
-                <ProjectVoiceNotes projectId={project.id} />
-              )}
+              {project &&
+              <ProjectVoiceNotes projectId={project.id} />
+              }
             </TabsContent>
 
             <TabsContent value="comments" className="mt-6 space-y-6">
               <div className="space-y-4 sm:space-y-6">
-                {latestStaffComment && (
-                  <Card>
+                {latestStaffComment &&
+                <Card>
                     <CardHeader>
                       <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
                         <Lightbulb className="h-4 w-4 text-[#ff6b35]" />
@@ -2189,11 +2189,11 @@ export default function ProjectDetailPage() {
                       </p>
                     </CardContent>
                   </Card>
-                )}
+                }
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg sm:text-xl">Add Comment</CardTitle>
-                    <CardDescription className="text-sm">
+                    <CardDescription className="text-sm" style={{ color: "#1a1a1a" }}>
                       Share updates or respond to RD staff feedback
                     </CardDescription>
                   </CardHeader>
@@ -2203,14 +2203,14 @@ export default function ProjectDetailPage() {
                       onChange={(e) => setCommentBody(e.target.value)}
                       placeholder="Write a comment..."
                       rows={4}
-                      className="text-sm resize-none"
-                    />
-                    <Button 
-                      onClick={handleAddComment} 
+                      className="text-sm resize-none" />
+                    
+                    <Button
+                      onClick={handleAddComment}
                       disabled={submitting || !commentBody.trim()}
                       className="w-full sm:w-auto"
-                      size="sm"
-                    >
+                      size="sm">
+                      
                       <Send className="h-4 w-4 mr-2" />
                       {submitting ? "Posting..." : "Post Comment"}
                     </Button>
@@ -2224,29 +2224,29 @@ export default function ProjectDetailPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {comments.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-8">
+                    {comments.length === 0 ?
+                    <p className="text-sm text-muted-foreground text-center py-8">
                         No comments yet. Start the conversation!
-                      </p>
-                    ) : (
-                      <div className="space-y-4">
-                        {comments.map((comment) => (
-                          <div key={comment.id} className="p-3 sm:p-4 border rounded-lg">
+                      </p> :
+
+                    <div className="space-y-4">
+                        {comments.map((comment) =>
+                      <div key={comment.id} className="p-3 sm:p-4 border rounded-lg">
                             <div className="flex items-start justify-between gap-3 mb-2">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <Badge
-                                  variant={
-                                    comment.author_role === "rd_staff" ? "default" : "secondary"
-                                  }
-                                  className="text-xs"
-                                >
+                              variant={
+                              comment.author_role === "rd_staff" ? "default" : "secondary"
+                              }
+                              className="text-xs">
+                              
                                   {comment.author_role === "rd_staff" ? "RD Staff" : "Client"}
                                 </Badge>
-                                {comment.author?.email && (
-                                  <span className="text-xs text-muted-foreground break-all">
+                                {comment.author?.email &&
+                            <span className="text-xs text-muted-foreground break-all">
                                     {comment.author.email}
                                   </span>
-                                )}
+                            }
                               </div>
                               <span className="text-xs text-muted-foreground flex-shrink-0">
                                 {new Date(comment.created_at).toLocaleDateString()}
@@ -2256,9 +2256,9 @@ export default function ProjectDetailPage() {
                               {comment.body}
                             </p>
                           </div>
-                        ))}
+                      )}
                       </div>
-                    )}
+                    }
                   </CardContent>
                 </Card>
               </div>
@@ -2301,8 +2301,8 @@ export default function ProjectDetailPage() {
                           step="0.01"
                           value={costAmount}
                           onChange={(e) => setCostAmount(e.target.value)}
-                          placeholder="e.g. 12000"
-                        />
+                          placeholder="e.g. 12000" />
+                        
                       </div>
 
                       <div className="space-y-2">
@@ -2312,8 +2312,8 @@ export default function ProjectDetailPage() {
                           value={costDescription}
                           onChange={(e) => setCostDescription(e.target.value)}
                           placeholder="Briefly describe the staff time, subcontractor work, materials, or other costs."
-                          rows={3}
-                        />
+                          rows={3} />
+                        
                       </div>
 
                       <div className="space-y-2">
@@ -2323,34 +2323,34 @@ export default function ProjectDetailPage() {
                           value={costNotes}
                           onChange={(e) => setCostNotes(e.target.value)}
                           placeholder="Anything that will help the team interpret this number, such as assumptions or ranges."
-                          rows={2}
-                        />
+                          rows={2} />
+                        
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
                         <Button
                           type="button"
                           onClick={handleSubmitCostAdvice}
-                          disabled={isSubmittingCostAdvice || !project}
-                        >
-                          {isSubmittingCostAdvice
-                            ? editingCostId
-                              ? "Updating..."
-                              : "Saving..."
-                            : editingCostId
-                            ? "Update cost advice"
-                            : "Save cost advice"}
+                          disabled={isSubmittingCostAdvice || !project}>
+                          
+                          {isSubmittingCostAdvice ?
+                          editingCostId ?
+                          "Updating..." :
+                          "Saving..." :
+                          editingCostId ?
+                          "Update cost advice" :
+                          "Save cost advice"}
                         </Button>
-                        {editingCostId && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleCancelEditCostAdvice}
-                            disabled={isSubmittingCostAdvice}
-                          >
+                        {editingCostId &&
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleCancelEditCostAdvice}
+                          disabled={isSubmittingCostAdvice}>
+                          
                             Cancel edit
                           </Button>
-                        )}
+                        }
                       </div>
                     </div>
                   </CardContent>
@@ -2364,19 +2364,19 @@ export default function ProjectDetailPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {isLoadingCostAdvice ? (
-                      <p className="text-sm text-muted-foreground">Loading costs...</p>
-                    ) : costAdvice.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
+                    {isLoadingCostAdvice ?
+                    <p className="text-sm text-muted-foreground">Loading costs...</p> :
+                    costAdvice.length === 0 ?
+                    <p className="text-sm text-muted-foreground">
                         No costs advised yet. Add your first estimate on the left.
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {costAdvice.map((item) => (
-                          <div
-                            key={item.id}
-                            className="rounded-lg border bg-card px-4 py-3 text-sm"
-                          >
+                      </p> :
+
+                    <div className="space-y-3">
+                        {costAdvice.map((item) =>
+                      <div
+                        key={item.id}
+                        className="rounded-lg border bg-card px-4 py-3 text-sm">
+                        
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 space-y-1">
                                 <div className="flex items-center justify-between gap-2">
@@ -2387,46 +2387,46 @@ export default function ProjectDetailPage() {
                                     <span className="font-medium">
                                       £
                                       {Number(item.amount).toLocaleString("en-GB", {
-                                        maximumFractionDigits: 2,
-                                      })}
+                                    maximumFractionDigits: 2
+                                  })}
                                     </span>
                                   </div>
                                   <span className="text-xs text-muted-foreground">
                                     {new Date(item.created_at).toLocaleDateString("en-GB")}
                                   </span>
                                 </div>
-                                {item.description && (
-                                  <p className="mt-1 text-muted-foreground">{item.description}</p>
-                                )}
-                                {item.notes && (
-                                  <p className="mt-1 text-xs text-muted-foreground">{item.notes}</p>
-                                )}
+                                {item.description &&
+                            <p className="mt-1 text-muted-foreground">{item.description}</p>
+                            }
+                                {item.notes &&
+                            <p className="mt-1 text-xs text-muted-foreground">{item.notes}</p>
+                            }
                               </div>
                               <div className="flex flex-col gap-1 pl-2">
                                 <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEditCostAdvice(item)}
-                                  aria-label="Edit cost"
-                                >
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditCostAdvice(item)}
+                              aria-label="Edit cost">
+                              
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteCostAdvice(item.id)}
-                                  aria-label="Delete cost"
-                                >
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteCostAdvice(item.id)}
+                              aria-label="Delete cost">
+                              
                                   <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               </div>
                             </div>
                           </div>
-                        ))}
+                      )}
                       </div>
-                    )}
+                    }
                   </CardContent>
                 </Card>
               </div>
@@ -2468,13 +2468,13 @@ export default function ProjectDetailPage() {
                   <div className="flex items-start gap-3 p-3 border rounded-lg">
                     <Checkbox
                       checked={approvalSections.basic_info === "approved"}
-                      onCheckedChange={(checked) => 
-                        setApprovalSections(prev => ({
-                          ...prev,
-                          basic_info: checked ? "approved" : "needs_revision"
-                        }))
-                      }
-                    />
+                      onCheckedChange={(checked) =>
+                      setApprovalSections((prev) => ({
+                        ...prev,
+                        basic_info: checked ? "approved" : "needs_revision"
+                      }))
+                      } />
+                    
                     <div className="flex-1">
                       <h4 className="font-medium">Basic Information</h4>
                       <p className="text-sm text-muted-foreground">Project name, description, sector, stage</p>
@@ -2484,13 +2484,13 @@ export default function ProjectDetailPage() {
                   <div className="flex items-start gap-3 p-3 border rounded-lg">
                     <Checkbox
                       checked={approvalSections.technical_understanding === "approved"}
-                      onCheckedChange={(checked) => 
-                        setApprovalSections(prev => ({
-                          ...prev,
-                          technical_understanding: checked ? "approved" : "needs_revision"
-                        }))
-                      }
-                    />
+                      onCheckedChange={(checked) =>
+                      setApprovalSections((prev) => ({
+                        ...prev,
+                        technical_understanding: checked ? "approved" : "needs_revision"
+                      }))
+                      } />
+                    
                     <div className="flex-1">
                       <h4 className="font-medium">Technical Understanding</h4>
                       <p className="text-sm text-muted-foreground">Team's technical analysis and approach</p>
@@ -2500,13 +2500,13 @@ export default function ProjectDetailPage() {
                   <div className="flex items-start gap-3 p-3 border rounded-lg">
                     <Checkbox
                       checked={approvalSections.challenges === "approved"}
-                      onCheckedChange={(checked) => 
-                        setApprovalSections(prev => ({
-                          ...prev,
-                          challenges: checked ? "approved" : "needs_revision"
-                        }))
-                      }
-                    />
+                      onCheckedChange={(checked) =>
+                      setApprovalSections((prev) => ({
+                        ...prev,
+                        challenges: checked ? "approved" : "needs_revision"
+                      }))
+                      } />
+                    
                     <div className="flex-1">
                       <h4 className="font-medium">Challenges & Uncertainties</h4>
                       <p className="text-sm text-muted-foreground">Technical challenges and risk assessment</p>
@@ -2516,13 +2516,13 @@ export default function ProjectDetailPage() {
                   <div className="flex items-start gap-3 p-3 border rounded-lg">
                     <Checkbox
                       checked={approvalSections.qualifying_activities === "approved"}
-                      onCheckedChange={(checked) => 
-                        setApprovalSections(prev => ({
-                          ...prev,
-                          qualifying_activities: checked ? "approved" : "needs_revision"
-                        }))
-                      }
-                    />
+                      onCheckedChange={(checked) =>
+                      setApprovalSections((prev) => ({
+                        ...prev,
+                        qualifying_activities: checked ? "approved" : "needs_revision"
+                      }))
+                      } />
+                    
                     <div className="flex-1">
                       <h4 className="font-medium">Qualifying Activities</h4>
                       <p className="text-sm text-muted-foreground">R&D activities and eligibility assessment</p>
@@ -2530,28 +2530,28 @@ export default function ProjectDetailPage() {
                   </div>
                 </div>
 
-                {Object.values(approvalSections).some(s => s === "needs_revision") && (
-                  <div className="space-y-2">
+                {Object.values(approvalSections).some((s) => s === "needs_revision") &&
+                <div className="space-y-2">
                     <Label>Feedback for sections needing revision</Label>
                     <Textarea
-                      value={revisionFeedback}
-                      onChange={(e) => setRevisionFeedback(e.target.value)}
-                      placeholder="Explain what needs to be changed..."
-                      rows={4}
-                    />
+                    value={revisionFeedback}
+                    onChange={(e) => setRevisionFeedback(e.target.value)}
+                    placeholder="Explain what needs to be changed..."
+                    rows={4} />
+                  
                   </div>
-                )}
+                }
               </div>
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => setReviewDialog(false)}>
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   onClick={handleApproveProject}
-                  disabled={submitting || (Object.values(approvalSections).some(s => s === "needs_revision") && !revisionFeedback.trim())}
-                >
-                  {submitting ? "Submitting..." : Object.values(approvalSections).every(s => s === "approved") ? "Approve All" : "Submit Feedback"}
+                  disabled={submitting || Object.values(approvalSections).some((s) => s === "needs_revision") && !revisionFeedback.trim()}>
+                  
+                  {submitting ? "Submitting..." : Object.values(approvalSections).every((s) => s === "approved") ? "Approve All" : "Submit Feedback"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -2598,8 +2598,8 @@ export default function ProjectDetailPage() {
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   placeholder="Reason for deleting this project..."
-                  rows={4}
-                />
+                  rows={4} />
+                
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setCancelDialog(false)}>
@@ -2608,8 +2608,8 @@ export default function ProjectDetailPage() {
                 <Button
                   variant="destructive"
                   onClick={handleCancelProject}
-                  disabled={isCancelling}
-                >
+                  disabled={isCancelling}>
+                  
                   {isCancelling ? "Deleting..." : "Delete Project"}
                 </Button>
               </DialogFooter>
@@ -2617,6 +2617,6 @@ export default function ProjectDetailPage() {
           </Dialog>
         </div>
       </Layout>
-    </>
-  );
+    </>);
+
 }
