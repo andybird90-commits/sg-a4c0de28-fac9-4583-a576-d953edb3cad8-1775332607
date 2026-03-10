@@ -111,32 +111,29 @@ export function Layout({ children, showNav = true }: LayoutProps) {
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-[#0F1D2D] text-slate-100">
         <div className="px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {user &&
-            <button
-              type="button"
-              onClick={() => setMobileNavOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-100"
-              aria-label="Open navigation">
-              
-                <Menu className="h-5 w-5" />
-              </button>
-            }
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            
+            {user && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen(true)}
+                  className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-100"
+                  aria-label="Open navigation">
+                  
+                    <Menu className="h-5 w-5" />
+                  </button>
+                <Link href="/home" className="hidden sm:flex items-center gap-3">
+                  <div className="relative h-8 w-32">
+                    <Image
+                    src="/rd_tax_white_wording.png"
+                    alt="RD TAX"
+                    fill
+                    className="object-contain"
+                    priority />
+                  
+                  </div>
+                </Link>
+              </>
+            )}
           </div>
 
           {user &&
@@ -175,20 +172,6 @@ export function Layout({ children, showNav = true }: LayoutProps) {
         {/* Sidebar – desktop only */}
         {user &&
         <aside className="hidden lg:flex h-screen w-64 flex-col bg-[#020817] border-r border-slate-800">
-            <div className="flex items-center justify-between px-6 h-16 border-b border-slate-800">
-              <Link href="/home" className="flex items-center gap-3">
-                <div className="relative h-8 w-32">
-                  <Image
-                  src="/rd_tax_white_wording.png"
-                  alt="RD TAX"
-                  fill
-                  className="object-contain"
-                  priority />
-                
-                </div>
-              </Link>
-              <div className="h-full w-px bg-slate-800" />
-            </div>
             <div className="px-4 py-4 space-y-1">
               {navItems.map((item) => {
               const Icon = item.icon;
