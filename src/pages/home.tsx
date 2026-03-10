@@ -334,7 +334,7 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             <div className="space-y-4 sm:space-y-6">
-              <Card className="border border-border bg-card shadow-professional-md">
+              <Card className="border border-border bg-card shadow-professional-md lg:hidden">
                 <CardHeader className="pb-3 sm:pb-4">
                   <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-foreground">
                     <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
@@ -500,7 +500,7 @@ export default function HomePage() {
                     </div>
                   ) : (
                     <div className="space-y-3 sm:space-y-4">
-                      {projects.slice(0, 8).map((project) => {
+                      {projects.slice(0, 3).map((project) => {
                         return (
                           <div
                             key={project.id}
