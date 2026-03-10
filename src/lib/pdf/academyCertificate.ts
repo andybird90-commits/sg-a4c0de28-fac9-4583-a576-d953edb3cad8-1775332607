@@ -97,7 +97,7 @@ export async function buildAcademyCertificatePdf(
     const targetHeight = crestImage.height * scale;
 
     const crestX = width - MARGIN - targetWidth;
-    const crestY = MARGIN;
+    const crestY = MARGIN / 2 + 6;
 
     page.drawImage(crestImage, {
       x: crestX,

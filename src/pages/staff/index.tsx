@@ -236,9 +236,7 @@ export default function StaffHomePage() {
         ) :
         null;
 
-        const activeProjects = uniqueRows.filter(
-          (r) => (r.innovation_density_score || 0) >= 60
-        ).length;
+        const activeProjects = uniqueRows.length;
 
         const documentationGaps = uniqueRows.filter(
           (r) =>
