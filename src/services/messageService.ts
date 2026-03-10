@@ -342,12 +342,22 @@ export async function deleteMessageForCurrentUser(messageId: string): Promise<vo
  * Get unread message count
  */
 export async function getUnreadCount(): Promise<number> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return 0;
 
   const { count, error } = await supabase
     .from("message_recipients")
-    .select("*", { count: "exact", head: true })
+    .select(
+      `
+      message_id,
+      messages!inner(
+        id
+      )
+    `,
+      { count: "exact", head: true }
+    )
     .eq("recipient_id", user.id)
     .is("read_at", null);
 
