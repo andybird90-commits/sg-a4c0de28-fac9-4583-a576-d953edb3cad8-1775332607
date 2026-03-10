@@ -189,11 +189,11 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
                           phase.status === "upcoming" &&
                           "bg-slate-800 text-slate-300 border-slate-700"
                         )}
-                        style={{
-                          color: phase.status === "complete" ? "#0f1d2d" : "#1a1a1a",
-                          borderColor: phase.status === "complete" ? "#0f1d2d" : undefined,
-                          backgroundColor: phase.status === "complete" ? "rgba(15,29,45,0.06)" : undefined
-                        }}>
+                        style={{ color: "#ffffff", fontSize: "12px" }}>
+
+
+
+                        
                         
                         {phase.status === "complete" ?
                         "Complete" :
