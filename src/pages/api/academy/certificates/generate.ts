@@ -1,19 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import fs from "fs";
+import path from "path";
 import { supabaseServer } from "@/integrations/supabase/serverClient";
 import { getCertificationEligibility, createCertificateRecord } from "@/services/academyCertificationService";
 import { buildAcademyCertificatePdf } from "@/lib/pdf/academyCertificate";
-import QRCode from "qrcode";
 
 function generateCertificateId(): string {
   const random = Math.random().toString(36).substring(2, 10).toUpperCase();
   const timestamp = Date.now().toString(36).toUpperCase();
   return `RD-${timestamp}-${random}`;
-}
-
-function toBaseUrl(req: NextApiRequest): string {
-  const host = req.headers["x-forwarded-host"] || req.headers.host || "";
-  const proto = req.headers["x-forwarded-proto"] || "https";
-  return `${proto}://${host}`;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -63,25 +58,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const certificateId = generateCertificateId();
   const completedAt = new Date().toISOString();
 
-  const baseUrl = toBaseUrl(req);
-  const verificationUrl = `${baseUrl}/api/academy/certificates/${encodeURIComponent(certificateId)}`;
-
-  let qrPngData: Uint8Array | undefined;
+  let logoPngData: Uint8Array | undefined;
   try {
-    const dataUrl = await QRCode.toDataURL(verificationUrl);
-    const base64 = dataUrl.split(",")[1] || "";
-    const bytes = Uint8Array.from(Buffer.from(base64, "base64"));
-    qrPngData = bytes;
-  } catch (e) {
-    qrPngData = undefined;
+    const logoPath = path.join(process.cwd(), "public", "RDTAXHEADER_1_.png");
+    const buffer = fs.readFileSync(logoPath);
+    logoPngData = new Uint8Array(buffer);
+  } catch {
+    logoPngData = undefined;
   }
 
   const pdfBytes = await buildAcademyCertificatePdf({
     recipientName,
     completionDate: new Date(completedAt).toLocaleDateString("en-GB"),
     certificateId,
-    verificationUrl,
-    qrPngData,
+    logoPngData,
   });
 
   const { error: recordError } = await createCertificateRecord({

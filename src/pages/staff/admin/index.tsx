@@ -98,6 +98,13 @@ export default function AdminDashboard() {
       color: "bg-purple-500"
     },
     {
+      title: "Certificates",
+      description: "View and validate Academy certificates",
+      icon: BarChart3,
+      href: "/staff/admin/certificates",
+      color: "bg-indigo-500"
+    },
+    {
       title: "Settings",
       description: "Configure system-wide settings",
       icon: Settings,

@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont } from "pdf-lib";
 
 const MM_TO_PT = 72 / 25.4;
 const A4_WIDTH = 297 * MM_TO_PT;
@@ -9,12 +9,47 @@ export interface AcademyCertificatePayload {
   recipientName: string;
   completionDate: string;
   certificateId: string;
-  verificationUrl: string;
-  qrPngData?: Uint8Array;
+  logoPngData?: Uint8Array;
 }
 
-export async function buildAcademyCertificatePdf(payload: AcademyCertificatePayload): Promise<Uint8Array> {
-  const { recipientName, completionDate, certificateId, verificationUrl, qrPngData } = payload;
+interface TextLine {
+  text: string;
+  font: PDFFont;
+  size: number;
+}
+
+function wrapText(
+  text: string,
+  font: PDFFont,
+  size: number,
+  maxWidth: number,
+): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let line = "";
+
+  for (const word of words) {
+    const testLine = line ? `${line} ${word}` : word;
+    const lineWidth = font.widthOfTextAtSize(testLine, size);
+    if (lineWidth > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = testLine;
+    }
+  }
+
+  if (line) {
+    lines.push(line);
+  }
+
+  return lines;
+}
+
+export async function buildAcademyCertificatePdf(
+  payload: AcademyCertificatePayload,
+): Promise<Uint8Array> {
+  const { recipientName, completionDate, certificateId, logoPngData } = payload;
 
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
@@ -37,188 +72,100 @@ export async function buildAcademyCertificatePdf(payload: AcademyCertificatePayl
     color: rgb(1, 1, 1),
   });
 
+  if (logoPngData) {
+    const logoImage = await pdfDoc.embedPng(logoPngData);
+    const targetWidth = 160;
+    const scale = targetWidth / logoImage.width;
+    const targetHeight = logoImage.height * scale;
+
+    const logoX = width - MARGIN - targetWidth;
+    const logoY = height - MARGIN - targetHeight;
+
+    page.drawImage(logoImage, {
+      x: logoX,
+      y: logoY,
+      width: targetWidth,
+      height: targetHeight,
+    });
+  }
+
   const title = "Certified R&D Tax Agent";
   const titleSize = 28;
   const titleWidth = fontBold.widthOfTextAtSize(title, titleSize);
 
   page.drawText(title, {
-    x: width / 2 - titleWidth / 2,
-    y: height - MARGIN - 20,
+    x: MARGIN,
+    y: height - MARGIN - 30,
     size: titleSize,
     font: fontBold,
     color: accentColor,
   });
 
-  const subtitle = "RD Agent Academy";
+  const subtitle = "RD Agent Academy – Foundation Certificate";
   const subtitleSize = 14;
   const subtitleWidth = font.widthOfTextAtSize(subtitle, subtitleSize);
 
   page.drawText(subtitle, {
-    x: width / 2 - subtitleWidth / 2,
-    y: height - MARGIN - 50,
+    x: MARGIN,
+    y: height - MARGIN - 60,
     size: subtitleSize,
     font,
     color: textColor,
   });
 
-  const bodyYStart = height - MARGIN - 100;
-  let y = bodyYStart;
+  const contentMaxWidth = width - MARGIN * 2;
+  const baseLineHeight = 18;
 
   const intro = "This certifies that";
-  page.drawText(intro, {
-    x: MARGIN,
-    y,
-    size: 12,
-    font,
-    color: textColor,
-  });
-
-  y -= 24;
-
-  const nameSize = 20;
-  page.drawText(recipientName || "Recipient Name", {
-    x: MARGIN,
-    y,
-    size: nameSize,
-    font: fontBold,
-    color: textColor,
-  });
-
-  y -= 30;
-
   const paragraph =
-    "has successfully completed the RD Agent Academy programme covering R&D tax legislation, claim preparation, evidence assessment, and HMRC enquiry defence.";
+    "has successfully completed the RD Agent Academy Foundation programme covering R&D tax legislation, claim preparation, evidence assessment, and HMRC enquiry defence.";
 
-  const maxWidth = width - MARGIN * 2 - 160;
-  const lineHeight = 16;
-  const words = paragraph.split(/\s+/);
-  let line = "";
+  const paragraphLines = wrapText(paragraph, font, 12, contentMaxWidth);
 
-  for (const word of words) {
-    const testLine = line ? `${line} ${word}` : word;
-    const lineWidth = font.widthOfTextAtSize(testLine, 12);
-    if (lineWidth > maxWidth && line) {
-      page.drawText(line, {
+  const dateLabel = `Completion Date: ${completionDate || "DD/MM/YYYY"}`;
+  const idLabel = `Certificate ID: ${certificateId}`;
+
+  const contentLines: TextLine[] = [
+    { text: intro, font, size: 12 },
+    { text: recipientName || "Recipient Name", font: fontBold, size: 20 },
+    ...paragraphLines.map((line) => ({
+      text: line,
+      font,
+      size: 12,
+    })),
+    { text: "", font, size: 12 },
+    { text: dateLabel, font, size: 11 },
+    { text: idLabel, font, size: 11 },
+  ];
+
+  const contentHeight = contentLines.length * baseLineHeight;
+  const centerY = height / 2;
+  let y = centerY + contentHeight / 2;
+
+  for (const line of contentLines) {
+    if (line.text) {
+      page.drawText(line.text, {
         x: MARGIN,
         y,
-        size: 12,
-        font,
+        size: line.size,
+        font: line.font,
         color: textColor,
       });
-      y -= lineHeight;
-      line = word;
-    } else {
-      line = testLine;
     }
-  }
-  if (line) {
-    page.drawText(line, {
-      x: MARGIN,
-      y,
-      size: 12,
-      font,
-      color: textColor,
-    });
-    y -= lineHeight;
+    y -= baseLineHeight;
   }
 
-  y -= 20;
+  const footerText = "RD TAX – Raising Funds for Businesses";
+  const footerSize = 10;
+  const footerWidth = font.widthOfTextAtSize(footerText, footerSize);
 
-  const dateLabel = "Completion Date:";
-  const dateValue = completionDate || "DD/MM/YYYY";
-  page.drawText(dateLabel, {
-    x: MARGIN,
-    y,
-    size: 11,
-    font: fontBold,
-    color: textColor,
-  });
-  page.drawText(` ${dateValue}`, {
-    x: MARGIN + fontBold.widthOfTextAtSize(dateLabel, 11),
-    y,
-    size: 11,
+  page.drawText(footerText, {
+    x: width / 2 - footerWidth / 2,
+    y: MARGIN,
+    size: footerSize,
     font,
     color: textColor,
   });
-
-  y -= 18;
-
-  const idLabel = "Certificate ID:";
-  const idValue = certificateId;
-  page.drawText(idLabel, {
-    x: MARGIN,
-    y,
-    size: 11,
-    font: fontBold,
-    color: textColor,
-  });
-  page.drawText(` ${idValue}`, {
-    x: MARGIN + fontBold.widthOfTextAtSize(idLabel, 11),
-    y,
-    size: 11,
-    font,
-    color: textColor,
-  });
-
-  if (qrPngData) {
-    const qrImage = await pdfDoc.embedPng(qrPngData);
-    const qrSize = 120;
-    const qrX = width - MARGIN - qrSize;
-    const qrY = height / 2 - qrSize / 2;
-
-    page.drawImage(qrImage, {
-      x: qrX,
-      y: qrY,
-      width: qrSize,
-      height: qrSize,
-    });
-
-    const verifyLabel = "Scan to verify certificate";
-    const verifyWidth = font.widthOfTextAtSize(verifyLabel, 10);
-    page.drawText(verifyLabel, {
-      x: qrX + qrSize / 2 - verifyWidth / 2,
-      y: qrY - 14,
-      size: 10,
-      font,
-      color: textColor,
-    });
-
-    const verifyUrlDisplay = verificationUrl || "";
-    if (verifyUrlDisplay) {
-      const urlSize = 8;
-      const maxUrlWidth = qrSize + 40;
-      const urlWords = verifyUrlDisplay.split(/\s+/);
-      let urlLine = "";
-      let urlY = qrY - 28;
-
-      for (const word of urlWords) {
-        const testLine = urlLine ? `${urlLine} ${word}` : word;
-        const lineWidth = font.widthOfTextAtSize(testLine, urlSize);
-        if (lineWidth > maxUrlWidth && urlLine) {
-          page.drawText(urlLine, {
-            x: qrX + qrSize / 2 - maxUrlWidth / 2,
-            y: urlY,
-            size: urlSize,
-            font,
-            color: textColor,
-          });
-          urlY -= 10;
-          urlLine = word;
-        } else {
-          urlLine = testLine;
-        }
-      }
-      if (urlLine) {
-        page.drawText(urlLine, {
-          x: qrX + qrSize / 2 - maxUrlWidth / 2,
-          y: urlY,
-          size: urlSize,
-          font,
-          color: textColor,
-        });
-      }
-    }
-  }
 
   const pdfBytes = await pdfDoc.save();
   return pdfBytes;
