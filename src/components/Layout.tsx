@@ -109,32 +109,32 @@ export function Layout({ children, showNav = true }: LayoutProps) {
     <div className="min-h-screen w-full max-w-full bg-background text-foreground flex flex-col">
       {/* Header – aligned with staff style */}
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-[#0F1D2D] text-slate-100">
-        <div className="px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+        <div className="px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between" style={{ backgroundColor: "#0f1d2d" }}>
           <div className="flex items-center gap-3">
-            {user && (
-              <>
+            {user &&
+            <>
                 <button
-                  type="button"
-                  onClick={() => setMobileNavOpen(true)}
-                  className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-100"
-                  aria-label="Open navigation">
+                type="button"
+                onClick={() => setMobileNavOpen(true)}
+                className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-100"
+                aria-label="Open navigation">
                   
                     <Menu className="h-5 w-5" />
                   </button>
                 <Link href="/home" className="hidden sm:flex items-center gap-3">
                   <div className="flex h-10 sm:h-11 md:h-12 lg:h-[3.25rem] items-center">
                     <Image
-                      src="/rd_tax_white_wording.png"
-                      alt="RD TAX"
-                      width={260}
-                      height={80}
-                      className="h-full w-auto"
-                      priority
-                    />
+                    src="/rd_tax_white_wording.png"
+                    alt="RD TAX"
+                    width={260}
+                    height={80}
+                    className="h-full w-auto"
+                    priority />
+                  
                   </div>
                 </Link>
               </>
-            )}
+            }
           </div>
 
           {user &&
@@ -172,8 +172,8 @@ export function Layout({ children, showNav = true }: LayoutProps) {
       <div className="flex w-full max-w-full flex-1 overflow-hidden h-[calc(100vh-3.5rem)]">
         {/* Sidebar – desktop only */}
         {user &&
-        <aside className="hidden lg:flex h-screen w-64 flex-col bg-[#020817] border-r border-slate-800">
-            <div className="px-4 py-4 space-y-1">
+        <aside className="hidden lg:flex h-screen w-64 flex-col bg-[#020817] border-r border-slate-800" style={{ backgroundColor: "rgb(15, 29, 45)", backgroundImage: "none" }}>
+            <div className="px-4 py-4 space-y-1" style={{ backgroundColor: "rgba(15, 29, 45, 0)" }}>
               {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
@@ -257,13 +257,13 @@ export function Layout({ children, showNav = true }: LayoutProps) {
               <div className="mb-3 px-1">
                 <div className="flex h-10 sm:h-11 md:h-12 items-center">
                   <Image
-                    src="/rd_tax_white_wording.png"
-                    alt="RD TAX"
-                    width={220}
-                    height={70}
-                    className="h-full w-auto"
-                    priority
-                  />
+                  src="/rd_tax_white_wording.png"
+                  alt="RD TAX"
+                  width={220}
+                  height={70}
+                  className="h-full w-auto"
+                  priority />
+                
                 </div>
               </div>
 
