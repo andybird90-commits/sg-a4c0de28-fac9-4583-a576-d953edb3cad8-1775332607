@@ -468,7 +468,6 @@ export const cifService = {
       additional_info?: string;
     }
   ) {
-    // Build update payload for cif_records
     const cifUpdates: Partial<CIFUpdate> = {
       current_stage: "awaiting_feasibility",
       section1_completed_at: new Date().toISOString(),
@@ -482,10 +481,14 @@ export const cifService = {
       cifUpdates.primary_contact_position = bdmData.primary_contact_position ?? undefined;
       cifUpdates.primary_contact_landline = bdmData.primary_contact_landline ?? undefined;
       cifUpdates.can_answer_feasibility = bdmData.can_answer_feasibility ?? null;
-      cifUpdates.alternate_contact_informed =
-        bdmData.alternate_contact_informed && bdmData.alternate_contact_informed !== ""
+
+      // For these toggle-style fields, treat "" or undefined as null in the DB
+      const altInformed =
+        bdmData.alternate_contact_informed && bdmData.alternate_contact_informed.length > 0
           ? bdmData.alternate_contact_informed
           : null;
+      cifUpdates.alternate_contact_informed = altInformed;
+
       cifUpdates.understands_scheme = bdmData.understands_scheme ?? null;
       cifUpdates.scheme_understanding_details =
         bdmData.scheme_understanding_details ?? null;
@@ -494,15 +497,21 @@ export const cifService = {
           ? bdmData.has_claimed_before
           : null;
       cifUpdates.previous_claim_details = bdmData.previous_claim_details ?? null;
-      cifUpdates.projects_discussed =
-        bdmData.projects_discussed && bdmData.projects_discussed !== ""
+
+      const projectsDiscussed =
+        bdmData.projects_discussed && bdmData.projects_discussed.length > 0
           ? bdmData.projects_discussed
           : null;
+      cifUpdates.projects_discussed = projectsDiscussed;
+
       cifUpdates.projects_details = bdmData.projects_details ?? null;
-      cifUpdates.fee_terms_discussed =
-        bdmData.fee_terms_discussed && bdmData.fee_terms_discussed !== ""
+
+      const feeTermsDiscussed =
+        bdmData.fee_terms_discussed && bdmData.fee_terms_discussed.length > 0
           ? bdmData.fee_terms_discussed
           : null;
+      cifUpdates.fee_terms_discussed = feeTermsDiscussed;
+
       cifUpdates.fee_terms_details = bdmData.fee_terms_details ?? null;
       cifUpdates.additional_info = bdmData.additional_info ?? null;
     }
@@ -516,7 +525,6 @@ export const cifService = {
 
     if (error) throw error;
 
-    // If we have an updated employee count, sync it back to the prospect record
     if (bdmData?.number_of_employees != null && data?.prospect_id) {
       const employeeCount = Number.isNaN(bdmData.number_of_employees)
         ? null
