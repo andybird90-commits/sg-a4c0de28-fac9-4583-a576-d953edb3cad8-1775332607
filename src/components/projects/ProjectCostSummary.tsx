@@ -111,7 +111,7 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
                 <div className="h-1.5 w-full rounded-full bg-slate-800">
                   <div
                     className="h-full rounded-full bg-emerald-500"
-                    style={{ width: `${percentage}%` }} />
+                    style={{ backgroundColor: "#f5a623" }} />
                   
                 </div>
               </div>);
