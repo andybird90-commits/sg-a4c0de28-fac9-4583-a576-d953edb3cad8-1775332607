@@ -333,8 +333,11 @@ export default function StaffRdAgentAcademyPage() {
   }, [moduleProgress]);
 
   const handleGenerateCertificate = async () => {
+    const headers = await getAcademyAuthHeaders();
+
     const response = await fetch("/api/academy/certificates/generate", {
       method: "POST",
+      headers,
     });
 
     if (!response.ok) {
