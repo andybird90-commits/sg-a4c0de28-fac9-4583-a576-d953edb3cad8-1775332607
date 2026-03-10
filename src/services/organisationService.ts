@@ -118,16 +118,36 @@ export const organisationService = {
       targetUserId = user.id;
     }
 
-    const { error } = await supabase
-      .from("organisation_users")
-      .insert({
-        org_id: orgId,
-        user_id: targetUserId,
-        role: role
+    try {
+      const response = await fetch("/api/organisations/join", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orgId,
+          userId: targetUserId,
+          role,
+        }),
       });
 
-    if (error) {
-      throw error;
+      if (!response.ok) {
+        let message = "Failed to join organisation";
+        try {
+          const data = (await response.json()) as { error?: string };
+          if (data?.error) {
+            message = data.error;
+          }
+        } catch {
+          // Ignore JSON parse errors and fall back to default message
+        }
+        throw new Error(message);
+      }
+    } catch (error: any) {
+      if (error?.message) {
+        throw error;
+      }
+      throw new Error("Failed to join organisation");
     }
   },
 
