@@ -610,7 +610,10 @@ function CIFCreationForm({
             ? false
             : null,
         previous_claim_details: formData.previousClaimDetails,
-        projects_discussed: formData.projectsDiscussed,
+        projects_discussed:
+          formData.projectsDiscussed === "yes" || formData.projectsDiscussed === "no"
+            ? formData.projectsDiscussed
+            : null,
         projects_details: formData.projectsDetails,
         fee_terms_discussed: formData.feeTermsDiscussed,
         fee_terms_details: formData.feeTermsDetails,
