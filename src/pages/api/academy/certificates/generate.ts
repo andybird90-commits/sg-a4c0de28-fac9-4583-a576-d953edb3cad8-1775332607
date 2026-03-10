@@ -59,6 +59,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const completedAt = new Date().toISOString();
 
   let logoPngData: Uint8Array | undefined;
+  let crestPngData: Uint8Array | undefined;
+
   try {
     const logoPath = path.join(process.cwd(), "public", "RDTAXHEADER_1_.png");
     const buffer = fs.readFileSync(logoPath);
@@ -67,11 +69,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     logoPngData = undefined;
   }
 
+  try {
+    const crestPath = path.join(process.cwd(), "public", "rd_crest.png");
+    const crestBuffer = fs.readFileSync(crestPath);
+    crestPngData = new Uint8Array(crestBuffer);
+  } catch {
+    crestPngData = undefined;
+  }
+
   const pdfBytes = await buildAcademyCertificatePdf({
     recipientName,
     completionDate: new Date(completedAt).toLocaleDateString("en-GB"),
     certificateId,
     logoPngData,
+    crestPngData,
   });
 
   const { error: recordError } = await createCertificateRecord({

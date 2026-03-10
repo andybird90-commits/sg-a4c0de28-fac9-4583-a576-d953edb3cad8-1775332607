@@ -27,7 +27,7 @@ const FOUNDATION_MODULES: AcademyModule[] = [
     title: "R&D Fundamentals",
     description:
       "Understand the legal framework behind UK R&D tax relief including BEIS guidelines and HMRC CIRD rules.",
-    duration: "45–60 min",
+    duration: "15–30 min",
     level: "foundation",
   },
   {
@@ -35,14 +35,14 @@ const FOUNDATION_MODULES: AcademyModule[] = [
     title: "Claim Writing Mastery",
     description:
       "Learn how to write strong technical narratives that clearly demonstrate technological uncertainty and advancement.",
-    duration: "60–90 min",
+    duration: "15–30 min",
     level: "foundation",
   },
   {
     id: "evidence-assessment",
     title: "Evidence Assessment",
     description: "Identify and organise the correct supporting evidence to strengthen a claim.",
-    duration: "45–60 min",
+    duration: "15–30 min",
     level: "foundation",
   },
   {
@@ -50,14 +50,14 @@ const FOUNDATION_MODULES: AcademyModule[] = [
     title: "Permitted Costs & Apportionment",
     description:
       "Understand which UK R&D costs qualify, which do not, and how to apportion staff and overheads defensibly.",
-    duration: "45–60 min",
+    duration: "15–30 min",
     level: "foundation",
   },
   {
     id: "hmrc-enquiry-simulator",
     title: "HMRC Enquiry Simulator",
     description: "Practice responding to HMRC enquiries through interactive AI-driven simulations.",
-    duration: "60 min",
+    duration: "15–30 min",
     level: "foundation",
   },
   {
@@ -65,7 +65,7 @@ const FOUNDATION_MODULES: AcademyModule[] = [
     title: "AI Claim Critique",
     description:
       "Upload draft claims and receive AI analysis highlighting weaknesses and improvement opportunities.",
-    duration: "30–45 min",
+    duration: "15–30 min",
     level: "foundation",
   },
 ];
@@ -76,7 +76,7 @@ const ADVANCED_MODULES: AcademyModule[] = [
     title: "Sector Deep Dive: Software & Digital",
     description:
       "Apply BEIS tests to SaaS, platforms, data and AI projects, and separate genuine R&D from routine delivery.",
-    duration: "60–90 min",
+    duration: "15–30 min",
     level: "advanced",
   },
   {
@@ -84,7 +84,7 @@ const ADVANCED_MODULES: AcademyModule[] = [
     title: "Sector Deep Dive: Manufacturing & Engineering",
     description:
       "Assess R&D in materials, tolerances, automation and robotics, including complex process-improvement borderline cases.",
-    duration: "60–90 min",
+    duration: "15–30 min",
     level: "advanced",
   },
   {
@@ -92,7 +92,7 @@ const ADVANCED_MODULES: AcademyModule[] = [
     title: "Advanced Sampling & Apportionment Methods",
     description:
       "Design statistically sensible, HMRC-ready sampling and apportionment frameworks for staff time and costs.",
-    duration: "60–90 min",
+    duration: "15–30 min",
     level: "advanced",
   },
   {
@@ -100,7 +100,7 @@ const ADVANCED_MODULES: AcademyModule[] = [
     title: "Risk Management & File Governance",
     description:
       "Build a gold-standard review and governance process so every file can withstand enquiry-level scrutiny.",
-    duration: "45–60 min",
+    duration: "15–30 min",
     level: "advanced",
   },
   {
@@ -108,7 +108,7 @@ const ADVANCED_MODULES: AcademyModule[] = [
     title: "HMRC Enquiry Case Studies & Outcomes",
     description:
       "Work through anonymised enquiry cases to understand what triggered them and what resolved them.",
-    duration: "60–75 min",
+    duration: "15–30 min",
     level: "advanced",
   },
   {
@@ -116,7 +116,7 @@ const ADVANCED_MODULES: AcademyModule[] = [
     title: "Commercials, Pricing & Client Communication",
     description:
       "Link technical quality to pricing, scope control and difficult client conversations in R&D advisory.",
-    duration: "45–60 min",
+    duration: "15–30 min",
     level: "advanced",
   },
   {
@@ -124,7 +124,7 @@ const ADVANCED_MODULES: AcademyModule[] = [
     title: "AI-Enabled Practice Operations",
     description:
       "Design safe AI workflows across your R&D practice, from drafting to evidence discovery and internal QA.",
-    duration: "45–60 min",
+    duration: "15–30 min",
     level: "advanced",
   },
   {
@@ -132,7 +132,7 @@ const ADVANCED_MODULES: AcademyModule[] = [
     title: "Ethics & Professional Standards in R&D Advisory",
     description:
       "Handle borderline claims, conflicts and disengagements while protecting the firm and the adviser personally.",
-    duration: "45–60 min",
+    duration: "15–30 min",
     level: "advanced",
   },
 ];

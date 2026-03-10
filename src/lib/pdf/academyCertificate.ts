@@ -10,6 +10,7 @@ export interface AcademyCertificatePayload {
   completionDate: string;
   certificateId: string;
   logoPngData?: Uint8Array;
+  crestPngData?: Uint8Array;
 }
 
 interface TextLine {
@@ -49,7 +50,7 @@ function wrapText(
 export async function buildAcademyCertificatePdf(
   payload: AcademyCertificatePayload,
 ): Promise<Uint8Array> {
-  const { recipientName, completionDate, certificateId, logoPngData } = payload;
+  const { recipientName, completionDate, certificateId, logoPngData, crestPngData } = payload;
 
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
@@ -84,6 +85,23 @@ export async function buildAcademyCertificatePdf(
     page.drawImage(logoImage, {
       x: logoX,
       y: logoY,
+      width: targetWidth,
+      height: targetHeight,
+    });
+  }
+
+  if (crestPngData) {
+    const crestImage = await pdfDoc.embedPng(crestPngData);
+    const targetWidth = 130;
+    const scale = targetWidth / crestImage.width;
+    const targetHeight = crestImage.height * scale;
+
+    const crestX = width - MARGIN - targetWidth;
+    const crestY = MARGIN;
+
+    page.drawImage(crestImage, {
+      x: crestX,
+      y: crestY,
       width: targetWidth,
       height: targetHeight,
     });
@@ -161,8 +179,21 @@ export async function buildAcademyCertificatePdf(
 
   page.drawText(footerText, {
     x: width / 2 - footerWidth / 2,
-    y: MARGIN,
+    y: MARGIN + 14,
     size: footerSize,
+    font,
+    color: textColor,
+  });
+
+  const disclaimerText =
+    "This certificate is an internal document of RDTax Ltd and is intended for business training only.";
+  const disclaimerSize = 8;
+  const disclaimerWidth = font.widthOfTextAtSize(disclaimerText, disclaimerSize);
+
+  page.drawText(disclaimerText, {
+    x: width / 2 - disclaimerWidth / 2,
+    y: MARGIN,
+    size: disclaimerSize,
     font,
     color: textColor,
   });
