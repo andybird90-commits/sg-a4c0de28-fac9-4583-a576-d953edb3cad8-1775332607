@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseServer } from "@/integrations/supabase/serverClient";
 import type { Database } from "@/integrations/supabase/types";
 
 export type AcademyCertificateRow = Database["public"]["Tables"]["academy_certificates"]["Insert"];
@@ -29,9 +29,9 @@ export async function getCertificationEligibility(userId: string): Promise<Certi
     "ai-claim-critique",
   ];
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer
     .from("academy_module_progress")
-    .select("module_id, quiz_passed")
+    .select("module_id, quiz_passed, last_score")
     .eq("user_id", userId);
 
   if (error) {
@@ -44,8 +44,14 @@ export async function getCertificationEligibility(userId: string): Promise<Certi
     };
   }
 
-  const completedModules = (data || [])
-    .filter((row) => row.quiz_passed)
+  const rows = data ?? [];
+
+  const completedModules = rows
+    .filter(
+      (row) =>
+        row.quiz_passed ||
+        (typeof row.last_score === "number" && row.last_score >= 70),
+    )
     .map((row) => row.module_id);
 
   const allCompleted = requiredModules.every((id) => completedModules.includes(id));
@@ -67,7 +73,7 @@ export async function createCertificateRecord(params: {
 }): Promise<{ id: string | null; error: string | null }> {
   const { userId, recipientName, certificateId, verificationCode, completedAt } = params;
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer
     .from("academy_certificates")
     .insert({
       user_id: userId,
@@ -88,7 +94,7 @@ export async function createCertificateRecord(params: {
 }
 
 export async function getCertificateByPublicId(certificateId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseServer
     .from("academy_certificates")
     .select("id, user_id, recipient_name, certificate_id, verification_code, completed_at")
     .eq("certificate_id", certificateId)
