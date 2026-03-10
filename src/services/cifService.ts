@@ -140,13 +140,12 @@ export const cifService = {
       primary_contact_email?: string;
       primary_contact_phone?: string;
       primary_contact_landline?: string;
-      // make sure this matches what we pass from the popup:
       number_of_employees?: number;
       rd_themes?: string[];
       expected_feasibility_date?: string;
       has_claimed_before?: boolean | null;
       previous_claim_year_end_date?: string;
-      previous_claim_value?: string | number;
+      previous_claim_value?: number | null;
       previous_claim_date_submitted?: string;
       company_research?: string;
       ai_research_data?: any;
@@ -163,10 +162,11 @@ export const cifService = {
     };
     createdBy: string;
   }) {
-    // 1. Create Prospect
+    // 1. Create Prospect (this is where number_of_employees really lives)
     const { data: prospect, error: prospectError } = await supabase
       .from("prospects")
       .insert({
+        bd_owner_id: createdBy,
         company_name: prospectData.company_name,
         company_number: prospectData.company_number,
         company_status: prospectData.company_status,
@@ -179,29 +179,27 @@ export const cifService = {
         contact_name: prospectData.contact_name,
         contact_email: prospectData.contact_email,
         contact_phone: prospectData.contact_phone,
-        bd_owner_id: createdBy,
       })
       .select()
       .single();
 
-    if (prospectError) throw prospectError;
+    if (prospectError || !prospect) {
+      throw prospectError || new Error("Failed to create prospect");
+    }
 
-    // 2. Create CIF Record
+    const previousClaimValueNumber =
+      typeof bdmSectionData.previous_claim_value === "number"
+        ? bdmSectionData.previous_claim_value
+        : bdmSectionData.previous_claim_value != null
+        ? Number(bdmSectionData.previous_claim_value)
+        : null;
+
+    // 2. Create CIF record – DO NOT send number_of_employees here
     const { data: cif, error: cifError } = await supabase
       .from("cif_records")
       .insert({
         prospect_id: prospect.id,
-        bdm_section_created_by: createdBy,
-        current_stage: "bdm_section",
-
-        // Persist headcount on CIF as well for reliable prefill
-        number_of_employees:
-          typeof bdmSectionData.number_of_employees === "number" &&
-          !Number.isNaN(bdmSectionData.number_of_employees)
-            ? bdmSectionData.number_of_employees
-            : prospect.number_of_employees ?? null,
-
-        // BDM Section Data
+        created_by: createdBy,
         primary_contact_name: bdmSectionData.primary_contact_name,
         primary_contact_position: bdmSectionData.primary_contact_position,
         primary_contact_email: bdmSectionData.primary_contact_email,
@@ -211,37 +209,27 @@ export const cifService = {
         expected_feasibility_date: bdmSectionData.expected_feasibility_date,
         has_claimed_before: bdmSectionData.has_claimed_before,
         previous_claim_year_end_date: bdmSectionData.previous_claim_year_end_date,
-        previous_claim_value: bdmSectionData.previous_claim_value
-          ? Number(bdmSectionData.previous_claim_value)
-          : null,
+        previous_claim_value: previousClaimValueNumber,
         previous_claim_date_submitted: bdmSectionData.previous_claim_date_submitted,
-
-        // New Fields
+        company_research: bdmSectionData.company_research,
+        ai_research_data: bdmSectionData.ai_research_data,
         can_answer_feasibility: bdmSectionData.can_answer_feasibility,
         alternate_contact_informed: bdmSectionData.alternate_contact_informed,
         understands_scheme: bdmSectionData.understands_scheme,
         scheme_understanding_details: bdmSectionData.scheme_understanding_details,
         previous_claim_details: bdmSectionData.previous_claim_details,
-        projects_discussed:
-          bdmSectionData.projects_discussed === "yes" || bdmSectionData.projects_discussed === "no"
-            ? bdmSectionData.projects_discussed
-            : null,
+        projects_discussed: bdmSectionData.projects_discussed,
         projects_details: bdmSectionData.projects_details,
-        fee_terms_discussed:
-          bdmSectionData.fee_terms_discussed === "yes" || bdmSectionData.fee_terms_discussed === "no"
-            ? bdmSectionData.fee_terms_discussed
-            : null,
+        fee_terms_discussed: bdmSectionData.fee_terms_discussed,
         fee_terms_details: bdmSectionData.fee_terms_details,
         additional_info: bdmSectionData.additional_info,
-
-        // AI Research (matches cif_records schema)
-        company_research: bdmSectionData.company_research,
-        ai_research_data: bdmSectionData.ai_research_data,
       })
       .select()
       .single();
 
-    if (cifError) throw cifError;
+    if (cifError) {
+      throw cifError;
+    }
 
     return { cif, prospect };
   },
@@ -455,112 +443,79 @@ export const cifService = {
   /**
    * Complete BDM Section
    */
-  async completeBDMSection(
-    cifId: string,
-    userId: string,
-    bdmData?: {
+  async completeBDMSection({
+    cifId,
+    updates,
+    userId,
+  }: {
+    cifId: string;
+    updates: {
       primary_contact_name?: string;
+      primary_contact_position?: string;
       primary_contact_email?: string;
       primary_contact_phone?: string;
-      primary_contact_position?: string;
       primary_contact_landline?: string;
       number_of_employees?: number;
-      can_answer_feasibility?: "yes" | "no";
-      alternate_contact_informed?: "yes" | "no" | "";
-      understands_scheme?: "yes" | "no" | "dont_know" | "";
+      can_answer_feasibility?: string;
+      alternate_contact_informed?: string;
+      understands_scheme?: string;
       scheme_understanding_details?: string;
       has_claimed_before?: boolean | null;
       previous_claim_details?: string;
-      projects_discussed?: "yes" | "no" | "";
+      projects_discussed?: string;
       projects_details?: string;
-      fee_terms_discussed?: "yes" | "no" | "";
+      fee_terms_discussed?: string;
       fee_terms_details?: string;
       additional_info?: string;
-    }
-  ) {
-    const cifUpdates: Partial<CIFUpdate> & { number_of_employees?: number | null } = {
-      current_stage: "awaiting_feasibility",
+    };
+    userId: string;
+  }) {
+    // 1. Update cif_records WITHOUT number_of_employees
+    const cifUpdates: Record<string, unknown> = {
+      primary_contact_name: updates.primary_contact_name,
+      primary_contact_position: updates.primary_contact_position,
+      primary_contact_email: updates.primary_contact_email,
+      primary_contact_phone: updates.primary_contact_phone,
+      primary_contact_landline: updates.primary_contact_landline,
+      can_answer_feasibility: updates.can_answer_feasibility,
+      alternate_contact_informed: updates.alternate_contact_informed,
+      understands_scheme: updates.understands_scheme,
+      scheme_understanding_details: updates.scheme_understanding_details,
+      has_claimed_before: updates.has_claimed_before,
+      previous_claim_details: updates.previous_claim_details,
+      projects_discussed: updates.projects_discussed,
+      projects_details: updates.projects_details,
+      fee_terms_discussed: updates.fee_terms_discussed,
+      fee_terms_details: updates.fee_terms_details,
+      additional_info: updates.additional_info,
       section1_completed_at: new Date().toISOString(),
       section1_completed_by: userId,
     };
 
-    if (bdmData) {
-      cifUpdates.primary_contact_name = bdmData.primary_contact_name ?? undefined;
-      cifUpdates.primary_contact_email = bdmData.primary_contact_email ?? undefined;
-      cifUpdates.primary_contact_phone = bdmData.primary_contact_phone ?? undefined;
-      cifUpdates.primary_contact_position = bdmData.primary_contact_position ?? undefined;
-      cifUpdates.primary_contact_landline = bdmData.primary_contact_landline ?? undefined;
-
-      // Persist headcount on CIF when provided
-      if (
-        typeof bdmData.number_of_employees === "number" &&
-        !Number.isNaN(bdmData.number_of_employees)
-      ) {
-        cifUpdates.number_of_employees = bdmData.number_of_employees;
-      }
-
-      cifUpdates.can_answer_feasibility = bdmData.can_answer_feasibility ?? null;
-
-      // For these toggle-style fields, treat "" or undefined as null in the DB
-      const altInformed =
-        bdmData.alternate_contact_informed && bdmData.alternate_contact_informed.length > 0
-          ? bdmData.alternate_contact_informed
-          : null;
-      cifUpdates.alternate_contact_informed = altInformed;
-
-      cifUpdates.understands_scheme = bdmData.understands_scheme ?? null;
-      cifUpdates.scheme_understanding_details =
-        bdmData.scheme_understanding_details ?? null;
-      cifUpdates.has_claimed_before =
-        typeof bdmData.has_claimed_before === "boolean"
-          ? bdmData.has_claimed_before
-          : null;
-      cifUpdates.previous_claim_details = bdmData.previous_claim_details ?? null;
-
-      const projectsDiscussed =
-        bdmData.projects_discussed && bdmData.projects_discussed.length > 0
-          ? bdmData.projects_discussed
-          : null;
-      cifUpdates.projects_discussed = projectsDiscussed;
-
-      cifUpdates.projects_details = bdmData.projects_details ?? null;
-
-      const feeTermsDiscussed =
-        bdmData.fee_terms_discussed && bdmData.fee_terms_discussed.length > 0
-          ? bdmData.fee_terms_discussed
-          : null;
-      cifUpdates.fee_terms_discussed = feeTermsDiscussed;
-
-      cifUpdates.fee_terms_details = bdmData.fee_terms_details ?? null;
-      cifUpdates.additional_info = bdmData.additional_info ?? null;
-    }
-
-    const { data, error } = await supabase
+    const { data: cif, error: cifError } = await supabase
       .from("cif_records")
       .update(cifUpdates)
       .eq("id", cifId)
-      .select("*, prospect_id")
-      .single();
+      .select("id, prospect_id")
+      .maybeSingle();
 
-    if (error) throw error;
+    if (cifError) {
+      throw cifError;
+    }
 
-    // Only sync number_of_employees to the prospect when we have a valid number.
-    if (
-      typeof bdmData?.number_of_employees === "number" &&
-      !Number.isNaN(bdmData.number_of_employees) &&
-      data?.prospect_id
-    ) {
-      try {
-        await supabase
-          .from("prospects")
-          .update({ number_of_employees: bdmData.number_of_employees })
-          .eq("id", data.prospect_id);
-      } catch (syncError) {
-        console.error("Failed to sync prospect employee count:", syncError);
+    // 2. If we received a valid employee count, sync it to prospects only
+    if (cif?.prospect_id && typeof updates.number_of_employees === "number") {
+      const { error: prospectError } = await supabase
+        .from("prospects")
+        .update({ number_of_employees: updates.number_of_employees })
+        .eq("id", cif.prospect_id);
+
+      if (prospectError) {
+        console.error("Failed to sync prospect employee count:", prospectError);
       }
     }
 
-    return data;
+    return cif;
   },
 
   /**

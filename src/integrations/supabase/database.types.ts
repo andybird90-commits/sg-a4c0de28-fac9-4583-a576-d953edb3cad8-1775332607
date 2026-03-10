@@ -212,6 +212,7 @@ export type Database = {
           consumables_estimate: number | null
           costs_details: string | null
           created_at: string
+          created_by: string | null
           ct600_filed_seen: string | null
           current_stage: string | null
           director_comment: string | null
@@ -323,6 +324,7 @@ export type Database = {
           consumables_estimate?: number | null
           costs_details?: string | null
           created_at?: string
+          created_by?: string | null
           ct600_filed_seen?: string | null
           current_stage?: string | null
           director_comment?: string | null
@@ -434,6 +436,7 @@ export type Database = {
           consumables_estimate?: number | null
           costs_details?: string | null
           created_at?: string
+          created_by?: string | null
           ct600_filed_seen?: string | null
           current_stage?: string | null
           director_comment?: string | null
@@ -512,6 +515,13 @@ export type Database = {
           {
             foreignKeyName: "cif_records_bdm_section_created_by_fkey"
             columns: ["bdm_section_created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cif_records_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

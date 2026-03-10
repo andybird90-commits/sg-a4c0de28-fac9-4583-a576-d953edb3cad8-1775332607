@@ -597,7 +597,10 @@ function CIFCreationForm({
         primary_contact_landline: formData.primaryContactLandline || undefined,
         number_of_employees: numberOfEmployees ?? undefined,
         can_answer_feasibility: formData.canAnswerFeasibility,
-        alternate_contact_informed: formData.alternateContactInformed,
+        alternate_contact_informed:
+          formData.alternateContactInformed === "yes" || formData.alternateContactInformed === "no"
+            ? formData.alternateContactInformed
+            : null,
         understands_scheme: formData.understandsScheme,
         scheme_understanding_details: formData.schemeUnderstandingDetails,
         has_claimed_before:
