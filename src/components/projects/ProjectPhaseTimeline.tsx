@@ -148,12 +148,13 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
         <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" style={{ backgroundColor: "#00000000" }}>
           {phases.map((phase) => {
             const icon =
-            phase.status === "complete" ?
-            <CheckCircle2 className="h-4 w-4" style={{ color: "#0f1d2d" }} /> :
-            phase.status === "current" ?
-            <AlertCircle className="h-4 w-4 text-orange-400" /> :
-
-            <Circle className="h-3 w-3 text-slate-600" />;
+              phase.status === "complete" ? (
+                <CheckCircle2 className="h-4 w-4" style={{ color: "#0f1d2d" }} />
+              ) : phase.status === "current" ? (
+                <AlertCircle className="h-4 w-4 text-orange-400" />
+              ) : (
+                <Circle className="h-3 w-3 text-slate-600" />
+              );
 
             const pillTextColor =
               phase.status === "complete" ? "#111827" : "rgb(238, 120, 37)";
@@ -163,19 +164,16 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
                 key={phase.key}
                 className={cn(
                   "rounded-lg border px-3 py-2 h-full",
-                  phase.status === "complete" &&
-                  "bg-slate-950/40",
-                  phase.status === "current" &&
-                  "border-orange-500/60 bg-slate-950",
-                  phase.status === "upcoming" &&
-                  "border-slate-800 bg-slate-950/40"
+                  phase.status === "complete" && "bg-slate-950/40",
+                  phase.status === "current" && "border-orange-500/60 bg-slate-950",
+                  phase.status === "upcoming" && "border-slate-800 bg-slate-950/40"
                 )}
                 style={{
                   backgroundColor: "#f3f4f6",
                   color: "#1a1a1a",
                   borderColor: phase.status === "complete" ? "#0f1d2d" : undefined
-                }}>
-                
+                }}
+              >
                 <div className="flex items-start gap-2">
                   <div className="mt-[2px]">{icon}</div>
                   <div className="space-y-1">
@@ -186,18 +184,16 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
                       <span
                         className={cn(
                           "rounded-full border px-2 py-[1px] text-[10px] font-medium",
-                          phase.status === "current" &&
-                          "bg-orange-500/10 border-orange-500/60",
-                          phase.status === "upcoming" &&
-                          "bg-slate-800 border-slate-700"
+                          phase.status === "current" && "bg-orange-500/10 border-orange-500/60",
+                          phase.status === "upcoming" && "bg-slate-800 border-slate-700"
                         )}
-                        style={{ color: pillTextColor, fontSize: "12px" }}>
-
-                        {phase.status === "complete" ?
-                        "Complete" :
-                        phase.status === "current" ?
-                        "In focus" :
-                        "Later"}
+                        style={{ color: pillTextColor, fontSize: "12px" }}
+                      >
+                        {phase.status === "complete"
+                          ? "Complete"
+                          : phase.status === "current"
+                          ? "In focus"
+                          : "Later"}
                       </span>
                     </div>
                     <p className="text-[11px] leading-snug text-slate-400" style={{ color: "#1a1a1a" }}>
@@ -205,8 +201,8 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
                     </p>
                   </div>
                 </div>
-              </li>);
-
+              </li>
+            );
           })}
         </ol>
       </CardContent>
