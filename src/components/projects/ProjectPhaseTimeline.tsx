@@ -155,6 +155,8 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
 
             <Circle className="h-3 w-3 text-slate-600" />;
 
+            const pillTextColor =
+              phase.status === "complete" ? "#111827" : "rgb(238, 120, 37)";
 
             return (
               <li
@@ -185,16 +187,12 @@ export const ProjectPhaseTimeline: FC<ProjectPhaseTimelineProps> = ({
                         className={cn(
                           "rounded-full border px-2 py-[1px] text-[10px] font-medium",
                           phase.status === "current" &&
-                          "bg-orange-500/10 text-orange-300 border-orange-500/60",
+                          "bg-orange-500/10 border-orange-500/60",
                           phase.status === "upcoming" &&
-                          "bg-slate-800 text-slate-300 border-slate-700"
+                          "bg-slate-800 border-slate-700"
                         )}
-                        style={{ color: "#ffffff", fontSize: "12px" }}>
+                        style={{ color: pillTextColor, fontSize: "12px" }}>
 
-
-
-                        
-                        
                         {phase.status === "complete" ?
                         "Complete" :
                         phase.status === "current" ?
