@@ -192,7 +192,14 @@ export const cifService = {
         prospect_id: prospect.id,
         bdm_section_created_by: createdBy,
         current_stage: "bdm_section",
-        
+
+        // Persist headcount on CIF as well for reliable prefill
+        number_of_employees:
+          typeof bdmSectionData.number_of_employees === "number" &&
+          !Number.isNaN(bdmSectionData.number_of_employees)
+            ? bdmSectionData.number_of_employees
+            : prospect.number_of_employees ?? null,
+
         // BDM Section Data
         primary_contact_name: bdmSectionData.primary_contact_name,
         primary_contact_position: bdmSectionData.primary_contact_position,
@@ -203,9 +210,11 @@ export const cifService = {
         expected_feasibility_date: bdmSectionData.expected_feasibility_date,
         has_claimed_before: bdmSectionData.has_claimed_before,
         previous_claim_year_end_date: bdmSectionData.previous_claim_year_end_date,
-        previous_claim_value: bdmSectionData.previous_claim_value ? Number(bdmSectionData.previous_claim_value) : null,
+        previous_claim_value: bdmSectionData.previous_claim_value
+          ? Number(bdmSectionData.previous_claim_value)
+          : null,
         previous_claim_date_submitted: bdmSectionData.previous_claim_date_submitted,
-        
+
         // New Fields
         can_answer_feasibility: bdmSectionData.can_answer_feasibility,
         alternate_contact_informed: bdmSectionData.alternate_contact_informed,
@@ -480,6 +489,15 @@ export const cifService = {
       cifUpdates.primary_contact_phone = bdmData.primary_contact_phone ?? undefined;
       cifUpdates.primary_contact_position = bdmData.primary_contact_position ?? undefined;
       cifUpdates.primary_contact_landline = bdmData.primary_contact_landline ?? undefined;
+
+      // Persist headcount on CIF when provided
+      if (
+        typeof bdmData.number_of_employees === "number" &&
+        !Number.isNaN(bdmData.number_of_employees)
+      ) {
+        cifUpdates.number_of_employees = bdmData.number_of_employees;
+      }
+
       cifUpdates.can_answer_feasibility = bdmData.can_answer_feasibility ?? null;
 
       // For these toggle-style fields, treat "" or undefined as null in the DB

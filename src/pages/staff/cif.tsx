@@ -356,7 +356,6 @@ function CIFCreationForm({
     feeTermsDiscussed: "",
     feeTermsDetails: "",
     additionalInfo: "",
-    // HMRC notification fields
     claimedWithinLast3Years: "",
     accountingPeriodStart: "",
     accountingPeriodEnd: "",
@@ -548,11 +547,14 @@ function CIFCreationForm({
     });
 
     if (missingFields.length > 0) {
+      const firstMissing = missingFields[0];
       toast({
         title: "Missing Required Fields",
         description: `Please fill in: ${missingFields.join(", ")}`,
         variant: "destructive",
       });
+      // Also log the first missing field clearly for debugging
+      console.log("CIFCreationForm.handleCreateCIF missing field:", firstMissing);
       return;
     }
 
