@@ -453,6 +453,30 @@ export default function HomePage() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Desktop-only Start New Claim card */}
+              <Card className="border border-border bg-card shadow-professional-md hidden lg:block">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2 text-foreground">
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-orange-500/10 text-orange-500">
+                      <FileText className="h-4 w-4" />
+                    </span>
+                    <span className="truncate">Start New Claim</span>
+                  </CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground">
+                    Begin a new R&amp;D claim for this organisation in just a few steps.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <Button
+                    onClick={() => router.push("/claims/new")}
+                    className="w-full gradient-primary text-slate-950 shadow-professional-md hover:shadow-professional-lg transition-professional"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Start New Claim
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="lg:col-span-2">
