@@ -136,7 +136,7 @@ export const ProjectHistoryPanel: FC<ProjectHistoryPanelProps> = ({
         <ol className="space-y-3 text-xs">
             {events.map((event) =>
           <li key={event.id} className="flex gap-3">
-                <div className="mt-[3px] h-2 w-2 rounded-full bg-slate-400" />
+                <div className="mt-[3px] h-2 w-2 rounded-full bg-slate-400" style={{ backgroundColor: "#1a1a1a" }} />
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium text-slate-50" style={{ color: "#1a1a1a" }}>
