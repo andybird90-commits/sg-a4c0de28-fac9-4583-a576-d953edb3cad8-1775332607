@@ -229,12 +229,12 @@ export default function FeasibilityResultPage() {
         description="R&D feasibility analysis" />
       
       <Layout>
-        <div className="min-h-screen bg-[#020617] text-slate-100">
+        <div className="min-h-screen bg-background text-foreground">
           <div className="max-w-5xl mx-auto px-4 py-8 print-full-width">
             <div className="flex items-center justify-between mb-8 print-hide">
               <Link
                 href="/feasibility/history"
-                className="text-slate-300 hover:text-slate-100 flex items-center gap-2">
+                className="text-blue-600 hover:text-blue-800 flex items-center gap-2">
                 
                 <ArrowLeft size={20} />
                 Back to Analysis History
@@ -266,24 +266,24 @@ export default function FeasibilityResultPage() {
 
             <div className="mb-8 print-header page-break-inside-avoid">
               <div className="flex items-center gap-3 mb-2">
-                <span className="bg-blue-500/20 text-blue-300 border border-blue-500/40 text-xs px-2.5 py-0.5 rounded-full font-medium">
+                <span className="bg-blue-100 text-blue-800 border border-blue-200 text-xs px-2.5 py-0.5 rounded-full font-medium">
                   {analysis.sector_guess || "General"}
                 </span>
-                <span className="text-slate-400 text-sm">
+                <span className="text-slate-500 text-sm">
                   {new Date(analysis.created_at).toLocaleDateString()}
                 </span>
               </div>
-              <h1 className="text-3xl font-bold text-slate-50 mb-4">
+              <h1 className="text-3xl font-bold text-slate-900 mb-4">
                 {analysis.idea_title || "Feasibility Analysis"}
               </h1>
-              <p className="text-lg text-slate-200 leading-relaxed bg-[#050b16] p-6 rounded-lg border border-slate-800 shadow-professional-md print-compact print-text-sm">
+              <p className="text-lg text-slate-800 leading-relaxed bg-card p-6 rounded-lg border border-border shadow-professional-md print-compact print-text-sm">
                 {analysis.summary}
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 mb-8 print-grid">
               {/* Technical Card */}
-              <Card className="border-t-4 border-t-blue-500 bg-[#050b16] border border-slate-800 print-card print-compact">
+              <Card className="border-t-4 border-t-blue-500 bg-card border border-border print-card print-compact">
                 <CardHeader className="print-compact">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
@@ -296,13 +296,13 @@ export default function FeasibilityResultPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="print-compact print-text-sm">
-                  <p className="text-sm text-slate-300 mb-4">{analysis.technical_reasoning}</p>
+                  <p className="text-sm text-slate-700 mb-4">{analysis.technical_reasoning}</p>
                   {analysis.technical_constraints && analysis.technical_constraints.length > 0 &&
                   <div>
-                      <h4 className="text-xs font-semibold text-slate-200 mb-2 uppercase">Key Constraints</h4>
+                      <h4 className="text-xs font-semibold text-slate-800 mb-2 uppercase">Key Constraints</h4>
                       <ul className="text-sm space-y-1">
                         {analysis.technical_constraints.map((item, i) =>
-                      <li key={i} className="flex gap-2 text-slate-300">
+                      <li key={i} className="flex gap-2 text-slate-700">
                             <span className="text-blue-500">•</span> {item}
                           </li>
                       )}
@@ -313,7 +313,7 @@ export default function FeasibilityResultPage() {
               </Card>
 
               {/* Commercial Card */}
-              <Card className="border-t-4 border-t-green-500 bg-[#050b16] border border-slate-800 print-card print-compact">
+              <Card className="border-t-4 border-t-green-500 bg-card border border-border print-card print-compact">
                 <CardHeader className="print-compact">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
@@ -326,17 +326,17 @@ export default function FeasibilityResultPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="print-compact print-text-sm">
-                  <p className="text-sm text-slate-300 mb-4">{analysis.commercial_reasoning}</p>
+                  <p className="text-sm text-slate-700 mb-4">{analysis.commercial_reasoning}</p>
                   
                   {analysis.target_customers && analysis.target_customers.length > 0 &&
                   <div className="mb-4">
-                      <h4 className="text-xs font-semibold text-slate-200 mb-2 uppercase">Target Customers</h4>
+                      <h4 className="text-xs font-semibold text-slate-800 mb-2 uppercase">Target Customers</h4>
                       <div className="flex flex-wrap gap-2">
                         {analysis.target_customers.map((tag, i) =>
                       <Badge
                         key={i}
                         variant="secondary"
-                        className="bg-slate-800 text-slate-100 border border-slate-600">
+                        className="bg-slate-100 text-slate-900 border border-slate-300">
                         
                             {tag}
                           </Badge>
@@ -347,10 +347,10 @@ export default function FeasibilityResultPage() {
                   
                   {analysis.revenue_ideas && analysis.revenue_ideas.length > 0 &&
                   <div>
-                      <h4 className="text-xs font-semibold text-slate-200 mb-2 uppercase">Revenue Models</h4>
+                      <h4 className="text-xs font-semibold text-slate-800 mb-2 uppercase">Revenue Models</h4>
                       <ul className="text-sm space-y-1">
                         {analysis.revenue_ideas.map((item, i) =>
-                      <li key={i} className="flex gap-2 text-sm text-slate-300">
+                      <li key={i} className="flex gap-2 text-sm text-slate-700">
                             <span className="text-green-500">•</span> {item}
                           </li>
                       )}
@@ -361,7 +361,7 @@ export default function FeasibilityResultPage() {
               </Card>
 
               {/* Delivery Card */}
-              <Card className="border-t-4 border-t-purple-500 bg-[#050b16] border border-slate-800 print-card print-compact">
+              <Card className="border-t-4 border-t-purple-500 bg-card border border-border print-card print-compact">
                 <CardHeader className="print-compact">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
@@ -383,10 +383,10 @@ export default function FeasibilityResultPage() {
                 <CardContent className="print-compact print-text-sm">
                   {analysis.delivery_dependencies && analysis.delivery_dependencies.length > 0 &&
                   <div>
-                      <h4 className="text-xs font-semibold text-slate-200 mb-2 uppercase">Key Dependencies</h4>
+                      <h4 className="text-xs font-semibold text-slate-800 mb-2 uppercase">Key Dependencies</h4>
                       <ul className="text-sm space-y-1">
                         {analysis.delivery_dependencies.map((item, i) =>
-                      <li key={i} className="flex gap-2 text-sm text-slate-300">
+                      <li key={i} className="flex gap-2 text-sm text-slate-700">
                             <span className="text-purple-500">•</span> {item}
                           </li>
                       )}
@@ -399,7 +399,7 @@ export default function FeasibilityResultPage() {
 
             <div className="grid md:grid-cols-2 gap-6 mb-8 print-grid page-break-before">
               {/* Risks */}
-              <Card className="bg-[#050b16] border border-slate-800 print-card print-compact">
+              <Card className="bg-card border border-border print-card print-compact">
                 <CardHeader className="print-compact">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="text-orange-500" size={20} />
@@ -412,7 +412,7 @@ export default function FeasibilityResultPage() {
                       <h4 className="text-sm font-semibold mb-2">Notable Risks</h4>
                       <ul className="space-y-2">
                         {(analysis.notable_risks || []).map((risk, i) =>
-                        <li key={i} className="flex gap-2 text-sm text-slate-200 bg-orange-500/10 p-2 rounded">
+                        <li key={i} className="flex gap-2 text-sm text-slate-800 bg-orange-50 p-2 rounded border border-orange-200">
                             <AlertTriangle size={16} className="text-orange-400 mt-0.5 shrink-0" />
                             {risk}
                           </li>
@@ -423,7 +423,7 @@ export default function FeasibilityResultPage() {
                       <h4 className="text-sm font-semibold mb-2">Regulatory Considerations</h4>
                       <ul className="space-y-2">
                         {(analysis.regulatory_issues || []).map((issue, i) =>
-                        <li key={i} className="flex gap-2 text-sm text-slate-200 bg-slate-800 p-2 rounded">
+                        <li key={i} className="flex gap-2 text-sm text-slate-800 bg-slate-100 p-2 rounded border border-slate-200">
                             <ShieldAlert size={16} className="text-gray-400 mt-0.5 shrink-0" />
                             {issue}
                           </li>
@@ -436,7 +436,7 @@ export default function FeasibilityResultPage() {
 
               {/* Next Actions & R&D Tax */}
               <div className="space-y-6">
-                <Card className="border-l-4 border-l-[#ff6b35] bg-[#050b16] border border-slate-800 print-card print-compact">
+                <Card className="border-l-4 border-l-[#ff6b35] bg-card border border-border print-card print-compact">
                   <CardHeader className="print-compact">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="text-[#FF6B35]" size={20} />
@@ -446,7 +446,7 @@ export default function FeasibilityResultPage() {
                   <CardContent className="print-compact print-text-sm">
                     <ul className="space-y-3">
                       {(analysis.next_actions || []).map((action, i) =>
-                      <li key={i} className="flex gap-3 text-sm text-slate-100">
+                      <li key={i} className="flex gap-3 text-sm text-slate-800">
                           <div className="bg-[#FF6B35] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
                             {i + 1}
                           </div>
@@ -457,7 +457,7 @@ export default function FeasibilityResultPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-slate-900 border border-slate-800 print-card print-compact">
+                <Card className="bg-card border border-border print-card print-compact">
                   <CardHeader className="pb-2 print-compact">
                     <div className="flex items-center gap-2">
                       <PoundSterling className="text-slate-600" size={20} />
@@ -473,7 +473,7 @@ export default function FeasibilityResultPage() {
                       `}>
                         {analysis.rd_tax_flag}
                       </div>
-                      <p className="text-sm text-slate-300 italic">
+                      <p className="text-sm text-slate-800 italic">
                         {analysis.rd_tax_reasoning}
                       </p>
                     </div>
@@ -489,7 +489,7 @@ export default function FeasibilityResultPage() {
               <button
                 type="button"
                 onClick={() => router.push("/feasibility/history")}
-                className="text-sm text-blue-300 hover:underline flex items-center gap-1">
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1">
                 
                 <span className="text-lg">←</span>
                 <span className="leading-tight">
