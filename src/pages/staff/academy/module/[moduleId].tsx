@@ -3,17 +3,25 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { StaffLayout } from "@/components/staff/StaffLayout";
 import { SEO } from "@/components/SEO";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 type QuestionType = "multiple_choice" | "true_false";
 
@@ -1184,10 +1192,10 @@ const MODULES: ModuleConfig[] = [
         id: "rg-q2",
         type: "true_false",
         question:
-          "True or false: Lessons from one enquiry should generally be fed back into templates, training and governance for future files.",
-        correctAnswer: true,
+          "True or false: It is acceptable to use client confidential data in any public AI system as long as terms of service mention encryption.",
+        correctAnswer: false,
         explanation:
-          "Treating enquiries as learning opportunities helps improve future file quality and reduce repeat issues.",
+          "Regulatory and professional standards typically require strict control over where client data goes; public AI endpoints may be inappropriate.",
       },
       {
         id: "rg-q3",
@@ -1291,16 +1299,16 @@ const MODULES: ModuleConfig[] = [
         ],
         correctOptionId: "b",
         explanation:
-          "Large, unexplained changes can trigger risk‑based enquiries.",
+          "Large unexplained movements can trigger risk‑based enquiries.",
       },
       {
         id: "ecs-q2",
         type: "true_false",
         question:
-          "True or false: Lessons from one enquiry should generally be fed back into templates, training and governance for future files.",
-        correctAnswer: true,
+          "True or false: It is acceptable to use client confidential data in any public AI system as long as terms of service mention encryption.",
+        correctAnswer: false,
         explanation:
-          "Treating enquiries as learning opportunities helps improve future file quality and reduce repeat issues.",
+          "Regulatory and professional standards typically require strict control over where client data goes; public AI endpoints may be inappropriate.",
       },
       {
         id: "ecs-q3",
@@ -1370,10 +1378,10 @@ const MODULES: ModuleConfig[] = [
         {
           id: "b",
           label:
-            "Quietly include all borderline projects to keep the client happy.",
+            "Accept all AI suggestions to make the project sound more advanced.",
           isCorrect: false,
           explanation:
-            "This creates significant regulatory and reputational risk.",
+            "Over‑stating complexity increases enquiry risk and can damage credibility.",
         },
         {
           id: "c",
@@ -1603,18 +1611,18 @@ const MODULES: ModuleConfig[] = [
         {
           id: "b",
           label:
-            "Agree to include everything to preserve the relationship and hope HMRC does not enquire.",
+            "Accept all AI suggestions to make the project sound more advanced.",
           isCorrect: false,
           explanation:
-            "This creates regulatory, reputational and personal risk.",
+            "Over‑stating complexity increases enquiry risk and can damage credibility.",
         },
         {
           id: "c",
           label:
-            "Ignore internal escalation policies because this is a 'special' client.",
+            "Stop using AI entirely because it sometimes makes mistakes.",
           isCorrect: false,
           explanation:
-            "Consistency is essential; exceptions undermine your governance model.",
+            "The goal is controlled use, not total avoidance. Managed correctly, AI adds real value.",
         },
       ],
     },
@@ -1754,6 +1762,22 @@ function calculateModuleProgress(
   return Math.round((completedSegments / totalSegments) * 100);
 }
 
+async function getAcademyAuthHeaders(): Promise<Record<string, string>> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const token = session?.access_token;
+
+  if (!token) {
+    return {};
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 export default function StaffAcademyModulePage() {
   const router = useRouter();
   const { moduleId } = router.query;
@@ -1771,7 +1795,10 @@ export default function StaffAcademyModulePage() {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const res = await fetch("/api/academy/certification/status");
+        const headers = await getAcademyAuthHeaders();
+        const res = await fetch("/api/academy/certification/status", {
+          headers,
+        });
         if (!res.ok) {
           setCertStatus({ loading: false, eligible: false });
           return;
@@ -1818,10 +1845,12 @@ export default function StaffAcademyModulePage() {
     }
 
     try {
+      const authHeaders = await getAcademyAuthHeaders();
       await fetch("/api/academy/update-progress", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...authHeaders,
         },
         body: JSON.stringify({
           moduleId: moduleConfig.id,

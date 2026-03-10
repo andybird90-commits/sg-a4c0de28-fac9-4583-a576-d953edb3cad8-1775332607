@@ -23,10 +23,21 @@ export default async function handler(
     return;
   }
 
+  const authHeader = req.headers.authorization;
+  const token =
+    typeof authHeader === "string" && authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : undefined;
+
+  if (!token) {
+    res.status(401).json({ success: false, error: "Not authenticated." });
+    return;
+  }
+
   const {
     data: { user },
     error: userError,
-  } = await supabaseServer.auth.getUser();
+  } = await supabaseServer.auth.getUser(token);
 
   if (userError || !user) {
     res.status(401).json({ success: false, error: "Not authenticated." });

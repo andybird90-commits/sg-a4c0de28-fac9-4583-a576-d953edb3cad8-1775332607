@@ -1,11 +1,15 @@
-import { useMemo, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { StaffLayout } from "@/components/staff/StaffLayout";
 import { SEO } from "@/components/SEO";
 import { useApp } from "@/contexts/AppContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 type ModuleStatus = "not_started" | "in_progress" | "completed";
 
@@ -146,6 +150,27 @@ interface ModuleProgressSummary {
   lastScore: number | null;
 }
 
+interface AcademyModuleWithStatus extends AcademyModule {
+  status: ModuleStatus;
+  lastScore: number | null;
+}
+
+async function getAcademyAuthHeaders(): Promise<Record<string, string>> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const token = session?.access_token;
+
+  if (!token) {
+    return {};
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+}
+
 function useCertificationStatus(): [CertificationStatus, () => Promise<void>] {
   const [status, setStatus] = useState<CertificationStatus>({
     loading: true,
@@ -191,18 +216,15 @@ function useModuleProgress(): [ModuleProgressSummary[], boolean] {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const fetchProgress = async () => {
+    const loadData = async () => {
       setLoading(true);
       try {
-        const response = await fetch("/api/academy/progress");
-        if (!response.ok) {
-          setProgress([]);
-          setLoading(false);
-          return;
-        }
-        const json = await response.json();
-        const modules: ModuleProgressSummary[] = Array.isArray(json.modules) ? json.modules : [];
-        setProgress(modules);
+        const headers = await getAcademyAuthHeaders();
+
+        const [progressRes, statusRes] = await Promise.all([
+          fetch("/api/academy/progress", { headers }),
+          fetch("/api/academy/certification/status", { headers }),
+        ]);
       } catch {
         setProgress([]);
       } finally {
@@ -210,7 +232,7 @@ function useModuleProgress(): [ModuleProgressSummary[], boolean] {
       }
     };
 
-    void fetchProgress();
+    void loadData();
   }, []);
 
   return [progress, loading];

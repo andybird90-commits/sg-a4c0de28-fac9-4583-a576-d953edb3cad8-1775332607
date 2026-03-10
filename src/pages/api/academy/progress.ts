@@ -29,10 +29,24 @@ export default async function handler(
     return;
   }
 
+  const authHeader = req.headers.authorization;
+  const token =
+    typeof authHeader === "string" && authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : undefined;
+
+  if (!token) {
+    res.status(200).json({
+      modules: [],
+      error: undefined,
+    });
+    return;
+  }
+
   const {
     data: { user },
     error: userError,
-  } = await supabaseServer.auth.getUser();
+  } = await supabaseServer.auth.getUser(token);
 
   if (userError || !user) {
     res.status(200).json({
