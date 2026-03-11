@@ -127,7 +127,7 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
   workflowStatus === "revision_requested";
 
   return (
-    <Card className="border border-slate-200 bg-slate-100/80 shadow-sm">
+    <Card className="border border-slate-200 bg-slate-50 shadow-sm">
       <CardHeader className="flex flex-row items-start justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <CardTitle className="text-sm font-semibold text-slate-900">
@@ -181,11 +181,11 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
 
       <CardContent className="space-y-4 pt-4">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {scores.map((score) =>
-          <div
-            key={score.label}
-            className="rounded-xl bg-slate-700 px-4 py-3 text-slate-50" style={{ backgroundColor: "#0f1d2d" }}>
-            
+          {scores.map((score) => (
+            <div
+              key={score.label}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900"
+            >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   {score.icon}
@@ -198,43 +198,43 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
                 </span>
               </div>
 
-              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-900">
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200">
                 <div
-                className={cn(
-                  "h-full rounded-full",
-                  score.label === "R&D story" && "bg-orange-500",
-                  score.label === "Evidence" && "bg-sky-500",
-                  score.label === "Costs" && "bg-emerald-500"
-                )}
-                style={{
-                  width: `${score.value / score.max * 100}%`
-                }} />
-              
+                  className={cn(
+                    "h-full rounded-full",
+                    score.label === "R&D story" && "bg-orange-500",
+                    score.label === "Evidence" && "bg-sky-500",
+                    score.label === "Costs" && "bg-emerald-500"
+                  )}
+                  style={{
+                    width: `${(score.value / score.max) * 100}%`
+                  }}
+                />
               </div>
 
-              <p className="mt-3 text-[11px] leading-snug text-slate-50">
+              <p className="mt-3 text-[11px] leading-snug text-slate-600">
                 {score.description}
               </p>
             </div>
-          )}
+          ))}
         </div>
 
-        {missingItems.length > 0 &&
-        <div className="mt-2 rounded-xl bg-slate-800 px-4 py-3 text-slate-50" style={{ backgroundColor: "#0f1d2d" }}>
-            <div className="flex items-center gap-2 text-xs font-semibold text-amber-200">
-              <AlertTriangle className="h-4 w-4 text-amber-400" />
+        {missingItems.length > 0 && (
+          <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-slate-900">
+            <div className="flex items-center gap-2 text-xs font-semibold text-amber-800">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
               <span>What would strengthen this project?</span>
             </div>
-            <ul className="mt-2 space-y-1.5 text-[11px]">
-              {missingItems.map((item, index) =>
-            <li key={`${item}-${index}`} className="flex gap-1.5">
-                  <span className="mt-[5px] h-1.5 w-1.5 rounded-full bg-slate-500" />
+            <ul className="mt-2 space-y-1.5 text-[11px] text-slate-700">
+              {missingItems.map((item, index) => (
+                <li key={`${item}-${index}`} className="flex gap-1.5">
+                  <span className="mt-[5px] h-1.5 w-1.5 rounded-full bg-slate-400" />
                   <span>{item}</span>
                 </li>
-            )}
+              ))}
             </ul>
           </div>
-        }
+        )}
       </CardContent>
     </Card>);
 
