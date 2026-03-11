@@ -221,7 +221,7 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
 
         {missingItems.length > 0 && (
           <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-slate-900">
-            <div className="flex items-center gap-2 text-xs font-semibold text-amber-800">
+            <div className="flex items-center gap-2 text-xs font-semibold text-amber-900">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
               <span>What would strengthen this project?</span>
             </div>
