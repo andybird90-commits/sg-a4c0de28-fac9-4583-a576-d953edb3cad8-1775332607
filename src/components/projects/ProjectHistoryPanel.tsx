@@ -121,7 +121,7 @@ export const ProjectHistoryPanel: FC<ProjectHistoryPanelProps> = ({
   return (
     <Card className="bg-slate-950/60 border-slate-800" style={{ backgroundColor: "#f3f4f6" }}>
       <CardHeader className="pb-3" style={{ backgroundColor: "#f3f4f6" }}>
-        <CardTitle className="flex items-center gap-2 text-sm text-slate-100" style={{ backgroundColor: "#0f1d2d" }}>
+        <CardTitle className="flex items-center gap-2 text-sm text-slate-100" style={{ backgroundColor: "#f3f4f6" }}>
           <Clock className="h-4 w-4 text-slate-300" />
           Activity &amp; History
         </CardTitle>
