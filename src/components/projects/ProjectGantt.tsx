@@ -28,7 +28,9 @@ export const ProjectGantt: FC<ProjectGanttProps> = ({ items }) => {
       return { ...item, start, end };
     })
     .filter(
-      (item): item is ProjectGanttItem & { start: number; end: number } =>
+      (
+        item
+      ): item is ProjectGanttItem & { start: number; end: number } =>
         Boolean(item)
     )
     .sort((a, b) => a.start - b.start);
@@ -67,10 +69,12 @@ export const ProjectGantt: FC<ProjectGanttProps> = ({ items }) => {
         <span>{formatShortDate(minStart)}</span>
         <span>{formatShortDate(maxEnd)}</span>
       </div>
+
       <div className="space-y-3">
         {validItems.map((item) => {
           const offsetRatio = (item.start - minStart) / span;
           const widthRatio = (item.end - item.start) / span;
+
           const leftPercent = Math.max(0, Math.min(100, offsetRatio * 100));
           const widthPercent = Math.max(
             3,
@@ -87,10 +91,11 @@ export const ProjectGantt: FC<ProjectGanttProps> = ({ items }) => {
                   {formatShortDate(item.start)} – {formatShortDate(item.end)}
                 </p>
               </div>
+
               <div className="flex-1">
                 <div className="relative h-3 rounded-full bg-slate-200">
                   <div
-                    className="absolute top-0 h-3 rounded-full bg-slate-500"
+                    className="absolute inset-y-0 rounded-full bg-slate-500"
                     style={{
                       left: `${leftPercent}%`,
                       width: `${widthPercent}%`
