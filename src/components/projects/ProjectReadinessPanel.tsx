@@ -180,25 +180,25 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-3 pt-3">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3">
           {scores.map((score) => (
             <div
               key={score.label}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900"
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-900"
             >
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   {score.icon}
-                  <span className="text-xs font-semibold">
+                  <span className="text-sm font-semibold">
                     {score.label}
                   </span>
                 </div>
-                <span className="text-xs font-semibold">
+                <span className="text-sm font-semibold">
                   {score.value}/{score.max}
                 </span>
               </div>
 
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200">
                 <div
                   className={cn(
                     "h-full rounded-full",
@@ -212,7 +212,7 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
                 />
               </div>
 
-              <p className="mt-2 text-[11px] leading-snug text-slate-600">
+              <p className="mt-3 text-xs leading-relaxed text-slate-700">
                 {score.description}
               </p>
             </div>
@@ -220,15 +220,15 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
         </div>
 
         {missingItems.length > 0 && (
-          <div className="mt-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-slate-900">
-            <div className="flex items-center gap-2 text-xs font-semibold text-amber-900">
+          <div className="mt-2 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-slate-900">
+            <div className="flex items-center gap-2 text-sm font-semibold text-amber-900">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
               <span>What would strengthen this project?</span>
             </div>
-            <ul className="mt-2 space-y-1.5 text-[11px] text-slate-700">
+            <ul className="mt-2.5 space-y-1.5 text-xs text-slate-700">
               {missingItems.map((item, index) => (
-                <li key={`${item}-${index}`} className="flex gap-1.5">
-                  <span className="mt-[5px] h-1.5 w-1.5 rounded-full bg-slate-400" />
+                <li key={`${item}-${index}`} className="flex gap-2">
+                  <span className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
                   <span>{item}</span>
                 </li>
               ))}
