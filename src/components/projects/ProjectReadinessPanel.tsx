@@ -128,7 +128,7 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
 
   return (
     <Card className="border border-slate-200 bg-slate-50 shadow-sm">
-      <CardHeader className="flex flex-row items-start justify-between gap-4 border-b border-slate-200 pb-4">
+      <CardHeader className="flex flex-row items-start justify-between gap-4 border-b border-slate-200 pb-3">
         <div>
           <CardTitle className="text-sm font-semibold text-slate-900">
             R&D Readiness
@@ -179,7 +179,7 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 pt-4">
+      <CardContent className="space-y-3 pt-3">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {scores.map((score) => (
             <div
@@ -198,7 +198,7 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
                 </span>
               </div>
 
-              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
                 <div
                   className={cn(
                     "h-full rounded-full",
@@ -212,7 +212,7 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
                 />
               </div>
 
-              <p className="mt-3 text-[11px] leading-snug text-slate-600">
+              <p className="mt-2 text-[11px] leading-snug text-slate-600">
                 {score.description}
               </p>
             </div>
@@ -220,7 +220,7 @@ export const ProjectReadinessPanel: FC<ProjectReadinessPanelProps> = ({
         </div>
 
         {missingItems.length > 0 && (
-          <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-slate-900">
+          <div className="mt-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-slate-900">
             <div className="flex items-center gap-2 text-xs font-semibold text-amber-900">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
               <span>What would strengthen this project?</span>

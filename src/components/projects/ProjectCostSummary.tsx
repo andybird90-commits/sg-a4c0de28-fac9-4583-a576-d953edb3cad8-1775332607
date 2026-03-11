@@ -20,26 +20,28 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
 }) => {
   if (!items || items.length === 0) {
     return (
-      <Card className="bg-slate-950/60 border-slate-800">
-        <CardHeader style={{ backgroundColor: "#ffffff" }}>
-          <CardTitle className="flex items-center gap-2 text-sm text-slate-100" style={{ backgroundColor: "#f97316" }}>
-            <Wallet className="h-4 w-4 text-emerald-400" style={{ backgroundColor: "#00000000" }} />
-            Project Costs
-          </CardTitle>
+      <Card className="border border-slate-200 bg-slate-50 shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-emerald-600" />
+            <CardTitle className="text-sm font-semibold text-slate-900">
+              Project Costs
+            </CardTitle>
+          </div>
         </CardHeader>
-        <CardContent style={{ backgroundColor: "#ffffff" }}>
-          <p className="text-xs text-slate-400" style={{ color: "#1a1a1a" }}>
+        <CardContent className="pt-0">
+          <p className="text-xs text-slate-600">
             Share your best-view costs for this project. Even rough estimates
             help us size the claim and follow up with the right questions.
           </p>
-          <p className="mt-2 text-[11px] text-slate-500" style={{ color: "#1a1a1a" }}>
-            {schemeLabel ?
-            `This project is currently tagged under the ${schemeLabel} scheme. The RDtax team will refine these figures as part of claim preparation.` :
-            "Once the scheme (e.g. SME, RDEC) is confirmed, the RDtax team will refine these figures as part of claim preparation."}
+          <p className="mt-2 text-[11px] text-slate-500">
+            {schemeLabel
+              ? `This project is currently tagged under the ${schemeLabel} scheme. The RDtax team will refine these figures as part of claim preparation.`
+              : "Once the scheme (e.g. SME, RDEC) is confirmed, the RDtax team will refine these figures as part of claim preparation."}
           </p>
         </CardContent>
-      </Card>);
-
+      </Card>
+    );
   }
 
   const totalsByType: Record<string, number> = {};
@@ -48,9 +50,9 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
   items.forEach((item) => {
     const key = (item.cost_type || "other").toLowerCase();
     const numeric =
-    typeof item.amount === "number" ?
-    item.amount :
-    Number.parseFloat(item.amount);
+      typeof item.amount === "number"
+        ? item.amount
+        : Number.parseFloat(item.amount);
     const safeAmount = Number.isFinite(numeric) ? numeric : 0;
     total += safeAmount;
     totalsByType[key] = (totalsByType[key] || 0) + safeAmount;
@@ -62,91 +64,96 @@ export const ProjectCostSummary: FC<ProjectCostSummaryProps> = ({
   const indicativeHigh = total * 0.3;
 
   return (
-    <Card className="bg-slate-950/60 border-slate-800">
-      <CardHeader className="pb-3" style={{ backgroundColor: "#0f1d2d" }}>
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2 text-sm text-slate-100">
-            <Wallet className="h-4 w-4 text-emerald-400" />
+    <Card className="border border-slate-200 bg-slate-50 shadow-sm">
+      <CardHeader className="flex items-start justify-between space-y-0 pb-4">
+        <div className="flex items-center gap-2">
+          <Wallet className="h-4 w-4 text-emerald-600" />
+          <CardTitle className="text-sm font-semibold text-slate-900">
             Project Costs
           </CardTitle>
-          <div className="text-right">
-            <div className="text-[11px] text-slate-400" style={{ color: "#ffffff" }}>Indicative total</div>
-            <div className="text-base font-semibold text-slate-50">
-              £
-              {total.toLocaleString("en-GB", {
-                maximumFractionDigits: 0
-              })}
-            </div>
-            {schemeLabel &&
-            <div className="mt-0.5 text-[11px] text-slate-400" style={{ color: "#ffffff" }}>
-                Scheme: {schemeLabel}
-              </div>
-            }
+        </div>
+        <div className="text-right text-xs text-slate-600">
+          <div className="font-medium text-slate-900">Indicative total</div>
+          <div className="text-base font-semibold text-slate-900">
+            £
+            {total.toLocaleString("en-GB", {
+              maximumFractionDigits: 0
+            })}
           </div>
+          {schemeLabel && (
+            <div className="mt-0.5 text-[11px] text-slate-500">
+              Scheme: {schemeLabel}
+            </div>
+          )}
         </div>
       </CardHeader>
-      <CardContent className="pt-0 space-y-3" style={{ backgroundColor: "#0f1d2d" }}>
+      <CardContent className="space-y-4 pt-0 text-xs text-slate-700">
         <div className="space-y-2">
           {entries.map(([type, value]) => {
-            const percentage = total > 0 ? value / total * 100 : 0;
+            const percentage = total > 0 ? (value / total) * 100 : 0;
             const label = type.replace("_", " ");
             return (
               <div key={type} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="capitalize" style={{ color: "#ffffff" }}>
+                    <Badge
+                      variant="outline"
+                      className="border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium capitalize text-slate-800"
+                    >
                       {label}
                     </Badge>
-                    <span className="text-slate-300">
+                    <span className="text-slate-700">
                       £
                       {value.toLocaleString("en-GB", {
                         maximumFractionDigits: 0
                       })}
                     </span>
                   </div>
-                  <span className="text-slate-400" style={{ color: "#ffffff" }}>
+                  <span className="text-slate-500">
                     {Math.round(percentage)}%
                   </span>
                 </div>
-                <div className="h-1.5 w-full rounded-full bg-slate-800">
+                <div className="h-1.5 w-full rounded-full bg-slate-200">
                   <div
-                    className="h-full rounded-full bg-emerald-500"
-                    style={{ backgroundColor: "#f5a623" }} />
-                  
+                    className="h-full rounded-full bg-amber-500"
+                    style={{ width: `${percentage}%` }}
+                  />
                 </div>
-              </div>);
-
+              </div>
+            );
           })}
         </div>
-        {total > 0 &&
-        <div className="pt-1 border-t border-slate-800/60 mt-2 pt-2 space-y-1">
-            <div className="text-[11px] text-slate-400" style={{ color: "#ffffff" }}>
+
+        {total > 0 && (
+          <div className="mt-2 space-y-1 border-t border-slate-200 pt-2">
+            <div className="text-[11px] text-slate-600">
               Rough indication of potential R&amp;D tax benefit
               {schemeLabel ? ` (${schemeLabel} scheme)` : ""}
             </div>
-            <div className="text-sm font-medium text-slate-50">
+            <div className="text-sm font-semibold text-slate-900">
               £
               {indicativeLow.toLocaleString("en-GB", {
-              maximumFractionDigits: 0
-            })}{" "}
+                maximumFractionDigits: 0
+              })}{" "}
               – £
               {indicativeHigh.toLocaleString("en-GB", {
-              maximumFractionDigits: 0
-            })}
+                maximumFractionDigits: 0
+              })}
             </div>
-            <p className="text-[10px] text-slate-500" style={{ color: "#ffffff" }}>
+            <p className="text-[10px] text-slate-500">
               This is a broad range based on typical relief levels
               {schemeLabel ? ` for the ${schemeLabel} scheme` : ""}. Your actual
               benefit will depend on your specific circumstances and tax
               position.
             </p>
           </div>
-        }
-        <p className="pt-1 text-[11px] text-slate-400" style={{ color: "#ffffff" }}>
+        )}
+
+        <p className="pt-1 text-[11px] text-slate-500">
           These figures are for guidance only and will be refined by your RDtax
           team as part of the claim preparation.
         </p>
       </CardContent>
-    </Card>);
-
+    </Card>
+  );
 };
