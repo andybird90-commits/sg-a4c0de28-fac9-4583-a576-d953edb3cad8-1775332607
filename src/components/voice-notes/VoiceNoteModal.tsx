@@ -74,25 +74,38 @@ export function VoiceNoteModal({ open, onClose, organisationId, userId }: VoiceN
         }),
       });
 
-      if (!response.ok) {
-        const body = await response.json().catch(() => null);
-        const message = body && body.error ? body.error : "Failed to save voice note.";
-        throw new Error(message);
+      const body = (await response.json().catch(() => null)) as
+        | {
+            success?: boolean;
+            error?: string;
+            message?: string;
+            projectName?: string | null;
+            needsConfirmation?: boolean;
+            transcript?: string | null;
+          }
+        | null;
+
+      if (!response.ok || !body || !body.success) {
+        const message =
+          body?.error ||
+          body?.message ||
+          (!response.ok ? "Failed to save voice note." : "Voice note could not be saved.");
+
+        if (body?.transcript) {
+          setAdditionalContext(body.transcript);
+        }
+
+        setSaveError(message);
+        notify({
+          type: "error",
+          title: "Voice note not saved",
+          message,
+        });
+        return;
       }
 
-      const data = (await response.json()) as {
-        success: boolean;
-        message?: string;
-        projectName?: string | null;
-        needsConfirmation?: boolean;
-      };
-
-      if (!data.success) {
-        throw new Error(data.message || "Failed to save voice note.");
-      }
-
-      const projectName = data.projectName || "a project";
-      const needsConfirmation = Boolean(data.needsConfirmation);
+      const projectName = body.projectName || "a project";
+      const needsConfirmation = Boolean(body.needsConfirmation);
 
       notify({
         type: "success",
@@ -184,14 +197,14 @@ export function VoiceNoteModal({ open, onClose, organisationId, userId }: VoiceN
 
           <div className="space-y-2 pt-1">
             <label className="text-xs font-medium text-slate-300" htmlFor="voice-note-context">
-              Additional context (optional)
+              Transcript & context (edit if needed)
             </label>
             <Textarea
               id="voice-note-context"
               rows={3}
               value={additionalContext}
               onChange={(event) => setAdditionalContext(event.target.value)}
-              placeholder="Any extra details, nicknames, or clarifications that help us match this to the right project."
+              placeholder="We’ll auto-fill this with the transcript. You can edit it or add the exact project name if we didn’t detect it."
               className="bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500"
             />
           </div>

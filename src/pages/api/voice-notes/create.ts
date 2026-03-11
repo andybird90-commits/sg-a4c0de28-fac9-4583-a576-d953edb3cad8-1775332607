@@ -17,6 +17,7 @@ interface CreateVoiceNoteResponse {
   projectId?: string | null;
   projectName?: string | null;
   needsConfirmation?: boolean;
+  transcript?: string | null;
 }
 
 const openaiApiKey = process.env.OPENAI_API_KEY;
@@ -133,6 +134,16 @@ export default async function handler(
       }
     } catch (matchErr) {
       console.error("Error while matching voice note to project:", matchErr);
+    }
+
+    if (!detectedProjectId) {
+      res.status(400).json({
+        success: false,
+        error:
+          "We couldn't automatically find a project for this voice note. Please add the project name into the transcript box and save again, then press Save Voice Note.",
+        transcript: transcriptText,
+      });
+      return;
     }
 
     const { data: inserted, error: insertError } = await supabaseServer
