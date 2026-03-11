@@ -69,15 +69,14 @@ export default async function handler(
         });
 
         const text =
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (transcription as any)?.text ||
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (transcription as any)?.results?.[0]?.alternatives?.[0]?.text ||
           "";
 
         transcriptText = text.trim() || null;
       } catch (err) {
         console.error("Voice note transcription failed:", err);
+        transcriptText = null;
       }
     }
 
@@ -101,9 +100,6 @@ export default async function handler(
           let bestMatch: { id: string; name: string; score: number } | null =
             null;
 
-          // Simple name-in-text matching. If you say the exact project name,
-          // it should be picked up.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (projects as any[]).forEach((p) => {
             const name = (p.name || "").toString().toLowerCase().trim();
             if (!name) return;
@@ -123,9 +119,7 @@ export default async function handler(
           }
         }
 
-        // If we still have no match but there is only one project, assume it.
         if (!detectedProjectId && projects.length === 1) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const only = projects[0] as any;
           detectedProjectId = only.id;
           detectedProjectName = only.name;
@@ -137,14 +131,25 @@ export default async function handler(
     }
 
     if (!detectedProjectId) {
+      const hasTranscript =
+        Boolean(transcriptText && transcriptText.trim().length > 0);
+
+      const friendlyError = hasTranscript
+        ? "We couldn't automatically find a project for this voice note. Please add the project name into the transcript box and save again, then press Save Voice Note."
+        : "We couldn't reliably transcribe this voice note. Please type a short summary, including the exact project name, into the transcript box and save again, then press Save Voice Note.";
+
       res.status(400).json({
         success: false,
-        error:
-          "We couldn't automatically find a project for this voice note. Please add the project name into the transcript box and save again, then press Save Voice Note.",
+        error: friendlyError,
         transcript: transcriptText,
       });
       return;
     }
+
+    const transcriptToStore =
+      (transcriptText && transcriptText.trim().length > 0
+        ? transcriptText.trim()
+        : additionalContext?.trim() || null);
 
     const { data: inserted, error: insertError } = await supabaseServer
       .from("project_voice_notes")
@@ -154,7 +159,7 @@ export default async function handler(
         created_by_user_id: userId,
         original_audio_url: audioDataUrl,
         transcript_raw: transcriptText,
-        transcript_cleaned: transcriptText,
+        transcript_cleaned: transcriptToStore,
         ai_summary: null,
         detected_project_name: detectedProjectName,
         detection_confidence: detectionConfidence,
