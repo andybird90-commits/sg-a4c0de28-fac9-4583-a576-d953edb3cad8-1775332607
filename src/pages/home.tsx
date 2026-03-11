@@ -582,6 +582,7 @@ export default function HomePage() {
         onClose={() => setIsVoiceNoteOpen(false)}
         organisationId={currentOrg.id}
         userId={user?.id ?? ""}
+        projects={projects}
       />
     </Layout>
   );

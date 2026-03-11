@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { Mic, Square, Play, Loader2 } from "lucide-react";
 import { useNotifications } from "@/contexts/NotificationContext";
@@ -11,6 +12,7 @@ interface VoiceNoteModalProps {
   onClose: () => void;
   organisationId: string;
   userId: string;
+  projects?: { id: string; name: string }[];
 }
 
 async function blobToBase64(blob: Blob): Promise<string> {
@@ -28,13 +30,15 @@ async function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
-export function VoiceNoteModal({ open, onClose, organisationId, userId }: VoiceNoteModalProps) {
+export function VoiceNoteModal({ open, onClose, organisationId, userId, projects }: VoiceNoteModalProps) {
   const { status, isRecording, audioUrl, audioBlob, recordingSeconds, error: recordingError, startRecording, stopRecording, reset } =
     useAudioRecorder({ maxDurationSeconds: 120 });
 
   const [additionalContext, setAdditionalContext] = useState<string>("");
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectName, setSelectedProjectName] = useState<string | null>(null);
 
   const { notify } = useNotifications();
 
@@ -43,6 +47,8 @@ export function VoiceNoteModal({ open, onClose, organisationId, userId }: VoiceN
       reset();
       setAdditionalContext("");
       setSaveError(null);
+      setSelectedProjectId(null);
+      setSelectedProjectName(null);
       onClose();
     }
   };
@@ -71,6 +77,8 @@ export function VoiceNoteModal({ open, onClose, organisationId, userId }: VoiceN
           organisationId,
           userId,
           additionalContext: additionalContext.trim() || null,
+          projectId: selectedProjectId,
+          projectName: selectedProjectName,
         }),
       });
 
@@ -208,6 +216,36 @@ export function VoiceNoteModal({ open, onClose, organisationId, userId }: VoiceN
               className="bg-slate-950 border-slate-800 text-slate-100 placeholder:text-slate-500"
             />
           </div>
+
+          {projects && projects.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <label className="text-xs font-medium text-slate-300">
+                Or choose project now
+              </label>
+              <Select
+                value={selectedProjectId ?? ""}
+                onValueChange={(value) => {
+                  setSelectedProjectId(value);
+                  const match = projects.find((project) => project.id === value) || null;
+                  setSelectedProjectName(match ? match.name : null);
+                }}
+              >
+                <SelectTrigger className="bg-slate-950 border-slate-800 text-slate-100">
+                  <SelectValue placeholder="Optional: pick a project to attach this note to" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-950 border-slate-800 text-slate-100">
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-slate-500">
+                If we cannot detect the project from the transcript, we will use this selection instead.
+              </p>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="mt-4">
