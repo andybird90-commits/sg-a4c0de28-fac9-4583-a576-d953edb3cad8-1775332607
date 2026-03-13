@@ -24,7 +24,10 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
-  Mic
+  Mic,
+  ClipboardList,
+  Sparkles,
+  ChevronRight
 } from "lucide-react";
 import { evidenceService } from "@/services/evidenceService";
 import { organisationService, type Project } from "@/services/organisationService";
