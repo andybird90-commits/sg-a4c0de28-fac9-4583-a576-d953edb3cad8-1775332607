@@ -72,7 +72,7 @@ export default function HomePage() {
     }
 
     if (currentOrg) {
-      loadDashboardData();
+      void loadDashboardData();
       organisationNotificationStatusService
         .getOrganisationNotificationStatus(currentOrg.id)
         .then((status) => {
@@ -85,14 +85,17 @@ export default function HomePage() {
           }
         })
         .catch((err) => {
-          console.error("Failed to load organisation notification status for dashboard", err);
+          console.error(
+            "Failed to load organisation notification status for dashboard",
+            err
+          );
         });
     } else {
       setLoading(false);
     }
   }, [user, currentOrg, authLoading, isStaff, router]);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (): Promise<void> => {
     if (!currentOrg) return;
 
     setLoading(true);
@@ -116,12 +119,17 @@ export default function HomePage() {
       const now = new Date();
       const thisMonth = allEvidence.filter((e) => {
         const created = new Date(e.created_at);
-        return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
+        return (
+          created.getMonth() === now.getMonth() &&
+          created.getFullYear() === now.getFullYear()
+        );
       }).length;
 
       const lastWeek = new Date();
       lastWeek.setDate(lastWeek.getDate() - 7);
-      const recentActivity = allEvidence.filter((e) => new Date(e.created_at) >= lastWeek).length;
+      const recentActivity = allEvidence.filter(
+        (e) => new Date(e.created_at) >= lastWeek
+      ).length;
 
       setStats({
         totalEvidence: allEvidence.length,
@@ -132,7 +140,11 @@ export default function HomePage() {
     } catch (error: any) {
       console.error("Error loading dashboard data:", error);
 
-      if (error?.message?.includes("session") || error?.message?.includes("JWT") || error?.status === 403) {
+      if (
+        error?.message?.includes("session") ||
+        error?.message?.includes("JWT") ||
+        error?.status === 403
+      ) {
         setAuthError(true);
         notify({
           type: "error",
@@ -162,7 +174,7 @@ export default function HomePage() {
           <Card className="max-w-md shadow-professional-lg border border-border bg-card w-full">
             <CardContent className="pt-6">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
                 <h2 className="text-xl sm:text-2xl font-semibold mb-2">Loading...</h2>
                 <p className="text-sm sm:text-base text-muted-foreground">
                   Please wait while we load your dashboard
@@ -184,7 +196,9 @@ export default function HomePage() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <AlertCircle className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-destructive mb-4" />
-                <h2 className="text-xl sm:text-2xl font-semibold mb-2">Session Expired</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold mb-2">
+                  Session Expired
+                </h2>
                 <p className="text-sm sm:text-base text-muted-foreground mb-6">
                   Your session has expired. Redirecting to login...
                 </p>
@@ -205,7 +219,9 @@ export default function HomePage() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <Building2 className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground mb-4" />
-                <h2 className="text-xl sm:text-2xl font-semibold mb-2">No Organisation Selected</h2>
+                <h2 className="text-xl sm:text-2xl font-semibold mb-2">
+                  No Organisation Selected
+                </h2>
                 <p className="text-sm sm:text-base text-muted-foreground mb-6">
                   Please select an organisation to continue.
                 </p>
@@ -228,15 +244,19 @@ export default function HomePage() {
       <SEO title="Dashboard - RD Companion" />
       <div className="min-h-screen bg-background text-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          {/* Header */}
           <div className="mb-6 sm:mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <h1 className="text-2xl sm:text-3xl font-bold mb-2 truncate">
-                  Welcome back, {user?.user_metadata?.full_name || user?.email?.split("@")[0]}
+                  Welcome back, {user?.user_metadata?.full_name ||
+                    user?.email?.split("@")[0]}
                 </h1>
                 <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
                   <Building2 className="h-4 w-4 flex-shrink-0" />
-                  <span className="font-medium truncate text-foreground">{currentOrg.name}</span>
+                  <span className="font-medium truncate text-foreground">
+                    {currentOrg.name}
+                  </span>
                   {currentOrg.sidekick_enabled && (
                     <Badge
                       variant="secondary"
@@ -284,10 +304,10 @@ export default function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="text-3xl font-bold">
-                  {stats.totalEvidence}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Across all projects</p>
+                <div className="text-3xl font-bold">{stats.totalEvidence}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Across all projects
+                </p>
               </CardContent>
             </Card>
 
@@ -305,7 +325,9 @@ export default function HomePage() {
                 <div className="text-3xl font-bold">
                   {stats.evidenceThisMonth}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Evidence items captured</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Evidence items captured
+                </p>
               </CardContent>
             </Card>
 
@@ -320,10 +342,10 @@ export default function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="text-3xl font-bold">
-                  {stats.activeProjects}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Currently in progress</p>
+                <div className="text-3xl font-bold">{stats.activeProjects}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Currently in progress
+                </p>
               </CardContent>
             </Card>
 
@@ -338,80 +360,44 @@ export default function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="text-3xl font-bold">
-                  {stats.recentActivity}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">New evidence added</p>
+                <div className="text-3xl font-bold">{stats.recentActivity}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  New evidence added
+                </p>
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-            <div className="space-y-4 sm:space-y-6">
-              <Card className="border border-border bg-card shadow-professional-md lg:hidden">
+          {/* Bulk / HMRC / Start New Claim (left) + Recent Projects (right) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch">
+            {/* Left column */}
+            <div className="space-y-4 sm:space-y-6 lg:space-y-4 lg:flex lg:flex-col lg:h-full">
+              {/* Bulk upload card */}
+              <Card className="border border-border bg-card shadow-professional-md">
                 <CardHeader className="pb-3 sm:pb-4">
                   <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-foreground">
-                    <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                    <span className="truncate">Quick Actions</span>
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-sky-500/10 text-sky-600">
+                      <Layers className="h-4 w-4" />
+                    </span>
+                    <span className="truncate">Bulk upload projects</span>
                   </CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground">
+                    Upload project evidence and financials in bulk for your advisor to
+                    review.
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2 sm:space-y-3">
+                <CardContent className="pt-0 flex flex-col gap-3">
                   <Button
-                    onClick={() => router.push("/projects/new")}
-                    variant="outline"
-                    className="w-full justify-start border-border text-foreground hover:bg-muted transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
+                    onClick={() => router.push("/bulk-upload")}
+                    className="w-full gradient-primary text-slate-950 shadow-professional-md hover:shadow-professional-lg transition-professional"
                   >
-                    <FolderOpen className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">New Project</span>
+                    <Layers className="mr-2 h-4 w-4" />
+                    Go to Bulk upload
                   </Button>
-                  <Button
-                    onClick={() => router.push("/projects")}
-                    variant="outline"
-                    className="w-full justify-start border-border text-foreground hover:bg-muted transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
-                    <BarChart3 className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Browse Projects</span>
-                  </Button>
-                  <Button
-                    onClick={() => router.push("/claims/new")}
-                    variant="outline"
-                    className="w-full justify-start border-border text-foreground hover:bg-muted transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
-                    <FileText className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Start New Claim</span>
-                  </Button>
-                  <Button
-                    onClick={() => router.push("/feasibility")}
-                    variant="outline"
-                    className="w-full justify-start border-border text-foreground hover:bg-muted transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
-                    <Lightbulb className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Feasibility Analysis</span>
-                  </Button>
-                  <Button
-                    onClick={() => router.push("/feasibility/history")}
-                    variant="outline"
-                    className="w-full justify-start border-border text-foreground hover:bg-muted transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
-                    <Clock className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Feasibility History</span>
-                  </Button>
-                  <Button
-                    onClick={() => router.push("/evidence/capture")}
-                    variant="outline"
-                    className="w-full justify-start border-border text-foreground hover:bg-muted transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
-                    <Camera className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Capture Evidence</span>
-                  </Button>
-                  <Button
-                    onClick={() => router.push("/settings")}
-                    variant="outline"
-                    className="w-full justify-start border-border text-foreground hover:bg-muted transition-professional text-xs sm:text-sm lg:text-base h-auto py-2 sm:py-2.5"
-                  >
-                    <Settings className="mr-2 sm:mr-3 h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Settings</span>
-                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Ideal when you already have documentation prepared for multiple
+                    projects.
+                  </p>
                 </CardContent>
               </Card>
 
@@ -462,14 +448,17 @@ export default function HomePage() {
                   </p>
                   {notificationDeadline && (
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Deadline: <span className="font-medium text-foreground">{notificationDeadline}</span>
+                      Deadline:{" "}
+                      <span className="font-medium text-foreground">
+                        {notificationDeadline}
+                      </span>
                     </p>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Desktop-only Start New Claim card */}
-              <Card className="border border-border bg-card shadow-professional-md hidden lg:block">
+              {/* Start New Claim card anchored to bottom */}
+              <Card className="border border-border bg-card shadow-professional-md mt-2 lg:mt-auto">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2 text-foreground">
                     <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-orange-500/10 text-orange-500">
@@ -493,6 +482,7 @@ export default function HomePage() {
               </Card>
             </div>
 
+            {/* Right column: Recent projects */}
             <div className="lg:col-span-2">
               <Card className="border border-border bg-card shadow-professional-md h-full">
                 <CardHeader className="pb-4">
@@ -517,16 +507,18 @@ export default function HomePage() {
                 <CardContent>
                   {loading ? (
                     <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                     </div>
                   ) : projects.length === 0 ? (
                     <div className="text-center py-12 px-4">
                       <div className="bg-muted rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-4 border border-border">
                         <FolderOpen className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
                       </div>
-                      <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">No projects yet</h3>
+                      <h3 className="text-base sm:text-lg font-semibold mb-2 text-foreground">
+                        No projects yet
+                      </h3>
                       <p className="text-sm text-muted-foreground mb-6">
-                        Create your first project to organize your R&D work
+                        Create your first project to organize your R&amp;D work
                       </p>
                       <Button
                         onClick={() => router.push("/projects/new")}
@@ -538,51 +530,51 @@ export default function HomePage() {
                     </div>
                   ) : (
                     <div className="space-y-3 sm:space-y-4">
-                      {projects.slice(0, 3).map((project) => {
-                        return (
-                          <div
-                            key={project.id}
-                            onClick={() => router.push(`/projects/${project.id}`)}
-                            className="p-4 sm:p-5 rounded-lg border border-border hover:border-primary/70 shadow-professional transition-professional cursor-pointer bg-card"
-                          >
-                            <div className="flex items-start justify-between gap-3 sm:gap-4">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                  <h3 className="font-semibold text-sm sm:text-base text-foreground line-clamp-1">
-                                    {project.name}
-                                  </h3>
-                                  <Badge
-                                    variant="default"
-                                    className="text-2xs bg-emerald-500/10 text-emerald-700 border-emerald-500/30 flex items-center gap-1 flex-shrink-0"
-                                  >
-                                    <CheckCircle2 className="h-3 w-3" />
-                                    Active
-                                  </Badge>
-                                </div>
-
-                                {project.description && (
-                                  <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 line-clamp-2">
-                                    {project.description}
-                                  </p>
-                                )}
-
-                                <div className="flex items-center text-xs text-muted-foreground">
-                                  <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
-                                  <span className="truncate">
-                                    {new Date(project.created_at).toLocaleDateString()}
-                                  </span>
-                                </div>
+                      {projects.slice(0, 3).map((project) => (
+                        <div
+                          key={project.id}
+                          onClick={() => router.push(`/projects/${project.id}`)}
+                          className="p-4 sm:p-5 rounded-lg border border-border hover:border-primary/70 shadow-professional transition-professional cursor-pointer bg-card"
+                        >
+                          <div className="flex items-start justify-between gap-3 sm:gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                <h3 className="font-semibold text-sm sm:text-base text-foreground line-clamp-1">
+                                  {project.name}
+                                </h3>
+                                <Badge
+                                  variant="default"
+                                  className="text-2xs bg-emerald-500/10 text-emerald-700 border-emerald-500/30 flex items-center gap-1 flex-shrink-0"
+                                >
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Active
+                                </Badge>
                               </div>
 
-                              <div className="flex-shrink-0">
-                                <div className="bg-primary/10 p-2 sm:p-3 rounded-lg border border-primary/30">
-                                  <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                                </div>
+                              {project.description && (
+                                <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 line-clamp-2">
+                                  {project.description}
+                                </p>
+                              )}
+
+                              <div className="flex items-center text-xs text-muted-foreground">
+                                <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
+                                <span className="truncate">
+                                  {new Date(
+                                    project.created_at
+                                  ).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex-shrink-0">
+                              <div className="bg-primary/10 p-2 sm:p-3 rounded-lg border border-primary/30">
+                                <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                               </div>
                             </div>
                           </div>
-                        );
-                      })}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </CardContent>
