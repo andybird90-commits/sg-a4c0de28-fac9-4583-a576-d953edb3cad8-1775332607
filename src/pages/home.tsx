@@ -245,14 +245,25 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="flex w-full sm:w-auto sm:justify-end">
-                <Button
-                  onClick={() => setIsVoiceNoteOpen(true)}
-                  size="lg"
-                  className="gradient-primary shadow-professional-md hover:shadow-professional-lg transition-professional w-full sm:w-auto text-slate-950"
-                >
-                  <Mic className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                  Voice Note
-                </Button>
+                <div className="flex w-full sm:w-auto gap-3 sm:justify-end">
+                  <Button
+                    onClick={() => router.push("/bulk-upload")}
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto border-border text-foreground hover:bg-muted transition-professional"
+                  >
+                    <Layers className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                    Bulk upload
+                  </Button>
+                  <Button
+                    onClick={() => setIsVoiceNoteOpen(true)}
+                    size="lg"
+                    className="gradient-primary shadow-professional-md hover:shadow-professional-lg transition-professional w-full sm:w-auto text-slate-950"
+                  >
+                    <Mic className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                    Voice Note
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
