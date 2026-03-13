@@ -27,8 +27,8 @@ import {
   Mic,
   ClipboardList,
   Sparkles,
-  ChevronRight
-} from "lucide-react";
+  ChevronRight } from
+"lucide-react";
 import { evidenceService } from "@/services/evidenceService";
 import { organisationService, type Project } from "@/services/organisationService";
 import { sidekickEvidenceService } from "@/services/sidekickEvidenceService";
@@ -73,23 +73,23 @@ export default function HomePage() {
 
     if (currentOrg) {
       void loadDashboardData();
-      organisationNotificationStatusService
-        .getOrganisationNotificationStatus(currentOrg.id)
-        .then((status) => {
-          if (status) {
-            setNotificationStatus(status.status as NotificationStatusState);
-            setNotificationDeadline(status.deadline_date);
-          } else {
-            setNotificationStatus(null);
-            setNotificationDeadline(null);
-          }
-        })
-        .catch((err) => {
-          console.error(
-            "Failed to load organisation notification status for dashboard",
-            err
-          );
-        });
+      organisationNotificationStatusService.
+      getOrganisationNotificationStatus(currentOrg.id).
+      then((status) => {
+        if (status) {
+          setNotificationStatus(status.status as NotificationStatusState);
+          setNotificationDeadline(status.deadline_date);
+        } else {
+          setNotificationStatus(null);
+          setNotificationDeadline(null);
+        }
+      }).
+      catch((err) => {
+        console.error(
+          "Failed to load organisation notification status for dashboard",
+          err
+        );
+      });
     } else {
       setLoading(false);
     }
@@ -102,12 +102,12 @@ export default function HomePage() {
     setAuthError(false);
     try {
       const [oldEvidenceData, projectsData] = await Promise.all([
-        evidenceService.getEvidence(currentOrg.id),
-        organisationService.getProjects(currentOrg.id)
-      ]);
+      evidenceService.getEvidence(currentOrg.id),
+      organisationService.getProjects(currentOrg.id)]
+      );
 
       const sidekickEvidencePromises = projectsData.map((project) =>
-        sidekickEvidenceService.getEvidenceByProject(project.id).catch(() => [])
+      sidekickEvidenceService.getEvidenceByProject(project.id).catch(() => [])
       );
       const sidekickEvidenceArrays = await Promise.all(sidekickEvidencePromises);
       const sidekickEvidenceData = sidekickEvidenceArrays.flat();
@@ -121,8 +121,8 @@ export default function HomePage() {
         const created = new Date(e.created_at);
         return (
           created.getMonth() === now.getMonth() &&
-          created.getFullYear() === now.getFullYear()
-        );
+          created.getFullYear() === now.getFullYear());
+
       }).length;
 
       const lastWeek = new Date();
@@ -141,10 +141,10 @@ export default function HomePage() {
       console.error("Error loading dashboard data:", error);
 
       if (
-        error?.message?.includes("session") ||
-        error?.message?.includes("JWT") ||
-        error?.status === 403
-      ) {
+      error?.message?.includes("session") ||
+      error?.message?.includes("JWT") ||
+      error?.status === 403)
+      {
         setAuthError(true);
         notify({
           type: "error",
@@ -183,8 +183,8 @@ export default function HomePage() {
             </CardContent>
           </Card>
         </div>
-      </Layout>
-    );
+      </Layout>);
+
   }
 
   if (authError) {
@@ -206,8 +206,8 @@ export default function HomePage() {
             </CardContent>
           </Card>
         </div>
-      </Layout>
-    );
+      </Layout>);
+
   }
 
   if (!currentOrg) {
@@ -227,16 +227,16 @@ export default function HomePage() {
                 </p>
                 <Button
                   onClick={() => router.push("/organisation-select")}
-                  className="gradient-primary w-full sm:w-auto text-slate-950"
-                >
+                  className="gradient-primary w-full sm:w-auto text-slate-950">
+                  
                   Select Organisation
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
-      </Layout>
-    );
+      </Layout>);
+
   }
 
   return (
@@ -250,39 +250,39 @@ export default function HomePage() {
               <div className="min-w-0 flex-1">
                 <h1 className="text-2xl sm:text-3xl font-bold mb-2 truncate">
                   Welcome back, {user?.user_metadata?.full_name ||
-                    user?.email?.split("@")[0]}
+                  user?.email?.split("@")[0]}
                 </h1>
                 <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
                   <Building2 className="h-4 w-4 flex-shrink-0" />
                   <span className="font-medium truncate text-foreground">
                     {currentOrg.name}
                   </span>
-                  {currentOrg.sidekick_enabled && (
-                    <Badge
-                      variant="secondary"
-                      className="ml-2 bg-emerald-500/10 text-emerald-700 border-emerald-500/30 text-xs"
-                    >
+                  {currentOrg.sidekick_enabled &&
+                  <Badge
+                    variant="secondary"
+                    className="ml-2 bg-emerald-500/10 text-emerald-700 border-emerald-500/30 text-xs">
+                    
                       Companion Enabled
                     </Badge>
-                  )}
+                  }
                 </div>
               </div>
               <div className="flex w-full sm:w-auto sm:justify-end">
                 <div className="flex w-full sm:w-auto gap-3 sm:justify-end">
-                  <Button
-                    onClick={() => router.push("/bulk-upload")}
-                    size="lg"
-                    variant="outline"
-                    className="w-full sm:w-auto border-border text-foreground hover:bg-muted transition-professional"
-                  >
-                    <Layers className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                    Bulk upload
-                  </Button>
+                  
+
+
+
+
+
+
+
+                  
                   <Button
                     onClick={() => setIsVoiceNoteOpen(true)}
                     size="lg"
-                    className="gradient-primary shadow-professional-md hover:shadow-professional-lg transition-professional w-full sm:w-auto text-slate-950"
-                  >
+                    className="gradient-primary shadow-professional-md hover:shadow-professional-lg transition-professional w-full sm:w-auto text-slate-950">
+                    
                     <Mic className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                     Voice Note
                   </Button>
@@ -389,8 +389,8 @@ export default function HomePage() {
                 <CardContent className="pt-0 flex flex-col gap-3">
                   <Button
                     onClick={() => router.push("/bulk-upload")}
-                    className="w-full gradient-primary text-slate-950 shadow-professional-md hover:shadow-professional-lg transition-professional"
-                  >
+                    className="w-full gradient-primary text-slate-950 shadow-professional-md hover:shadow-professional-lg transition-professional">
+                    
                     <Layers className="mr-2 h-4 w-4" />
                     Go to Bulk upload
                   </Button>
@@ -409,51 +409,51 @@ export default function HomePage() {
                       <Shield className="h-4 w-4" />
                     </div>
                     <span className="truncate">HMRC Notification</span>
-                    {notificationStatus && (
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[10px] px-1.5 py-0.5 rounded-full border",
-                          notificationStatus === "submitted"
-                            ? "border-emerald-500/60 text-emerald-700 bg-emerald-500/10"
-                            : notificationStatus === "not_required"
-                            ? "border-slate-400/60 text-slate-700 bg-slate-200/40"
-                            : notificationStatus === "overdue"
-                            ? "border-red-500/60 text-red-700 bg-red-500/10"
-                            : "border-amber-500/60 text-amber-700 bg-amber-500/10"
-                        )}
-                      >
+                    {notificationStatus &&
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded-full border",
+                        notificationStatus === "submitted" ?
+                        "border-emerald-500/60 text-emerald-700 bg-emerald-500/10" :
+                        notificationStatus === "not_required" ?
+                        "border-slate-400/60 text-slate-700 bg-slate-200/40" :
+                        notificationStatus === "overdue" ?
+                        "border-red-500/60 text-red-700 bg-red-500/10" :
+                        "border-amber-500/60 text-amber-700 bg-amber-500/10"
+                      )}>
+                      
                         {notificationStatus === "submitted" && "Completed"}
                         {notificationStatus === "not_required" && "Not required"}
                         {notificationStatus === "required" && "Required"}
                         {notificationStatus === "overdue" && "Overdue"}
                         {notificationStatus === "unclear" && "Unclear"}
                       </Badge>
-                    )}
+                    }
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {notificationStatus
-                      ? notificationStatus === "submitted"
-                        ? "Your HMRC pre-notification has been completed for this organisation. Your advisor will let you know if anything further is needed."
-                        : notificationStatus === "not_required"
-                        ? "Based on your onboarding answers, HMRC pre-notification is not required for this organisation."
-                        : notificationStatus === "required"
-                        ? "Your advisor needs to complete an HMRC pre-notification for this organisation before a claim can be submitted."
-                        : notificationStatus === "overdue"
-                        ? "Your HMRC pre-notification is overdue. Your advisor will contact you to complete this before submitting a claim."
-                        : "Your advisor is still assessing whether an HMRC pre-notification is required for this organisation."
-                      : "We haven’t run an HMRC notification check for this organisation yet. Your advisor will complete this as part of the onboarding process."}
+                    {notificationStatus ?
+                    notificationStatus === "submitted" ?
+                    "Your HMRC pre-notification has been completed for this organisation. Your advisor will let you know if anything further is needed." :
+                    notificationStatus === "not_required" ?
+                    "Based on your onboarding answers, HMRC pre-notification is not required for this organisation." :
+                    notificationStatus === "required" ?
+                    "Your advisor needs to complete an HMRC pre-notification for this organisation before a claim can be submitted." :
+                    notificationStatus === "overdue" ?
+                    "Your HMRC pre-notification is overdue. Your advisor will contact you to complete this before submitting a claim." :
+                    "Your advisor is still assessing whether an HMRC pre-notification is required for this organisation." :
+                    "We haven’t run an HMRC notification check for this organisation yet. Your advisor will complete this as part of the onboarding process."}
                   </p>
-                  {notificationDeadline && (
-                    <p className="mt-2 text-xs text-muted-foreground">
+                  {notificationDeadline &&
+                  <p className="mt-2 text-xs text-muted-foreground">
                       Deadline:{" "}
                       <span className="font-medium text-foreground">
                         {notificationDeadline}
                       </span>
                     </p>
-                  )}
+                  }
                 </CardContent>
               </Card>
 
@@ -473,8 +473,8 @@ export default function HomePage() {
                 <CardContent className="pt-0">
                   <Button
                     onClick={() => router.push("/claims/new")}
-                    className="w-full gradient-primary text-slate-950 shadow-professional-md hover:shadow-professional-lg transition-professional"
-                  >
+                    className="w-full gradient-primary text-slate-950 shadow-professional-md hover:shadow-professional-lg transition-professional">
+                    
                     <FileText className="mr-2 h-4 w-4" />
                     Start New Claim
                   </Button>
@@ -491,26 +491,26 @@ export default function HomePage() {
                       <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                       <span className="truncate">Recent Projects</span>
                     </CardTitle>
-                    {projects.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push("/projects")}
-                        className="text-primary hover:text-primary/90 hover:bg-muted flex-shrink-0 text-xs sm:text-sm"
-                      >
+                    {projects.length > 0 &&
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push("/projects")}
+                      className="text-primary hover:text-primary/90 hover:bg-muted flex-shrink-0 text-xs sm:text-sm">
+                      
                         View All
                         <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
-                    )}
+                    }
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {loading ? (
-                    <div className="flex items-center justify-center py-12">
+                  {loading ?
+                  <div className="flex items-center justify-center py-12">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                    </div>
-                  ) : projects.length === 0 ? (
-                    <div className="text-center py-12 px-4">
+                    </div> :
+                  projects.length === 0 ?
+                  <div className="text-center py-12 px-4">
                       <div className="bg-muted rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-4 border border-border">
                         <FolderOpen className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
                       </div>
@@ -521,21 +521,21 @@ export default function HomePage() {
                         Create your first project to organize your R&amp;D work
                       </p>
                       <Button
-                        onClick={() => router.push("/projects/new")}
-                        className="gradient-primary w-full sm:w-auto text-slate-950"
-                      >
+                      onClick={() => router.push("/projects/new")}
+                      className="gradient-primary w-full sm:w-auto text-slate-950">
+                      
                         <FolderOpen className="mr-2 h-4 w-4" />
                         Create Your First Project
                       </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 sm:space-y-4">
-                      {projects.slice(0, 3).map((project) => (
-                        <div
-                          key={project.id}
-                          onClick={() => router.push(`/projects/${project.id}`)}
-                          className="p-4 sm:p-5 rounded-lg border border-border hover:border-primary/70 shadow-professional transition-professional cursor-pointer bg-card"
-                        >
+                    </div> :
+
+                  <div className="space-y-3 sm:space-y-4">
+                      {projects.slice(0, 3).map((project) =>
+                    <div
+                      key={project.id}
+                      onClick={() => router.push(`/projects/${project.id}`)}
+                      className="p-4 sm:p-5 rounded-lg border border-border hover:border-primary/70 shadow-professional transition-professional cursor-pointer bg-card">
+                      
                           <div className="flex items-start justify-between gap-3 sm:gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -543,26 +543,26 @@ export default function HomePage() {
                                   {project.name}
                                 </h3>
                                 <Badge
-                                  variant="default"
-                                  className="text-2xs bg-emerald-500/10 text-emerald-700 border-emerald-500/30 flex items-center gap-1 flex-shrink-0"
-                                >
+                              variant="default"
+                              className="text-2xs bg-emerald-500/10 text-emerald-700 border-emerald-500/30 flex items-center gap-1 flex-shrink-0">
+                              
                                   <CheckCircle2 className="h-3 w-3" />
                                   Active
                                 </Badge>
                               </div>
 
-                              {project.description && (
-                                <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 line-clamp-2">
+                              {project.description &&
+                          <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 line-clamp-2">
                                   {project.description}
                                 </p>
-                              )}
+                          }
 
                               <div className="flex items-center text-xs text-muted-foreground">
                                 <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
                                 <span className="truncate">
                                   {new Date(
-                                    project.created_at
-                                  ).toLocaleDateString()}
+                                project.created_at
+                              ).toLocaleDateString()}
                                 </span>
                               </div>
                             </div>
@@ -574,9 +574,9 @@ export default function HomePage() {
                             </div>
                           </div>
                         </div>
-                      ))}
+                    )}
                     </div>
-                  )}
+                  }
                 </CardContent>
               </Card>
             </div>
@@ -588,8 +588,8 @@ export default function HomePage() {
         onClose={() => setIsVoiceNoteOpen(false)}
         organisationId={currentOrg.id}
         userId={user?.id ?? ""}
-        projects={projects}
-      />
-    </Layout>
-  );
+        projects={projects} />
+      
+    </Layout>);
+
 }
