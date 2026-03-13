@@ -3279,21 +3279,21 @@ export default function ClaimDetailPage() {
                               }))
                               }>
                               
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="staff">Staff</SelectItem>
-                                <SelectItem value="subcontractor">
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="staff">Staff</SelectItem>
+                                  <SelectItem value="subcontractor">
                                   Subcontractor
                                 </SelectItem>
-                                <SelectItem value="consumables">
+                                  <SelectItem value="consumables">
                                   Consumables
                                 </SelectItem>
-                                <SelectItem value="software">Software</SelectItem>
-                                <SelectItem value="other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
+                                  <SelectItem value="software">Software</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
                           </div>
                           <div>
                             <Label>Description</Label>
@@ -3347,20 +3347,20 @@ export default function ClaimDetailPage() {
                               }))
                               }>
                               
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select project" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select project" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">
                                   Not linked to a specific project
                                 </SelectItem>
-                                {projects.map((project) =>
+                                  {projects.map((project) =>
                                 <SelectItem key={project.id} value={project.id}>
                                     {project.name}
                                   </SelectItem>
                                 )}
-                              </SelectContent>
-                            </Select>
+                                </SelectContent>
+                              </Select>
                           </div>
                         </div>
                         <DialogFooter>
