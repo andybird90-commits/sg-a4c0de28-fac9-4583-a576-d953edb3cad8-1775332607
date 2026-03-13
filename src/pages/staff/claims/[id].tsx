@@ -2027,10 +2027,12 @@ export default function ClaimDetailPage() {
 
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="bulk">Bulk</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="costs">Costs</TabsTrigger>
+            <TabsTrigger value="apportion">Apportion</TabsTrigger>
             <TabsTrigger value="evidence">Evidence</TabsTrigger>
             <TabsTrigger value="companion">Companion</TabsTrigger>
           </TabsList>
@@ -2617,6 +2619,24 @@ export default function ClaimDetailPage() {
                     </Link>
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* BULK – placeholder for future bulk tools */}
+          <TabsContent value="bulk" className="mt-6 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Bulk tools</CardTitle>
+                <CardDescription>
+                  Bulk operations for this claim will be added here in a later
+                  iteration.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  No bulk tools are available yet.
+                </p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -3224,6 +3244,24 @@ export default function ClaimDetailPage() {
                 </>);
 
             })()}
+          </TabsContent>
+
+          {/* APPORTION – placeholder for future apportionment tools */}
+          <TabsContent value="apportion" className="mt-6 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Apportionment</CardTitle>
+                <CardDescription>
+                  Tools for apportioning costs and effort will be added here in
+                  a later iteration.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  No apportionment tools are configured yet.
+                </p>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* EVIDENCE – document list and upload */}
