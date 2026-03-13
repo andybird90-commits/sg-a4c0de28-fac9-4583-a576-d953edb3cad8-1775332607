@@ -5,16 +5,13 @@ import { SEO } from "@/components/SEO";
 import { useApp } from "@/contexts/AppContext";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { bulkProjectService } from "@/services/bulkProjectService";
-import type { Database } from "@/integrations/supabase/types";
+import type { BulkProject, BulkProjectUpload } from "@/services/bulkProjectService";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Upload, FileText } from "lucide-react";
-
-type BulkProject = Database["public"]["Tables"]["bulk_projects"]["Row"];
-type BulkProjectUpload = Database["public"]["Tables"]["bulk_project_uploads"]["Row"];
 
 export default function BulkUploadPage() {
   const router = useRouter();
@@ -81,8 +78,16 @@ export default function BulkUploadPage() {
       });
 
       const uploads = await bulkProjectService.getUploadsForProject(project.id);
-      setEvidenceUploads(uploads.filter((u) => u.upload_type === "evidence"));
-      setFinancialUploads(uploads.filter((u) => u.upload_type === "financial"));
+      setEvidenceUploads(
+        (uploads as BulkProjectUpload[]).filter(
+          (u) => u.upload_type === "evidence"
+        )
+      );
+      setFinancialUploads(
+        (uploads as BulkProjectUpload[]).filter(
+          (u) => u.upload_type === "financial"
+        )
+      );
     } catch (error: any) {
       console.error("[BulkUploadPage] Error saving bulk project:", error);
       notify({
@@ -341,7 +346,7 @@ export default function BulkUploadPage() {
                           </div>
                           <Button
                             variant="outline"
-                            size="xs"
+                            size="sm"
                             onClick={() => {
                               void handleDownload(upload);
                             }}
@@ -402,7 +407,7 @@ export default function BulkUploadPage() {
                           </div>
                           <Button
                             variant="outline"
-                            size="xs"
+                            size="sm"
                             onClick={() => {
                               void handleDownload(upload);
                             }}

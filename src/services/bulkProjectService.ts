@@ -1,10 +1,32 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
 
-type BulkProject = Database["public"]["Tables"]["bulk_projects"]["Row"];
-type BulkProjectInsert = Database["public"]["Tables"]["bulk_projects"]["Insert"];
-type BulkProjectUpload = Database["public"]["Tables"]["bulk_project_uploads"]["Row"];
-type BulkProjectUploadInsert = Database["public"]["Tables"]["bulk_project_uploads"]["Insert"];
+export interface BulkProject {
+  id: string;
+  org_id: string;
+  created_by: string | null;
+  name: string;
+  description: string | null;
+  sector: string | null;
+  stage: string | null;
+  created_at: string;
+}
+
+export type BulkProjectInsert = Omit<BulkProject, "id" | "created_at">;
+
+export interface BulkProjectUpload {
+  id: string;
+  bulk_project_id: string;
+  upload_type: string;
+  file_name: string;
+  file_path: string;
+  bucket_name: string;
+  mime_type: string | null;
+  file_size_bytes: number;
+  created_by: string;
+  created_at: string;
+}
+
+export type BulkProjectUploadInsert = Omit<BulkProjectUpload, "id" | "created_at">;
 
 const BULK_EVIDENCE_BUCKET = "bulk-project-evidence";
 const BULK_FINANCIAL_BUCKET = "bulk-project-financials";
@@ -31,7 +53,7 @@ export const bulkProjectService = {
       stage: params.stage || null
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("bulk_projects")
       .insert(payload)
       .select()
@@ -46,7 +68,7 @@ export const bulkProjectService = {
   },
 
   async getProjectsForOrganisation(orgId: string): Promise<BulkProjectWithUploads[]> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("bulk_projects")
       .select("*, bulk_project_uploads(*)")
       .eq("org_id", orgId)
@@ -61,7 +83,7 @@ export const bulkProjectService = {
   },
 
   async getUploadsForProject(bulkProjectId: string): Promise<BulkProjectUpload[]> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("bulk_project_uploads")
       .select("*")
       .eq("bulk_project_id", bulkProjectId)
@@ -112,7 +134,7 @@ export const bulkProjectService = {
       created_by: params.createdBy
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("bulk_project_uploads")
       .insert(record)
       .select()

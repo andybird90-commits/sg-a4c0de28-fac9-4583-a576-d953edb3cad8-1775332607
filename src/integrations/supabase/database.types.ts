@@ -653,6 +653,63 @@ export type Database = {
           },
         ]
       }
+      claim_apportionment_source_files: {
+        Row: {
+          claim_evidence_id: string | null
+          confidence_score: number | null
+          created_at: string
+          detected_doc_type: string | null
+          extraction_summary_json: Json | null
+          file_name: string
+          file_path: string
+          file_size_bytes: number | null
+          id: string
+          mime_type: string | null
+          parse_status: string
+          raw_text: Json | null
+          schedule_id: string
+          selected_doc_type: string | null
+          source_origin: string
+          updated_at: string
+        }
+        Insert: {
+          claim_evidence_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          detected_doc_type?: string | null
+          extraction_summary_json?: Json | null
+          file_name: string
+          file_path: string
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string | null
+          parse_status?: string
+          raw_text?: Json | null
+          schedule_id: string
+          selected_doc_type?: string | null
+          source_origin: string
+          updated_at?: string
+        }
+        Update: {
+          claim_evidence_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          detected_doc_type?: string | null
+          extraction_summary_json?: Json | null
+          file_name?: string
+          file_path?: string
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string | null
+          parse_status?: string
+          raw_text?: Json | null
+          schedule_id?: string
+          selected_doc_type?: string | null
+          source_origin?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       claim_costs: {
         Row: {
           amount: number

@@ -80,7 +80,11 @@ import {
   getLatestInspectorSummaryForClaim,
   type ClaimInspectorSummary } from
 "@/services/hmrcInspectorService";
-import { bulkProjectService, type BulkProjectWithUploads } from "@/services/bulkProjectService";
+import {
+  bulkProjectService,
+  type BulkProjectWithUploads,
+  type BulkProjectUpload
+} from "@/services/bulkProjectService";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-GB", {
@@ -379,6 +383,45 @@ export default function ClaimDetailPage() {
   const [bulkProjects, setBulkProjects] = useState<BulkProjectWithUploads[]>([]);
   const [loadingBulkProjects, setLoadingBulkProjects] = useState(false);
 
+  const handleDownloadBulkUpload = async (upload: BulkProjectUpload): Promise<void> => {
+    try {
+      const { data, error } = await supabase.storage
+        .from(upload.bucket_name)
+        .download(upload.file_path);
+
+      if (error || !data) {
+        console.error("[ClaimDetailPage.handleDownloadBulkUpload] download error", error);
+        toast({
+          title: "Download failed",
+          description: "We could not download this file from storage.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const url = window.URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = upload.file_name || "download";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download started",
+        description: "Bulk upload file is downloading."
+      });
+    } catch (error: any) {
+      console.error("[ClaimDetailPage.handleDownloadBulkUpload] unexpected error", error);
+      toast({
+        title: "Download failed",
+        description: error?.message || "Unexpected error while downloading file.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const loadClaim = async (claimId: string): Promise<void> => {
     try {
       setLoading(true);
@@ -423,8 +466,10 @@ export default function ClaimDetailPage() {
       if (loaded.org_id) {
         try {
           setLoadingBulkProjects(true);
-          const bulk = await bulkProjectService.getProjectsForOrganisation(loaded.org_id);
-          setBulkProjects(bulk);
+          const bulk = await bulkProjectService.getProjectsForOrganisation(
+            loaded.org_id
+          );
+          setBulkProjects(bulk as BulkProjectWithUploads[]);
         } catch (bulkError) {
           console.error("[ClaimDetailPage.loadClaim] Error loading bulk projects:", bulkError);
           toast({
@@ -2665,9 +2710,15 @@ export default function ClaimDetailPage() {
                 ) : (
                   <div className="space-y-4">
                     {bulkProjects.map((project) => {
-                      const uploads = project.bulk_project_uploads || [];
-                      const evidence = uploads.filter((u) => u.upload_type === "evidence");
-                      const financial = uploads.filter((u) => u.upload_type === "financial");
+                      const uploads: BulkProjectUpload[] =
+                        (project.bulk_project_uploads as BulkProjectUpload[]) ||
+                        [];
+                      const evidence = uploads.filter(
+                        (u) => u.upload_type === "evidence"
+                      );
+                      const financial = uploads.filter(
+                        (u) => u.upload_type === "financial"
+                      );
 
                       return (
                         <div
@@ -2722,7 +2773,7 @@ export default function ClaimDetailPage() {
                                       <span className="truncate">{upload.file_name}</span>
                                       <Button
                                         variant="outline"
-                                        size="xs"
+                                        size="sm"
                                         onClick={() => {
                                           void handleDownloadBulkUpload(upload);
                                         }}
@@ -2754,7 +2805,7 @@ export default function ClaimDetailPage() {
                                       <span className="truncate">{upload.file_name}</span>
                                       <Button
                                         variant="outline"
-                                        size="xs"
+                                        size="sm"
                                         onClick={() => {
                                           void handleDownloadBulkUpload(upload);
                                         }}
