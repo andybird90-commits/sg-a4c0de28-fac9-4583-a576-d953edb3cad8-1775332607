@@ -75,6 +75,86 @@ export type Database = {
         }
         Relationships: []
       }
+      bulk_project_uploads: {
+        Row: {
+          bucket_name: string
+          bulk_project_id: string
+          created_at: string
+          created_by: string
+          file_name: string
+          file_path: string
+          file_size_bytes: number
+          id: string
+          mime_type: string | null
+          upload_type: string
+        }
+        Insert: {
+          bucket_name: string
+          bulk_project_id: string
+          created_at?: string
+          created_by: string
+          file_name: string
+          file_path: string
+          file_size_bytes: number
+          id?: string
+          mime_type?: string | null
+          upload_type: string
+        }
+        Update: {
+          bucket_name?: string
+          bulk_project_id?: string
+          created_at?: string
+          created_by?: string
+          file_name?: string
+          file_path?: string
+          file_size_bytes?: number
+          id?: string
+          mime_type?: string | null
+          upload_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_project_uploads_bulk_project_id_fkey"
+            columns: ["bulk_project_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_projects: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          org_id: string
+          sector: string | null
+          stage: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          org_id: string
+          sector?: string | null
+          stage?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          org_id?: string
+          sector?: string | null
+          stage?: string | null
+        }
+        Relationships: []
+      }
       calendar_accounts: {
         Row: {
           access_token: string | null

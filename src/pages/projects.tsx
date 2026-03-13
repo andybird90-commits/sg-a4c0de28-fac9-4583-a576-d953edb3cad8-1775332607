@@ -5,11 +5,12 @@ import { Layout } from "@/components/Layout";
 import { SEO } from "@/components/SEO";
 import { useApp } from "@/contexts/AppContext";
 import { sidekickProjectService } from "@/services/sidekickProjectService";
+import { bulkProjectService, type BulkProject } from "@/services/bulkProjectService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MessageWidget } from "@/components/MessageWidget";
-import { Plus, FolderOpen, Clock, Lightbulb } from "lucide-react";
+import { Plus, FolderOpen, Clock, Lightbulb, Layers } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -50,6 +51,8 @@ export default function ProjectsPage() {
   const { user, currentOrg } = useApp();
   const [projects, setProjects] = useState<CombinedProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bulkProjects, setBulkProjects] = useState<BulkProject[]>([]);
+  const [bulkLoading, setBulkLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
@@ -63,13 +66,17 @@ export default function ProjectsPage() {
 
     const fetchProjects = async () => {
       try {
-        const [sidekickData, regularData] = await Promise.all([
+        setLoading(true);
+        setBulkLoading(true);
+
+        const [sidekickData, regularData, bulkData] = await Promise.all([
           sidekickProjectService.getProjectsByOrganisation(currentOrg.id),
           supabase
             .from("projects")
             .select("*")
             .eq("org_id", currentOrg.id)
             .order("created_at", { ascending: false }),
+          bulkProjectService.getProjectsForOrganisation(currentOrg.id),
         ]);
 
         const combined: CombinedProject[] = [
@@ -97,10 +104,12 @@ export default function ProjectsPage() {
         );
 
         setProjects(combined);
+        setBulkProjects(bulkData || []);
       } catch (error) {
         console.error("Error fetching projects:", error);
       } finally {
         setLoading(false);
+        setBulkLoading(false);
       }
     };
 
@@ -213,6 +222,99 @@ export default function ProjectsPage() {
               ))}
             </div>
           )}
+
+          <div className="mt-10">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Bulk projects</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Review bulk R&amp;D project uploads prepared for your advisor.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden sm:inline-flex shadow-professional-md"
+                onClick={() => router.push("/bulk-upload")}
+              >
+                <Layers className="mr-2 h-4 w-4" />
+                New bulk project
+              </Button>
+            </div>
+
+            {bulkLoading ? (
+              <div className="py-8 text-center">
+                <p className="text-sm text-muted-foreground">Loading bulk projects...</p>
+              </div>
+            ) : bulkProjects.length === 0 ? (
+              <Card className="bg-card shadow-professional-md">
+                <CardContent className="py-8 text-center">
+                  <p className="mb-3 text-sm text-muted-foreground">
+                    You do not have any bulk projects yet.
+                  </p>
+                  <Button
+                    className="shadow-professional-md"
+                    onClick={() => router.push("/bulk-upload")}
+                  >
+                    <Layers className="mr-2 h-4 w-4" />
+                    Start a bulk project
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {bulkProjects.map((project) => (
+                  <Card
+                    key={project.id}
+                    className="flex h-full flex-col border border-border bg-card shadow-professional-md"
+                  >
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-foreground">
+                        {project.name || "Untitled bulk project"}
+                      </CardTitle>
+                      <CardDescription className="line-clamp-2 text-sm text-muted-foreground">
+                        {project.description || "No description"}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="mt-auto flex flex-col gap-3 pb-4">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        {project.sector && (
+                          <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[11px]">
+                            {project.sector}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(project.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-border"
+                          onClick={() =>
+                            router.push(`/bulk-upload?bulkProjectId=${project.id}`)
+                          }
+                        >
+                          Review
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="shadow-professional-md"
+                          onClick={() =>
+                            router.push(`/claims/new?bulkProjectId=${project.id}`)
+                          }
+                        >
+                          Add to claim
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </Layout>
     </>

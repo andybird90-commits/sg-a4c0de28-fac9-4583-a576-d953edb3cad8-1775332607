@@ -82,6 +82,21 @@ export const bulkProjectService = {
     return (data as BulkProjectWithUploads[]) || [];
   },
 
+  async getProjectById(id: string): Promise<BulkProjectWithUploads | null> {
+    const { data, error } = await (supabase as any)
+      .from("bulk_projects")
+      .select("*, bulk_project_uploads(*)")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[bulkProjectService.getProjectById] Error:", error);
+      throw error;
+    }
+
+    return (data as BulkProjectWithUploads) || null;
+  },
+
   async getUploadsForProject(bulkProjectId: string): Promise<BulkProjectUpload[]> {
     const { data, error } = await (supabase as any)
       .from("bulk_project_uploads")

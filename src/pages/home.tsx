@@ -372,114 +372,117 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch">
             {/* Left column */}
             <div className="space-y-4 sm:space-y-6 lg:space-y-4 lg:flex lg:flex-col lg:h-full">
-              {/* Bulk upload card */}
-              <Card className="border border-border bg-card shadow-professional-md">
-                <CardHeader className="pb-3 sm:pb-4">
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-foreground">
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-sky-500/10 text-sky-600">
-                      <Layers className="h-4 w-4" />
-                    </span>
-                    <span className="truncate">Bulk upload projects</span>
-                  </CardTitle>
-                  <CardDescription className="text-sm text-muted-foreground">
-                    Upload project evidence and financials in bulk for your advisor to
-                    review.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0 flex flex-col gap-3">
-                  <Button
-                    onClick={() => router.push("/bulk-upload")}
-                    className="w-full gradient-primary text-slate-950 shadow-professional-md hover:shadow-professional-lg transition-professional">
-                    
-                    <Layers className="mr-2 h-4 w-4" />
-                    Go to Bulk upload
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    Ideal when you already have documentation prepared for multiple
-                    projects.
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* HMRC Notification card */}
-              <Card className="border border-border bg-card shadow-professional-md">
-                <CardHeader className="pb-3 sm:pb-4">
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-foreground">
-                    <div className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-purple-500/10 text-purple-600">
-                      <Shield className="h-4 w-4" />
-                    </div>
-                    <span className="truncate">HMRC Notification</span>
-                    {notificationStatus &&
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-[10px] px-1.5 py-0.5 rounded-full border",
-                        notificationStatus === "submitted" ?
-                        "border-emerald-500/60 text-emerald-700 bg-emerald-500/10" :
-                        notificationStatus === "not_required" ?
-                        "border-slate-400/60 text-slate-700 bg-slate-200/40" :
-                        notificationStatus === "overdue" ?
-                        "border-red-500/60 text-red-700 bg-red-500/10" :
-                        "border-amber-500/60 text-amber-700 bg-amber-500/10"
-                      )}>
-                      
-                        {notificationStatus === "submitted" && "Completed"}
-                        {notificationStatus === "not_required" && "Not required"}
-                        {notificationStatus === "required" && "Required"}
-                        {notificationStatus === "overdue" && "Overdue"}
-                        {notificationStatus === "unclear" && "Unclear"}
-                      </Badge>
-                    }
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {notificationStatus ?
-                    notificationStatus === "submitted" ?
-                    "Your HMRC pre-notification has been completed for this organisation. Your advisor will let you know if anything further is needed." :
-                    notificationStatus === "not_required" ?
-                    "Based on your onboarding answers, HMRC pre-notification is not required for this organisation." :
-                    notificationStatus === "required" ?
-                    "Your advisor needs to complete an HMRC pre-notification for this organisation before a claim can be submitted." :
-                    notificationStatus === "overdue" ?
-                    "Your HMRC pre-notification is overdue. Your advisor will contact you to complete this before submitting a claim." :
-                    "Your advisor is still assessing whether an HMRC pre-notification is required for this organisation." :
-                    "We haven’t run an HMRC notification check for this organisation yet. Your advisor will complete this as part of the onboarding process."}
-                  </p>
-                  {notificationDeadline &&
-                  <p className="mt-2 text-xs text-muted-foreground">
-                      Deadline:{" "}
-                      <span className="font-medium text-foreground">
-                        {notificationDeadline}
+              {/* Left column cards */}
+              <div className="flex flex-col gap-4 lg:gap-6 h-full">
+                {/* Start New Claim card */}
+                <Card className="border border-border bg-card shadow-professional-md mt-2 lg:mt-auto">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2 text-foreground">
+                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-orange-500/10 text-orange-500">
+                        <FileText className="h-4 w-4" />
                       </span>
-                    </p>
-                  }
-                </CardContent>
-              </Card>
+                      <span className="truncate">Start New Claim</span>
+                    </CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground">
+                      Begin a new R&amp;D claim for this organisation in just a few steps.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <Button
+                      onClick={() => router.push("/claims/new")}
+                      className="w-full gradient-primary text-slate-950 shadow-professional-md hover:shadow-professional-lg transition-professional"
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      Start New Claim
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              {/* Start New Claim card anchored to bottom */}
-              <Card className="border border-border bg-card shadow-professional-md mt-2 lg:mt-auto">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2 text-foreground">
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-orange-500/10 text-orange-500">
-                      <FileText className="h-4 w-4" />
-                    </span>
-                    <span className="truncate">Start New Claim</span>
-                  </CardTitle>
-                  <CardDescription className="text-sm text-muted-foreground">
-                    Begin a new R&amp;D claim for this organisation in just a few steps.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <Button
-                    onClick={() => router.push("/claims/new")}
-                    className="w-full gradient-primary text-slate-950 shadow-professional-md hover:shadow-professional-lg transition-professional">
-                    
-                    <FileText className="mr-2 h-4 w-4" />
-                    Start New Claim
-                  </Button>
-                </CardContent>
-              </Card>
+                {/* Bulk upload card */}
+                <Card className="border border-border bg-card shadow-professional-md">
+                  <CardHeader className="pb-3 sm:pb-4">
+                    <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-foreground">
+                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-sky-500/10 text-sky-600">
+                        <Layers className="h-4 w-4" />
+                      </span>
+                      <span className="truncate">Bulk upload projects</span>
+                    </CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground">
+                      Upload project evidence and financials in bulk for your advisor to
+                      review.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0 flex flex-col gap-3">
+                    <Button
+                      onClick={() => router.push("/bulk-upload")}
+                      className="w-full gradient-primary text-slate-950 shadow-professional-md hover:shadow-professional-lg transition-professional"
+                    >
+                      <Layers className="mr-2 h-4 w-4" />
+                      Go to Bulk upload
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Ideal when you already have documentation prepared for multiple
+                      projects.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* HMRC Notification card */}
+                <Card className="border border-border bg-card shadow-professional-md">
+                  <CardHeader className="pb-3 sm:pb-4">
+                    <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-foreground">
+                      <div className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-purple-500/10 text-purple-600">
+                        <Shield className="h-4 w-4" />
+                      </div>
+                      <span className="truncate">HMRC Notification</span>
+                      {notificationStatus && (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded-full border",
+                            notificationStatus === "submitted"
+                              ? "border-emerald-500/60 text-emerald-700 bg-emerald-500/10"
+                              : notificationStatus === "not_required"
+                              ? "border-slate-400/60 text-slate-700 bg-slate-200/40"
+                              : notificationStatus === "overdue"
+                              ? "border-red-500/60 text-red-700 bg-red-500/10"
+                              : "border-amber-500/60 text-amber-700 bg-amber-500/10"
+                          )}
+                        >
+                          {notificationStatus === "submitted" && "Completed"}
+                          {notificationStatus === "not_required" && "Not required"}
+                          {notificationStatus === "required" && "Required"}
+                          {notificationStatus === "overdue" && "Overdue"}
+                          {notificationStatus === "unclear" && "Unclear"}
+                        </Badge>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {notificationStatus
+                        ? notificationStatus === "submitted"
+                          ? "Your HMRC pre-notification has been completed for this organisation. Your advisor will let you know if anything further is needed."
+                          : notificationStatus === "not_required"
+                          ? "Based on your onboarding answers, HMRC pre-notification is not required for this organisation."
+                          : notificationStatus === "required"
+                          ? "Your advisor needs to complete an HMRC pre-notification for this organisation before a claim can be submitted."
+                          : notificationStatus === "overdue"
+                          ? "Your HMRC pre-notification is overdue. Your advisor will contact you to complete this before submitting a claim."
+                          : "Your advisor is still assessing whether an HMRC pre-notification is required for this organisation."
+                        : "We haven’t run an HMRC notification check for this organisation yet. Your advisor will complete this as part of the onboarding process."}
+                    </p>
+                    {notificationDeadline && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Deadline:{" "}
+                        <span className="font-medium text-foreground">
+                          {notificationDeadline}
+                        </span>
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Right column: Recent projects */}

@@ -44,6 +44,48 @@ export default function BulkUploadPage() {
     }
   }, [appLoading, user, currentOrg, router]);
 
+  useEffect(() => {
+    if (!user || !currentOrg) return;
+
+    const { bulkProjectId } = router.query;
+    if (!bulkProjectId || typeof bulkProjectId !== "string") return;
+
+    if (bulkProject && bulkProject.id === bulkProjectId) return;
+
+    const loadExisting = async () => {
+      try {
+        const project = await bulkProjectService.getProjectById(bulkProjectId);
+        if (!project) return;
+
+        setBulkProject(project);
+
+        setForm({
+          name: project.name,
+          description: project.description ?? "",
+          sector: project.sector ?? "",
+          stage: project.stage ?? ""
+        });
+
+        const uploads = project.bulk_project_uploads || [];
+        setEvidenceUploads(
+          uploads.filter((u) => u.upload_type === "evidence")
+        );
+        setFinancialUploads(
+          uploads.filter((u) => u.upload_type === "financial")
+        );
+      } catch (error: any) {
+        console.error("[BulkUploadPage] Error loading existing bulk project:", error);
+        notify({
+          type: "error",
+          title: "Could not load bulk project",
+          message: error?.message || "Please try again."
+        });
+      }
+    };
+
+    void loadExisting();
+  }, [router.query, user, currentOrg, bulkProject, notify]);
+
   const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
