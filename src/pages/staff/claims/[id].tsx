@@ -461,7 +461,14 @@ export default function ClaimDetailPage() {
       }
 
       if (!currentOrg) {
-        throw new Error("No organisation selected");
+        setError("No organisation selected");
+        toast({
+          variant: "destructive",
+          title: "No organisation selected",
+          description:
+            "Please select an organisation before viewing this claim.",
+        });
+        return;
       }
 
       const loaded = await claimService.getClaimById(id);
@@ -521,20 +528,63 @@ export default function ClaimDetailPage() {
           .in("id", bulkLinkedProjectIds)
           .eq("org_id", currentOrg.id);
 
+        console.log("[ClaimDetailPage.loadClaim] bulkProjectsById query result", {
+          data: bulkProjectsById,
+          error: bulkByIdError,
+        });
+
         if (bulkByIdError) {
           console.error(
             "[ClaimDetailPage.loadClaim] error fetching bulk_projects by linked IDs",
             bulkByIdError
           );
-          setBulkProjectsForClaim([]);
-        } else {
+          // As a fallback, at least surface lightweight rows built from claim projects
+          const fallbackBulk = bulkLinkedProjectIds.map((bpId) => {
+            const linkedProject = claimProjectsForClaim.find(
+              (p: any) => p.source_bulk_project_id === bpId
+            );
+            return {
+              id: bpId,
+              org_id: currentOrg.id,
+              name:
+                linkedProject?.name ||
+                "Bulk project",
+              description:
+                linkedProject?.description ||
+                null,
+              bulk_project_uploads: [],
+            } as any;
+          });
+          setBulkProjectsForClaim(fallbackBulk as BulkProjectWithUploads[]);
+        } else if (bulkProjectsById && bulkProjectsById.length > 0) {
           console.log(
-            "[ClaimDetailPage.loadClaim] bulkProjects query result",
-            bulkProjectsById?.length ?? 0
+            "[ClaimDetailPage.loadClaim] bulkProjectsForClaim resolved from bulk_projects",
+            bulkProjectsById.length
           );
           setBulkProjectsForClaim(
             (bulkProjectsById ?? []) as BulkProjectWithUploads[]
           );
+        } else {
+          console.log(
+            "[ClaimDetailPage.loadClaim] bulk_projects query returned no rows, using fallback from claim_projects"
+          );
+          const fallbackBulk = bulkLinkedProjectIds.map((bpId) => {
+            const linkedProject = claimProjectsForClaim.find(
+              (p: any) => p.source_bulk_project_id === bpId
+            );
+            return {
+              id: bpId,
+              org_id: currentOrg.id,
+              name:
+                linkedProject?.name ||
+                "Bulk project",
+              description:
+                linkedProject?.description ||
+                null,
+              bulk_project_uploads: [],
+            } as any;
+          });
+          setBulkProjectsForClaim(fallbackBulk as BulkProjectWithUploads[]);
         }
       } else {
         console.log(
@@ -569,8 +619,9 @@ export default function ClaimDetailPage() {
   useEffect(() => {
     if (!id || typeof id !== "string") return;
     if (!isValidUuid(id)) return;
+    if (!currentOrg) return;
     void loadClaim();
-  }, [id, toast]);
+  }, [id, currentOrg]);
 
   // Placeholder QA submission handler so the button works without breaking the build
   const handleSubmitForQa = async (): Promise<void> => {
