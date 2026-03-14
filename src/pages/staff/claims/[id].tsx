@@ -467,28 +467,54 @@ export default function ClaimDetailPage() {
       setInspectorSummary(summary);
 
       const existingHmrc =
-      loaded.hmrc_responses as HmrcResponseItem[] | null ?? [];
+        (loaded.hmrc_responses as HmrcResponseItem[] | null) ?? [];
       setHmrcResponses(existingHmrc);
 
       setOutcomeSubmittedValue(
-        loaded.submitted_claim_value != null ?
-        String(loaded.submitted_claim_value) :
-        ""
+        loaded.submitted_claim_value != null
+          ? String(loaded.submitted_claim_value)
+          : ""
       );
       setOutcomeReceivedValue(
-        loaded.received_claim_value != null ?
-        String(loaded.received_claim_value) :
-        ""
+        loaded.received_claim_value != null
+          ? String(loaded.received_claim_value)
+          : ""
       );
 
       const existingScheme =
-      (loaded as any).scheme_type as string | null ??
-      (loaded as any).scheme as string | null ??
-      "";
+        ((loaded as any).scheme_type as string | null) ??
+        ((loaded as any).scheme as string | null) ??
+        "";
       setSchemeDraft(existingScheme || "");
 
-      const claimProjects =
-      loaded.projects as ClaimProject[] | null ?? [];
+      let claimProjects: ClaimProject[] = [];
+
+      try {
+        const { data: claimProjectsData, error: claimProjectsError } =
+          await supabase
+            .from("claim_projects")
+            .select("*")
+            .eq("claim_id", loaded.id);
+
+        if (claimProjectsError) {
+          console.error(
+            "[ClaimDetailPage.loadClaim] Error loading claim projects:",
+            claimProjectsError
+          );
+          claimProjects =
+            ((loaded.projects as ClaimProject[] | null) ?? []) as ClaimProject[];
+        } else {
+          claimProjects = (claimProjectsData as ClaimProject[]) || [];
+        }
+      } catch (projectError) {
+        console.error(
+          "[ClaimDetailPage.loadClaim] Unexpected error loading claim projects:",
+          projectError
+        );
+        claimProjects =
+          ((loaded.projects as ClaimProject[] | null) ?? []) as ClaimProject[];
+      }
+
       setProjects(claimProjects);
 
       if (loaded.org_id) {
@@ -500,7 +526,10 @@ export default function ClaimDetailPage() {
           setBulkProjects(bulk as BulkProjectWithUploads[]);
 
           const bulkLinkedProjectIds = (claimProjects || [])
-            .map((p: any) => p.source_bulk_project_id)
+            .map(
+              (p: any) =>
+                (p.source_bulk_project_id as string | null | undefined) || null
+            )
             .filter(
               (bulkId: string | null | undefined): bulkId is string => !!bulkId
             );
@@ -513,7 +542,8 @@ export default function ClaimDetailPage() {
             const bulkForClaim = uniqueIds
               .map((bulkId) => bulkById.get(bulkId))
               .filter(
-                (bp): bp is BulkProjectWithUploads => typeof bp !== "undefined"
+                (bp): bp is BulkProjectWithUploads =>
+                  typeof bp !== "undefined"
               );
 
             setBulkProjectsForClaim(bulkForClaim);
@@ -528,7 +558,7 @@ export default function ClaimDetailPage() {
           toast({
             title: "Error loading bulk projects",
             description:
-            "Bulk projects for this organisation could not be loaded.",
+              "Bulk projects for this organisation could not be loaded.",
             variant: "destructive"
           });
           setBulkProjectsForClaim([]);
@@ -546,40 +576,42 @@ export default function ClaimDetailPage() {
       setClientProjectCostSummary({});
       setClientEvidenceByProject({});
 
-      // Load client-side cost advice from linked sidekick projects
-      const sidekickIds = claimProjects.
-      map((p) => p.source_sidekick_project_id).
-      filter((id): id is string => typeof id === "string" && id.length > 0);
+      const sidekickIds = claimProjects
+        .map((p: any) => p.source_sidekick_project_id as string | null)
+        .filter(
+          (sidekickId): sidekickId is string =>
+            typeof sidekickId === "string" && sidekickId.length > 0
+        );
 
       if (sidekickIds.length > 0) {
         try {
           const [adviceResults, evidenceResults] = await Promise.all([
-          Promise.all(
-            sidekickIds.map(async (sidekickId) => {
-              const advice =
-              (await sidekickCostAdviceService.getByProject(sidekickId)) ??
-              [];
-              return { sidekickId, advice };
-            })
-          ),
-          Promise.all(
-            sidekickIds.map(async (sidekickId) => {
-              try {
-                const evidenceItems =
-                (await sidekickEvidenceService.getEvidenceByProject(
-                  sidekickId
-                )) ?? [];
-                return { sidekickId, evidenceItems };
-              } catch (e) {
-                console.error(
-                  "[ClaimDetailPage.loadClaim] Error loading client evidence for sidekick project",
-                  { sidekickId, error: e }
-                );
-                return { sidekickId, evidenceItems: [] };
-              }
-            })
-          )]
-          );
+            Promise.all(
+              sidekickIds.map(async (sidekickId) => {
+                const advice =
+                  (await sidekickCostAdviceService.getByProject(sidekickId)) ??
+                  [];
+                return { sidekickId, advice };
+              })
+            ),
+            Promise.all(
+              sidekickIds.map(async (sidekickId) => {
+                try {
+                  const evidenceItems =
+                    (await sidekickEvidenceService.getEvidenceByProject(
+                      sidekickId
+                    )) ?? [];
+                  return { sidekickId, evidenceItems };
+                } catch (e) {
+                  console.error(
+                    "[ClaimDetailPage.loadClaim] Error loading client evidence for sidekick project",
+                    { sidekickId, error: e }
+                  );
+                  return { sidekickId, evidenceItems: [] };
+                }
+              })
+            )
+          ]);
 
           const adviceMap = new Map<string, any[]>();
           adviceResults.forEach(({ sidekickId, advice }) => {
@@ -620,7 +652,8 @@ export default function ClaimDetailPage() {
           {};
 
           claimProjects.forEach((project) => {
-            const sidekickId = project.source_sidekick_project_id;
+            const sidekickId = (project as any)
+              .source_sidekick_project_id as string | null;
             if (!sidekickId) return;
 
             const adviceItems = adviceMap.get(sidekickId) ?? [];
@@ -636,7 +669,7 @@ export default function ClaimDetailPage() {
 
               adviceItems.forEach((item: any) => {
                 const type =
-                item.cost_type as string | null | undefined || "other";
+                  (item.cost_type as string | null | undefined) || "other";
                 const amount = Number(item.amount || 0);
                 if (!Number.isFinite(amount) || amount <= 0) {
                   return;
@@ -675,12 +708,16 @@ export default function ClaimDetailPage() {
               projectEvidence[project.id] = evidenceItems.map((item: any) => ({
                 id: item.id as string,
                 projectId: project.id,
-                title: item.title as string | null | undefined ?? null,
-                type: item.type as string || "note",
+                title:
+                  ((item.title as string | null | undefined) ?? null) as string | null,
+                type: (item.type as string) || "note",
                 createdAt: item.created_at as string,
                 externalUrl:
-                item.external_url as string | null | undefined ?? null,
-                body: item.body as string | null | undefined ?? null
+                  ((item.external_url as string | null | undefined) ??
+                    null) as string | null,
+                body:
+                  ((item.body as string | null | undefined) ??
+                    null) as string | null
               }));
             }
           });
@@ -700,15 +737,12 @@ export default function ClaimDetailPage() {
           );
         }
       }
-
-      // (bulkProjectsForClaim is now derived above when loading bulk projects)
-
     } catch (error) {
       console.error("Error loading claim:", error);
       toast({
         title: "Error loading claim",
         description:
-        "We could not load the latest details for this claim. Please try again.",
+          "We could not load the latest details for this claim. Please try again.",
         variant: "destructive"
       });
     } finally {
