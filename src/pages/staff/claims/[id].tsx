@@ -268,7 +268,7 @@ export default function ClaimDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { toast } = useToast();
-  const { user: profile } = useApp();
+  const { user: profile, currentOrg } = useApp();
   const [loading, setLoading] = useState(true);
   const [claim, setClaim] = useState<ClaimWithDetails | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
@@ -341,6 +341,7 @@ export default function ClaimDetailPage() {
 
     {});
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Document management state
   const [showDocumentDialog, setShowDocumentDialog] = useState(false);
@@ -455,295 +456,100 @@ export default function ClaimDetailPage() {
       setLoading(true);
       setLoadingProjects(true);
 
-      const loaded = await claimService.getClaimById(id as string);
+      if (!id || typeof id !== "string") {
+        throw new Error("Invalid claim id");
+      }
+
+      if (!currentOrg) {
+        throw new Error("No organisation selected");
+      }
+
+      const loaded = await claimService.getClaimById(id);
       if (!loaded) {
-        setClaim(null);
-        return;
+        throw new Error("Claim not found");
       }
 
       setClaim(loaded);
 
-      const summary = await getLatestInspectorSummaryForClaim(id as string);
-      setInspectorSummary(summary);
+      // Prefer projects loaded via claimService; if missing, fall back to a direct claim_projects query
+      let claimProjectsForClaim = loaded.projects ?? [];
 
-      const existingHmrc =
-        (loaded.hmrc_responses as HmrcResponseItem[] | null) ?? [];
-      setHmrcResponses(existingHmrc);
+      if (!claimProjectsForClaim || claimProjectsForClaim.length === 0) {
+        const { data: directClaimProjects, error: directProjectsError } = await supabase
+          .from("claim_projects")
+          .select("*")
+          .eq("claim_id", id)
+          .eq("org_id", currentOrg.id);
 
-      setOutcomeSubmittedValue(
-        loaded.submitted_claim_value != null
-          ? String(loaded.submitted_claim_value)
-          : ""
-      );
-      setOutcomeReceivedValue(
-        loaded.received_claim_value != null
-          ? String(loaded.received_claim_value)
-          : ""
-      );
-
-      const existingScheme =
-        ((loaded as any).scheme_type as string | null) ??
-        ((loaded as any).scheme as string | null) ??
-        "";
-      setSchemeDraft(existingScheme || "");
-
-      let claimProjects: ClaimProject[] = [];
-
-      try {
-        const { data: claimProjectsData, error: claimProjectsError } =
-          await supabase
-            .from("claim_projects")
-            .select("*")
-            .eq("claim_id", loaded.id);
-
-        if (claimProjectsError) {
-          console.error(
-            "[ClaimDetailPage.loadClaim] Error loading claim projects:",
-            claimProjectsError
-          );
-          claimProjects =
-            ((loaded.projects as ClaimProject[] | null) ?? []) as ClaimProject[];
+        if (directProjectsError) {
+          console.error("[ClaimDetailPage.loadClaim] direct claim_projects fetch error", directProjectsError);
         } else {
-          claimProjects = (claimProjectsData as ClaimProject[]) || [];
+          console.log("[ClaimDetailPage.loadClaim] direct claim_projects fetched", directClaimProjects?.length ?? 0);
+          claimProjectsForClaim = directClaimProjects ?? [];
         }
-      } catch (projectError) {
-        console.error(
-          "[ClaimDetailPage.loadClaim] Unexpected error loading claim projects:",
-          projectError
-        );
-        claimProjects =
-          ((loaded.projects as ClaimProject[] | null) ?? []) as ClaimProject[];
       }
 
-      setProjects(claimProjects);
+      setProjects(claimProjectsForClaim);
 
-      if (loaded.org_id) {
-        try {
-          setLoadingBulkProjects(true);
-          const bulk = await bulkProjectService.getProjectsForOrganisation(
-            loaded.org_id
-          );
-          setBulkProjects(bulk as BulkProjectWithUploads[]);
+      // Derive bulk-linked project IDs from claim_projects
+      const bulkLinkedProjectIds = Array.from(
+        new Set(
+          (claimProjectsForClaim || [])
+            .map((p: any) => p.source_bulk_project_id)
+            .filter((v: string | null | undefined): v is string => !!v)
+        )
+      );
 
-          const bulkLinkedProjectIds = (claimProjects || [])
-            .map(
-              (p: any) =>
-                (p.source_bulk_project_id as string | null | undefined) || null
-            )
-            .filter(
-              (bulkId: string | null | undefined): bulkId is string => !!bulkId
-            );
+      console.log(
+        "[ClaimDetailPage.loadClaim] bulkLinkedProjectIds from claim_projects",
+        bulkLinkedProjectIds
+      );
 
-          if (bulkLinkedProjectIds.length > 0) {
-            const uniqueIds = Array.from(new Set(bulkLinkedProjectIds));
-            const bulkById = new Map(
-              (bulk as BulkProjectWithUploads[]).map((bp) => [bp.id, bp])
-            );
-            const bulkForClaim = uniqueIds
-              .map((bulkId) => bulkById.get(bulkId))
-              .filter(
-                (bp): bp is BulkProjectWithUploads =>
-                  typeof bp !== "undefined"
-              );
+      let resolvedBulkProjects: any[] = [];
 
-            setBulkProjectsForClaim(bulkForClaim);
-          } else {
-            setBulkProjectsForClaim([]);
-          }
-        } catch (bulkError) {
+      if (bulkLinkedProjectIds.length > 0) {
+        const { data: bulkProjectsById, error: bulkByIdError } = await supabase
+          .from("bulk_projects")
+          .select("*, bulk_project_uploads(*)")
+          .in("id", bulkLinkedProjectIds)
+          .eq("org_id", currentOrg.id);
+
+        if (bulkByIdError) {
           console.error(
-            "[ClaimDetailPage.loadClaim] Error loading bulk projects:",
-            bulkError
+            "[ClaimDetailPage.loadClaim] error fetching bulk_projects by linked IDs",
+            bulkByIdError
           );
-          toast({
-            title: "Error loading bulk projects",
-            description:
-              "Bulk projects for this organisation could not be loaded.",
-            variant: "destructive"
-          });
-          setBulkProjectsForClaim([]);
-        } finally {
-          setLoadingBulkProjects(false);
+        } else {
+          console.log(
+            "[ClaimDetailPage.loadClaim] bulk projects fetched by linked IDs",
+            bulkProjectsById?.length ?? 0
+          );
+          resolvedBulkProjects = bulkProjectsById ?? [];
         }
       } else {
-        setBulkProjectsForClaim([]);
-      }
-
-      // Reset client-side aggregated cost state
-      setClientCostTotalsByType({});
-      setClientTotalCost(0);
-      setClientCostEntryCount(0);
-      setClientProjectCostSummary({});
-      setClientEvidenceByProject({});
-
-      const sidekickIds = claimProjects
-        .map((p: any) => p.source_sidekick_project_id as string | null)
-        .filter(
-          (sidekickId): sidekickId is string =>
-            typeof sidekickId === "string" && sidekickId.length > 0
+        console.log(
+          "[ClaimDetailPage.loadClaim] no bulkLinkedProjectIds for this claim"
         );
-
-      if (sidekickIds.length > 0) {
-        try {
-          const [adviceResults, evidenceResults] = await Promise.all([
-            Promise.all(
-              sidekickIds.map(async (sidekickId) => {
-                const advice =
-                  (await sidekickCostAdviceService.getByProject(sidekickId)) ??
-                  [];
-                return { sidekickId, advice };
-              })
-            ),
-            Promise.all(
-              sidekickIds.map(async (sidekickId) => {
-                try {
-                  const evidenceItems =
-                    (await sidekickEvidenceService.getEvidenceByProject(
-                      sidekickId
-                    )) ?? [];
-                  return { sidekickId, evidenceItems };
-                } catch (e) {
-                  console.error(
-                    "[ClaimDetailPage.loadClaim] Error loading client evidence for sidekick project",
-                    { sidekickId, error: e }
-                  );
-                  return { sidekickId, evidenceItems: [] };
-                }
-              })
-            )
-          ]);
-
-          const adviceMap = new Map<string, any[]>();
-          adviceResults.forEach(({ sidekickId, advice }) => {
-            adviceMap.set(sidekickId, advice);
-          });
-
-          const evidenceMap = new Map<string, any[]>();
-          evidenceResults.forEach(({ sidekickId, evidenceItems }) => {
-            evidenceMap.set(sidekickId, evidenceItems);
-          });
-
-          const totalsByType: Record<
-            string,
-            {total: number;count: number;}> =
-          {};
-          let overallTotal = 0;
-          let overallCount = 0;
-
-          const projectSummaries: {
-            [projectId: string]: {
-              total: number;
-              count: number;
-              byType: Record<string, {total: number;count: number;}>;
-            };
-          } = {};
-
-          const projectEvidence: Record<
-            string,
-            Array<{
-              id: string;
-              projectId: string;
-              title: string | null;
-              type: string;
-              createdAt: string;
-              externalUrl?: string | null;
-              body?: string | null;
-            }>> =
-          {};
-
-          claimProjects.forEach((project) => {
-            const sidekickId = (project as any)
-              .source_sidekick_project_id as string | null;
-            if (!sidekickId) return;
-
-            const adviceItems = adviceMap.get(sidekickId) ?? [];
-            const evidenceItems = evidenceMap.get(sidekickId) ?? [];
-
-            if (adviceItems.length) {
-              let projectTotal = 0;
-              let projectCount = 0;
-              const projectByType: Record<
-                string,
-                {total: number;count: number;}> =
-              {};
-
-              adviceItems.forEach((item: any) => {
-                const type =
-                  (item.cost_type as string | null | undefined) || "other";
-                const amount = Number(item.amount || 0);
-                if (!Number.isFinite(amount) || amount <= 0) {
-                  return;
-                }
-
-                // Global totals by type
-                if (!totalsByType[type]) {
-                  totalsByType[type] = { total: 0, count: 0 };
-                }
-                totalsByType[type].total += amount;
-                totalsByType[type].count += 1;
-
-                // Per-project totals
-                if (!projectByType[type]) {
-                  projectByType[type] = { total: 0, count: 0 };
-                }
-                projectByType[type].total += amount;
-                projectByType[type].count += 1;
-
-                projectTotal += amount;
-                projectCount += 1;
-                overallTotal += amount;
-                overallCount += 1;
-              });
-
-              if (projectCount > 0) {
-                projectSummaries[project.id] = {
-                  total: projectTotal,
-                  count: projectCount,
-                  byType: projectByType
-                };
-              }
-            }
-
-            if (evidenceItems.length) {
-              projectEvidence[project.id] = evidenceItems.map((item: any) => ({
-                id: item.id as string,
-                projectId: project.id,
-                title:
-                  ((item.title as string | null | undefined) ?? null) as string | null,
-                type: (item.type as string) || "note",
-                createdAt: item.created_at as string,
-                externalUrl:
-                  ((item.external_url as string | null | undefined) ??
-                    null) as string | null,
-                body:
-                  ((item.body as string | null | undefined) ??
-                    null) as string | null
-              }));
-            }
-          });
-
-          if (overallCount > 0) {
-            setClientCostTotalsByType(totalsByType);
-            setClientTotalCost(overallTotal);
-            setClientCostEntryCount(overallCount);
-            setClientProjectCostSummary(projectSummaries);
-          }
-
-          setClientEvidenceByProject(projectEvidence);
-        } catch (clientSideError) {
-          console.error(
-            "[ClaimDetailPage.loadClaim] Error loading client cost advice / evidence:",
-            clientSideError
-          );
-        }
       }
-    } catch (error) {
-      console.error("Error loading claim:", error);
+
+      setBulkProjectsForClaim(resolvedBulkProjects);
+
+      console.log(
+        "[ClaimDetailPage.loadClaim] bulkProjectsForClaim resolved",
+        resolvedBulkProjects
+      );
+
+      setError(null);
+    } catch (err: unknown) {
+      console.error("[ClaimDetailPage.loadClaim] Error loading claim", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to load claim details"
+      );
       toast({
+        variant: "destructive",
         title: "Error loading claim",
         description:
-          "We could not load the latest details for this claim. Please try again.",
-        variant: "destructive"
+          err instanceof Error ? err.message : "Something went wrong. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -2717,7 +2523,11 @@ export default function ClaimDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {bulkProjectsForClaim.length === 0 ? (
+                {loadingBulkProjects ? (
+                  <p className="text-sm text-muted-foreground">
+                    Loading bulk projects...
+                  </p>
+                ) : bulkProjectsForClaim.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     No bulk projects are currently linked to this claim.
                   </p>
