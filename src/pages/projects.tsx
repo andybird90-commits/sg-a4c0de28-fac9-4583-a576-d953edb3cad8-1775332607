@@ -4,18 +4,23 @@ import Link from "next/link";
 import { Layout } from "@/components/Layout";
 import { SEO } from "@/components/SEO";
 import { useApp } from "@/contexts/AppContext";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { sidekickProjectService } from "@/services/sidekickProjectService";
 import { bulkProjectService, type BulkProject } from "@/services/bulkProjectService";
+import { claimService } from "@/services/claimService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MessageWidget } from "@/components/MessageWidget";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, FolderOpen, Clock, Lightbulb, Layers } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 
 type SidekickProject = Database["public"]["Tables"]["sidekick_projects"]["Row"];
 type RegularProject = Database["public"]["Tables"]["projects"]["Row"];
+type ClaimRow = Database["public"]["Tables"]["claims"]["Row"];
+type ClaimProjectRow = Database["public"]["Tables"]["claim_projects"]["Row"];
 
 interface CombinedProject {
   id: string;
@@ -26,6 +31,10 @@ interface CombinedProject {
   status?: string;
   sector?: string | null;
   stage?: string | null;
+}
+
+interface ClaimWithProjects extends ClaimRow {
+  projects?: ClaimProjectRow[];
 }
 
 const statusColors: Record<string, string> = {
@@ -49,10 +58,23 @@ const statusLabels: Record<string, string> = {
 export default function ProjectsPage() {
   const router = useRouter();
   const { user, currentOrg } = useApp();
+  const { notify } = useNotifications();
   const [projects, setProjects] = useState<CombinedProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [bulkProjects, setBulkProjects] = useState<BulkProject[]>([]);
   const [bulkLoading, setBulkLoading] = useState(true);
+
+  const [claimSelectionOpen, setClaimSelectionOpen] = useState(false);
+  const [selectedBulkProject, setSelectedBulkProject] = useState<BulkProject | null>(null);
+  const [selectedSidekickProject, setSelectedSidekickProject] = useState<{
+    id: string;
+    name: string;
+    description?: string | null;
+  } | null>(null);
+  const [claimsForOrg, setClaimsForOrg] = useState<ClaimWithProjects[]>([]);
+  const [claimsLoading, setClaimsLoading] = useState(false);
+  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
+  const [attachingToClaim, setAttachingToClaim] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -115,6 +137,151 @@ export default function ProjectsPage() {
 
     fetchProjects();
   }, [currentOrg]);
+
+  const loadClaimsForOrganisation = async () => {
+    if (!currentOrg) return;
+
+    try {
+      setClaimsLoading(true);
+      const { data, error } = await supabase
+        .from("claims")
+        .select(
+          `
+          id,
+          org_id,
+          claim_year,
+          status,
+          period_start,
+          period_end,
+          created_at,
+          projects:claim_projects(
+            id,
+            name,
+            status,
+            workflow_status
+          )
+        `
+        )
+        .eq("org_id", currentOrg.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("[ProjectsPage] Error loading claims for Add to claim:", error);
+        notify({
+          type: "error",
+          title: "Could not load claims",
+          message: error.message ?? "Please try again.",
+        });
+        return;
+      }
+
+      setClaimsForOrg((data as ClaimWithProjects[]) || []);
+    } catch (error: any) {
+      console.error("[ProjectsPage] Unexpected error loading claims:", error);
+      notify({
+        type: "error",
+        title: "Could not load claims",
+        message: error?.message || "Something went wrong. Please try again.",
+      });
+    } finally {
+      setClaimsLoading(false);
+    }
+  };
+
+  const openAddBulkToClaim = (project: BulkProject) => {
+    setSelectedBulkProject(project);
+    setSelectedSidekickProject(null);
+    setSelectedClaimId(null);
+    setClaimSelectionOpen(true);
+    void loadClaimsForOrganisation();
+  };
+
+  const openAddSidekickToClaim = (project: CombinedProject) => {
+    setSelectedSidekickProject({
+      id: project.id,
+      name: project.name,
+      description: project.description,
+    });
+    setSelectedBulkProject(null);
+    setSelectedClaimId(null);
+    setClaimSelectionOpen(true);
+    void loadClaimsForOrganisation();
+  };
+
+  const handleAttachProjectToClaim = async () => {
+    if (!user || !currentOrg || !selectedClaimId) {
+      return;
+    }
+
+    try {
+      setAttachingToClaim(true);
+
+      if (selectedBulkProject) {
+        const { error } = await supabase.from("claim_projects").insert({
+          claim_id: selectedClaimId,
+          org_id: currentOrg.id,
+          name: selectedBulkProject.name,
+          description: selectedBulkProject.description,
+          rd_theme: selectedBulkProject.sector,
+          created_by: user.id,
+        });
+
+        if (error) {
+          console.error("[ProjectsPage] Error attaching bulk project to claim:", error);
+          notify({
+            type: "error",
+            title: "Could not add to claim",
+            message: error.message ?? "Please try again.",
+          });
+          return;
+        }
+
+        notify({
+          type: "success",
+          title: "Bulk project added to claim",
+          message: "This bulk project has been added to the selected claim.",
+        });
+      } else if (selectedSidekickProject) {
+        try {
+          await claimService.importSidekickProject(
+            selectedClaimId,
+            currentOrg.id,
+            selectedSidekickProject.id
+          );
+        } catch (error: any) {
+          console.error("[ProjectsPage] Error attaching sidekick project to claim:", error);
+          notify({
+            type: "error",
+            title: "Could not add to claim",
+            message: error?.message || "Something went wrong. Please try again.",
+          });
+          return;
+        }
+
+        notify({
+          type: "success",
+          title: "Project added to claim",
+          message: "This project has been added to the selected claim.",
+        });
+      } else {
+        return;
+      }
+
+      setClaimSelectionOpen(false);
+      setSelectedBulkProject(null);
+      setSelectedSidekickProject(null);
+      setSelectedClaimId(null);
+    } catch (error: any) {
+      console.error("[ProjectsPage] Unexpected error attaching project to claim:", error);
+      notify({
+        type: "error",
+        title: "Could not add to claim",
+        message: error?.message || "Something went wrong. Please try again.",
+      });
+    } finally {
+      setAttachingToClaim(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -183,6 +350,20 @@ export default function ProjectsPage() {
                         {project.name}
                       </CardTitle>
                       <div className="pointer-events-auto flex items-center gap-2">
+                        {project.type === "sidekick" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-border px-2 py-1 text-xs"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openAddSidekickToClaim(project);
+                            }}
+                          >
+                            Add to claim
+                          </Button>
+                        )}
                         {project.status && (
                           <Badge className={statusColors[project.status]}>
                             {statusLabels[project.status]}
@@ -301,10 +482,8 @@ export default function ProjectsPage() {
                         </Button>
                         <Button
                           size="sm"
-                          className="shadow-professional-md"
-                          onClick={() =>
-                            router.push(`/claims/new?bulkProjectId=${project.id}`)
-                          }
+                          className="bg-orange-500 text-slate-950 shadow-professional-md hover:bg-orange-400"
+                          onClick={() => openAddBulkToClaim(project)}
                         >
                           Add to claim
                         </Button>
@@ -316,6 +495,158 @@ export default function ProjectsPage() {
             )}
           </div>
         </div>
+
+        <Dialog
+          open={claimSelectionOpen}
+          onOpenChange={(open) => {
+            setClaimSelectionOpen(open);
+            if (!open) {
+              setSelectedBulkProject(null);
+              setSelectedSidekickProject(null);
+              setSelectedClaimId(null);
+            }
+          }}
+        >
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle className="text-base sm:text-lg">
+                Add project to an existing claim
+              </DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                Choose which claim this project should be attached to. You can see which projects
+                are already in each claim.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-3 space-y-4">
+              {selectedBulkProject ? (
+                <div className="rounded-md border border-border bg-muted/60 p-3 text-sm">
+                  <p className="font-medium text-foreground">{selectedBulkProject.name}</p>
+                  {selectedBulkProject.description && (
+                    <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                      {selectedBulkProject.description}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                selectedSidekickProject && (
+                  <div className="rounded-md border border-border bg-muted/60 p-3 text-sm">
+                    <p className="font-medium text-foreground">
+                      {selectedSidekickProject.name}
+                    </p>
+                    {selectedSidekickProject.description && (
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                        {selectedSidekickProject.description}
+                      </p>
+                    )}
+                  </div>
+                )
+              )}
+
+              {claimsLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-orange-500" />
+                </div>
+              ) : claimsForOrg.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  There are no claims for this organisation yet. Create a claim first, then add this
+                  project.
+                </p>
+              ) : (
+                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                  {claimsForOrg.map((claim) => {
+                    const projectsInClaim = ((claim as any).projects ||
+                      []) as ClaimProjectRow[];
+                    const isSelected = selectedClaimId === claim.id;
+
+                    return (
+                      <button
+                        key={claim.id}
+                        type="button"
+                        onClick={() => setSelectedClaimId(claim.id)}
+                        className={`w-full rounded-lg border px-3 py-3 text-left text-sm transition-colors sm:px-4 sm:py-3.5 ${
+                          isSelected
+                            ? "border-orange-500 bg-orange-50"
+                            : "border-border bg-background hover:border-slate-400 hover:bg-muted"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">
+                              Claim {claim.claim_year}
+                            </p>
+                            {claim.period_start && claim.period_end && (
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                Period{" "}
+                                {new Date(claim.period_start).toLocaleDateString()} –{" "}
+                                {new Date(claim.period_end).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className="whitespace-nowrap border-border bg-muted text-[11px] font-medium capitalize"
+                          >
+                            {String(claim.status || "")
+                              .replace(/_/g, " ")
+                              .toLowerCase() || "intake"}
+                          </Badge>
+                        </div>
+                        {projectsInClaim.length > 0 && (
+                          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                            <p className="text-[11px] font-medium uppercase tracking-wide">
+                              Projects in claim
+                            </p>
+                            <ul className="space-y-0.5">
+                              {projectsInClaim.slice(0, 3).map((p) => (
+                                <li key={p.id} className="truncate">
+                                  • {p.name}
+                                </li>
+                              ))}
+                              {projectsInClaim.length > 3 && (
+                                <li className="text-[11px]">
+                                  + {projectsInClaim.length - 3} more
+                                </li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setClaimSelectionOpen(false);
+                  setSelectedBulkProject(null);
+                  setSelectedSidekickProject(null);
+                  setSelectedClaimId(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="bg-orange-500 text-slate-950 hover:bg-orange-400 disabled:cursor-not-allowed disabled:bg-orange-500/40 disabled:text-slate-300"
+                onClick={handleAttachProjectToClaim}
+                disabled={
+                  !selectedClaimId ||
+                  attachingToClaim ||
+                  claimsLoading ||
+                  claimsForOrg.length === 0
+                }
+              >
+                {attachingToClaim ? "Adding..." : "Add to claim"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Layout>
     </>
   );
