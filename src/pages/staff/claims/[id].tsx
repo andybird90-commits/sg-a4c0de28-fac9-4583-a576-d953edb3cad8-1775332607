@@ -367,6 +367,32 @@ export default function ClaimDetailPage() {
   const [schemeDraft, setSchemeDraft] = useState("");
   const [savingScheme, setSavingScheme] = useState(false);
 
+  const handleHmrcResponseChange = (
+    index: number,
+    field: keyof HmrcResponseItem,
+    value: string
+  ): void => {
+    setHmrcResponses((previous) => {
+      const next = [...previous];
+      const current = next[index] ?? { question: "", team_response: "" };
+      next[index] = {
+        ...current,
+        [field]: value
+      };
+      return next;
+    });
+  };
+
+  const handleAddHmrcResponseRow = (): void => {
+    setHmrcResponses((previous) => [
+      ...previous,
+      {
+        question: "",
+        team_response: ""
+      }
+    ]);
+  };
+
   // New state for draft/finalise actions
   const [generatingDraft, setGeneratingDraft] = useState(false);
   const [finalisingPack, setFinalisingPack] = useState(false);
