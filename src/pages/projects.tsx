@@ -224,6 +224,7 @@ export default function ProjectsPage() {
           description: selectedBulkProject.description,
           rd_theme: selectedBulkProject.sector,
           created_by: user.id,
+          source_bulk_project_id: selectedBulkProject.id,
         });
 
         if (error) {

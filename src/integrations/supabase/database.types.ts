@@ -1038,6 +1038,7 @@ export type Database = {
           revision_count: number | null
           sent_to_client_at: string | null
           software_cost: number | null
+          source_bulk_project_id: string | null
           source_project_id: string | null
           source_sidekick_project_id: string | null
           staff_cost: number | null
@@ -1082,6 +1083,7 @@ export type Database = {
           revision_count?: number | null
           sent_to_client_at?: string | null
           software_cost?: number | null
+          source_bulk_project_id?: string | null
           source_project_id?: string | null
           source_sidekick_project_id?: string | null
           staff_cost?: number | null
@@ -1126,6 +1128,7 @@ export type Database = {
           revision_count?: number | null
           sent_to_client_at?: string | null
           software_cost?: number | null
+          source_bulk_project_id?: string | null
           source_project_id?: string | null
           source_sidekick_project_id?: string | null
           staff_cost?: number | null
@@ -1169,6 +1172,13 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_projects_source_bulk_project_id_fkey"
+            columns: ["source_bulk_project_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_projects"
             referencedColumns: ["id"]
           },
           {

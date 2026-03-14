@@ -383,6 +383,8 @@ export default function ClaimDetailPage() {
   const [bulkProjects, setBulkProjects] = useState<BulkProjectWithUploads[]>([]);
   const [loadingBulkProjects, setLoadingBulkProjects] = useState(false);
 
+  const [bulkProjectsForClaim, setBulkProjectsForClaim] = useState<BulkProjectWithUploads[]>([]);
+
   const handleDownloadBulkUpload = async (upload: BulkProjectUpload): Promise<void> => {
     try {
       const { data, error } = await supabase.storage
@@ -422,12 +424,12 @@ export default function ClaimDetailPage() {
     }
   };
 
-  const loadClaim = async (claimId: string): Promise<void> => {
+  const loadClaim = async () => {
     try {
       setLoading(true);
       setLoadingProjects(true);
 
-      const loaded = await claimService.getClaimById(claimId);
+      const loaded = await claimService.getClaimById(id as string);
       if (!loaded) {
         setClaim(null);
         return;
@@ -435,7 +437,7 @@ export default function ClaimDetailPage() {
 
       setClaim(loaded);
 
-      const summary = await getLatestInspectorSummaryForClaim(claimId);
+      const summary = await getLatestInspectorSummaryForClaim(id as string);
       setInspectorSummary(summary);
 
       const existingHmrc =
@@ -643,6 +645,29 @@ export default function ClaimDetailPage() {
           );
         }
       }
+
+      // After loading claim and its projects, resolve any bulk-linked projects
+      try {
+        const bulkLinkedProjectIds = (claimProjects || [])
+          .map((p: any) => p.source_bulk_project_id)
+          .filter((id: string | null | undefined): id is string => !!id);
+
+        if (bulkLinkedProjectIds.length > 0) {
+          const uniqueIds = Array.from(new Set(bulkLinkedProjectIds));
+          const { data, error } = await (supabase as any)
+            .from("bulk_projects")
+            .select("*, bulk_project_uploads(*)")
+            .in("id", uniqueIds);
+
+          if (!error && Array.isArray(data)) {
+            setBulkProjectsForClaim(data as BulkProjectWithUploads[]);
+          }
+        } else {
+          setBulkProjectsForClaim([]);
+        }
+      } catch (bulkError) {
+        console.error("[ClaimDetailPage.loadClaim] Error resolving bulk-linked projects:", bulkError);
+      }
     } catch (error) {
       console.error("Error loading claim:", error);
       toast({
@@ -661,7 +686,7 @@ export default function ClaimDetailPage() {
   useEffect(() => {
     if (!id || typeof id !== "string") return;
     if (!isValidUuid(id)) return;
-    void loadClaim(id);
+    void loadClaim();
   }, [id, toast]);
 
   // Placeholder QA submission handler so the button works without breaking the build
@@ -2092,8 +2117,8 @@ export default function ClaimDetailPage() {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-          <TabsList className="grid w-full grid-cols-7">
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="w-full justify-start gap-2 overflow-x-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="bulk">Bulk</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
@@ -2134,9 +2159,9 @@ export default function ClaimDetailPage() {
                       Created
                     </dt>
                     <dd className="mt-1 text-sm font-semibold">
-                      {claim.created_at ?
-                      format(new Date(claim.created_at), "PPP") :
-                      "N/A"}
+                      {claim.created_at
+                        ? format(new Date(claim.created_at), "PPP")
+                        : "N/A"}
                     </dd>
                   </div>
                   <div>
@@ -2144,9 +2169,9 @@ export default function ClaimDetailPage() {
                       Last Updated
                     </dt>
                     <dd className="mt-1 text-sm font-semibold">
-                      {claim.updated_at ?
-                      format(new Date(claim.updated_at), "PPP") :
-                      "N/A"}
+                      {claim.updated_at
+                        ? format(new Date(claim.updated_at), "PPP")
+                        : "N/A"}
                     </dd>
                   </div>
                 </dl>
@@ -2195,80 +2220,80 @@ export default function ClaimDetailPage() {
                         size="sm"
                         variant="secondary"
                         onClick={handleGenerateDraftPack}
-                        disabled={generatingDraft}>
-                        
-                        {generatingDraft ?
-                        <>
+                        disabled={generatingDraft}
+                      >
+                        {generatingDraft ? (
+                          <>
                             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                             Generating drafts...
-                          </> :
-
-                        <>
+                          </>
+                        ) : (
+                          <>
                             <FileText className="mr-2 h-4 w-4" />
                             Generate draft claim
                           </>
-                        }
+                        )}
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={handleFinaliseClaimPack}
-                        disabled={finalisingPack}>
-                        
-                        {finalisingPack ?
-                        <>
+                        disabled={finalisingPack}
+                      >
+                        {finalisingPack ? (
+                          <>
                             <Lock className="mr-2 h-4 w-4 animate-spin" />
                             Finalising...
-                          </> :
-
-                        <>
+                          </>
+                        ) : (
+                          <>
                             <Lock className="mr-2 h-4 w-4" />
                             Finalise claim pack
                           </>
-                        }
+                        )}
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={handleDownloadDraftPdf}
-                        disabled={downloadingDraftPdf}>
-                        
-                        {downloadingDraftPdf ?
-                        <>
+                        disabled={downloadingDraftPdf}
+                      >
+                        {downloadingDraftPdf ? (
+                          <>
                             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                             Downloading draft...
-                          </> :
-
-                        <>
+                          </>
+                        ) : (
+                          <>
                             <Download className="mr-2 h-4 w-4" />
                             Download draft pack
                           </>
-                        }
+                        )}
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={handleDownloadFinalPdf}
-                        disabled={downloadingFinalPdf}>
-                        
-                        {downloadingFinalPdf ?
-                        <>
+                        disabled={downloadingFinalPdf}
+                      >
+                        {downloadingFinalPdf ? (
+                          <>
                             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                             Downloading final...
-                          </> :
-
-                        <>
+                          </>
+                        ) : (
+                          <>
                             <Download className="mr-2 h-4 w-4" />
                             Download final pack
                           </>
-                        }
+                        )}
                       </Button>
                     </div>
                   </div>
-                  {(draftSummary || finaliseSummary) &&
-                  <div className="mt-2 grid gap-3 text-xs text-muted-foreground md:grid-cols-2">
-                      {draftSummary &&
-                    <div>
+                  {(draftSummary || finaliseSummary) && (
+                    <div className="mt-2 grid gap-3 text-xs text-muted-foreground md:grid-cols-2">
+                      {draftSummary && (
+                        <div>
                           <p className="font-semibold text-foreground">
                             Draft generation summary
                           </p>
@@ -2279,9 +2304,9 @@ export default function ClaimDetailPage() {
                             Errors: {draftSummary.error_count ?? 0}
                           </p>
                         </div>
-                    }
-                      {finaliseSummary &&
-                    <div>
+                      )}
+                      {finaliseSummary && (
+                        <div>
                           <p className="font-semibold text-foreground">
                             Finalisation summary
                           </p>
@@ -2293,9 +2318,9 @@ export default function ClaimDetailPage() {
                             Missing: {finaliseSummary.missing_count ?? 0}
                           </p>
                         </div>
-                    }
+                      )}
                     </div>
-                  }
+                  )}
                 </div>
 
                 {/* Step 1 – Internal QA signoff */}
@@ -2311,20 +2336,22 @@ export default function ClaimDetailPage() {
                   </div>
                   <div className="flex flex-col gap-3 md:flex-row md:items-end">
                     <div className="flex-1">
-                      <Label htmlFor="qa-admin">Assign QA reviewer (admin)</Label>
+                      <Label htmlFor="qa-admin">
+                        Assign QA reviewer (admin)
+                      </Label>
                       <Select
                         value={selectedQaAdmin}
-                        onValueChange={setSelectedQaAdmin}>
-                        
+                        onValueChange={setSelectedQaAdmin}
+                      >
                         <SelectTrigger id="qa-admin">
                           <SelectValue placeholder="Select admin reviewer" />
                         </SelectTrigger>
                         <SelectContent>
-                          {qaAdmins.map((admin) =>
-                          <SelectItem key={admin.id} value={admin.id}>
+                          {qaAdmins.map((admin) => (
+                            <SelectItem key={admin.id} value={admin.id}>
                               {admin.full_name ?? admin.email ?? "Admin"}
                             </SelectItem>
-                          )}
+                          ))}
                         </SelectContent>
                       </Select>
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -2335,8 +2362,8 @@ export default function ClaimDetailPage() {
                     <Button
                       variant="secondary"
                       disabled={submittingQa || !selectedQaAdmin}
-                      onClick={handleSubmitForQa}>
-                      
+                      onClick={handleSubmitForQa}
+                    >
                       {submittingQa ? "Submitting..." : "Submit for QA signoff"}
                     </Button>
                   </div>
@@ -2354,40 +2381,38 @@ export default function ClaimDetailPage() {
                     </p>
                   </div>
 
-                  {claim.status === "final_signoff" &&
-                  <Button
-                    variant="secondary"
-                    disabled={clientActionLoading}
-                    onClick={handleIssueToClient}>
-                    
-                      {clientActionLoading ?
-                    "Issuing..." :
-                    "Issue to client for comment"}
-                    </Button>
-                  }
-
-                  {claim.status === "client_review" &&
-                  <div className="flex flex-col gap-3 md:w-56">
-                      <Button
+                  {claim.status === "final_signoff" && (
+                    <Button
                       variant="secondary"
                       disabled={clientActionLoading}
-                      onClick={handleClientApprove}>
-                      
-                        {clientActionLoading ?
-                      "Saving..." :
-                      "Client approved – ready to file"}
+                      onClick={handleIssueToClient}
+                    >
+                      {clientActionLoading
+                        ? "Issuing..."
+                        : "Issue to client for comment"}
+                    </Button>
+                  )}
+
+                  {claim.status === "client_review" && (
+                    <div className="flex flex-col gap-3 md:w-56">
+                      <Button
+                        variant="secondary"
+                        disabled={clientActionLoading}
+                        onClick={handleClientApprove}
+                      >
+                        {clientActionLoading
+                          ? "Saving..."
+                          : "Client approved – ready to file"}
                       </Button>
                       <Button
-                      variant="outline"
-                      disabled={
-                      clientActionLoading || !clientFeedback.trim()
-                      }
-                      onClick={handleClientComments}>
-                      
+                        variant="outline"
+                        disabled={clientActionLoading || !clientFeedback.trim()}
+                        onClick={handleClientComments}
+                      >
                         Client comments – back to draft
                       </Button>
                     </div>
-                  }
+                  )}
                 </div>
 
                 {/* Step 3 – HMRC submission */}
@@ -2403,26 +2428,26 @@ export default function ClaimDetailPage() {
                   </div>
 
                   <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                    {claim.status === "ready_to_file" &&
-                    <Button
-                      variant="secondary"
-                      disabled={hmrcActionLoading}
-                      onClick={handleIssueToHmrc}>
-                      
+                    {claim.status === "ready_to_file" && (
+                      <Button
+                        variant="secondary"
+                        disabled={hmrcActionLoading}
+                        onClick={handleIssueToHmrc}
+                      >
                         {hmrcActionLoading ? "Submitting..." : "Issue to HMRC"}
                       </Button>
-                    }
-                    {claim.actual_submission_date &&
-                    <p className="text-xs text-muted-foreground">
+                    )}
+                    {claim.actual_submission_date && (
+                      <p className="text-xs text-muted-foreground">
                         Submitted to HMRC on{" "}
                         <span className="font-semibold">
                           {format(
-                          new Date(claim.actual_submission_date),
-                          "PPP"
-                        )}
+                            new Date(claim.actual_submission_date),
+                            "PPP"
+                          )}
                         </span>
                       </p>
-                    }
+                    )}
                   </div>
 
                   {/* HMRC responses section */}
@@ -2433,9 +2458,9 @@ export default function ClaimDetailPage() {
                           HMRC responses &amp; queries
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Log questions from HMRC and your team&apos;s responses.
-                          Use the Companion tab or the Companion button to help
-                          draft responses.
+                          Log questions from HMRC and your team&apos;s
+                          responses. Use the Companion tab or the Companion
+                          button to help draft responses.
                         </p>
                       </div>
                       <Button
@@ -2445,15 +2470,15 @@ export default function ClaimDetailPage() {
                         disabled={loadingHmrcAnalysis}
                         onClick={() => {
                           void handleHmrcCompanion();
-                        }}>
-                        
+                        }}
+                      >
                         <Sparkles className="mr-2 h-4 w-4" />
                         {loadingHmrcAnalysis ? "Reviewing..." : "Ask Companion"}
                       </Button>
                     </div>
 
-                    {hmrcAnalysis &&
-                    <div className="rounded-lg border border-border/60 bg-background/40 p-3 text-sm">
+                    {hmrcAnalysis && (
+                      <div className="rounded-lg border border-border/60 bg-background/40 p-3 text-sm">
                         <p className="mb-1 text-xs font-semibold text-muted-foreground">
                           Companion suggestions on HMRC responses
                         </p>
@@ -2461,20 +2486,20 @@ export default function ClaimDetailPage() {
                           {hmrcAnalysis}
                         </p>
                       </div>
-                    }
+                    )}
 
-                    {loadingHmrcAnalysis && !hmrcAnalysis &&
-                    <p className="text-xs text-muted-foreground">
+                    {loadingHmrcAnalysis && !hmrcAnalysis && (
+                      <p className="text-xs text-muted-foreground">
                         Reviewing HMRC responses...
                       </p>
-                    }
+                    )}
 
                     <div className="space-y-3">
-                      {hmrcResponses.map((item, index) =>
-                      <div
-                        key={index}
-                        className="space-y-2 rounded-lg border border-border/50 bg-background/40 p-3">
-                        
+                      {hmrcResponses.map((item, index) => (
+                        <div
+                          key={index}
+                          className="space-y-2 rounded-lg border border-border/50 bg-background/40 p-3"
+                        >
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-medium text-muted-foreground">
                               Exchange {index + 1}
@@ -2486,60 +2511,60 @@ export default function ClaimDetailPage() {
                                 HMRC question / point
                               </Label>
                               <Textarea
-                              rows={3}
-                              value={item.question}
-                              onChange={(e) =>
-                              handleHmrcResponseChange(
-                                index,
-                                "question",
-                                e.target.value
-                              )
-                              }
-                              placeholder="Paste the HMRC question or point here..." />
-                            
+                                rows={3}
+                                value={item.question}
+                                onChange={(e) =>
+                                  handleHmrcResponseChange(
+                                    index,
+                                    "question",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Paste the HMRC question or point here..."
+                              />
                             </div>
                             <div className="space-y-1">
                               <Label className="text-xs">
                                 Team response / counter
                               </Label>
                               <Textarea
-                              rows={3}
-                              value={item.team_response}
-                              onChange={(e) =>
-                              handleHmrcResponseChange(
-                                index,
-                                "team_response",
-                                e.target.value
-                              )
-                              }
-                              placeholder="Draft your response to HMRC..." />
-                            
+                                rows={3}
+                                value={item.team_response}
+                                onChange={(e) =>
+                                  handleHmrcResponseChange(
+                                    index,
+                                    "team_response",
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="Draft your response to HMRC..."
+                              />
                             </div>
                           </div>
                         </div>
-                      )}
+                      ))}
                     </div>
 
                     <div className="flex flex-wrap gap-3">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleAddHmrcResponseRow}>
-                        
+                        onClick={handleAddHmrcResponseRow}
+                      >
                         Add another response
                       </Button>
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={handleSaveHmrcResponses}>
-                        
+                        onClick={handleSaveHmrcResponses}
+                      >
                         Save responses
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleExportHmrcResponsePdf}>
-                        
+                        onClick={handleExportHmrcResponsePdf}
+                      >
                         Export response PDF
                       </Button>
                     </div>
@@ -2566,9 +2591,9 @@ export default function ClaimDetailPage() {
                           type="number"
                           value={outcomeSubmittedValue}
                           onChange={(e) =>
-                          setOutcomeSubmittedValue(e.target.value)
-                          } />
-                        
+                            setOutcomeSubmittedValue(e.target.value)
+                          }
+                        />
                       </div>
                       <div>
                         <Label htmlFor="received-value">
@@ -2579,49 +2604,49 @@ export default function ClaimDetailPage() {
                           type="number"
                           value={outcomeReceivedValue}
                           onChange={(e) =>
-                          setOutcomeReceivedValue(e.target.value)
-                          } />
-                        
+                            setOutcomeReceivedValue(e.target.value)
+                          }
+                        />
                       </div>
                       <div className="flex flex-col justify-end">
-                        {outcomeSubmittedValue && outcomeReceivedValue ?
-                        <div>
+                        {outcomeSubmittedValue && outcomeReceivedValue ? (
+                          <div>
                             <p className="text-xs text-muted-foreground">
                               Realisation vs submitted
                             </p>
                             <p className="text-lg font-semibold">
                               {(
-                            Number(outcomeReceivedValue) /
-                            Math.max(
-                              Number(outcomeSubmittedValue),
-                              1
-                            ) *
-                            100).
-                            toFixed(1)}
+                                (Number(outcomeReceivedValue) /
+                                  Math.max(
+                                    Number(outcomeSubmittedValue),
+                                    1
+                                  )) *
+                                100
+                              ).toFixed(1)}
                               %
                             </p>
-                          </div> :
-
-                        <p className="text-xs text-muted-foreground">
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
                             Enter both values to see the realised percentage.
                           </p>
-                        }
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-3">
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={handleSaveOutcome}>
-                        
+                        onClick={handleSaveOutcome}
+                      >
                         Save outcome
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         disabled={claim.status === "completed"}
-                        onClick={handleMarkClaimCompleted}>
-                        
+                        onClick={handleMarkClaimCompleted}
+                      >
                         Mark claim completed
                       </Button>
                     </div>
@@ -2629,199 +2654,121 @@ export default function ClaimDetailPage() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* HMRC Inspector card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>HMRC Inspector</CardTitle>
-                <CardDescription>
-                  Live HMRC-style review of this claim&apos;s robustness.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex items-center justify-between text-xs">
-                  <span>Status</span>
-                  <span className="font-medium">
-                    {inspectorSummary ?
-                    inspectorSummary.latestStatus === "completed" ?
-                    "Completed" :
-                    "In progress" :
-                    "Not run"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span>Latest score</span>
-                  <span>
-                    {inspectorSummary?.latestScore != null ?
-                    `${inspectorSummary.latestScore}/100` :
-                    "—"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span>Risk level</span>
-                  <span>
-                    {inspectorSummary?.latestRiskLevel ?
-                    inspectorSummary.latestRiskLevel :
-                    "—"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span>Last run</span>
-                  <span>
-                    {inspectorSummary?.lastRunAt ?
-                    new Date(
-                      inspectorSummary.lastRunAt
-                    ).toLocaleDateString() :
-                    "—"}
-                  </span>
-                </div>
-                <div className="mt-3 flex flex-col gap-2">
-                  <Button asChild size="sm">
-                    <Link href={`/staff/claims/${claim.id}/inspector`}>
-                      {inspectorSummary &&
-                      inspectorSummary.latestStatus !== "not_run" ?
-                      "Open Inspector Review" :
-                      "Run Inspector"}
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* BULK – bulk projects uploaded by client */}
-          <TabsContent value="bulk" className="mt-6 space-y-4">
+          <TabsContent value="bulk" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Bulk projects</CardTitle>
                 <CardDescription>
-                  Bulk R&amp;D projects created by the client with evidence and financial packs attached.
+                  Bulk uploads prepared by the client that are now linked to this
+                  claim as projects.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loadingBulkProjects ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
-                  </div>
-                ) : bulkProjects.length === 0 ? (
+                {bulkProjectsForClaim.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No bulk projects have been uploaded for this organisation yet.
+                    No bulk projects are currently linked to this claim.
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {bulkProjects.map((project) => {
-                      const uploads: BulkProjectUpload[] =
-                        (project.bulk_project_uploads as BulkProjectUpload[]) ||
-                        [];
-                      const evidence = uploads.filter(
-                        (u) => u.upload_type === "evidence"
-                      );
-                      const financial = uploads.filter(
-                        (u) => u.upload_type === "financial"
-                      );
-
-                      return (
-                        <div
-                          key={project.id}
-                          className="rounded-lg border border-border bg-card/60 p-4 shadow-sm"
-                        >
-                          <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                            <div className="space-y-1">
-                              <h3 className="text-sm font-semibold text-foreground">
-                                {project.name}
-                              </h3>
-                              <p className="text-xs text-muted-foreground max-w-xl">
-                                {project.description || "No description provided."}
+                    {bulkProjectsForClaim.map((bp) => (
+                      <div key={bp.id} className="rounded-lg border p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold">{bp.name}</h3>
+                            {bp.description && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {bp.description}
                               </p>
-                              <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-                                {project.sector && (
-                                  <span>
-                                    <span className="font-semibold">Sector:</span> {project.sector}
-                                  </span>
-                                )}
-                                {project.stage && (
-                                  <span>
-                                    <span className="font-semibold">Stage:</span> {project.stage}
-                                  </span>
-                                )}
-                                {project.created_at && (
-                                  <span>
-                                    <span className="font-semibold">Created:</span>{" "}
-                                    {format(new Date(project.created_at), "PPP")}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <p className="text-xs font-medium text-muted-foreground">
-                                Bulk evidence uploads
-                              </p>
-                              {evidence.length === 0 ? (
-                                <p className="text-xs text-muted-foreground">
-                                  No evidence packs uploaded for this bulk project.
-                                </p>
-                              ) : (
-                                <ul className="space-y-1.5">
-                                  {evidence.map((upload) => (
-                                    <li
-                                      key={upload.id}
-                                      className="flex items-center justify-between gap-2 rounded border border-border/60 bg-background/40 px-2 py-1.5 text-xs"
-                                    >
-                                      <span className="truncate">{upload.file_name}</span>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          void handleDownloadBulkUpload(upload);
-                                        }}
-                                      >
-                                        <Download className="mr-1 h-3 w-3" />
-                                        Download
-                                      </Button>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-
-                            <div className="space-y-2">
-                              <p className="text-xs font-medium text-muted-foreground">
-                                Bulk financial uploads
-                              </p>
-                              {financial.length === 0 ? (
-                                <p className="text-xs text-muted-foreground">
-                                  No financial packs uploaded for this bulk project.
-                                </p>
-                              ) : (
-                                <ul className="space-y-1.5">
-                                  {financial.map((upload) => (
-                                    <li
-                                      key={upload.id}
-                                      className="flex items-center justify-between gap-2 rounded border border-border/60 bg-background/40 px-2 py-1.5 text-xs"
-                                    >
-                                      <span className="truncate">{upload.file_name}</span>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          void handleDownloadBulkUpload(upload);
-                                        }}
-                                      >
-                                        <Download className="mr-1 h-3 w-3" />
-                                        Download
-                                      </Button>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
+                            )}
+                            {bp.sector && (
+                              <Badge variant="secondary" className="mt-2">
+                                {bp.sector}
+                              </Badge>
+                            )}
                           </div>
                         </div>
-                      );
-                    })}
+
+                        <div className="mt-4 grid gap-4 md:grid-cols-2">
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">
+                              Evidence packs
+                            </p>
+                            {bp.bulk_project_uploads?.filter(
+                              (u) => u.upload_type === "evidence"
+                            ).length ? (
+                              <ul className="space-y-1 text-xs">
+                                {bp.bulk_project_uploads
+                                  ?.filter((u) => u.upload_type === "evidence")
+                                  .map((u) => (
+                                    <li
+                                      key={u.id}
+                                      className="flex items-center justify-between gap-2"
+                                    >
+                                      <span className="truncate">
+                                        {u.file_name}
+                                      </span>
+                                      <span className="text-[11px] text-muted-foreground">
+                                        {(
+                                          u.file_size_bytes /
+                                          1024 /
+                                          1024
+                                        ).toFixed(1)}{" "}
+                                        MB
+                                      </span>
+                                    </li>
+                                  ))}
+                              </ul>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">
+                                No evidence packs uploaded for this bulk
+                                project.
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground mb-1">
+                              Financial packs
+                            </p>
+                            {bp.bulk_project_uploads?.filter(
+                              (u) => u.upload_type === "financial"
+                            ).length ? (
+                              <ul className="space-y-1 text-xs">
+                                {bp.bulk_project_uploads
+                                  ?.filter(
+                                    (u) => u.upload_type === "financial"
+                                  )
+                                  .map((u) => (
+                                    <li
+                                      key={u.id}
+                                      className="flex items-center justify-between gap-2"
+                                    >
+                                      <span className="truncate">
+                                        {u.file_name}
+                                      </span>
+                                      <span className="text-[11px] text-muted-foreground">
+                                        {(
+                                          u.file_size_bytes /
+                                          1024 /
+                                          1024
+                                        ).toFixed(1)}{" "}
+                                        MB
+                                      </span>
+                                    </li>
+                                  ))}
+                              </ul>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">
+                                No financial packs uploaded for this bulk
+                                project.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -2837,28 +2784,41 @@ export default function ClaimDetailPage() {
                 Add project
               </Button>
             </div>
-            {loadingProjects ?
-            <div className="flex items-center justify-center py-8">
+            {loadingProjects ? (
+              <div className="flex items-center justify-center py-8">
                 <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
-              </div> :
-            projects.length === 0 ?
-            <p className="py-8 text-center text-sm text-muted-foreground">
-                No projects linked to this claim yet.
-              </p> :
-
-            <div className="space-y-3">
-                {projects.map((project) =>
-              <ProjectCard key={project.id} project={project} />
-              )}
               </div>
-            }
+            ) : projects.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No projects linked to this claim yet.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {projects.map((project) => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/* COSTS – editable with summary */}
           <TabsContent value="costs" className="mt-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Costs</h2>
-              <Button size="sm" onClick={() => {setEditingCost(null);setCostForm({ cost_type: "staff", description: "", amount: "", cost_date: "", project_id: "" });setShowCostDialog(true);}}>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setEditingCost(null);
+                  setCostForm({
+                    cost_type: "staff",
+                    description: "",
+                    amount: "",
+                    cost_date: "",
+                    project_id: ""
+                  });
+                  setShowCostDialog(true);
+                }}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Add cost
               </Button>
@@ -2868,38 +2828,38 @@ export default function ClaimDetailPage() {
               const hasClaimCosts = costs.length > 0;
 
               const costTotalsByTypeFromClaim = costs.reduce<
-                Record<string, {total: number;count: number;}>>(
-                (acc, cost) => {
-                  const type = cost.cost_type as string || "other";
-                  const amount = Number(cost.amount || 0);
+                Record<string, { total: number; count: number }>
+              >((acc, cost) => {
+                const type = (cost.cost_type as string) || "other";
+                const amount = Number(cost.amount || 0);
 
-                  if (!acc[type]) {
-                    acc[type] = { total: 0, count: 0 };
-                  }
+                if (!acc[type]) {
+                  acc[type] = { total: 0, count: 0 };
+                }
 
-                  acc[type].total += amount;
-                  acc[type].count += 1;
-                  return acc;
-                }, {});
+                acc[type].total += amount;
+                acc[type].count += 1;
+                return acc;
+              }, {});
 
               const totalClaimCostFromClaim =
-              claim?.total_costs as number | null | undefined ??
-              Object.values(costTotalsByTypeFromClaim).reduce(
-                (sum, entry) => sum + entry.total,
-                0
-              );
+                (claim?.total_costs as number | null | undefined) ??
+                Object.values(costTotalsByTypeFromClaim).reduce(
+                  (sum, entry) => sum + entry.total,
+                  0
+                );
 
-              const effectiveCostTotalsByType = hasClaimCosts ?
-              costTotalsByTypeFromClaim :
-              clientCostTotalsByType;
+              const effectiveCostTotalsByType = hasClaimCosts
+                ? costTotalsByTypeFromClaim
+                : clientCostTotalsByType;
 
-              const effectiveTotalClaimCost = hasClaimCosts ?
-              totalClaimCostFromClaim :
-              clientTotalCost;
+              const effectiveTotalClaimCost = hasClaimCosts
+                ? totalClaimCostFromClaim
+                : clientTotalCost;
 
-              const effectiveCostEntryCount = hasClaimCosts ?
-              costs.length :
-              clientCostEntryCount;
+              const effectiveCostEntryCount = hasClaimCosts
+                ? costs.length
+                : clientCostEntryCount;
 
               const costTypeLabels: Record<string, string> = {
                 staff: "Staff",
@@ -2910,22 +2870,25 @@ export default function ClaimDetailPage() {
               };
 
               const orderedCostTypes: string[] = [
-              "staff",
-              "subcontractor",
-              "consumables",
-              "software",
-              "other"];
-
+                "staff",
+                "subcontractor",
+                "consumables",
+                "software",
+                "other"
+              ];
 
               const schemeType =
-              (claim as any)?.scheme_type as string | null | undefined ??
-              (claim as any)?.scheme as string | null | undefined ??
-              "";
+                ((claim as any)?.scheme_type as
+                  | string
+                  | null
+                  | undefined) ??
+                ((claim as any)?.scheme as string | null | undefined) ??
+                "";
 
               const schemeForCalc = schemeType || schemeDraft || "";
 
               const { lowMultiplier, highMultiplier } =
-              getSchemeMultipliers(schemeForCalc);
+                getSchemeMultipliers(schemeForCalc);
 
               const indicativeLow = effectiveTotalClaimCost * lowMultiplier;
               const indicativeHigh = effectiveTotalClaimCost * highMultiplier;
@@ -2935,20 +2898,20 @@ export default function ClaimDetailPage() {
                 {
                   total: number;
                   count: number;
-                  byType: Record<string, {total: number;count: number;}>;
-                }> =
-              {};
+                  byType: Record<string, { total: number; count: number }>;
+                }
+              > = {};
 
               if (hasClaimCosts) {
                 (costs as any[]).forEach((cost) => {
                   const projectId =
-                  cost.project_id as string | null | undefined || null;
+                    (cost.project_id as string | null | undefined) || null;
                   if (!projectId) return;
 
                   const amount = Number(cost.amount || 0);
                   const type =
-                  (cost.cost_type as string | null | undefined ||
-                  "other") as string;
+                    ((cost.cost_type as string | null | undefined) ||
+                      "other") as string;
 
                   if (!projectSummaries[projectId]) {
                     projectSummaries[projectId] = {
@@ -2984,7 +2947,7 @@ export default function ClaimDetailPage() {
               }
 
               const hasProjectLevelCosts =
-              Object.keys(projectSummaries).length > 0;
+                Object.keys(projectSummaries).length > 0;
 
               return (
                 <>
@@ -3006,12 +2969,12 @@ export default function ClaimDetailPage() {
                           <p className="mt-1 text-sm font-semibold">
                             {schemeType || "Not set"}
                           </p>
-                          {!schemeType &&
-                          <p className="mt-1 text-xs text-muted-foreground">
+                          {!schemeType && (
+                            <p className="mt-1 text-xs text-muted-foreground">
                               Once scheme type is recorded on the claim it will
                               show here.
                             </p>
-                          }
+                          )}
                         </div>
                         <div>
                           <p className="text-xs font-medium text-muted-foreground">
@@ -3035,13 +2998,13 @@ export default function ClaimDetailPage() {
                         <p className="text-xs font-medium text-muted-foreground">
                           Totals by cost heading
                         </p>
-                        {effectiveCostEntryCount === 0 ?
-                        <p className="text-sm text-muted-foreground">
+                        {effectiveCostEntryCount === 0 ? (
+                          <p className="text-sm text-muted-foreground">
                             No cost entries have been recorded for this claim
                             yet.
-                          </p> :
-
-                        <div className="overflow-hidden rounded-md border bg-background/40">
+                          </p>
+                        ) : (
+                          <div className="overflow-hidden rounded-md border bg-background/40">
                             <Table>
                               <TableHeader>
                                 <TableRow>
@@ -3056,10 +3019,11 @@ export default function ClaimDetailPage() {
                               </TableHeader>
                               <TableBody>
                                 {orderedCostTypes.map((type) => {
-                                const entry = effectiveCostTotalsByType[type];
-                                if (!entry) return null;
-                                return (
-                                  <TableRow key={type}>
+                                  const entry =
+                                    effectiveCostTotalsByType[type];
+                                  if (!entry) return null;
+                                  return (
+                                    <TableRow key={type}>
                                       <TableCell className="font-medium">
                                         {costTypeLabels[type] || type}
                                       </TableCell>
@@ -3069,26 +3033,26 @@ export default function ClaimDetailPage() {
                                       <TableCell className="text-right">
                                         {formatCurrency(entry.total)}
                                       </TableCell>
-                                    </TableRow>);
-
-                              })}
+                                    </TableRow>
+                                  );
+                                })}
                               </TableBody>
                             </Table>
                           </div>
-                        }
+                        )}
                       </div>
 
                       <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
                         <p className="text-xs font-medium text-muted-foreground">
                           Totals by project
                         </p>
-                        {!hasProjectLevelCosts ?
-                        <p className="text-sm text-muted-foreground">
+                        {!hasProjectLevelCosts ? (
+                          <p className="text-sm text-muted-foreground">
                             No project-level costs have been recorded for this
                             claim yet.
-                          </p> :
-
-                        <div className="overflow-hidden rounded-md border bg-background/40">
+                          </p>
+                        ) : (
+                          <div className="overflow-hidden rounded-md border bg-background/40">
                             <Table>
                               <TableHeader>
                                 <TableRow>
@@ -3112,89 +3076,91 @@ export default function ClaimDetailPage() {
                               </TableHeader>
                               <TableBody>
                                 {projects.map((project) => {
-                                const summary = projectSummaries[project.id];
-                                if (!summary) return null;
+                                  const summary =
+                                    projectSummaries[project.id];
+                                  if (!summary) return null;
 
-                                const staffTotal =
-                                summary.byType["staff"]?.total ?? 0;
-                                const subcontractorTotal =
-                                summary.byType["subcontractor"]?.total ?? 0;
-                                const consumablesTotal =
-                                summary.byType["consumables"]?.total ?? 0;
+                                  const staffTotal =
+                                    summary.byType["staff"]?.total ?? 0;
+                                  const subcontractorTotal =
+                                    summary.byType["subcontractor"]?.total ??
+                                    0;
+                                  const consumablesTotal =
+                                    summary.byType["consumables"]?.total ?? 0;
 
-                                const projectLow =
-                                summary.total * lowMultiplier;
-                                const projectHigh =
-                                summary.total * highMultiplier;
+                                  const projectLow =
+                                    summary.total * lowMultiplier;
+                                  const projectHigh =
+                                    summary.total * highMultiplier;
 
-                                return (
-                                  <TableRow key={project.id}>
+                                  return (
+                                    <TableRow key={project.id}>
                                       <TableCell className="font-medium">
                                         {project.name}
                                       </TableCell>
                                       <TableCell className="text-right">
-                                        {staffTotal > 0 ?
-                                      formatCurrency(staffTotal) :
-                                      "—"}
+                                        {staffTotal > 0
+                                          ? formatCurrency(staffTotal)
+                                          : "—"}
                                       </TableCell>
                                       <TableCell className="text-right">
-                                        {subcontractorTotal > 0 ?
-                                      formatCurrency(subcontractorTotal) :
-                                      "—"}
+                                        {subcontractorTotal > 0
+                                          ? formatCurrency(subcontractorTotal)
+                                          : "—"}
                                       </TableCell>
                                       <TableCell className="text-right">
-                                        {consumablesTotal > 0 ?
-                                      formatCurrency(consumablesTotal) :
-                                      "—"}
+                                        {consumablesTotal > 0
+                                          ? formatCurrency(consumablesTotal)
+                                          : "—"}
                                       </TableCell>
                                       <TableCell className="text-right">
                                         {formatCurrency(summary.total)}
                                       </TableCell>
                                       <TableCell className="text-right text-xs">
-                                        {summary.total > 0 ?
-                                      <>
+                                        {summary.total > 0 ? (
+                                          <>
                                             {formatCurrency(projectLow)} –{" "}
                                             {formatCurrency(projectHigh)}
-                                          </> :
-
-                                        "—"
-                                        }
+                                          </>
+                                        ) : (
+                                          "—"
+                                        )}
                                       </TableCell>
-                                    </TableRow>);
-
-                              })}
+                                    </TableRow>
+                                  );
+                                })}
                               </TableBody>
                             </Table>
                           </div>
-                        }
+                        )}
                       </div>
 
                       <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
                         <p className="text-xs font-medium text-muted-foreground">
                           Indicative R&amp;D benefit for this claim
                         </p>
-                        {effectiveTotalClaimCost > 0 ?
-                        <>
+                        {effectiveTotalClaimCost > 0 ? (
+                          <>
                             <p className="text-sm font-semibold">
                               {formatCurrency(indicativeLow)} –{" "}
                               {formatCurrency(indicativeHigh)}
                             </p>
                             <p className="text-[11px] text-muted-foreground">
                               Based on typical relief levels
-                              {schemeForCalc ?
-                            ` for the ${schemeForCalc} scheme` :
-                            ""}{" "}
+                              {schemeForCalc
+                                ? ` for the ${schemeForCalc} scheme`
+                                : ""}{" "}
                               applied to the total qualifying costs recorded on
                               this tab. Actual benefit will depend on the
                               company&apos;s detailed tax position.
                             </p>
-                          </> :
-
-                        <p className="text-[11px] text-muted-foreground">
-                          Add costs to this claim to see an indicative R&amp;D
-                          benefit range based on the selected scheme.
-                        </p>
-                      }
+                          </>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground">
+                            Add costs to this claim to see an indicative R&amp;D
+                            benefit range based on the selected scheme.
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-2 rounded-md border border-border/60 bg-background/40 p-3">
@@ -3208,10 +3174,8 @@ export default function ClaimDetailPage() {
                             </Label>
                             <Select
                               value={schemeDraft}
-                              onValueChange={(value) =>
-                              setSchemeDraft(value)
-                              }>
-                              
+                              onValueChange={(value) => setSchemeDraft(value)}
+                            >
                               <SelectTrigger id="scheme-type-select">
                                 <SelectValue placeholder="Select scheme type" />
                               </SelectTrigger>
@@ -3228,8 +3192,8 @@ export default function ClaimDetailPage() {
                             variant="secondary"
                             className="md:self-end"
                             disabled={savingScheme || !schemeDraft}
-                            onClick={handleSaveScheme}>
-                            
+                            onClick={handleSaveScheme}
+                          >
                             {savingScheme ? "Saving..." : "Save scheme"}
                           </Button>
                         </div>
@@ -3251,13 +3215,13 @@ export default function ClaimDetailPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {costs.length === 0 ?
-                      <p className="text-sm text-muted-foreground">
+                      {costs.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
                           No costs recorded yet. Use &quot;Add cost&quot; to
                           start capturing qualifying expenditure.
-                        </p> :
-
-                      <div className="overflow-hidden rounded-md border bg-background/40">
+                        </p>
+                      ) : (
+                        <div className="overflow-hidden rounded-md border bg-background/40">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -3271,45 +3235,48 @@ export default function ClaimDetailPage() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {costs.map((cost: any) =>
-                            <TableRow key={cost.id}>
-                                <TableCell>
-                                  {cost.cost_date ?
-                              format(
-                                new Date(cost.cost_date),
-                                "dd MMM yyyy"
-                              ) :
-                              "—"}
-                                </TableCell>
-                                <TableCell className="max-w-xs truncate">
-                                  {cost.description || "—"}
-                                </TableCell>
-                                <TableCell>
-                                  {costTypeLabels[
-                              cost.cost_type as string || "other"] ||
-                              cost.cost_type || "Other"}
-                                </TableCell>
-                                <TableCell>
-                                  {projects.find(
-                                (p) => p.id === cost.project_id
-                              )?.name || "—"}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  {formatCurrency(
-                                Number(cost.amount || 0)
-                              )}
-                                </TableCell>
-                              </TableRow>
-                          )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    }
+                              {costs.map((cost: any) => (
+                                <TableRow key={cost.id}>
+                                  <TableCell>
+                                    {cost.cost_date
+                                      ? format(
+                                          new Date(cost.cost_date),
+                                          "dd MMM yyyy"
+                                        )
+                                      : "—"}
+                                  </TableCell>
+                                  <TableCell className="max-w-xs truncate">
+                                    {cost.description || "—"}
+                                  </TableCell>
+                                  <TableCell>
+                                    {costTypeLabels[
+                                      (cost.cost_type as string) || "other"
+                                    ] ||
+                                      cost.cost_type ||
+                                      "Other"}
+                                  </TableCell>
+                                  <TableCell>
+                                    {projects.find(
+                                      (p) => p.id === cost.project_id
+                                    )?.name || "—"}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {formatCurrency(Number(cost.amount || 0))}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
 
                   {/* Add/Edit cost dialog */}
-                  <Dialog open={showCostDialog} onOpenChange={setShowCostDialog}>
+                  <Dialog
+                    open={showCostDialog}
+                    onOpenChange={setShowCostDialog}
+                  >
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>
@@ -3325,40 +3292,42 @@ export default function ClaimDetailPage() {
                           <Select
                             value={costForm.cost_type}
                             onValueChange={(value) =>
-                            setCostForm((prev) => ({
-                              ...prev,
-                              cost_type: value
-                            }))
-                            }>
-                            
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="staff">Staff</SelectItem>
-                                <SelectItem value="subcontractor">
+                              setCostForm((prev) => ({
+                                ...prev,
+                                cost_type: value
+                              }))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="staff">Staff</SelectItem>
+                              <SelectItem value="subcontractor">
                                 Subcontractor
                               </SelectItem>
-                                <SelectItem value="consumables">
+                              <SelectItem value="consumables">
                                 Consumables
                               </SelectItem>
-                                <SelectItem value="software">Software</SelectItem>
-                                <SelectItem value="other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
+                              <SelectItem value="software">
+                                Software
+                              </SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
                           <Label>Description</Label>
                           <Input
                             value={costForm.description}
                             onChange={(e) =>
-                            setCostForm((prev) => ({
-                              ...prev,
-                              description: e.target.value
-                            }))
+                              setCostForm((prev) => ({
+                                ...prev,
+                                description: e.target.value
+                              }))
                             }
-                            placeholder="Short description of the cost" />
-                          
+                            placeholder="Short description of the cost"
+                          />
                         </div>
                         <div className="grid gap-4 md:grid-cols-2">
                           <div>
@@ -3367,12 +3336,12 @@ export default function ClaimDetailPage() {
                               type="number"
                               value={costForm.amount}
                               onChange={(e) =>
-                              setCostForm((prev) => ({
-                                ...prev,
-                                amount: e.target.value
-                              }))
-                              } />
-                          
+                                setCostForm((prev) => ({
+                                  ...prev,
+                                  amount: e.target.value
+                                }))
+                              }
+                            />
                           </div>
                           <div>
                             <Label>Date</Label>
@@ -3380,12 +3349,12 @@ export default function ClaimDetailPage() {
                               type="date"
                               value={costForm.cost_date}
                               onChange={(e) =>
-                              setCostForm((prev) => ({
-                                ...prev,
-                                cost_date: e.target.value
-                              }))
-                              } />
-                          
+                                setCostForm((prev) => ({
+                                  ...prev,
+                                  cost_date: e.target.value
+                                }))
+                              }
+                            />
                           </div>
                         </div>
                         <div>
@@ -3393,38 +3362,36 @@ export default function ClaimDetailPage() {
                           <Select
                             value={costForm.project_id}
                             onValueChange={(value) =>
-                            setCostForm((prev) => ({
-                              ...prev,
-                              project_id: value
-                            }))
-                            }>
-                            
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select project" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">
+                              setCostForm((prev) => ({
+                                ...prev,
+                                project_id: value
+                              }))
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select project" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">
                                 Not linked to a specific project
                               </SelectItem>
-                                {projects.map((project) =>
-                              <SelectItem key={project.id} value={project.id}>
+                              {projects.map((project) => (
+                                <SelectItem key={project.id} value={project.id}>
                                   {project.name}
                                 </SelectItem>
-                              )}
-                              </SelectContent>
-                            </Select>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                       <DialogFooter>
                         <Button
                           variant="outline"
-                          onClick={() => setShowCostDialog(false)}>
-                          
+                          onClick={() => setShowCostDialog(false)}
+                        >
                           Cancel
                         </Button>
-                        <Button onClick={handleSaveCost}>
-                          Save
-                        </Button>
+                        <Button onClick={handleSaveCost}>Save</Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
@@ -3468,341 +3435,346 @@ export default function ClaimDetailPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {!claim.documents || claim.documents.length === 0 ?
-                <p className="text-sm text-muted-foreground">
-                  No documents uploaded for this claim yet.
-                </p> :
-
-                <div className="overflow-hidden rounded-md border bg-background/40">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Project</TableHead>
-                        <TableHead className="text-right">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {claim.documents.map((doc: any) =>
-                    <TableRow key={doc.id}>
-                          <TableCell className="max-w-xs truncate">
-                            {doc.title || doc.file_name || "Untitled"}
-                          </TableCell>
-                          <TableCell className="capitalize">
-                            {doc.doc_type || "supporting_evidence"}
-                          </TableCell>
-                          <TableCell>
-                            {projects.find(
-                          (p) => p.id === doc.project_id
-                        )?.name || "—"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() =>
-                          handleDownloadDocument(doc as any)
-                          }>
-                          
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
+                {!claim.documents || claim.documents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No documents uploaded for this claim yet.
+                  </p>
+                ) : (
+                  <div className="overflow-hidden rounded-md border bg-background/40">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Project</TableHead>
+                          <TableHead className="text-right">
+                            Actions
+                          </TableHead>
                         </TableRow>
-                    )}
-                    </TableBody>
-                  </Table>
-                </div>
-              }
-              <div className="mt-6 space-y-4">
-                <h3 className="text-sm font-semibold">
-                  Client evidence from Sidekick
-                </h3>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Evidence items the client has shared against linked Sidekick
-                  projects. These are read-only here; update them from the
-                  client project workspace.
-                </p>
-                {Object.keys(clientEvidenceByProject).length === 0 ?
-                <p className="text-sm text-muted-foreground">
-                    No client-side evidence has been recorded for the linked
-                    projects yet.
-                  </p> :
-
-                <div className="space-y-4">
-                    {projects.map((project) => {
-                    const items = clientEvidenceByProject[project.id];
-                    if (!items || items.length === 0) return null;
-                    return (
-                      <div
-                        key={project.id}
-                        className="rounded-md border border-border/60 bg-background/40 p-3">
-                        
-                          <p className="text-xs font-semibold mb-2">
-                            {project.name}
-                          </p>
-                          <div className="space-y-2">
-                            {items.map((item) =>
-                          <div
-                            key={item.id}
-                            className="rounded border border-border/40 bg-background/60 p-2 text-xs">
-                            
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                  <div className="flex items-center gap-2">
-                                    <Badge
-                                  variant="secondary"
-                                  className="text-[10px] capitalize">
-                                  
-                                      {item.type}
-                                    </Badge>
-                                    {item.title &&
-                                <span className="font-medium truncate max-w-[220px]">
-                                        {item.title}
-                                      </span>
+                      </TableHeader>
+                      <TableBody>
+                        {claim.documents.map((doc: any) => (
+                          <TableRow key={doc.id}>
+                            <TableCell className="max-w-xs truncate">
+                              {doc.title || doc.file_name || "Untitled"}
+                            </TableCell>
+                            <TableCell className="capitalize">
+                              {doc.doc_type || "supporting_evidence"}
+                            </TableCell>
+                            <TableCell>
+                              {projects.find(
+                                (p) => p.id === doc.project_id
+                              )?.name || "—"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() =>
+                                  handleDownloadDocument(doc as any)
                                 }
-                                  </div>
-                                  <span className="text-[10px] text-muted-foreground">
-                                    {new Date(item.createdAt).toLocaleDateString(
-                                  "en-GB"
-                                )}
-                                  </span>
-                                </div>
-                                {item.body &&
-                            <p className="text-[11px] text-muted-foreground whitespace-pre-wrap">
-                                    {item.body}
-                                  </p>
-                            }
-                                {item.externalUrl &&
-                            <a
-                              href={item.externalUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-1 inline-block text-[11px] text-blue-500 hover:underline break-all">
-                              
-                                    {item.externalUrl}
-                                  </a>
-                            }
-                              </div>
-                          )}
-                          </div>
-                        </div>);
-
-                  })}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
-                }
-              </div>
-            </CardContent>
-          </Card>
+                )}
+                <div className="mt-6 space-y-4">
+                  <h3 className="text-sm font-semibold">
+                    Client evidence from Sidekick
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Evidence items the client has shared against linked Sidekick
+                    projects. These are read-only here; update them from the
+                    client project workspace.
+                  </p>
+                  {Object.keys(clientEvidenceByProject).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No client-side evidence has been recorded for the linked
+                      projects yet.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {projects.map((project) => {
+                        const items = clientEvidenceByProject[project.id];
+                        if (!items || items.length === 0) return null;
+                        return (
+                          <div
+                            key={project.id}
+                            className="rounded-md border border-border/60 bg-background/40 p-3"
+                          >
+                            <p className="text-xs font-semibold mb-2">
+                              {project.name}
+                            </p>
+                            <div className="space-y-2">
+                              {items.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="rounded border border-border/40 bg-background/60 p-2 text-xs"
+                                >
+                                  <div className="mb-1 flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-[10px] capitalize"
+                                      >
+                                        {item.type}
+                                      </Badge>
+                                      {item.title && (
+                                        <span className="max-w-[220px] truncate font-medium">
+                                          {item.title}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {new Date(
+                                        item.createdAt
+                                      ).toLocaleDateString("en-GB")}
+                                    </span>
+                                  </div>
+                                  {item.body && (
+                                    <p className="whitespace-pre-wrap text-[11px] text-muted-foreground">
+                                      {item.body}
+                                    </p>
+                                  )}
+                                  {item.externalUrl && (
+                                    <a
+                                      href={item.externalUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="mt-1 inline-block break-all text-[11px] text-blue-500 hover:underline"
+                                    >
+                                      {item.externalUrl}
+                                    </a>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Upload document dialog */}
-          <Dialog
-            open={showDocumentDialog}
-            onOpenChange={setShowDocumentDialog}>
-            
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Upload document</DialogTitle>
-                <DialogDescription>
-                  Add supporting evidence against this claim or a specific
-                  project.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>File</Label>
-                  <Input
-                    type="file"
-                    onChange={(e) =>
-                    setSelectedFile(e.target.files?.[0] || null)
-                    } />
-                  
-                </div>
-                <div>
-                  <Label>Document type</Label>
-                  <Select
-                    value={documentType}
-                    onValueChange={setDocumentType}>
-                    
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="supporting_evidence">
-                        Supporting evidence
-                      </SelectItem>
-                      <SelectItem value="working_paper">
-                        Working paper
-                      </SelectItem>
-                      <SelectItem value="submission_pack">
-                        Submission pack
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Project (optional)</Label>
-                  <Select
-                    value={documentProjectId}
-                    onValueChange={setDocumentProjectId}>
-                    
-                    <SelectTrigger>
-                      <SelectValue placeholder="Link to a project (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        Not linked to a specific project
-                      </SelectItem>
-                      {projects.map((project) =>
-                      <SelectItem key={project.id} value={project.id}>
-                          {project.name}
+            {/* Upload document dialog */}
+            <Dialog
+              open={showDocumentDialog}
+              onOpenChange={setShowDocumentDialog}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Upload document</DialogTitle>
+                  <DialogDescription>
+                    Add supporting evidence against this claim or a specific
+                    project.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label>File</Label>
+                    <Input
+                      type="file"
+                      onChange={(e) =>
+                        setSelectedFile(e.target.files?.[0] || null)
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Document type</Label>
+                    <Select
+                      value={documentType}
+                      onValueChange={setDocumentType}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="supporting_evidence">
+                          Supporting evidence
                         </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                        <SelectItem value="working_paper">
+                          Working paper
+                        </SelectItem>
+                        <SelectItem value="submission_pack">
+                          Submission pack
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Project (optional)</Label>
+                    <Select
+                      value={documentProjectId}
+                      onValueChange={setDocumentProjectId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Link to a project (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          Not linked to a specific project
+                        </SelectItem>
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDocumentDialog(false)}>
-                  
-                  Cancel
-                </Button>
-                <Button
-                  disabled={uploadingDocument || !selectedFile}
-                  onClick={() => {
-                    void handleDocumentUpload();
-                  }}>
-                  
-                  {uploadingDocument ? "Uploading..." : "Upload"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </TabsContent>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDocumentDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={uploadingDocument || !selectedFile}
+                    onClick={() => {
+                      void handleDocumentUpload();
+                    }}
+                  >
+                    {uploadingDocument ? "Uploading..." : "Upload"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
 
-        {/* COMPANION – AI analysis */}
-        <TabsContent value="companion" className="mt-6 space-y-4">
-          <Card>
-            <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div>
-                <CardTitle>AI Companion Analysis</CardTitle>
-                <CardDescription>
-                  Generate and share AI-powered insights for this claim.
-                </CardDescription>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {aiAnalysis &&
-                <Dialog
-                  open={showSendAnalysisDialog}
-                  onOpenChange={setShowSendAnalysisDialog}>
-                  
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Users className="mr-2 h-4 w-4" />
-                        Send analysis
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Send AI analysis</DialogTitle>
-                        <DialogDescription>
-                          Send this AI analysis as a message to a team member.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label>Recipient</Label>
-                          <Select value={sendTo} onValueChange={setSendTo}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select recipient..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {claim.bd_owner_id &&
-                            <SelectItem value={claim.bd_owner_id}>
-                                  BD owner
-                                </SelectItem>
-                            }
-                              {claim.technical_lead_id &&
-                            <SelectItem value={claim.technical_lead_id}>
-                                  Technical lead
-                                </SelectItem>
-                            }
-                              {claim.cost_lead_id &&
-                            <SelectItem value={claim.cost_lead_id}>
-                                  Cost lead
-                                </SelectItem>
-                            }
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label>Preview</Label>
-                          <div className="mt-2 max-h-64 overflow-y-auto rounded-md bg-muted p-3 text-sm">
-                            {aiAnalysis}
+          {/* COMPANION – AI analysis */}
+          <TabsContent value="companion" className="mt-6 space-y-4">
+            <Card>
+              <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle>AI Companion Analysis</CardTitle>
+                  <CardDescription>
+                    Generate and share AI-powered insights for this claim.
+                  </CardDescription>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {aiAnalysis && (
+                    <Dialog
+                      open={showSendAnalysisDialog}
+                      onOpenChange={setShowSendAnalysisDialog}
+                    >
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Users className="mr-2 h-4 w-4" />
+                          Send analysis
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Send AI analysis</DialogTitle>
+                          <DialogDescription>
+                            Send this AI analysis as a message to a team member.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label>Recipient</Label>
+                            <Select
+                              value={sendTo}
+                              onValueChange={setSendTo}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select recipient..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {claim.bd_owner_id && (
+                                  <SelectItem value={claim.bd_owner_id}>
+                                    BD owner
+                                  </SelectItem>
+                                )}
+                                {claim.technical_lead_id && (
+                                  <SelectItem value={claim.technical_lead_id}>
+                                    Technical lead
+                                  </SelectItem>
+                                )}
+                                {claim.cost_lead_id && (
+                                  <SelectItem value={claim.cost_lead_id}>
+                                    Cost lead
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label>Preview</Label>
+                            <div className="mt-2 max-h-64 overflow-y-auto rounded-md bg-muted p-3 text-sm">
+                              {aiAnalysis}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <DialogFooter>
-                        <Button
-                        variant="outline"
-                        onClick={() => setShowSendAnalysisDialog(false)}>
-                        
-                          Cancel
-                        </Button>
-                        <Button
-                        onClick={handleSendAnalysis}
-                        disabled={!sendTo || sendingMessage}>
-                        
-                          {sendingMessage ? "Sending..." : "Send"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                }
-                <Button
-                  size="sm"
-                  onClick={handleGenerateAnalysis}
-                  disabled={loadingAnalysis}>
-                  
-                  {loadingAnalysis ?
-                  <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing...
-                    </> :
-
-                  <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Generate analysis
-                    </>
-                  }
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {!aiAnalysis && !loadingAnalysis &&
-              <p className="text-sm text-muted-foreground">
-                  No analysis yet. Click &quot;Generate analysis&quot; to
-                  create an AI summary of this claim for internal or client
-                  use.
-                </p>
-              }
-              {loadingAnalysis &&
-              <p className="text-sm text-muted-foreground">
-                  Generating analysis...
-                </p>
-              }
-              {aiAnalysis && !loadingAnalysis &&
-              <div className="rounded-md bg-muted p-4 text-sm whitespace-pre-wrap">
-                  {aiAnalysis}
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() =>
+                              setShowSendAnalysisDialog(false)
+                            }
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handleSendAnalysis}
+                            disabled={!sendTo || sendingMessage}
+                          >
+                            {sendingMessage ? "Sending..." : "Send"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={handleGenerateAnalysis}
+                    disabled={loadingAnalysis}
+                  >
+                    {loadingAnalysis ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Generate analysis
+                      </>
+                    )}
+                  </Button>
                 </div>
-              }
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </CardHeader>
+              <CardContent>
+                {!aiAnalysis && !loadingAnalysis && (
+                  <p className="text-sm text-muted-foreground">
+                    No analysis yet. Click &quot;Generate analysis&quot; to
+                    create an AI summary of this claim for internal or client
+                    use.
+                  </p>
+                )}
+                {loadingAnalysis && (
+                  <p className="text-sm text-muted-foreground">
+                    Generating analysis...
+                  </p>
+                )}
+                {aiAnalysis && !loadingAnalysis && (
+                  <div className="whitespace-pre-wrap rounded-md bg-muted p-4 text-sm">
+                    {aiAnalysis}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </StaffLayout>);
 
