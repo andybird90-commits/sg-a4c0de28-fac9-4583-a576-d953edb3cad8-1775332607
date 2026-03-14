@@ -1312,7 +1312,7 @@ export default function ClaimDetailPage() {
       setShowDocumentDialog(false);
       setSelectedFile(null);
       setDocumentProjectId("");
-      if (id && typeof id === "string") loadClaim(id);
+      if (id && typeof id === "string") loadClaim();
     } catch (error: any) {
       console.error("Upload error:", error);
       toast({
@@ -1393,7 +1393,7 @@ export default function ClaimDetailPage() {
 
       setQaFeedback("");
       if (id && typeof id === "string") {
-        await loadClaim(id);
+        await loadClaim();
       }
     } catch (error) {
       console.error("Error approving QA:", error);
@@ -1453,7 +1453,7 @@ export default function ClaimDetailPage() {
 
       setQaFeedback("");
       if (id && typeof id === "string") {
-        await loadClaim(id);
+        await loadClaim();
       }
     } catch (error) {
       console.error("Error returning claim with QA comments:", error);
@@ -1484,7 +1484,7 @@ export default function ClaimDetailPage() {
       });
 
       if (id && typeof id === "string") {
-        await loadClaim(id);
+        await loadClaim();
       }
     } catch (error) {
       console.error("Error issuing claim to client:", error);
@@ -1516,7 +1516,7 @@ export default function ClaimDetailPage() {
 
       setClientFeedback("");
       if (id && typeof id === "string") {
-        await loadClaim(id);
+        await loadClaim();
       }
     } catch (error) {
       console.error("Error recording client approval:", error);
@@ -1576,7 +1576,7 @@ export default function ClaimDetailPage() {
 
       setClientFeedback("");
       if (id && typeof id === "string") {
-        await loadClaim(id);
+        await loadClaim();
       }
     } catch (error) {
       console.error("Error recording client comments:", error);
@@ -1643,7 +1643,7 @@ export default function ClaimDetailPage() {
       }
 
       if (id && typeof id === "string") {
-        await loadClaim(id);
+        await loadClaim();
       }
     } catch (error) {
       console.error("Error issuing claim to HMRC:", error);
@@ -1693,7 +1693,7 @@ export default function ClaimDetailPage() {
       });
 
       if (id && typeof id === "string") {
-        await loadClaim(id);
+        await loadClaim();
       }
     } catch (error) {
       console.error("Error exporting HMRC response PDF:", error);
@@ -1703,25 +1703,6 @@ export default function ClaimDetailPage() {
         variant: "destructive"
       });
     }
-  };
-
-  const handleAddHmrcResponseRow = () => {
-    setHmrcResponses((prev) => [
-    ...prev,
-    { question: "", team_response: "" }]
-    );
-  };
-
-  const handleHmrcResponseChange = (
-  index: number,
-  field: "question" | "team_response",
-  value: string) =>
-  {
-    setHmrcResponses((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], [field]: value };
-      return next;
-    });
   };
 
   const handleSaveHmrcResponses = async (): Promise<void> => {
@@ -1747,7 +1728,7 @@ export default function ClaimDetailPage() {
       });
 
       if (id && typeof id === "string") {
-        await loadClaim(id);
+        await loadClaim();
       }
     } catch (error) {
       console.error("Error saving HMRC responses:", error);
@@ -1783,7 +1764,7 @@ export default function ClaimDetailPage() {
       });
 
       if (id && typeof id === "string") {
-        await loadClaim(id);
+        await loadClaim();
       }
     } catch (error) {
       console.error("Error saving claim outcome:", error);
@@ -1810,7 +1791,7 @@ export default function ClaimDetailPage() {
       });
 
       if (id && typeof id === "string") {
-        await loadClaim(id);
+        await loadClaim();
       }
     } catch (error) {
       console.error("Error marking claim completed:", error);
@@ -1863,7 +1844,7 @@ export default function ClaimDetailPage() {
       });
 
       if (id && typeof id === "string") {
-        await loadClaim(id);
+        await loadClaim();
       }
     } catch (error: any) {
       console.error("Error saving scheme type:", error);
@@ -1905,7 +1886,7 @@ export default function ClaimDetailPage() {
         await claimService.addCostToClaim(payload);
       }
 
-      await loadClaim(id);
+      await loadClaim();
 
       toast({
         title: editingCost ? "Cost updated" : "Cost added",
