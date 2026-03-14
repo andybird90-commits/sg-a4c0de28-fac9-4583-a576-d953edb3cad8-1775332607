@@ -472,31 +472,40 @@ export default function ClaimDetailPage() {
       setClaim(loaded);
 
       // Prefer projects loaded via claimService; if missing, fall back to a direct claim_projects query
-      let claimProjectsForClaim = loaded.projects ?? [];
+      let claimProjectsForClaim: any[] = (loaded as any).projects ?? [];
 
       if (!claimProjectsForClaim || claimProjectsForClaim.length === 0) {
-        const { data: directClaimProjects, error: directProjectsError } = await supabase
-          .from("claim_projects")
-          .select("*")
-          .eq("claim_id", id)
-          .eq("org_id", currentOrg.id);
+        const { data: directClaimProjects, error: directProjectsError } =
+          await supabase
+            .from("claim_projects")
+            .select("*")
+            .eq("claim_id", id)
+            .eq("org_id", currentOrg.id);
 
         if (directProjectsError) {
-          console.error("[ClaimDetailPage.loadClaim] direct claim_projects fetch error", directProjectsError);
+          console.error(
+            "[ClaimDetailPage.loadClaim] direct claim_projects fetch error",
+            directProjectsError
+          );
         } else {
-          console.log("[ClaimDetailPage.loadClaim] direct claim_projects fetched", directClaimProjects?.length ?? 0);
+          console.log(
+            "[ClaimDetailPage.loadClaim] direct claim_projects fetched",
+            directClaimProjects?.length ?? 0
+          );
           claimProjectsForClaim = directClaimProjects ?? [];
         }
       }
 
-      setProjects(claimProjectsForClaim);
+      setProjects(claimProjectsForClaim as ClaimProject[]);
 
-      // Derive bulk-linked project IDs from claim_projects
-      const bulkLinkedProjectIds = Array.from(
-        new Set(
+      // Derive bulk-linked project IDs from the claimProjects we just set
+      const bulkLinkedProjectIds: string[] = Array.from(
+        new Set<string>(
           (claimProjectsForClaim || [])
             .map((p: any) => p.source_bulk_project_id)
-            .filter((v: string | null | undefined): v is string => !!v)
+            .filter(
+              (v: string | null | undefined): v is string => !!v
+            )
         )
       );
 
@@ -504,8 +513,6 @@ export default function ClaimDetailPage() {
         "[ClaimDetailPage.loadClaim] bulkLinkedProjectIds from claim_projects",
         bulkLinkedProjectIds
       );
-
-      let resolvedBulkProjects: any[] = [];
 
       if (bulkLinkedProjectIds.length > 0) {
         const { data: bulkProjectsById, error: bulkByIdError } = await supabase
@@ -519,37 +526,38 @@ export default function ClaimDetailPage() {
             "[ClaimDetailPage.loadClaim] error fetching bulk_projects by linked IDs",
             bulkByIdError
           );
+          setBulkProjectsForClaim([]);
         } else {
           console.log(
-            "[ClaimDetailPage.loadClaim] bulk projects fetched by linked IDs",
+            "[ClaimDetailPage.loadClaim] bulkProjects query result",
             bulkProjectsById?.length ?? 0
           );
-          resolvedBulkProjects = bulkProjectsById ?? [];
+          setBulkProjectsForClaim(
+            (bulkProjectsById ?? []) as BulkProjectWithUploads[]
+          );
         }
       } else {
         console.log(
           "[ClaimDetailPage.loadClaim] no bulkLinkedProjectIds for this claim"
         );
+        setBulkProjectsForClaim([]);
       }
-
-      setBulkProjectsForClaim(resolvedBulkProjects);
-
-      console.log(
-        "[ClaimDetailPage.loadClaim] bulkProjectsForClaim resolved",
-        resolvedBulkProjects
-      );
 
       setError(null);
     } catch (err: unknown) {
       console.error("[ClaimDetailPage.loadClaim] Error loading claim", err);
       setError(
-        err instanceof Error ? err.message : "Failed to load claim details"
+        err instanceof Error
+          ? err.message
+          : "Failed to load claim details"
       );
       toast({
         variant: "destructive",
         title: "Error loading claim",
         description:
-          err instanceof Error ? err.message : "Something went wrong. Please try again.",
+          err instanceof Error
+            ? err.message
+            : "Something went wrong. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -2688,8 +2696,8 @@ export default function ClaimDetailPage() {
               const hasClaimCosts = costs.length > 0;
 
               const costTotalsByTypeFromClaim = costs.reduce<
-                Record<string, { total: number; count: number }>
-              >((acc, cost) => {
+                Record<string, {total: number;count: number;}>>(
+              (acc, cost) => {
                 const type = (cost.cost_type as string) || "other";
                 const amount = Number(cost.amount || 0);
 
@@ -2758,7 +2766,7 @@ export default function ClaimDetailPage() {
                 {
                   total: number;
                   count: number;
-                  byType: Record<string, { total: number; count: number }>;
+                  byType: Record<string, {total: number;count: number;}>;
                 }
               > = {};
 
