@@ -498,16 +498,45 @@ export default function ClaimDetailPage() {
             loaded.org_id
           );
           setBulkProjects(bulk as BulkProjectWithUploads[]);
+
+          const bulkLinkedProjectIds = (claimProjects || [])
+            .map((p: any) => p.source_bulk_project_id)
+            .filter(
+              (bulkId: string | null | undefined): bulkId is string => !!bulkId
+            );
+
+          if (bulkLinkedProjectIds.length > 0) {
+            const uniqueIds = Array.from(new Set(bulkLinkedProjectIds));
+            const bulkById = new Map(
+              (bulk as BulkProjectWithUploads[]).map((bp) => [bp.id, bp])
+            );
+            const bulkForClaim = uniqueIds
+              .map((bulkId) => bulkById.get(bulkId))
+              .filter(
+                (bp): bp is BulkProjectWithUploads => typeof bp !== "undefined"
+              );
+
+            setBulkProjectsForClaim(bulkForClaim);
+          } else {
+            setBulkProjectsForClaim([]);
+          }
         } catch (bulkError) {
-          console.error("[ClaimDetailPage.loadClaim] Error loading bulk projects:", bulkError);
+          console.error(
+            "[ClaimDetailPage.loadClaim] Error loading bulk projects:",
+            bulkError
+          );
           toast({
             title: "Error loading bulk projects",
-            description: "Bulk projects for this organisation could not be loaded.",
+            description:
+            "Bulk projects for this organisation could not be loaded.",
             variant: "destructive"
           });
+          setBulkProjectsForClaim([]);
         } finally {
           setLoadingBulkProjects(false);
         }
+      } else {
+        setBulkProjectsForClaim([]);
       }
 
       // Reset client-side aggregated cost state
@@ -672,28 +701,8 @@ export default function ClaimDetailPage() {
         }
       }
 
-      // After loading claim and its projects, resolve any bulk-linked projects
-      try {
-        const bulkLinkedProjectIds = (claimProjects || [])
-          .map((p: any) => p.source_bulk_project_id)
-          .filter((id: string | null | undefined): id is string => !!id);
+      // (bulkProjectsForClaim is now derived above when loading bulk projects)
 
-        if (bulkLinkedProjectIds.length > 0) {
-          const uniqueIds = Array.from(new Set(bulkLinkedProjectIds));
-          const { data, error } = await (supabase as any)
-            .from("bulk_projects")
-            .select("*, bulk_project_uploads(*)")
-            .in("id", uniqueIds);
-
-          if (!error && Array.isArray(data)) {
-            setBulkProjectsForClaim(data as BulkProjectWithUploads[]);
-          }
-        } else {
-          setBulkProjectsForClaim([]);
-        }
-      } catch (bulkError) {
-        console.error("[ClaimDetailPage.loadClaim] Error resolving bulk-linked projects:", bulkError);
-      }
     } catch (error) {
       console.error("Error loading claim:", error);
       toast({
