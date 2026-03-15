@@ -613,6 +613,14 @@ export default function ClaimDetailPage() {
     void loadClaim();
   }, [id, currentOrg]);
 
+  useEffect(() => {
+    if (typeof id !== "string") return;
+    const tab = router.query.tab;
+    if (typeof tab === "string") {
+      setActiveTab(tab);
+    }
+  }, [router.query.tab, id]);
+
   // Placeholder QA submission handler so the button works without breaking the build
   const handleSubmitForQa = async (): Promise<void> => {
     toast({
@@ -2022,7 +2030,11 @@ export default function ClaimDetailPage() {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
           <TabsList className="w-full justify-start gap-2 overflow-x-auto">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="bulk">Bulk</TabsTrigger>
@@ -2031,6 +2043,7 @@ export default function ClaimDetailPage() {
             <TabsTrigger value="apportion">Apportion</TabsTrigger>
             <TabsTrigger value="evidence">Evidence</TabsTrigger>
             <TabsTrigger value="companion">Companion</TabsTrigger>
+            <TabsTrigger value="completion">Completion Status</TabsTrigger>
           </TabsList>
 
           {/* OVERVIEW – full-width content */}
@@ -3559,129 +3572,9 @@ export default function ClaimDetailPage() {
             </Dialog>
           </TabsContent>
 
-          {/* COMPANION – AI analysis */}
-          <TabsContent value="companion" className="mt-6 space-y-4">
-            <Card>
-              <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <CardTitle>AI Companion Analysis</CardTitle>
-                  <CardDescription>
-                    Generate and share AI-powered insights for this claim.
-                  </CardDescription>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {aiAnalysis && (
-                    <Dialog
-                      open={showSendAnalysisDialog}
-                      onOpenChange={setShowSendAnalysisDialog}
-                    >
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Users className="mr-2 h-4 w-4" />
-                          Send analysis
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Send AI analysis</DialogTitle>
-                          <DialogDescription>
-                            Send this AI analysis as a message to a team member.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label>Recipient</Label>
-                            <Select
-                              value={sendTo}
-                              onValueChange={setSendTo}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select recipient..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {claim.bd_owner_id && (
-                                  <SelectItem value={claim.bd_owner_id}>
-                                    BD owner
-                                  </SelectItem>
-                                )}
-                                {claim.technical_lead_id && (
-                                  <SelectItem value={claim.technical_lead_id}>
-                                    Technical lead
-                                  </SelectItem>
-                                )}
-                                {claim.cost_lead_id && (
-                                  <SelectItem value={claim.cost_lead_id}>
-                                    Cost lead
-                                  </SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label>Preview</Label>
-                            <div className="mt-2 max-h-64 overflow-y-auto rounded-md bg-muted p-3 text-sm">
-                              {aiAnalysis}
-                            </div>
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button
-                            variant="outline"
-                            onClick={() =>
-                              setShowSendAnalysisDialog(false)
-                            }
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            onClick={handleSendAnalysis}
-                            disabled={!sendTo || sendingMessage}
-                          >
-                            {sendingMessage ? "Sending..." : "Send"}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                  <Button
-                    size="sm"
-                    onClick={handleGenerateAnalysis}
-                    disabled={loadingAnalysis}
-                  >
-                    {loadingAnalysis ? (
-                      <>
-                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Generate analysis
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {!aiAnalysis && !loadingAnalysis && (
-                  <p className="text-sm text-muted-foreground">
-                    No analysis yet. Click &quot;Generate analysis&quot; to
-                    create an AI summary of this claim for internal or client
-                    use.
-                  </p>
-                )}
-                {loadingAnalysis && (
-                  <p className="text-sm text-muted-foreground">
-                    Generating analysis...
-                  </p>
-                )}
-                {aiAnalysis && !loadingAnalysis && (
-                  <div className="whitespace-pre-wrap rounded-md bg-muted p-4 text-sm">
-                    {aiAnalysis}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          {/* COMPLETION STATUS – Technical / Cost / QA / Draft / Final */}
+          <TabsContent value="completion" className="mt-6 space-y-4">
+            <CompletionStatusTab claim={claim} />
           </TabsContent>
         </Tabs>
       </div>
