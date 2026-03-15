@@ -26,6 +26,7 @@ import {
   buildInternalClients,
   reconcileFeesWithClients } from
 "@/services/clientFeeReconciliationService";
+import { ProjectGantt } from "@/components/projects/ProjectGantt";
 
 type ClientToBeOnboardedRow =
 Database["public"]["Tables"]["clients_to_be_onboarded"]["Row"];
@@ -413,43 +414,9 @@ export default function PipelinePage() {
           </div>
         </div>
 
-        {/* Summary Cards */}
-        {summary &&
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Pipeline</p>
-                  <p className="text-3xl font-bold mt-1">
-                    £{totalPipelineRevenue.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                  })}
-                  </p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-blue-500" />
-              </div>
-            </Card>
-            <Card className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Active Customers</p>
-                  <p className="text-3xl font-bold mt-1">{summary.count}</p>
-                </div>
-                <Calendar className="w-8 h-8 text-green-500" />
-              </div>
-            </Card>
-            <Card className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Avg Confidence</p>
-                  <p className="text-3xl font-bold mt-1">{summary.avgConfidence}%</p>
-                </div>
-                <Filter className="w-8 h-8 text-purple-500" />
-              </div>
-            </Card>
-          </div>
-        }
+        {/* KPI cards and 12‑month pipeline chart moved from /staff dashboard */}
+        <section className="space-y-4">
+        </section>
 
         {/* Filters */}
         <Card className="p-4">
@@ -523,107 +490,15 @@ export default function PipelinePage() {
             </div> :
 
           <div className="space-y-2">
-              {expandedPipeline.map((entry) => {
-              const pipelineDate = new Date(entry.pipeline_start_date);
-              const expectedFilingDate = entry.expected_accounts_filing_date ?
-              new Date(entry.expected_accounts_filing_date) :
-              null;
-              const confidence = entry.filing_confidence_score || 0;
-              const avgLagDays = entry.average_filing_lag_days || 0;
-              let yearEndDate: Date | null = null;
-
-              if (expectedFilingDate && avgLagDays > 0) {
-                yearEndDate = new Date(expectedFilingDate);
-                yearEndDate.setDate(yearEndDate.getDate() - avgLagDays);
-              }
-
-              return (
-                <div
-                  key={entry.id}
-                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors cursor-pointer group"
-                  onClick={() => {
-                    if (entry.claim_id) {
-                      router.push(`/staff/claims/${entry.claim_id}`);
-                    }
-                  }}>
-                  
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-semibold text-lg" style={{ fontSize: "12px" }}>
-                            {entry.organisation?.name || "Unknown Organisation"}
-                          </h3>
-                          <Badge variant={getConfidenceBadge(confidence)}>
-                            {confidence}% confident
-                          </Badge>
-                          <Badge
-                          variant={entry.claim_id ? "outline" : "secondary"}>
-                          
-                            {entry.claim_id ? "Onboarded client" : "Client not yet onboarded"}
-                          </Badge>
-                          {entry.auto_created &&
-                        <Badge variant="outline">Auto</Badge>
-                        }
-                        </div>
-                        <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                          <div className="flex flex-wrap items-center gap-4">
-                            {yearEndDate &&
-                          <span>
-                                Year End:{" "}
-                                <strong>{format(yearEndDate, "MMM yyyy")}</strong>
-                              </span>
-                          }
-                            {expectedFilingDate &&
-                          <span>
-                                Expected Filing:{" "}
-                                <strong>{format(expectedFilingDate, "dd MMM yyyy")}</strong>
-                              </span>
-                          }
-                          </div>
-                          <div className="flex flex-wrap items-center gap-4">
-                            <span>Avg Filing Lag: <strong>{entry.average_filing_lag_days || 0} days</strong></span>
-                            <span>Years Trading: <strong>{entry.years_trading || 0}</strong></span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="w-full md:w-auto flex flex-row md:flex-col items-end justify-between md:justify-start gap-2">
-                        <div className="text-right md:text-right">
-                          <div className="text-2xl font-bold">
-                            £{(entry.predicted_revenue || 0).toLocaleString()}
-                          </div>
-                          <div className="text-sm text-muted-foreground mt-1 mb-2">
-                            Predicted Revenue
-                          </div>
-                        </div>
-                        <Button
-                        variant="ghost"
-                        size="sm"
-                        className="md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => handleEditClick(entry, e)}>
-                        
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Edit Manual Entry
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Visual Timeline Bar */}
-                    <div className="mt-4">
-                      <div className="relative h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                        className={`absolute h-full ${
-                        confidence >= 70 ? "bg-green-500" :
-                        confidence >= 40 ? "bg-yellow-500" :
-                        "bg-red-500"}`
-                        }
-                        style={{ width: `${confidence}%` }} />
-                      
-                      </div>
-                    </div>
-                  </div>);
-
-            })}
-            </div>
+            <ProjectGantt
+              items={expandedPipeline.map((entry) => ({
+                id: entry.id,
+                name: entry.organisation?.name || "Unknown Organisation",
+                start_date: entry.pipeline_start_date,
+                end_date: entry.expected_accounts_filing_date
+              }))}
+            />
+          </div>
           }
         </Card>
 

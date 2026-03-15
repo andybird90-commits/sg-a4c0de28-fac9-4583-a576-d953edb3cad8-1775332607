@@ -146,6 +146,38 @@ export async function getMessageThread(threadId: string): Promise<MessageWithDet
   return (data || []) as MessageWithDetails[];
 }
 
+export async function getMessagesForEntity(
+  entityType: "organisation" | "project" | "evidence" | "claim" | "cif",
+  entityId: string
+): Promise<MessageWithDetails[]> {
+  const { data, error } = await supabase
+    .from("messages")
+    .select(
+      `
+      *,
+      sender:profiles!messages_sender_id_fkey(id, full_name, avatar_url),
+      recipients:message_recipients(
+        recipient_id,
+        read_at,
+        recipient:profiles!message_recipients_recipient_id_fkey(id, full_name, avatar_url)
+      ),
+      mentions:message_mentions(
+        mentioned_user:profiles!message_mentions_mentioned_user_id_fkey(id, full_name)
+      )
+    `
+    )
+    .eq("entity_type", entityType)
+    .eq("entity_id", entityId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("[messageService.getMessagesForEntity] Error:", error);
+    throw error;
+  }
+
+  return (data || []) as MessageWithDetails[];
+}
+
 /**
  * Send a new message
  */
@@ -416,4 +448,5 @@ export const messageService = {
   getUnreadCount,
   searchUsersForMention,
   resolveOrgId,
+  getMessagesForEntity,
 };
