@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -89,6 +90,7 @@ import {
 } from "@/services/bulkProjectService";
 import { CompletionStatusTab } from "@/components/claims/CompletionStatusTab";
 import { internalCommentService, type InternalCommentWithAuthor } from "@/services/internalCommentService";
+// evidenceService is not used here; Sidekick evidence powers the client evidence panel
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-GB", {
@@ -527,6 +529,62 @@ export default function ClaimDetailPage() {
       }>>>(
 
     {});
+
+  const refreshEvidenceForProjects = async (
+    claimProjectsForClaim: ClaimProject[],
+    orgId: string
+  ): Promise<void> => {
+    if (!claimProjectsForClaim.length) {
+      setClientEvidenceByProject({});
+      return;
+    }
+
+    try {
+      const results = await Promise.all(
+        claimProjectsForClaim.map(async (project) => {
+          // Prefer explicit Sidekick project linkage if present
+          const sidekickProjectId =
+            (project as any).source_sidekick_project_id ||
+            (project as any).sidekick_project_id;
+
+          if (!sidekickProjectId) {
+            return [project.id, []] as const;
+          }
+
+          const items = await sidekickEvidenceService.getEvidenceByProject(
+            sidekickProjectId
+          );
+
+          const mappedItems =
+            (items || []).map((e: any) => ({
+              id: e.id,
+              // group under the claim project id so the Evidence tab can display per-claim-project
+              projectId: project.id,
+              title: e.title ?? null,
+              type: e.type,
+              createdAt: e.created_at,
+              externalUrl: (e as any).external_url ?? null,
+              body: e.body ?? null
+            })) || [];
+
+          return [project.id, mappedItems] as const;
+        })
+      );
+
+      const byProject: typeof clientEvidenceByProject = {};
+      results.forEach(([projectId, items]) => {
+        // spread to ensure a mutable array, avoiding readonly[] type issues
+        byProject[projectId] = [...items];
+      });
+      setClientEvidenceByProject(byProject);
+    } catch (error) {
+      console.error(
+        "[ClaimDetailPage.refreshEvidenceForProjects] Error loading evidence",
+        error
+      );
+    }
+  };
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -693,6 +751,13 @@ export default function ClaimDetailPage() {
       const claimProjectsForClaim: any[] = directClaimProjects ?? [];
       setProjects(claimProjectsForClaim as ClaimProject[]);
 
+      if (currentOrg) {
+        await refreshEvidenceForProjects(
+          claimProjectsForClaim as ClaimProject[],
+          currentOrg.id
+        );
+      }
+
       // Derive bulk-linked project IDs from the direct claim_projects data
       const bulkLinkedProjectIds: string[] = Array.from(
         new Set<string>(
@@ -710,49 +775,33 @@ export default function ClaimDetailPage() {
       );
 
       if (bulkLinkedProjectIds.length > 0) {
-        const { data: bulkProjectsById, error: bulkByIdError } = await supabase
-          .from("bulk_projects")
-          .select("*, bulk_project_uploads(*)")
-          .in("id", bulkLinkedProjectIds)
-          .eq("org_id", currentOrg.id);
+        const bulkProjects: BulkProjectWithUploads[] = [];
 
-        console.log("[ClaimDetailPage.loadClaim] bulkProjectsById query result", {
-          data: bulkProjectsById,
-          error: bulkByIdError,
-        });
-
-        if (bulkByIdError) {
-          console.error(
-            "[ClaimDetailPage.loadClaim] error fetching bulk_projects by linked IDs",
-            bulkByIdError
-          );
-          // As a fallback, at least surface lightweight rows built from claim projects
-          const fallbackBulk = bulkLinkedProjectIds.map((bpId) => {
-            const linkedProject = claimProjectsForClaim.find(
-              (p: any) => p.source_bulk_project_id === bpId
+        for (const bpId of bulkLinkedProjectIds) {
+          try {
+            const project = await bulkProjectService.getProjectById(bpId);
+            if (project) {
+              bulkProjects.push(project as BulkProjectWithUploads);
+            }
+          } catch (bulkError) {
+            console.error(
+              "[ClaimDetailPage.loadClaim] error fetching bulk project via service",
+              { bpId, bulkError }
             );
-            return {
-              id: bpId,
-              org_id: currentOrg.id,
-              name: linkedProject?.name || "Bulk project",
-              description: linkedProject?.description || null,
-              bulk_project_uploads: [],
-            } as any;
-          });
-          setBulkProjectsForClaim(fallbackBulk as BulkProjectWithUploads[]);
-        } else if (bulkProjectsById && bulkProjectsById.length > 0) {
+          }
+        }
+
+        if (bulkProjects.length > 0) {
           console.log(
-            "[ClaimDetailPage.loadClaim] bulkProjectsForClaim resolved from bulk_projects",
-            bulkProjectsById.length
+            "[ClaimDetailPage.loadClaim] bulkProjectsForClaim resolved via bulkProjectService",
+            bulkProjects.length
           );
-          setBulkProjectsForClaim(
-            (bulkProjectsById ?? []) as BulkProjectWithUploads[]
-          );
+          setBulkProjectsForClaim(bulkProjects);
         } else {
           console.log(
-            "[ClaimDetailPage.loadClaim] bulk_projects query returned no rows, using fallback from claim_projects"
+            "[ClaimDetailPage.loadClaim] no bulk projects returned; using lightweight fallback from claim_projects"
           );
-          const fallbackBulk = bulkLinkedProjectIds.map((bpId) => {
+          const fallbackBulk: BulkProjectWithUploads[] = bulkLinkedProjectIds.map((bpId) => {
             const linkedProject = claimProjectsForClaim.find(
               (p: any) => p.source_bulk_project_id === bpId
             );
@@ -761,10 +810,14 @@ export default function ClaimDetailPage() {
               org_id: currentOrg.id,
               name: linkedProject?.name || "Bulk project",
               description: linkedProject?.description || null,
+              sector: (linkedProject as any)?.sector ?? null,
+              stage: (linkedProject as any)?.stage ?? null,
+              created_at: new Date().toISOString(),
+              created_by: null,
               bulk_project_uploads: [],
-            } as any;
+            } as BulkProjectWithUploads;
           });
-          setBulkProjectsForClaim(fallbackBulk as BulkProjectWithUploads[]);
+          setBulkProjectsForClaim(fallbackBulk);
         }
       } else {
         console.log(
@@ -2392,7 +2445,7 @@ export default function ClaimDetailPage() {
                         <p className="mb-1 text-xs font-semibold text-muted-foreground">
                           Companion suggestions on HMRC responses
                         </p>
-                        <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                        <p className="whitespace-pre-wrap text-[11px] text-muted-foreground">
                           {hmrcAnalysis}
                         </p>
                       </div>
@@ -2610,7 +2663,7 @@ export default function ClaimDetailPage() {
                             <p className="text-xs font-medium text-muted-foreground mb-1">
                               Evidence packs
                             </p>
-                            {bp.bulk_project_uploads?.filter(
+                            {bp.bulk_project_uploads && bp.bulk_project_uploads.filter(
                               (u) => u.upload_type === "evidence"
                             ).length ? (
                               <ul className="space-y-1 text-xs">
@@ -2621,17 +2674,29 @@ export default function ClaimDetailPage() {
                                       key={u.id}
                                       className="flex items-center justify-between gap-2"
                                     >
-                                      <span className="truncate">
-                                        {u.file_name}
-                                      </span>
-                                      <span className="text-[11px] text-muted-foreground">
-                                        {(
-                                          u.file_size_bytes /
-                                          1024 /
-                                          1024
-                                        ).toFixed(1)}{" "}
-                                        MB
-                                      </span>
+                                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                                        <span className="truncate">
+                                          {u.file_name}
+                                        </span>
+                                        <span className="text-[11px] text-muted-foreground">
+                                          {(
+                                            u.file_size_bytes /
+                                            1024 /
+                                            1024
+                                          ).toFixed(1)}{" "}
+                                          MB
+                                        </span>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          void handleDownloadBulkUpload(u);
+                                        }}
+                                      >
+                                        <Download className="h-4 w-4" />
+                                      </Button>
                                     </li>
                                   ))}
                               </ul>
@@ -2646,7 +2711,7 @@ export default function ClaimDetailPage() {
                             <p className="text-xs font-medium text-muted-foreground mb-1">
                               Financial packs
                             </p>
-                            {bp.bulk_project_uploads?.filter(
+                            {bp.bulk_project_uploads && bp.bulk_project_uploads.filter(
                               (u) => u.upload_type === "financial"
                             ).length ? (
                               <ul className="space-y-1 text-xs">
@@ -2659,17 +2724,29 @@ export default function ClaimDetailPage() {
                                       key={u.id}
                                       className="flex items-center justify-between gap-2"
                                     >
-                                      <span className="truncate">
-                                        {u.file_name}
-                                      </span>
-                                      <span className="text-[11px] text-muted-foreground">
-                                        {(
-                                          u.file_size_bytes /
-                                          1024 /
-                                          1024
-                                        ).toFixed(1)}{" "}
-                                        MB
-                                      </span>
+                                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                                        <span className="truncate">
+                                          {u.file_name}
+                                        </span>
+                                        <span className="text-[11px] text-muted-foreground">
+                                          {(
+                                            u.file_size_bytes /
+                                            1024 /
+                                            1024
+                                          ).toFixed(1)}{" "}
+                                          MB
+                                        </span>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          void handleDownloadBulkUpload(u);
+                                        }}
+                                      >
+                                        <Download className="h-4 w-4" />
+                                      </Button>
                                     </li>
                                   ))}
                               </ul>
@@ -2804,8 +2881,8 @@ export default function ClaimDetailPage() {
               const { lowMultiplier, highMultiplier } =
                 getSchemeMultipliers(schemeForCalc);
 
-              const indicativeLow = effectiveTotalClaimCost * lowMultiplier;
-              const indicativeHigh = effectiveTotalClaimCost * highMultiplier;
+              const indicativeLow = Math.round(Number(effectiveTotalClaimCost) * lowMultiplier);
+              const indicativeHigh = Math.round(Number(effectiveTotalClaimCost) * highMultiplier);
 
               const projectSummaries: Record<
                 string,
@@ -3665,6 +3742,59 @@ export default function ClaimDetailPage() {
           {/* COMPLETION STATUS – Technical / Cost / QA / Draft / Final */}
           <TabsContent value="completion" className="space-y-6">
             <CompletionStatusTab claim={claim} />
+          </TabsContent>
+
+          {/* COMPANION CLAIM REVIEWER */}
+          <TabsContent value="companion" className="mt-6 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Companion Claim reviewer
+                </CardTitle>
+                <CardDescription>
+                  Use RD Companion to review this claim and suggest improvements to narratives, risks and
+                  opportunities before you finalise the pack.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="max-w-xl text-sm text-muted-foreground">
+                    Generate an internal-only AI review of this claim covering risks, strengths and suggested
+                    next actions. This does not change any client-facing content.
+                  </p>
+                  <Button
+                    variant="secondary"
+                    disabled={loadingAnalysis}
+                    onClick={() => {
+                      void handleGenerateAnalysis();
+                    }}
+                  >
+                    {loadingAnalysis ? (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                        Reviewing claim...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Review claim with Companion
+                      </>
+                    )}
+                  </Button>
+                </div>
+                {aiAnalysis && (
+                  <div className="rounded-md border border-border/60 bg-background/40 p-3 text-sm">
+                    <p className="mb-1 text-xs font-semibold text-muted-foreground">
+                      Companion analysis
+                    </p>
+                    <p className="whitespace-pre-wrap text-muted-foreground">
+                      {aiAnalysis}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

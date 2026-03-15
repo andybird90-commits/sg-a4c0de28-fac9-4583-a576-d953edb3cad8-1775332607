@@ -21,21 +21,20 @@ type NewClaimCost = Omit<ClaimCostInsert, "org_id"> & {
 type ClaimDocument = Database["public"]["Tables"]["claim_documents"]["Row"];
 type ClaimDocumentInsert = Database["public"]["Tables"]["claim_documents"]["Insert"];
 
-export interface ClaimWithDetails extends Claim {
-  organisations?: {
-    name: string;
-    organisation_code: string;
-  } | null;
-  projects?: ClaimProject[];
-  costs?: ClaimCost[];
-  documents?: ClaimDocument[];
+export type ClaimWithDetails = Claim & {
+  organisations?: any;
   bd_owner?: Profile | null;
   technical_lead?: Profile | null;
   cost_lead?: Profile | null;
+  ops_owner?: Profile | null;
+  director?: Profile | null;
   qa_reviewer?: Profile | null;
-  total_costs?: number;
+  projects?: ClaimProject[];
+  costs?: ClaimCost[];
+  documents?: ClaimDocument[];
+  total_costs?: number | null;
   document_count?: number;
-}
+};
 
 export class ClaimService {
   /**

@@ -50,6 +50,10 @@ interface BoardRow {
   finalStatus: StageStatus;
   estimatedValue: number;
   latestConversation: string | null;
+  projectsCount: number;
+  evidenceCount: number;
+  companyAddress: string | null;
+  companyContact: string | null;
 }
 
 export default function StaffHomePage() {
@@ -106,10 +110,40 @@ export default function StaffHomePage() {
             (completion?.final_status as StageStatus) ??
             (hasFinal ? "complete" : "not_started");
 
-          const estimatedValue =
-            (claim as any).estimated_benefit ??
-            (claim as any).estimated_value ??
-            0;
+          // Projects & evidence
+          const projectsCount = Array.isArray((claim as any).projects)
+            ? (claim as any).projects.length
+            : 0;
+          const evidenceCount =
+            typeof (claim as any).document_count === "number"
+              ? (claim as any).document_count
+              : 0;
+
+          // Company details (best-effort, blanks allowed)
+          const org: any = (claim as any).organisations ?? {};
+          const addressParts = [
+            org.address_line1,
+            org.address_line2,
+            org.city,
+            org.postcode,
+          ].filter(Boolean);
+          const companyAddress =
+            addressParts.length > 0 ? addressParts.join(", ") : null;
+
+          const contactParts = [
+            org.contact_name,
+            org.contact_email,
+            org.contact_phone,
+          ].filter(Boolean);
+          const companyContact =
+            contactParts.length > 0 ? contactParts.join(" • ") : null;
+
+          // Estimated value – use total_costs coming from client/staff side aggregation
+          const totalCosts =
+            typeof (claim as any).total_costs === "number"
+              ? (claim as any).total_costs
+              : Number((claim as any).total_costs || 0);
+          const estimatedValue = totalCosts > 0 ? totalCosts : 0;
 
           const latestConversation =
             (claim as any).latest_conversation_summary ??
@@ -125,6 +159,10 @@ export default function StaffHomePage() {
             finalStatus,
             estimatedValue,
             latestConversation,
+            projectsCount,
+            evidenceCount,
+            companyAddress,
+            companyContact,
           };
         });
 
@@ -179,12 +217,6 @@ export default function StaffHomePage() {
                   <th className="px-4 py-3 text-left">QA</th>
                   <th className="px-4 py-3 text-left">Draft</th>
                   <th className="px-4 py-3 text-left">Final</th>
-                  <th className="px-4 py-3 text-right">
-                    <div className="inline-flex items-center gap-1">
-                      <PoundSterling className="h-3 w-3" />
-                      <span>Est. Value</span>
-                    </div>
-                  </th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -198,11 +230,25 @@ export default function StaffHomePage() {
                     }
                   >
                     <td className="px-4 py-3">
-                      <div className="font-medium text-slate-900">
-                        {row.claim.organisations?.name || "Unknown client"}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {row.claim.organisations?.organisation_code}
+                      <div className="space-y-1">
+                        <div className="font-medium text-slate-900">
+                          {row.claim.organisations?.name || "Unknown client"}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {row.claim.organisations?.organisation_code}
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {row.projectsCount} projects
+                          {row.evidenceCount > 0 && (
+                            <> • {row.evidenceCount} evidence items</>
+                          )}
+                        </div>
+                        {(row.companyAddress || row.companyContact) && (
+                          <div className="text-[11px] text-slate-500 space-y-0.5">
+                            {row.companyAddress && <div>{row.companyAddress}</div>}
+                            {row.companyContact && <div>{row.companyContact}</div>}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-slate-800">
@@ -229,19 +275,6 @@ export default function StaffHomePage() {
                     </td>
                     <td className="px-4 py-3">
                       <StatusBox label="Final" status={row.finalStatus} />
-                    </td>
-                    <td className="px-4 py-3 text-right font-semibold text-slate-900">
-                      {row.estimatedValue > 0 ? (
-                        new Intl.NumberFormat("en-GB", {
-                          style: "currency",
-                          currency: "GBP",
-                          maximumFractionDigits: 0,
-                        }).format(row.estimatedValue)
-                      ) : (
-                        <span className="text-xs font-normal text-slate-400">
-                          Not set
-                        </span>
-                      )}
                     </td>
                     <td
                       className="px-4 py-3 text-right"
