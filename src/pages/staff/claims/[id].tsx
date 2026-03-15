@@ -2252,54 +2252,7 @@ export default function ClaimDetailPage() {
                       QA signoff.
                     </p>
                   </div>
-                  <div className="flex flex-col gap-3 md:flex-row md:items-end">
-                    <div className="flex-1">
-                      <Label htmlFor="qa-admin">
-                        Assign QA reviewer (admin)
-                      </Label>
-                      <Select
-                        value={selectedQaAdmin}
-                        onValueChange={setSelectedQaAdmin}
-                      >
-                        <SelectTrigger id="qa-admin">
-                          <SelectValue placeholder="Select admin reviewer" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {qaAdmins.map((admin) => (
-                            <SelectItem key={admin.id} value={admin.id}>
-                              {admin.full_name ?? admin.email ?? "Admin"}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        The selected admin will receive a message with a link to
-                        this claim to review and approve.
-                      </p>
-                    </div>
-                    <Button
-                      variant="secondary"
-                      disabled={submittingQa || !selectedQaAdmin}
-                      onClick={handleSubmitForQa}
-                    >
-                      {submittingQa ? "Submitting..." : "Submit for QA signoff"}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Step 2 – Client review */}
-                <div className="space-y-3 border-t border-border pt-4">
-                  <div>
-                    <p className="text-sm font-semibold">
-                      Step 2 – Client review and comments
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Once QA is complete, issue this claim to the client for
-                      review and comments.
-                    </p>
-                  </div>
-
-                  {claim.status === "final_signoff" && (
+                  <div className="flex flex-col gap-3 md:w-56">
                     <Button
                       variant="secondary"
                       disabled={clientActionLoading}
@@ -2309,35 +2262,21 @@ export default function ClaimDetailPage() {
                         ? "Issuing..."
                         : "Issue to client for comment"}
                     </Button>
-                  )}
-
-                  {claim.status === "client_review" && (
-                    <div className="flex flex-col gap-3 md:w-56">
-                      <Button
-                        variant="secondary"
-                        disabled={clientActionLoading}
-                        onClick={handleClientApprove}
-                      >
-                        {clientActionLoading
-                          ? "Saving..."
-                          : "Client approved – ready to file"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        disabled={clientActionLoading || !clientFeedback.trim()}
-                        onClick={handleClientComments}
-                      >
-                        Client comments – back to draft
-                      </Button>
-                    </div>
-                  )}
+                    <Button
+                      variant="outline"
+                      disabled={clientActionLoading || !clientFeedback.trim()}
+                      onClick={handleClientComments}
+                    >
+                      Client comments – back to draft
+                    </Button>
+                  </div>
                 </div>
 
-                {/* Step 3 – HMRC submission */}
+                {/* Step 2 – HMRC submission */}
                 <div className="space-y-4 border-t border-border pt-4">
                   <div>
                     <p className="text-sm font-semibold">
-                      Step 3 – HMRC submission
+                      Step 2 – HMRC submission
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Once the client has approved, issue this claim to HMRC and

@@ -790,6 +790,130 @@ export type Database = {
         }
         Relationships: []
       }
+      claim_completion_status: {
+        Row: {
+          claim_id: string
+          cost_completed_at: string | null
+          cost_completed_by: string | null
+          cost_notes: string | null
+          cost_status: string
+          created_at: string
+          draft_completed_at: string | null
+          draft_completed_by: string | null
+          draft_document_id: string | null
+          draft_status: string
+          final_completed_at: string | null
+          final_completed_by: string | null
+          final_document_id: string | null
+          final_status: string
+          id: string
+          qa_completed_at: string | null
+          qa_completed_by: string | null
+          qa_notes: string | null
+          qa_status: string
+          technical_completed_at: string | null
+          technical_completed_by: string | null
+          technical_notes: string | null
+          technical_status: string
+          updated_at: string
+        }
+        Insert: {
+          claim_id: string
+          cost_completed_at?: string | null
+          cost_completed_by?: string | null
+          cost_notes?: string | null
+          cost_status?: string
+          created_at?: string
+          draft_completed_at?: string | null
+          draft_completed_by?: string | null
+          draft_document_id?: string | null
+          draft_status?: string
+          final_completed_at?: string | null
+          final_completed_by?: string | null
+          final_document_id?: string | null
+          final_status?: string
+          id?: string
+          qa_completed_at?: string | null
+          qa_completed_by?: string | null
+          qa_notes?: string | null
+          qa_status?: string
+          technical_completed_at?: string | null
+          technical_completed_by?: string | null
+          technical_notes?: string | null
+          technical_status?: string
+          updated_at?: string
+        }
+        Update: {
+          claim_id?: string
+          cost_completed_at?: string | null
+          cost_completed_by?: string | null
+          cost_notes?: string | null
+          cost_status?: string
+          created_at?: string
+          draft_completed_at?: string | null
+          draft_completed_by?: string | null
+          draft_document_id?: string | null
+          draft_status?: string
+          final_completed_at?: string | null
+          final_completed_by?: string | null
+          final_document_id?: string | null
+          final_status?: string
+          id?: string
+          qa_completed_at?: string | null
+          qa_completed_by?: string | null
+          qa_notes?: string | null
+          qa_status?: string
+          technical_completed_at?: string | null
+          technical_completed_by?: string | null
+          technical_notes?: string | null
+          technical_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_completion_status_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: true
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_completion_status_cost_completed_by_fkey"
+            columns: ["cost_completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_completion_status_draft_completed_by_fkey"
+            columns: ["draft_completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_completion_status_final_completed_by_fkey"
+            columns: ["final_completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_completion_status_qa_completed_by_fkey"
+            columns: ["qa_completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_completion_status_technical_completed_by_fkey"
+            columns: ["technical_completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       claim_costs: {
         Row: {
           amount: number
