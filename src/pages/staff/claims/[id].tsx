@@ -478,34 +478,32 @@ export default function ClaimDetailPage() {
 
       setClaim(loaded);
 
-      // Prefer projects loaded via claimService; if missing, fall back to a direct claim_projects query
-      let claimProjectsForClaim: any[] = (loaded as any).projects ?? [];
+      // Always fetch claim_projects directly so we have all columns (including source_bulk_project_id)
+      const {
+        data: directClaimProjects,
+        error: directProjectsError,
+      } = await supabase
+        .from("claim_projects")
+        .select("*")
+        .eq("claim_id", id)
+        .eq("org_id", currentOrg.id);
 
-      if (!claimProjectsForClaim || claimProjectsForClaim.length === 0) {
-        const { data: directClaimProjects, error: directProjectsError } =
-          await supabase
-            .from("claim_projects")
-            .select("*")
-            .eq("claim_id", id)
-            .eq("org_id", currentOrg.id);
-
-        if (directProjectsError) {
-          console.error(
-            "[ClaimDetailPage.loadClaim] direct claim_projects fetch error",
-            directProjectsError
-          );
-        } else {
-          console.log(
-            "[ClaimDetailPage.loadClaim] direct claim_projects fetched",
-            directClaimProjects?.length ?? 0
-          );
-          claimProjectsForClaim = directClaimProjects ?? [];
-        }
+      if (directProjectsError) {
+        console.error(
+          "[ClaimDetailPage.loadClaim] direct claim_projects fetch error",
+          directProjectsError
+        );
+      } else {
+        console.log(
+          "[ClaimDetailPage.loadClaim] direct claim_projects fetched",
+          directClaimProjects?.length ?? 0
+        );
       }
 
+      const claimProjectsForClaim: any[] = directClaimProjects ?? [];
       setProjects(claimProjectsForClaim as ClaimProject[]);
 
-      // Derive bulk-linked project IDs from the claimProjects we just set
+      // Derive bulk-linked project IDs from the direct claim_projects data
       const bulkLinkedProjectIds: string[] = Array.from(
         new Set<string>(
           (claimProjectsForClaim || [])
@@ -546,12 +544,8 @@ export default function ClaimDetailPage() {
             return {
               id: bpId,
               org_id: currentOrg.id,
-              name:
-                linkedProject?.name ||
-                "Bulk project",
-              description:
-                linkedProject?.description ||
-                null,
+              name: linkedProject?.name || "Bulk project",
+              description: linkedProject?.description || null,
               bulk_project_uploads: [],
             } as any;
           });
@@ -575,12 +569,8 @@ export default function ClaimDetailPage() {
             return {
               id: bpId,
               org_id: currentOrg.id,
-              name:
-                linkedProject?.name ||
-                "Bulk project",
-              description:
-                linkedProject?.description ||
-                null,
+              name: linkedProject?.name || "Bulk project",
+              description: linkedProject?.description || null,
               bulk_project_uploads: [],
             } as any;
           });
