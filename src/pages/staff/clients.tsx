@@ -821,9 +821,10 @@ export default function StaffClients() {
     );
   };
 
-  const filteredProspectsOnboarded = prospectsOnboarded.
-  filter((prospect) => {
-    if (!onboardedSearch) return true;
+  const filteredProspectsOnboarded = prospectsOnboarded
+  .filter((prospect) => {
+    const search = searchToOnboard.trim().toLowerCase();
+    if (!search) return true;
     const haystack = [
     prospect.company_name,
     prospect.company_number,
@@ -832,13 +833,14 @@ export default function StaffClients() {
     filter(Boolean).
     join(" ").
     toLowerCase();
-    return haystack.includes(onboardedSearch);
+    return haystack.includes(search);
   }).
   sort((a, b) => {
     const nameA = (a.company_name || "").toLowerCase();
     const nameB = (b.company_name || "").toLowerCase();
-    if (nameA < nameB) return -1 * sortFactorOnboarded;
-    if (nameA > nameB) return 1 * sortFactorOnboarded;
+    const sortFactor = sortToOnboard === "name-asc" ? 1 : -1;
+    if (nameA < nameB) return -1 * sortFactor;
+    if (nameA > nameB) return 1 * sortFactor;
     return 0;
   });
 
@@ -886,15 +888,15 @@ export default function StaffClients() {
   const bulkProgress =
   bulkState.total > 0 ? Math.round(bulkState.completed / bulkState.total * 100) : 0;
 
-  const totalToOnboardCount = clientsToOnboard.length + prospectsToOnboard.length;
+  const totalToOnboardCount =
+  clientsToOnboard.length + prospectsToOnboard.length + prospectsOnboarded.length;
   const hasClientsToOnboard = clientsToOnboard.length > 0;
   const hasProspectsToOnboard = prospectsToOnboard.length > 0;
+  const hasOnboardedClients = prospectsOnboarded.length > 0;
 
   const toOnboardSearch = searchToOnboard.trim().toLowerCase();
-  const onboardedSearch = searchOnboarded.trim().toLowerCase();
 
   const sortFactorToOnboard = sortToOnboard === "name-asc" ? 1 : -1;
-  const sortFactorOnboarded = sortOnboarded === "name-asc" ? 1 : -1;
 
   const filteredClientsToOnboard = clientsToOnboard.
   filter((client) => {
@@ -1062,8 +1064,7 @@ export default function StaffClients() {
             </div>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Clients to be onboarded */}
+          <div className="grid gap-6">
             <Card className="border-blue-200">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                 <div className="flex items-center gap-3">
@@ -1071,9 +1072,9 @@ export default function StaffClients() {
                     <Building2 className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">Clients to be onboarded</CardTitle>
+                    <CardTitle className="text-lg">Clients</CardTitle>
                     <CardDescription>
-                      Prospects without an organisation yet. Start CIFs and enrich details.
+                      Imported clients, RD prospects and onboarded organisations. Use tags to see status.
                     </CardDescription>
                   </div>
                 </div>
@@ -1153,9 +1154,9 @@ export default function StaffClients() {
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                     Loading clients...
                   </div> :
-                !hasClientsToOnboard && !hasProspectsToOnboard ?
+                !hasClientsToOnboard && !hasProspectsToOnboard && !hasOnboardedClients ?
                 <div className="py-8 text-center text-sm text-muted-foreground">
-                    No clients awaiting onboarding. Add prospects or imported clients to see them here.
+                    No clients yet.
                   </div> :
 
                 <div className="space-y-4">
@@ -1227,7 +1228,7 @@ export default function StaffClients() {
 
                     {hasProspectsToOnboard &&
                   <div className="space-y-2">
-                        {hasClientsToOnboard &&
+                        {(hasClientsToOnboard || hasOnboardedClients) &&
                     <p className="text-xs font-medium text-slate-700 pt-2 border-t border-slate-100">
                             Prospects in RD Companion
                           </p>
@@ -1251,6 +1252,12 @@ export default function StaffClients() {
                                       <p className="font-semibold text-sm">
                                         {prospect.company_name}
                                       </p>
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] px-1.5 py-0.5 rounded-full"
+                                      >
+                                        To onboard
+                                      </Badge>
                                       {isEnriched &&
                                   <Badge variant="outline" className="text-xs">
                                           Enriched
@@ -1319,123 +1326,75 @@ export default function StaffClients() {
                         </div>
                       </div>
                   }
-                  </div>
-                }
-              </CardContent>
-            </Card>
 
-            {/* Clients onboarded */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-emerald-500 text-white">
-                    <Building2 className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Clients onboarded</CardTitle>
-                    <CardDescription>
-                      Prospects that have been converted into active client organisations.
-                    </CardDescription>
-                  </div>
-                </div>
-                {prospectsOnboarded.length > 0 &&
-                <Badge variant="outline" className="ml-2">
-                    {prospectsOnboarded.length} client
-                    {prospectsOnboarded.length === 1 ? "" : "s"}
-                  </Badge>
-                }
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <Input
-                    placeholder="Search onboarded clients..."
-                    value={searchOnboarded}
-                    onChange={(e) => setSearchOnboarded(e.target.value)}
-                    className="max-w-xs" />
-                  
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Sort by</span>
-                    <select
-                      value={sortOnboarded}
-                      onChange={(e) =>
-                      setSortOnboarded(e.target.value === "name-desc" ? "name-desc" : "name-asc")
-                      }
-                      className="h-8 rounded-md border border-input bg-background px-2 text-xs">
-                      
-                      <option value="name-asc">Name A–Z</option>
-                      <option value="name-desc">Name Z–A</option>
-                    </select>
-                  </div>
-                </div>
-
-                {loading ?
-                <div className="flex items-center justify-center py-10 text-muted-foreground">
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Loading clients...
-                  </div> :
-                filteredProspectsOnboarded.length === 0 ?
-                <div className="py-8 text-center text-sm text-muted-foreground">
-                    No onboarded clients yet.
-                  </div> :
-
-                <div className="space-y-3">
-                    {filteredProspectsOnboarded.map((prospect) =>
-                  <Card
-                    key={prospect.id}
-                    className="border border-slate-200 hover:shadow-sm transition-shadow">
-                    
-                        <CardContent className="py-3 px-4 flex items-center justify-between gap-4">
-                          <div>
-                            <p className="font-semibold text-sm flex items-center gap-2">
-                              {prospect.company_name}
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] px-1.5 py-0.5 rounded-full"
-                              >
-                                Onboarded
-                              </Badge>
-                              {prospect.org_id &&
-                          (() => {
-                            const status = notificationStatuses[prospect.org_id];
-                            if (
-                            status === "required" ||
-                            status === "overdue" ||
-                            status === "unclear")
-                            {
-                              return (
-                                <Badge
-                                  variant="destructive"
-                                  className="text-[10px] px-1.5 py-0.5 rounded-full">
-                                  
-                                        PRE
-                                      </Badge>);
-
-                            }
-                            return null;
-                          })()}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {prospect.company_number ?
-                          `Company no. ${prospect.company_number}` :
-                          "No company number recorded"}
-                            </p>
-                            {prospect.company_status &&
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                                Status: {prospect.company_status}
-                              </p>
-                        }
-                          </div>
-                          <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => router.push("/staff/cif")}>
+                    {hasOnboardedClients &&
+                  <div className="space-y-2">
+                        {(hasClientsToOnboard || hasProspectsToOnboard) &&
+                    <p className="text-xs font-medium text-slate-700 pt-2 border-t border-slate-100">
+                            Onboarded clients
+                          </p>
+                    }
+                        <div className="space-y-3">
+                          {filteredProspectsOnboarded.map((prospect) =>
+                      <Card
+                        key={prospect.id}
+                        className="border border-slate-200 hover:shadow-sm transition-shadow">
                         
-                            <ArrowRight className="h-3 w-3 mr-1" />
-                            View CIFs
-                          </Button>
-                        </CardContent>
-                      </Card>
-                  )}
+                              <CardContent className="py-3 px-4 flex items-center justify-between gap-4">
+                                <div>
+                                  <p className="font-semibold text-sm flex items-center gap-2">
+                                    {prospect.company_name}
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] px-1.5 py-0.5 rounded-full"
+                                    >
+                                      Onboarded
+                                    </Badge>
+                                    {prospect.org_id &&
+                                (() => {
+                                  const status = notificationStatuses[prospect.org_id];
+                                  if (
+                                  status === "required" ||
+                                  status === "overdue" ||
+                                  status === "unclear")
+                                  {
+                                    return (
+                                      <Badge
+                                        variant="destructive"
+                                        className="text-[10px] px-1.5 py-0.5 rounded-full">
+                                        
+                                            PRE
+                                          </Badge>);
+
+                                  }
+                                  return null;
+                                })()}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {prospect.company_number ?
+                                `Company no. ${prospect.company_number}` :
+                                "No company number recorded"}
+                                  </p>
+                                  {prospect.company_status &&
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                      Status: {prospect.company_status}
+                                    </p>
+                              }
+                                </div>
+                                <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => router.push("/staff/cif")}>
+                              
+                                  <ArrowRight className="h-3 w-3 mr-1" />
+                                  View CIFs
+                                </Button>
+                              </CardContent>
+                            </Card>
+                      )}
+                        </div>
+                      </div>
+                  }
                   </div>
                 }
               </CardContent>
