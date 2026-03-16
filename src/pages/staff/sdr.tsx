@@ -7,6 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
 import { Loader2, Upload, PhoneCall, XCircle, RefreshCcw } from "lucide-react";
 
 type SdrProspect = Tables<"sdr_prospects">;
@@ -29,6 +37,9 @@ export default function StaffSDRPage(): JSX.Element {
   const [bookingBdmId, setBookingBdmId] = useState("");
   const [bookingStart, setBookingStart] = useState("");
   const [bookingDuration, setBookingDuration] = useState(30);
+  const [bulkEnriching, setBulkEnriching] = useState(false);
+  const [bulkEnrichedCount, setBulkEnrichedCount] = useState(0);
+  const [bulkEnrichTotal, setBulkEnrichTotal] = useState(0);
 
   useEffect(() => {
     if (!user || appLoading) {
@@ -170,6 +181,46 @@ export default function StaffSDRPage(): JSX.Element {
     }
   };
 
+  const handleBulkEnrich = (): void => {
+    if (bulkEnriching) {
+      return;
+    }
+
+    const queue = prospects.filter((p) => !p.ai_dossier_json);
+
+    if (queue.length === 0) {
+      return;
+    }
+
+    setBulkEnriching(true);
+    setBulkEnrichedCount(0);
+    setBulkEnrichTotal(queue.length);
+
+    const processNext = async (index: number): Promise<void> => {
+      if (index >= queue.length) {
+        setBulkEnriching(false);
+        setBulkEnrichTotal(0);
+        return;
+      }
+
+      const prospect = queue[index];
+
+      await handleEnrich(prospect);
+      setBulkEnrichedCount(index + 1);
+
+      if (index < queue.length - 1) {
+        setTimeout(() => {
+          void processNext(index + 1);
+        }, 5000);
+      } else {
+        setBulkEnriching(false);
+        setBulkEnrichTotal(0);
+      }
+    };
+
+    void processNext(0);
+  };
+
   const handleMarkOutcome = async (
     prospect: SdrProspect,
     status: "not_interested" | "contacted"
@@ -268,10 +319,16 @@ export default function StaffSDRPage(): JSX.Element {
   };
 
   const dossier = getDossier(selectedProspect);
+  const enrichedProspects = prospects.filter(
+    (prospect) => !!prospect.ai_dossier_json
+  );
+  const unenrichedCount = prospects.filter(
+    (prospect) => !prospect.ai_dossier_json
+  ).length;
 
   return (
     <StaffLayout title="SDR">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
             SDR Radar
@@ -282,7 +339,8 @@ export default function StaffSDRPage(): JSX.Element {
           </p>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <section className="grid gap-6 lg:grid-cols-[1.1fr_1.1fr_1.8fr]">
+          {/* Left column: upload + ranked prospects */}
           <div className="space-y-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -378,257 +436,368 @@ export default function StaffSDRPage(): JSX.Element {
             </Card>
           </div>
 
+          {/* Middle column: enriched dossiers */}
+          <Card className="h-[620px] overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <div>
+                <CardTitle className="text-base font-semibold text-slate-900">
+                  Enriched dossiers
+                </CardTitle>
+                <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+                  Prospects that already have an AI-generated R&amp;D dossier.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkEnrich}
+                disabled={bulkEnriching || unenrichedCount === 0}
+              >
+                {bulkEnriching ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {bulkEnrichTotal > 0
+                      ? `Bulk enriching ${bulkEnrichedCount}/${bulkEnrichTotal}`
+                      : "Bulk enriching"}
+                  </>
+                ) : (
+                  <>
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    {unenrichedCount > 0
+                      ? `Bulk enrich ${unenrichedCount} prospect${
+                          unenrichedCount === 1 ? "" : "s"
+                        }`
+                      : "Bulk enrich"}
+                  </>
+                )}
+              </Button>
+            </CardHeader>
+            <CardContent className="h-[560px] overflow-y-auto">
+              {enrichedProspects.length === 0 ? (
+                <p className="text-sm text-slate-500">
+                  No enriched dossiers yet. Use the Enrich button on a prospect or run
+                  a bulk enrich.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Company</TableHead>
+                        <TableHead className="w-32">R&amp;D score</TableHead>
+                        <TableHead className="w-28">Status</TableHead>
+                        <TableHead className="w-40">BDM call</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {enrichedProspects.map((prospect) => (
+                        <TableRow
+                          key={prospect.id as string}
+                          className="cursor-pointer"
+                          onClick={() => setSelectedProspect(prospect)}
+                        >
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-slate-900">
+                                {prospect.company_name}
+                              </span>
+                              {prospect.company_number ? (
+                                <span className="text-xs text-slate-500">
+                                  Company no: {prospect.company_number}
+                                </span>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {prospect.rd_viability_score != null ? (
+                              <span>
+                                {(prospect.rd_viability_score as number).toFixed(1)} / 100
+                              </span>
+                            ) : (
+                              <span className="text-xs text-slate-500">Not scored</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-[11px]">
+                              {prospect.status.replace(/_/g, " ")}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {prospect.bdm_call_scheduled_at ? (
+                              <span className="text-xs text-slate-500">
+                                {new Date(
+                                  prospect.bdm_call_scheduled_at as string
+                                ).toLocaleString()}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-slate-500">Not booked</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Right column: dossier */}
           <Card className="h-[620px] overflow-hidden">
             <CardHeader>
               <CardTitle className="text-base font-semibold text-slate-900">
                 Dossier
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex h-[560px] flex-col gap-4 overflow-y-auto">
-              {!selectedProspect ? (
-                <p className="text-sm text-slate-500">
-                  Select a prospect on the left to view its dossier.
-                </p>
-              ) : (
-                <>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h2 className="text-lg font-semibold text-slate-900">
-                        {selectedProspect.company_name}
-                      </h2>
-                      {selectedProspect.company_number ? (
-                        <p className="text-xs text-slate-500">
-                          Company no: {selectedProspect.company_number}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {renderScoreBadge(
-                        (selectedProspect.rd_viability_score as number | null) ?? null
-                      )}
-                      {selectedProspect.estimated_claim_band ? (
-                        <Badge variant="outline">
-                          Band: {selectedProspect.estimated_claim_band}
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEnrich(selectedProspect)}
-                      disabled={!!enrichingId}
-                    >
-                      {enrichingId === selectedProspect.id ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Enriching…
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCcw className="mr-2 h-4 w-4" />
-                          Enrich / refresh dossier
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleMarkOutcome(selectedProspect, "not_interested")}
-                    >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Mark not interested
-                    </Button>
-                  </div>
-
-                  {dossier ? (
-                    <div className="space-y-3 text-sm text-slate-700">
-                      {dossier.rd_summary ? (
-                        <section>
-                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            R&amp;D summary
-                          </h3>
-                          <p className="mt-1 whitespace-pre-line">{dossier.rd_summary}</p>
-                        </section>
-                      ) : null}
-
-                      {dossier.what_they_do ? (
-                        <section>
-                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            What they do
-                          </h3>
-                          <p className="mt-1 whitespace-pre-line">
-                            {dossier.what_they_do}
+            <CardContent className="h-[560px] overflow-y-auto">
+              <div className="mx-auto flex h-full w-full max-w-xl flex-col gap-4">
+                {!selectedProspect ? (
+                  <p className="text-sm text-slate-500">
+                    Select a prospect on the left to view its dossier.
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h2 className="text-lg font-semibold text-slate-900">
+                          {selectedProspect.company_name}
+                        </h2>
+                        {selectedProspect.company_number ? (
+                          <p className="text-xs text-slate-500">
+                            Company no: {selectedProspect.company_number}
                           </p>
-                        </section>
-                      ) : null}
-
-                      {dossier.technical_focus ? (
-                        <section>
-                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Technical focus
-                          </h3>
-                          <p className="mt-1 whitespace-pre-line">
-                            {dossier.technical_focus}
-                          </p>
-                        </section>
-                      ) : null}
-
-                      {dossier.where_rd_is_happening ? (
-                        <section>
-                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Where R&amp;D is likely happening
-                          </h3>
-                          <p className="mt-1 whitespace-pre-line">
-                            {dossier.where_rd_is_happening}
-                          </p>
-                        </section>
-                      ) : null}
-
-                      {dossier.rd_tax_fit ? (
-                        <section>
-                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            R&amp;D tax fit (hypotheses)
-                          </h3>
-                          <p className="mt-1 whitespace-pre-line">{dossier.rd_tax_fit}</p>
-                        </section>
-                      ) : null}
-
-                      {Array.isArray(dossier.questions_to_validate) &&
-                      dossier.questions_to_validate.length > 0 ? (
-                        <section>
-                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Questions to validate quickly
-                          </h3>
-                          <ul className="mt-1 list-disc space-y-1 pl-4">
-                            {dossier.questions_to_validate.map(
-                              (q: string, idx: number) => (
-                                <li key={idx}>{q}</li>
-                              )
-                            )}
-                          </ul>
-                        </section>
-                      ) : null}
-
-                      {dossier.call_script_intro || dossier.call_script_main ? (
-                        <section>
-                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Call script
-                          </h3>
-                          {dossier.call_script_intro ? (
-                            <p className="mt-1 whitespace-pre-line">
-                              {dossier.call_script_intro}
-                            </p>
-                          ) : null}
-                          {dossier.call_script_main ? (
-                            <p className="mt-2 whitespace-pre-line">
-                              {dossier.call_script_main}
-                            </p>
-                          ) : null}
-                        </section>
-                      ) : null}
-
-                      {dossier.confidence_note ? (
-                        <section>
-                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Confidence note
-                          </h3>
-                          <p className="mt-1 whitespace-pre-line text-xs text-slate-500">
-                            {dossier.confidence_note}
-                          </p>
-                        </section>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-slate-500">
-                      No dossier yet. Click "Enrich / refresh dossier" to generate one.
-                    </p>
-                  )}
-
-                  <div className="mt-4 border-t border-slate-100 pt-3">
-                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Book BDM call
-                    </h3>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                      <div className="flex-1 space-y-1">
-                        <label className="block text-xs font-medium text-slate-600">
-                          BDM
-                        </label>
-                        <select
-                          className="block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
-                          value={bookingBdmId}
-                          onChange={(e) => setBookingBdmId(e.target.value)}
-                        >
-                          {bdmUsers.map((bdm) => (
-                            <option key={bdm.id} value={bdm.id}>
-                              {bdm.full_name || bdm.email || "Unnamed user"}
-                            </option>
-                          ))}
-                        </select>
+                        ) : null}
                       </div>
-                      <div className="flex-1 space-y-1">
-                        <label className="block text-xs font-medium text-slate-600">
-                          Start (your local time)
-                        </label>
-                        <Input
-                          type="datetime-local"
-                          value={bookingStart}
-                          onChange={(e) => setBookingStart(e.target.value)}
-                        />
+                      <div className="flex flex-wrap items-center gap-2">
+                        {renderScoreBadge(
+                          (selectedProspect.rd_viability_score as number | null) ?? null
+                        )}
+                        {selectedProspect.estimated_claim_band ? (
+                          <Badge variant="outline">
+                            Band: {selectedProspect.estimated_claim_band}
+                          </Badge>
+                        ) : null}
                       </div>
-                      <div className="w-28 space-y-1">
-                        <label className="block text-xs font-medium text-slate-600">
-                          Duration (min)
-                        </label>
-                        <Input
-                          type="number"
-                          min={15}
-                          max={180}
-                          value={bookingDuration}
-                          onChange={(e) =>
-                            setBookingDuration(
-                              Number.isNaN(parseInt(e.target.value, 10))
-                                ? 30
-                                : parseInt(e.target.value, 10)
-                            )
-                          }
-                        />
-                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
                       <Button
                         size="sm"
-                        className="sm:ml-1"
-                        disabled={booking || !bookingBdmId || !bookingStart}
-                        onClick={handleBookCall}
+                        variant="outline"
+                        onClick={() => handleEnrich(selectedProspect)}
+                        disabled={!!enrichingId}
                       >
-                        {booking ? (
+                        {enrichingId === selectedProspect.id ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Booking…
+                            Enriching…
                           </>
                         ) : (
                           <>
-                            <PhoneCall className="mr-2 h-4 w-4" />
-                            Book BDM call
+                            <RefreshCcw className="mr-2 h-4 w-4" />
+                            Enrich / refresh dossier
                           </>
                         )}
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          handleMarkOutcome(selectedProspect, "not_interested")
+                        }
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Mark not interested
+                      </Button>
                     </div>
-                    {selectedProspect?.bdm_call_scheduled_at && (
-                      <p className="mt-2 text-xs text-slate-500">
-                        BDM call scheduled at{" "}
-                        {new Date(
-                          selectedProspect.bdm_call_scheduled_at as string
-                        ).toLocaleString()}{" "}
-                        {selectedProspect.bdm_call_teams_link
-                          ? ` • Teams: ${selectedProspect.bdm_call_teams_link}`
-                          : null}
+
+                    {dossier ? (
+                      <div className="space-y-3 text-sm text-slate-700">
+                        {dossier.rd_summary ? (
+                          <section>
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              R&amp;D summary
+                            </h3>
+                            <p className="mt-1 whitespace-pre-line">{dossier.rd_summary}</p>
+                          </section>
+                        ) : null}
+
+                        {dossier.what_they_do ? (
+                          <section>
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              What they do
+                            </h3>
+                            <p className="mt-1 whitespace-pre-line">
+                              {dossier.what_they_do}
+                            </p>
+                          </section>
+                        ) : null}
+
+                        {dossier.technical_focus ? (
+                          <section>
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Technical focus
+                            </h3>
+                            <p className="mt-1 whitespace-pre-line">
+                              {dossier.technical_focus}
+                            </p>
+                          </section>
+                        ) : null}
+
+                        {dossier.where_rd_is_happening ? (
+                          <section>
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Where R&amp;D is likely happening
+                            </h3>
+                            <p className="mt-1 whitespace-pre-line">
+                              {dossier.where_rd_is_happening}
+                            </p>
+                          </section>
+                        ) : null}
+
+                        {dossier.rd_tax_fit ? (
+                          <section>
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              R&amp;D tax fit (hypotheses)
+                            </h3>
+                            <p className="mt-1 whitespace-pre-line">{dossier.rd_tax_fit}</p>
+                          </section>
+                        ) : null}
+
+                        {Array.isArray(dossier.questions_to_validate) &&
+                        dossier.questions_to_validate.length > 0 ? (
+                          <section>
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Questions to validate quickly
+                            </h3>
+                            <ul className="mt-1 list-disc space-y-1 pl-4">
+                              {dossier.questions_to_validate.map(
+                                (q: string, idx: number) => (
+                                  <li key={idx}>{q}</li>
+                                )
+                              )}
+                            </ul>
+                          </section>
+                        ) : null}
+
+                        {dossier.call_script_intro || dossier.call_script_main ? (
+                          <section>
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Call script
+                            </h3>
+                            {dossier.call_script_intro ? (
+                              <p className="mt-1 whitespace-pre-line">
+                                {dossier.call_script_intro}
+                              </p>
+                            ) : null}
+                            {dossier.call_script_main ? (
+                              <p className="mt-2 whitespace-pre-line">
+                                {dossier.call_script_main}
+                              </p>
+                            ) : null}
+                          </section>
+                        ) : null}
+
+                        {dossier.confidence_note ? (
+                          <section>
+                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Confidence note
+                            </h3>
+                            <p className="mt-1 whitespace-pre-line text-xs text-slate-500">
+                              {dossier.confidence_note}
+                            </p>
+                          </section>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">
+                        No dossier yet. Click "Enrich / refresh dossier" to generate one.
                       </p>
                     )}
-                  </div>
-                </>
-              )}
+
+                    <div className="mt-4 border-t border-slate-100 pt-3">
+                      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Book BDM call
+                      </h3>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div className="flex-1 space-y-1">
+                          <label className="block text-xs font-medium text-slate-600">
+                            BDM
+                          </label>
+                          <select
+                            className="block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+                            value={bookingBdmId}
+                            onChange={(e) => setBookingBdmId(e.target.value)}
+                          >
+                            {bdmUsers.map((bdm) => (
+                              <option key={bdm.id} value={bdm.id}>
+                                {bdm.full_name || bdm.email || "Unnamed user"}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <label className="block text-xs font-medium text-slate-600">
+                            Start (your local time)
+                          </label>
+                          <Input
+                            type="datetime-local"
+                            value={bookingStart}
+                            onChange={(e) => setBookingStart(e.target.value)}
+                          />
+                        </div>
+                        <div className="w-28 space-y-1">
+                          <label className="block text-xs font-medium text-slate-600">
+                            Duration (min)
+                          </label>
+                          <Input
+                            type="number"
+                            min={15}
+                            max={180}
+                            value={bookingDuration}
+                            onChange={(e) =>
+                              setBookingDuration(
+                                Number.isNaN(parseInt(e.target.value, 10))
+                                  ? 30
+                                  : parseInt(e.target.value, 10)
+                              )
+                            }
+                          />
+                        </div>
+                        <Button
+                          size="sm"
+                          className="sm:ml-1"
+                          disabled={booking || !bookingBdmId || !bookingStart}
+                          onClick={handleBookCall}
+                        >
+                          {booking ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Booking…
+                            </>
+                          ) : (
+                            <>
+                              <PhoneCall className="mr-2 h-4 w-4" />
+                              Book BDM call
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      {selectedProspect?.bdm_call_scheduled_at && (
+                        <p className="mt-2 text-xs text-slate-500">
+                          BDM call scheduled at{" "}
+                          {new Date(
+                            selectedProspect.bdm_call_scheduled_at as string
+                          ).toLocaleString()}{" "}
+                          {selectedProspect.bdm_call_teams_link
+                            ? ` • Teams: ${selectedProspect.bdm_call_teams_link}`
+                            : null}
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
         </section>
