@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { X, Send, AtSign, Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -14,6 +14,7 @@ import { messageService } from "@/services/messageService";
 import { profileService } from "@/services/profileService";
 import type { Profile } from "@/services/profileService";
 import { useApp } from "@/contexts/AppContext";
+import { renderTextWithMentions } from "@/lib/formatMentions";
 
 interface QuickMessageModalProps {
   isOpen: boolean;

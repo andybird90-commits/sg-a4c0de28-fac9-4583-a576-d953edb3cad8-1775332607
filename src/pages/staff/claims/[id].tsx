@@ -124,6 +124,19 @@ type HistoryItem = {
   body: string;
 };
 
+const HISTORY_MENTION_REGEX = /@\[((?:[^\]]+))\]\([^)]+\)/g;
+
+function renderTextWithMentions(text: string | null | undefined): string {
+  if (!text) {
+    return "";
+  }
+
+  return text.replace(
+    HISTORY_MENTION_REGEX,
+    (_match: string, name: string) => `@${name}`
+  );
+}
+
 function useClaimHistory(
   claim: ClaimWithDetails | null,
   toast?: (args: { title: string; description?: string; variant?: "destructive" | "default" }) => void
@@ -3568,7 +3581,7 @@ export default function ClaimDetailPage() {
                                   </div>
                                   {item.body && (
                                     <p className="whitespace-pre-wrap text-[11px] text-muted-foreground">
-                                      {item.body}
+                                      {renderTextWithMentions(item.body)}
                                     </p>
                                   )}
                                   {item.externalUrl && (
@@ -3765,8 +3778,8 @@ export default function ClaimDetailPage() {
                             {item.subject && (
                               <p className="text-xs font-medium text-foreground">{item.subject}</p>
                             )}
-                            <p className="whitespace-pre-wrap text-xs text-muted-foreground">
-                              {item.body}
+                            <p className="whitespace-pre-line text-[13px] text-slate-700">
+                              {renderTextWithMentions(item.body)}
                             </p>
                           </div>
                         </div>

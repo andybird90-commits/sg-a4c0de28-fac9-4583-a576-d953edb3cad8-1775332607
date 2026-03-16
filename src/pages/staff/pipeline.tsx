@@ -372,6 +372,24 @@ export default function PipelinePage() {
     return { month, revenue, count: monthPipeline.length };
   });
 
+  const maxRevenue = useMemo(
+    () =>
+      revenueByMonth.reduce(
+        (max, m) => (m.revenue > max ? m.revenue : max),
+        0
+      ),
+    [revenueByMonth]
+  );
+
+  const maxCount = useMemo(
+    () =>
+      revenueByMonth.reduce(
+        (max, m) => (m.count > max ? m.count : max),
+        0
+      ),
+    [revenueByMonth]
+  );
+
   const totalPipelineRevenue = useMemo(
     () => revenueByMonth.reduce((sum, m) => sum + m.revenue, 0),
     [revenueByMonth]
@@ -414,8 +432,83 @@ export default function PipelinePage() {
           </div>
         </div>
 
-        {/* KPI cards and 12‑month pipeline chart moved from /staff dashboard */}
-        <section className="space-y-4">
+        {/* Pipeline charts */}
+        <section className="grid gap-4 md:grid-cols-2">
+          <Card className="p-4">
+            <h2 className="text-sm font-semibold text-slate-800">
+              Pipeline Revenue by Month
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Based on expected filing dates and predicted revenue
+            </p>
+            <div className="mt-4 flex items-end gap-2 overflow-x-auto pb-2">
+              {revenueByMonth.map(({ month, revenue, count }) => {
+                const heightPercent =
+                  maxRevenue > 0 ? Math.max((revenue / maxRevenue) * 100, 4) : 0;
+                return (
+                  <div
+                    key={`rev-${month.toISOString()}`}
+                    className="flex flex-col items-center min-w-[40px]"
+                  >
+                    <div className="flex h-28 w-6 items-end rounded-full bg-slate-100">
+                      <div
+                        className="w-full rounded-full bg-emerald-500"
+                        style={{ height: `${heightPercent}%` }}
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <div className="mt-2 text-[10px] font-medium text-slate-700">
+                      £{revenue.toLocaleString()}
+                    </div>
+                    <div className="mt-1 text-[10px] text-slate-500">
+                      {format(month, "MMM yy")}
+                    </div>
+                    <div className="mt-0.5 text-[9px] text-slate-400">
+                      {count} clients
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <h2 className="text-sm font-semibold text-slate-800">
+              Customers per Month
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Number of customers expected to file in each month
+            </p>
+            <div className="mt-4 flex items-end gap-2 overflow-x-auto pb-2">
+              {revenueByMonth.map(({ month, revenue, count }) => {
+                const heightPercent =
+                  maxCount > 0 ? Math.max((count / maxCount) * 100, 4) : 0;
+                return (
+                  <div
+                    key={`cnt-${month.toISOString()}`}
+                    className="flex flex-col items-center min-w-[40px]"
+                  >
+                    <div className="flex h-28 w-6 items-end rounded-full bg-slate-100">
+                      <div
+                        className="w-full rounded-full bg-blue-500"
+                        style={{ height: `${heightPercent}%` }}
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <div className="mt-2 text-[10px] font-medium text-slate-700">
+                      {count.toLocaleString()}
+                    </div>
+                    <div className="mt-1 text-[10px] text-slate-500">
+                      {format(month, "MMM yy")}
+                    </div>
+                    <div className="mt-0.5 text-[9px] text-slate-400">
+                      £{revenue.toLocaleString()}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
         </section>
 
         {/* Filters */}

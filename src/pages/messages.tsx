@@ -15,6 +15,7 @@ import { Inbox, Send, Reply, Users, AtSign, Loader2, Trash2 } from "lucide-react
 import { useApp } from "@/contexts/AppContext";
 import { StaffLayout } from "@/components/staff/StaffLayout";
 import { useStaffStatus } from "@/hooks/useStaffStatus";
+import { renderTextWithMentions } from "@/lib/formatMentions";
 
 export default function MessagesPage() {
   const router = useRouter();
@@ -266,7 +267,7 @@ export default function MessagesPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-gray-600 break-words line-clamp-2">
-            {message.body}
+            {renderTextWithMentions(message.body)}
           </p>
           {message.mentions && message.mentions.length > 0 && (
             <div className="flex items-center gap-1 mt-2">
@@ -665,7 +666,7 @@ export default function MessagesPage() {
 
           <div className="space-y-4">
             <div className="rounded-md bg-gray-50 p-4 text-sm text-gray-800 whitespace-pre-wrap">
-              {selectedMessage?.body}
+              {renderTextWithMentions(selectedMessage?.body || "")}
             </div>
           </div>
 

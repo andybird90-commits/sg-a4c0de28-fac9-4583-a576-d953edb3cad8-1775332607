@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickMessageModal } from "./QuickMessageModal";
+import { renderTextWithMentions } from "@/lib/formatMentions";
 
 interface MessageWidgetProps {
   entityType: "organisation" | "project" | "evidence" | "claim" | "cif";
