@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -170,8 +169,9 @@ function useClaimHistory(
           body: c.body
         }));
 
-        const combined = [...messageItems, ...manualItems].sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        const combined = [...messageItems, ...manualItems].sort((a, b) =>
+          // Newest first: later timestamps should come before earlier ones
+          b.createdAt.localeCompare(a.createdAt)
         );
 
         if (!cancelled) {
@@ -247,7 +247,11 @@ function useClaimHistory(
 
     try {
       setSavingManual(true);
-      const comment = await internalCommentService.addManualCommentForClaim(claim.id, manualBody.trim());
+      const body = manualBody.trim();
+      const comment = await internalCommentService.addManualCommentForClaim(
+        claim.id,
+        body
+      );
 
       const newItem: HistoryItem = {
         id: comment.id,
@@ -260,12 +264,47 @@ function useClaimHistory(
       };
 
       setHistoryItems((prev) =>
-        [...prev, newItem].sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        [...prev, newItem].sort((a, b) =>
+          // Newest first
+          b.createdAt.localeCompare(a.createdAt)
         )
       );
       setManualBody("");
       setShowMentions(false);
+
+      // Send notifications/messages to any @mentioned users
+      try {
+        const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+        const mentionedIds: string[] = [];
+        let match: RegExpExecArray | null;
+
+        while ((match = mentionRegex.exec(body)) !== null) {
+          const userId = match[2];
+          if (userId) {
+            mentionedIds.push(userId);
+          }
+        }
+
+        const uniqueMentionedIds = Array.from(new Set(mentionedIds));
+
+        if (uniqueMentionedIds.length > 0 && claim.org_id) {
+          await messageService.sendMessage(
+            claim.org_id,
+            uniqueMentionedIds,
+            `Manual note on claim: ${claim.organisations?.name || ""} - FY ${
+              claim.claim_year
+            }`,
+            body,
+            undefined,
+            { entity_type: "claim", entity_id: claim.id }
+          );
+        }
+      } catch (mentionError) {
+        console.error(
+          "[useClaimHistory] Error sending mention notifications for manual comment",
+          mentionError
+        );
+      }
 
       if (toast) {
         toast({

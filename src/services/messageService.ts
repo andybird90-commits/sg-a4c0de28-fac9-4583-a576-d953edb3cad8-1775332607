@@ -237,14 +237,12 @@ export async function sendMessage(
   }
 
   // Insert recipients
-  // De-duplicate and ensure we never send a message back to the sender
-  const uniqueRecipientIds = Array.from(new Set(recipientIds)).filter(
-    (id) => id !== user.id
-  );
+  // De-duplicate recipient IDs (sender can be included as a recipient)
+  const uniqueRecipientIds = Array.from(new Set(recipientIds));
 
   if (uniqueRecipientIds.length === 0) {
-    console.warn("[messageService.sendMessage] No valid recipients after filtering (self-recipient removed).");
-    throw new Error("No valid recipients selected for this message.");
+    console.warn("[messageService.sendMessage] No recipient IDs provided.");
+    throw new Error("No recipients selected for this message.");
   }
 
   const recipientInserts = uniqueRecipientIds.map((recipientId) => ({
@@ -402,6 +400,53 @@ export async function getUnreadCount(): Promise<number> {
 }
 
 /**
+ * Get unread message counts per claim for the current user.
+ * Returns a map of claimId -> unread count.
+ */
+export async function getUnreadCountsForClaims(
+  claimIds: string[]
+): Promise<Record<string, number>> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || claimIds.length === 0) {
+    return {};
+  }
+
+  const { data, error } = await supabase
+    .from("message_recipients")
+    .select(
+      `
+      message_id,
+      messages!inner(
+        id,
+        entity_type,
+        entity_id
+      )
+    `
+    )
+    .eq("recipient_id", user.id)
+    .is("read_at", null)
+    .eq("messages.entity_type", "claim")
+    .in("messages.entity_id", claimIds);
+
+  if (error) {
+    console.error("[messageService.getUnreadCountsForClaims] Error:", error);
+    return {};
+  }
+
+  const result: Record<string, number> = {};
+
+  (data || []).forEach((row: any) => {
+    const claimId: string | undefined = row.messages?.entity_id;
+    if (!claimId) return;
+    result[claimId] = (result[claimId] || 0) + 1;
+  });
+
+  return result;
+}
+
+/**
  * Search users for @mentions (staff + clients from user's org)
  */
 export async function searchUsersForMention(query: string, orgId?: string): Promise<Array<{ id: string; name: string; role: string }>> {
@@ -446,6 +491,7 @@ export const messageService = {
   markMessageAsRead,
   deleteMessageForCurrentUser,
   getUnreadCount,
+  getUnreadCountsForClaims,
   searchUsersForMention,
   resolveOrgId,
   getMessagesForEntity,

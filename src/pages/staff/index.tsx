@@ -6,6 +6,7 @@ import { claimCompletionStatusService } from "@/services/claimCompletionStatusSe
 import { MessageWidget } from "@/components/MessageWidget";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, PoundSterling } from "lucide-react";
+import { messageService } from "@/services/messageService";
 
 type StageStatus = "not_started" | "in_progress" | "complete" | "blocked" | null | undefined;
 
@@ -25,20 +26,20 @@ function getStatusColor(status: StageStatus): string {
 
 function StatusBox({
   label,
-  status,
-}: {
-  label: string;
-  status: StageStatus;
-}) {
+  status
+
+
+
+}: {label: string;status: StageStatus;}) {
   return (
     <div
       className={`inline-flex min-w-[80px] items-center justify-center rounded-md px-2 py-1 text-xs font-semibold shadow-sm ${getStatusColor(
         status
-      )}`}
-    >
+      )}`}>
+      
       {label}
-    </div>
-  );
+    </div>);
+
 }
 
 interface BoardRow {
@@ -54,6 +55,7 @@ interface BoardRow {
   evidenceCount: number;
   companyAddress: string | null;
   companyContact: string | null;
+  unreadHistoryCount: number;
 }
 
 export default function StaffHomePage() {
@@ -66,89 +68,95 @@ export default function StaffHomePage() {
       setLoading(true);
       try {
         const claims = await claimService.getAllClaims();
+
+        const unreadByClaim =
+        await messageService.getUnreadCountsForClaims(
+          claims.map((c) => c.id)
+        );
+
         const completionByClaim =
-          await claimCompletionStatusService.getForClaims(
-            claims.map((c) => c.id)
-          );
+        await claimCompletionStatusService.getForClaims(
+          claims.map((c) => c.id)
+        );
 
         const nextRows: BoardRow[] = claims.map((claim) => {
           const completion = completionByClaim[claim.id];
 
           const techStatus: StageStatus =
-            (completion?.technical_status as StageStatus) ?? "not_started";
+          completion?.technical_status as StageStatus ?? "not_started";
           const costStatus: StageStatus =
-            (completion?.cost_status as StageStatus) ?? "not_started";
+          completion?.cost_status as StageStatus ?? "not_started";
           const qaStatus: StageStatus =
-            (completion?.qa_status as StageStatus) ?? "not_started";
+          completion?.qa_status as StageStatus ?? "not_started";
 
           // Use the actual ClaimWithDetails fields that exist on the type
           const hasDraft =
-            // prefer explicit completion status when present
-            !!completion?.draft_status
-              ? (completion.draft_status as StageStatus) === "complete"
-              : Boolean(
-                  // fall back to whatever draft indicator the claim type exposes
-                  (claim as any).draft_pdf_url ??
-                    (claim as any).draft_document_url ??
-                    (claim as any).draft_document_path
-                );
+          // prefer explicit completion status when present
+          !!completion?.draft_status ?
+          completion.draft_status as StageStatus === "complete" :
+          Boolean(
+            // fall back to whatever draft indicator the claim type exposes
+            (claim as any).draft_pdf_url ??
+            (claim as any).draft_document_url ??
+            (claim as any).draft_document_path
+          );
 
           const hasFinal =
-            !!completion?.final_status
-              ? (completion.final_status as StageStatus) === "complete"
-              : Boolean(
-                  (claim as any).final_pdf_url ??
-                    (claim as any).final_document_url ??
-                    (claim as any).final_document_path
-                );
+          !!completion?.final_status ?
+          completion.final_status as StageStatus === "complete" :
+          Boolean(
+            (claim as any).final_pdf_url ??
+            (claim as any).final_document_url ??
+            (claim as any).final_document_path
+          );
 
           const draftStatus: StageStatus =
-            (completion?.draft_status as StageStatus) ??
-            (hasDraft ? "complete" : "not_started");
+          completion?.draft_status as StageStatus ?? (
+          hasDraft ? "complete" : "not_started");
 
           const finalStatus: StageStatus =
-            (completion?.final_status as StageStatus) ??
-            (hasFinal ? "complete" : "not_started");
+          completion?.final_status as StageStatus ?? (
+          hasFinal ? "complete" : "not_started");
 
           // Projects & evidence
-          const projectsCount = Array.isArray((claim as any).projects)
-            ? (claim as any).projects.length
-            : 0;
+          const projectsCount = Array.isArray((claim as any).projects) ?
+          (claim as any).projects.length :
+          0;
           const evidenceCount =
-            typeof (claim as any).document_count === "number"
-              ? (claim as any).document_count
-              : 0;
+          typeof (claim as any).document_count === "number" ?
+          (claim as any).document_count :
+          0;
 
           // Company details (best-effort, blanks allowed)
           const org: any = (claim as any).organisations ?? {};
           const addressParts = [
-            org.address_line1,
-            org.address_line2,
-            org.city,
-            org.postcode,
-          ].filter(Boolean);
+          org.address_line1,
+          org.address_line2,
+          org.city,
+          org.postcode].
+          filter(Boolean);
           const companyAddress =
-            addressParts.length > 0 ? addressParts.join(", ") : null;
+          addressParts.length > 0 ? addressParts.join(", ") : null;
 
           const contactParts = [
-            org.contact_name,
-            org.contact_email,
-            org.contact_phone,
-          ].filter(Boolean);
+          org.contact_name,
+          org.contact_email,
+          org.contact_phone].
+          filter(Boolean);
           const companyContact =
-            contactParts.length > 0 ? contactParts.join(" • ") : null;
+          contactParts.length > 0 ? contactParts.join(" • ") : null;
 
           // Estimated value – use total_costs coming from client/staff side aggregation
           const totalCosts =
-            typeof (claim as any).total_costs === "number"
-              ? (claim as any).total_costs
-              : Number((claim as any).total_costs || 0);
-          const estimatedValue = totalCosts > 0 ? totalCosts : 0;
+          typeof (claim as any).total_costs === "number" ?
+          (claim as any).total_costs :
+          Number((claim as any).total_costs || 0);
+          const estimatedValue = totalCosts;
 
           const latestConversation =
-            (claim as any).latest_conversation_summary ??
-            (claim as any).latest_conversation ??
-            null;
+          (claim as any).latest_conversation_summary ??
+          (claim as any).latest_conversation ??
+          null;
 
           return {
             claim,
@@ -163,6 +171,7 @@ export default function StaffHomePage() {
             evidenceCount,
             companyAddress,
             companyContact,
+            unreadHistoryCount: unreadByClaim[claim.id] || 0
           };
         });
 
@@ -190,28 +199,28 @@ export default function StaffHomePage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => router.push("/staff/claims")}
-          >
+            onClick={() => router.push("/staff/claims")}>
+            
             View list
           </Button>
         </div>
 
         <div className="overflow-x-auto rounded-xl border bg-white shadow-sm">
-          {loading ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">
+          {loading ?
+          <div className="py-10 text-center text-sm text-muted-foreground">
               Loading claims…
-            </div>
-          ) : rows.length === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">
+            </div> :
+          rows.length === 0 ?
+          <div className="py-10 text-center text-sm text-muted-foreground">
               No claims to display.
-            </div>
-          ) : (
-            <table className="min-w-[980px] w-full text-sm">
+            </div> :
+
+          <table className="min-w-[980px] w-full text-sm">
               <thead>
                 <tr className="border-b bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   <th className="px-4 py-3 text-left">Client</th>
                   <th className="px-4 py-3 text-left">Year</th>
-                  <th className="px-4 py-3 text-left">Conversation</th>
+                  <th className="px-4 py-3 text-left">History</th>
                   <th className="px-4 py-3 text-left">Tech</th>
                   <th className="px-4 py-3 text-left">Cost</th>
                   <th className="px-4 py-3 text-left">QA</th>
@@ -221,14 +230,14 @@ export default function StaffHomePage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
-                  <tr
-                    key={row.claim.id}
-                    className="border-b last:border-0 hover:bg-slate-50/80"
-                    onClick={() =>
-                      router.push(`/staff/claims/${row.claim.id}`)
-                    }
-                  >
+                {rows.map((row) =>
+              <tr
+                key={row.claim.id}
+                className="border-b last:border-0 hover:bg-slate-50/80"
+                onClick={() =>
+                router.push(`/staff/claims/${row.claim.id}`)
+                }>
+                
                     <td className="px-4 py-3">
                       <div className="space-y-1">
                         <div className="font-medium text-slate-900">
@@ -239,27 +248,44 @@ export default function StaffHomePage() {
                         </div>
                         <div className="text-[11px] text-slate-500">
                           {row.projectsCount} projects
-                          {row.evidenceCount > 0 && (
-                            <> • {row.evidenceCount} evidence items</>
-                          )}
+                          {row.evidenceCount > 0 &&
+                      <> • {row.evidenceCount} evidence items</>
+                      }
                         </div>
-                        {(row.companyAddress || row.companyContact) && (
-                          <div className="text-[11px] text-slate-500 space-y-0.5">
+                        {(row.companyAddress || row.companyContact) &&
+                    <div className="space-y-0.5 text-[11px] text-slate-500">
                             {row.companyAddress && <div>{row.companyAddress}</div>}
                             {row.companyContact && <div>{row.companyContact}</div>}
                           </div>
-                        )}
+                    }
                       </div>
                     </td>
                     <td className="px-4 py-3 text-slate-800">
                       {row.claim.claim_year}
                     </td>
-                    <td className="max-w-xs px-4 py-3 align-top text-xs text-slate-600">
-                      {row.latestConversation || (
-                        <span className="text-slate-400">
-                          No recent notes
+                    <td className="px-4 py-3 align-top text-xs">
+                      <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push({
+                        pathname: `/staff/claims/${row.claim.id}`,
+                        query: { tab: "history" }
+                      });
+                    }} style={{ margin: "20px 0px" }}>
+                    
+                        <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700">
+                          {row.unreadHistoryCount > 9 ?
+                      "9+" :
+                      row.unreadHistoryCount}
                         </span>
-                      )}
+                        <span>
+                          {row.unreadHistoryCount === 0 ?
+                      "No new" :
+                      "History"}
+                        </span>
+                      </button>
                     </td>
                     <td className="px-4 py-3">
                       <StatusBox label="Tech" status={row.techStatus} />
@@ -277,27 +303,27 @@ export default function StaffHomePage() {
                       <StatusBox label="Final" status={row.finalStatus} />
                     </td>
                     <td
-                      className="px-4 py-3 text-right"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                  className="px-4 py-3 text-right"
+                  onClick={(e) => e.stopPropagation()}>
+                  
                       <div className="flex items-center justify-end gap-2">
                         <MessageWidget
-                          entityType="claim"
-                          entityId={row.claim.id}
-                          entityName={`${row.claim.organisations?.name || "Claim"} - FY ${
-                            row.claim.claim_year
-                          }`}
-                        />
+                      entityType="claim"
+                      entityId={row.claim.id}
+                      entityName={`${row.claim.organisations?.name || "Claim"} - FY ${
+                      row.claim.claim_year}`
+                      } />
+                    
                         <ChevronRight className="h-4 w-4 text-slate-400" />
                       </div>
                     </td>
                   </tr>
-                ))}
+              )}
               </tbody>
             </table>
-          )}
+          }
         </div>
       </div>
-    </StaffLayout>
-  );
+    </StaffLayout>);
+
 }
