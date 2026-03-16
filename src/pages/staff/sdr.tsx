@@ -7,13 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  Loader2,
-  Upload,
-  PhoneCall,
-  XCircle,
-  RefreshCcw,
-} from "lucide-react";
+import { Loader2, Upload, PhoneCall, XCircle, RefreshCcw } from "lucide-react";
 
 type SdrProspect = Tables<"sdr_prospects">;
 
@@ -23,7 +17,7 @@ interface BdmUser {
   email: string | null;
 }
 
-export default function StaffSDRPage() {
+export default function StaffSDRPage(): JSX.Element {
   const { user, loading: appLoading } = useApp();
   const [prospects, setProspects] = useState<SdrProspect[]>([]);
   const [selectedProspect, setSelectedProspect] = useState<SdrProspect | null>(null);
@@ -44,7 +38,7 @@ export default function StaffSDRPage() {
     void loadBdmUsers();
   }, [user, appLoading]);
 
-  const loadProspects = async () => {
+  const loadProspects = async (): Promise<void> => {
     if (!user) return;
     try {
       setLoadingProspects(true);
@@ -60,7 +54,7 @@ export default function StaffSDRPage() {
         return;
       }
 
-      const list = data || [];
+      const list: SdrProspect[] = (data as SdrProspect[]) || [];
       setProspects(list);
       if (!selectedProspect && list.length > 0) {
         setSelectedProspect(list[0]);
@@ -70,7 +64,7 @@ export default function StaffSDRPage() {
     }
   };
 
-  const loadBdmUsers = async () => {
+  const loadBdmUsers = async (): Promise<void> => {
     try {
       const { data, error } = await supabase
         .from("profiles")
@@ -85,7 +79,7 @@ export default function StaffSDRPage() {
 
       const mapped: BdmUser[] = (data || []).map((p: any) => ({
         id: p.id as string,
-        full_name: (p.full_name as string) || p.email,
+        full_name: (p.full_name as string) || (p.email as string | null),
         email: p.email as string | null,
       }));
       setBdmUsers(mapped);
@@ -97,7 +91,7 @@ export default function StaffSDRPage() {
     }
   };
 
-  const handleCsvUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleCsvUpload = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
     if (!user) return;
     const file = event.target.files?.[0];
     if (!file) return;
@@ -105,7 +99,10 @@ export default function StaffSDRPage() {
     setUploading(true);
     try {
       const text = await file.text();
-      const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+      const lines = text
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
 
       if (lines.length === 0) {
         setUploading(false);
@@ -117,7 +114,7 @@ export default function StaffSDRPage() {
         const companyName = parts[0];
         const companyNumber = parts.length > 1 ? parts[1] || null : null;
         return {
-          created_by: user.id,
+          created_by: user.id as string,
           company_name: companyName,
           company_number: companyNumber,
         };
@@ -134,11 +131,14 @@ export default function StaffSDRPage() {
       console.error("Error processing CSV upload:", err);
     } finally {
       setUploading(false);
-      event.target.value = "";
+      // reset input so same file can be uploaded again if needed
+      if (event.target) {
+        event.target.value = "";
+      }
     }
   };
 
-  const handleEnrich = async (prospect: SdrProspect) => {
+  const handleEnrich = async (prospect: SdrProspect): Promise<void> => {
     try {
       setEnrichingId(prospect.id as string);
       const response = await fetch("/api/sdr/enrich", {
@@ -156,12 +156,12 @@ export default function StaffSDRPage() {
         return;
       }
 
-      const updated = await response.json();
+      const updated = (await response.json()) as SdrProspect;
       setProspects((prev) =>
-        prev.map((p) => (p.id === prospect.id ? { ...p, ...updated } as SdrProspect : p))
+        prev.map((p) => (p.id === prospect.id ? updated : p))
       );
       if (selectedProspect?.id === prospect.id) {
-        setSelectedProspect((prev) => (prev ? ({ ...prev, ...updated } as SdrProspect) : prev));
+        setSelectedProspect(updated);
       }
     } catch (err) {
       console.error("Unexpected error enriching prospect:", err);
@@ -173,7 +173,7 @@ export default function StaffSDRPage() {
   const handleMarkOutcome = async (
     prospect: SdrProspect,
     status: "not_interested" | "contacted"
-  ) => {
+  ): Promise<void> => {
     try {
       const { data, error } = await supabase
         .from("sdr_prospects")
@@ -183,25 +183,28 @@ export default function StaffSDRPage() {
         })
         .eq("id", prospect.id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error updating SDR prospect outcome:", error);
         return;
       }
 
+      const updated = data as SdrProspect | null;
+      if (!updated) return;
+
       setProspects((prev) =>
-        prev.map((p) => (p.id === prospect.id ? (data as SdrProspect) : p))
+        prev.map((p) => (p.id === prospect.id ? updated : p))
       );
       if (selectedProspect?.id === prospect.id) {
-        setSelectedProspect(data as SdrProspect);
+        setSelectedProspect(updated);
       }
     } catch (err) {
       console.error("Unexpected error updating SDR prospect outcome:", err);
     }
   };
 
-  const handleBookCall = async () => {
+  const handleBookCall = async (): Promise<void> => {
     if (!selectedProspect || !bookingBdmId || !bookingStart) {
       return;
     }
@@ -230,7 +233,9 @@ export default function StaffSDRPage() {
 
       if (result.updatedProspect) {
         const updated = result.updatedProspect as SdrProspect;
-        setProspects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+        setProspects((prev) =>
+          prev.map((p) => (p.id === updated.id ? updated : p))
+        );
         setSelectedProspect(updated);
       }
     } catch (err) {
@@ -240,24 +245,24 @@ export default function StaffSDRPage() {
     }
   };
 
-  const renderScoreBadge = (score: number | null) => {
+  const renderScoreBadge = (score: number | null): JSX.Element => {
     if (score == null) {
       return <Badge variant="outline">Not scored</Badge>;
     }
     let variant: "default" | "secondary" | "destructive" = "secondary";
-    if (score &gt;= 80) {
+    if (score >= 80) {
       variant = "default";
-    } else if (score &lt; 50) {
+    } else if (score < 50) {
       variant = "destructive";
     }
     return (
-      &lt;Badge variant={variant}&gt;
+      <Badge variant={variant}>
         R&amp;D score: {score.toFixed(1)} / 100
-      &lt;/Badge&gt;
+      </Badge>
     );
   };
 
-  const getDossier = (prospect: SdrProspect | null): any | null =&gt; {
+  const getDossier = (prospect: SdrProspect | null): any | null => {
     if (!prospect || !prospect.ai_dossier_json) return null;
     return prospect.ai_dossier_json as any;
   };
@@ -265,344 +270,353 @@ export default function StaffSDRPage() {
   const dossier = getDossier(selectedProspect);
 
   return (
-    &lt;StaffLayout title="SDR"&gt;
-      &lt;div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8"&gt;
-        &lt;header className="space-y-2"&gt;
-          &lt;h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl"&gt;
+    <StaffLayout title="SDR">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+        <header className="space-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
             SDR Radar
-          &lt;/h1&gt;
-          &lt;p className="max-w-2xl text-sm text-slate-600 sm:text-base"&gt;
-            Upload prospect companies, let the assistant build R&amp;D dossiers, then rank and
-            book BDM discovery calls from a single workspace.
-          &lt;/p&gt;
-        &lt;/header&gt;
+          </h1>
+          <p className="max-w-2xl text-sm text-slate-600 sm:text-base">
+            Upload prospect companies, let the assistant build R&amp;D dossiers, then
+            rank and book BDM discovery calls from a single workspace.
+          </p>
+        </header>
 
-        &lt;section className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]"&gt;
-          &lt;div className="space-y-4"&gt;
-            &lt;Card&gt;
-              &lt;CardHeader className="flex flex-row items-center justify-between space-y-0"&gt;
-                &lt;div&gt;
-                  &lt;CardTitle className="text-base font-semibold text-slate-900"&gt;
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <div className="space-y-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="text-base font-semibold text-slate-900">
                     Prospect upload
-                  &lt;/CardTitle&gt;
-                  &lt;p className="mt-1 text-xs text-slate-500 sm:text-sm"&gt;
-                    Upload a CSV with one company per line (name, optional company number).
-                  &lt;/p&gt;
-                &lt;/div&gt;
-                &lt;label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 sm:text-sm"&gt;
-                  &lt;Upload className="h-4 w-4" /&gt;
+                  </CardTitle>
+                  <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+                    Upload a CSV with one company per line (name, optional company
+                    number).
+                  </p>
+                </div>
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 sm:text-sm">
+                  <Upload className="h-4 w-4" />
                   {uploading ? "Uploading…" : "Upload CSV"}
-                  &lt;Input
+                  <Input
                     type="file"
                     accept=".csv,text/csv"
                     className="hidden"
                     onChange={handleCsvUpload}
                     disabled={uploading}
-                  /&gt;
-                &lt;/label&gt;
-              &lt;/CardHeader&gt;
-            &lt;/Card&gt;
+                  />
+                </label>
+              </CardHeader>
+            </Card>
 
-            &lt;Card className="h-[520px] overflow-hidden"&gt;
-              &lt;CardHeader className="flex flex-row items-center justify-between space-y-0"&gt;
-                &lt;CardTitle className="text-base font-semibold text-slate-900"&gt;
+            <Card className="h-[520px] overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-base font-semibold text-slate-900">
                   Ranked prospects
-                &lt;/CardTitle&gt;
-                &lt;Button
+                </CardTitle>
+                <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
                   onClick={loadProspects}
                   disabled={loadingProspects}
                   aria-label="Refresh prospects"
-                &gt;
+                >
                   {loadingProspects ? (
-                    &lt;Loader2 className="h-4 w-4 animate-spin" /&gt;
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    &lt;RefreshCcw className="h-4 w-4" /&gt;
+                    <RefreshCcw className="h-4 w-4" />
                   )}
-                &lt;/Button&gt;
-              &lt;/CardHeader&gt;
-              &lt;CardContent className="h-[460px] space-y-2 overflow-y-auto"&gt;
-                {loadingProspects &amp;&amp; prospects.length === 0 ? (
-                  &lt;div className="flex h-full items-center justify-center text-sm text-slate-500"&gt;
-                    &lt;Loader2 className="mr-2 h-4 w-4 animate-spin" /&gt;
+                </Button>
+              </CardHeader>
+              <CardContent className="h-[460px] space-y-2 overflow-y-auto">
+                {loadingProspects && prospects.length === 0 ? (
+                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Loading prospects…
-                  &lt;/div&gt;
+                  </div>
                 ) : prospects.length === 0 ? (
-                  &lt;p className="text-sm text-slate-500"&gt;
+                  <p className="text-sm text-slate-500">
                     No SDR prospects yet. Upload a CSV to get started.
-                  &lt;/p&gt;
+                  </p>
                 ) : (
-                  prospects.map((prospect) =&gt; (
-                    &lt;button
+                  prospects.map((prospect) => (
+                    <button
                       key={prospect.id as string}
                       type="button"
-                      onClick={() =&gt; setSelectedProspect(prospect)}
+                      onClick={() => setSelectedProspect(prospect)}
                       className={`w-full rounded-xl border px-3 py-3 text-left text-sm transition hover:bg-slate-50 ${
                         selectedProspect?.id === prospect.id
                           ? "border-slate-900 bg-slate-900/5"
                           : "border-slate-200 bg-white"
                       }`}
-                    &gt;
-                      &lt;div className="flex items-center justify-between gap-2"&gt;
-                        &lt;div className="min-w-0"&gt;
-                          &lt;p className="truncate text-sm font-semibold text-slate-900"&gt;
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900">
                             {prospect.company_name}
-                          &lt;/p&gt;
+                          </p>
                           {prospect.company_number ? (
-                            &lt;p className="mt-0.5 text-xs text-slate-500"&gt;
+                            <p className="mt-0.5 text-xs text-slate-500">
                               Company no: {prospect.company_number}
-                            &lt;/p&gt;
+                            </p>
                           ) : null}
-                        &lt;/div&gt;
-                        &lt;div className="flex flex-col items-end gap-1"&gt;
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
                           {renderScoreBadge(
-                            prospect.rd_viability_score as number | null
+                            (prospect.rd_viability_score as number | null) ?? null
                           )}
-                          &lt;Badge variant="outline" className="text-[11px]"&gt;
+                          <Badge variant="outline" className="text-[11px]">
                             {prospect.status.replace(/_/g, " ")}
-                          &lt;/Badge&gt;
-                        &lt;/div&gt;
-                      &lt;/div&gt;
-                    &lt;/button&gt;
+                          </Badge>
+                        </div>
+                      </div>
+                    </button>
                   ))
                 )}
-              &lt;/CardContent&gt;
-            &lt;/Card&gt;
-          &lt;/div&gt;
+              </CardContent>
+            </Card>
+          </div>
 
-          &lt;Card className="h-[620px] overflow-hidden"&gt;
-            &lt;CardHeader&gt;
-              &lt;CardTitle className="text-base font-semibold text-slate-900"&gt;
+          <Card className="h-[620px] overflow-hidden">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold text-slate-900">
                 Dossier
-              &lt;/CardTitle&gt;
-            &lt;/CardHeader&gt;
-            &lt;CardContent className="flex h-[560px] flex-col gap-4 overflow-y-auto"&gt;
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex h-[560px] flex-col gap-4 overflow-y-auto">
               {!selectedProspect ? (
-                &lt;p className="text-sm text-slate-500"&gt;
+                <p className="text-sm text-slate-500">
                   Select a prospect on the left to view its dossier.
-                &lt;/p&gt;
+                </p>
               ) : (
-                &lt;&gt;
-                  &lt;div className="flex flex-wrap items-center justify-between gap-2"&gt;
-                    &lt;div&gt;
-                      &lt;h2 className="text-lg font-semibold text-slate-900"&gt;
+                <>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-900">
                         {selectedProspect.company_name}
-                      &lt;/h2&gt;
+                      </h2>
                       {selectedProspect.company_number ? (
-                        &lt;p className="text-xs text-slate-500"&gt;
+                        <p className="text-xs text-slate-500">
                           Company no: {selectedProspect.company_number}
-                        &lt;/p&gt;
+                        </p>
                       ) : null}
-                    &lt;/div&gt;
-                    &lt;div className="flex flex-wrap items-center gap-2"&gt;
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
                       {renderScoreBadge(
-                        selectedProspect.rd_viability_score as number | null
+                        (selectedProspect.rd_viability_score as number | null) ?? null
                       )}
                       {selectedProspect.estimated_claim_band ? (
-                        &lt;Badge variant="outline"&gt;
+                        <Badge variant="outline">
                           Band: {selectedProspect.estimated_claim_band}
-                        &lt;/Badge&gt;
+                        </Badge>
                       ) : null}
-                    &lt;/div&gt;
-                  &lt;/div&gt;
+                    </div>
+                  </div>
 
-                  &lt;div className="flex flex-wrap gap-2 border-b border-slate-100 pb-3"&gt;
-                    &lt;Button
+                  <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
+                    <Button
                       size="sm"
                       variant="outline"
-                      onClick={() =&gt; handleEnrich(selectedProspect)}
+                      onClick={() => handleEnrich(selectedProspect)}
                       disabled={!!enrichingId}
-                    &gt;
+                    >
                       {enrichingId === selectedProspect.id ? (
-                        &lt;&gt;
-                          &lt;Loader2 className="mr-2 h-4 w-4 animate-spin" /&gt;
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Enriching…
-                        &lt;/&gt;
+                        </>
                       ) : (
-                        &lt;&gt;
-                          &lt;RefreshCcw className="mr-2 h-4 w-4" /&gt;
+                        <>
+                          <RefreshCcw className="mr-2 h-4 w-4" />
                           Enrich / refresh dossier
-                        &lt;/&gt;
+                        </>
                       )}
-                    &lt;/Button&gt;
-                    &lt;Button
+                    </Button>
+                    <Button
                       size="sm"
                       variant="outline"
-                      onClick={() =&gt; handleMarkOutcome(selectedProspect, "not_interested")}
-                    &gt;
-                      &lt;XCircle className="mr-2 h-4 w-4" /&gt;
+                      onClick={() => handleMarkOutcome(selectedProspect, "not_interested")}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
                       Mark not interested
-                    &lt;/Button&gt;
-                  &lt;/div&gt;
+                    </Button>
+                  </div>
 
                   {dossier ? (
-                    &lt;div className="space-y-3 text-sm text-slate-700"&gt;
+                    <div className="space-y-3 text-sm text-slate-700">
                       {dossier.rd_summary ? (
-                        &lt;section&gt;
-                          &lt;h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500"&gt;
+                        <section>
+                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             R&amp;D summary
-                          &lt;/h3&gt;
-                          &lt;p className="mt-1 whitespace-pre-line"&gt;{dossier.rd_summary}&lt;/p&gt;
-                        &lt;/section&gt;
+                          </h3>
+                          <p className="mt-1 whitespace-pre-line">{dossier.rd_summary}</p>
+                        </section>
                       ) : null}
 
                       {dossier.what_they_do ? (
-                        &lt;section&gt;
-                          &lt;h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500"&gt;
+                        <section>
+                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             What they do
-                          &lt;/h3&gt;
-                          &lt;p className="mt-1 whitespace-pre-line"&gt;{dossier.what_they_do}&lt;/p&gt;
-                        &lt;/section&gt;
+                          </h3>
+                          <p className="mt-1 whitespace-pre-line">
+                            {dossier.what_they_do}
+                          </p>
+                        </section>
                       ) : null}
 
                       {dossier.technical_focus ? (
-                        &lt;section&gt;
-                          &lt;h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500"&gt;
+                        <section>
+                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Technical focus
-                          &lt;/h3&gt;
-                          &lt;p className="mt-1 whitespace-pre-line"&gt;
+                          </h3>
+                          <p className="mt-1 whitespace-pre-line">
                             {dossier.technical_focus}
-                          &lt;/p&gt;
-                        &lt;/section&gt;
+                          </p>
+                        </section>
                       ) : null}
 
                       {dossier.where_rd_is_happening ? (
-                        &lt;section&gt;
-                          &lt;h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500"&gt;
+                        <section>
+                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Where R&amp;D is likely happening
-                          &lt;/h3&gt;
-                          &lt;p className="mt-1 whitespace-pre-line"&gt;
+                          </h3>
+                          <p className="mt-1 whitespace-pre-line">
                             {dossier.where_rd_is_happening}
-                          &lt;/p&gt;
-                        &lt;/section&gt;
+                          </p>
+                        </section>
                       ) : null}
 
                       {dossier.rd_tax_fit ? (
-                        &lt;section&gt;
-                          &lt;h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500"&gt;
+                        <section>
+                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             R&amp;D tax fit (hypotheses)
-                          &lt;/h3&gt;
-                          &lt;p className="mt-1 whitespace-pre-line"&gt;{dossier.rd_tax_fit}&lt;/p&gt;
-                        &lt;/section&gt;
+                          </h3>
+                          <p className="mt-1 whitespace-pre-line">{dossier.rd_tax_fit}</p>
+                        </section>
                       ) : null}
 
-                      {Array.isArray(dossier.questions_to_validate) &amp;&amp;
-                      dossier.questions_to_validate.length &gt; 0 ? (
-                        &lt;section&gt;
-                          &lt;h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500"&gt;
+                      {Array.isArray(dossier.questions_to_validate) &&
+                      dossier.questions_to_validate.length > 0 ? (
+                        <section>
+                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Questions to validate quickly
-                          &lt;/h3&gt;
-                          &lt;ul className="mt-1 list-disc space-y-1 pl-4"&gt;
-                            {dossier.questions_to_validate.map((q: string, idx: number) =&gt; (
-                              &lt;li key={idx}&gt;{q}&lt;/li&gt;
-                            ))}
-                          &lt;/ul&gt;
-                        &lt;/section&gt;
+                          </h3>
+                          <ul className="mt-1 list-disc space-y-1 pl-4">
+                            {dossier.questions_to_validate.map(
+                              (q: string, idx: number) => (
+                                <li key={idx}>{q}</li>
+                              )
+                            )}
+                          </ul>
+                        </section>
                       ) : null}
 
                       {dossier.call_script_intro || dossier.call_script_main ? (
-                        &lt;section&gt;
-                          &lt;h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500"&gt;
+                        <section>
+                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Call script
-                          &lt;/h3&gt;
+                          </h3>
                           {dossier.call_script_intro ? (
-                            &lt;p className="mt-1 whitespace-pre-line"&gt;
+                            <p className="mt-1 whitespace-pre-line">
                               {dossier.call_script_intro}
-                            &lt;/p&gt;
+                            </p>
                           ) : null}
                           {dossier.call_script_main ? (
-                            &lt;p className="mt-2 whitespace-pre-line"&gt;
+                            <p className="mt-2 whitespace-pre-line">
                               {dossier.call_script_main}
-                            &lt;/p&gt;
+                            </p>
                           ) : null}
-                        &lt;/section&gt;
+                        </section>
                       ) : null}
 
                       {dossier.confidence_note ? (
-                        &lt;section&gt;
-                          &lt;h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500"&gt;
+                        <section>
+                          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                             Confidence note
-                          &lt;/h3&gt;
-                          &lt;p className="mt-1 whitespace-pre-line text-xs text-slate-500"&gt;
+                          </h3>
+                          <p className="mt-1 whitespace-pre-line text-xs text-slate-500">
                             {dossier.confidence_note}
-                          &lt;/p&gt;
-                        &lt;/section&gt;
+                          </p>
+                        </section>
                       ) : null}
-                    &lt;/div&gt;
+                    </div>
                   ) : (
-                    &lt;p className="text-sm text-slate-500"&gt;
-                      No dossier yet. Click &quot;Enrich / refresh dossier&quot; to generate one.
-                    &lt;/p&gt;
+                    <p className="text-sm text-slate-500">
+                      No dossier yet. Click "Enrich / refresh dossier" to generate one.
+                    </p>
                   )}
 
-                  &lt;div className="mt-4 border-t border-slate-100 pt-3"&gt;
-                    &lt;h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500"&gt;
+                  <div className="mt-4 border-t border-slate-100 pt-3">
+                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                       Book BDM call
-                    &lt;/h3&gt;
-                    &lt;div className="flex flex-col gap-3 sm:flex-row sm:items-end"&gt;
-                      &lt;div className="flex-1 space-y-1"&gt;
-                        &lt;label className="block text-xs font-medium text-slate-600"&gt;
+                    </h3>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                      <div className="flex-1 space-y-1">
+                        <label className="block text-xs font-medium text-slate-600">
                           BDM
-                        &lt;/label&gt;
-                        &lt;select
+                        </label>
+                        <select
                           className="block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
                           value={bookingBdmId}
-                          onChange={(e) =&gt; setBookingBdmId(e.target.value)}
-                        &gt;
-                          {bdmUsers.map((bdm) =&gt; (
-                            &lt;option key={bdm.id} value={bdm.id}&gt;
+                          onChange={(e) => setBookingBdmId(e.target.value)}
+                        >
+                          {bdmUsers.map((bdm) => (
+                            <option key={bdm.id} value={bdm.id}>
                               {bdm.full_name || bdm.email || "Unnamed user"}
-                            &lt;/option&gt;
+                            </option>
                           ))}
-                        &lt;/select&gt;
-                      &lt;/div&gt;
-                      &lt;div className="flex-1 space-y-1"&gt;
-                        &lt;label className="block text-xs font-medium text-slate-600"&gt;
+                        </select>
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <label className="block text-xs font-medium text-slate-600">
                           Start (your local time)
-                        &lt;/label&gt;
-                        &lt;Input
+                        </label>
+                        <Input
                           type="datetime-local"
                           value={bookingStart}
-                          onChange={(e) =&gt; setBookingStart(e.target.value)}
-                        /&gt;
-                      &lt;/div&gt;
-                      &lt;div className="w-28 space-y-1"&gt;
-                        &lt;label className="block text-xs font-medium text-slate-600"&gt;
+                          onChange={(e) => setBookingStart(e.target.value)}
+                        />
+                      </div>
+                      <div className="w-28 space-y-1">
+                        <label className="block text-xs font-medium text-slate-600">
                           Duration (min)
-                        &lt;/label&gt;
-                        &lt;Input
+                        </label>
+                        <Input
                           type="number"
                           min={15}
                           max={180}
                           value={bookingDuration}
-                          onChange={(e) =&gt;
-                            setBookingDuration(parseInt(e.target.value || "30", 10))
+                          onChange={(e) =>
+                            setBookingDuration(
+                              Number.isNaN(parseInt(e.target.value, 10))
+                                ? 30
+                                : parseInt(e.target.value, 10)
+                            )
                           }
-                        /&gt;
-                      &lt;/div&gt;
-                      &lt;Button
+                        />
+                      </div>
+                      <Button
                         size="sm"
                         className="sm:ml-1"
                         disabled={booking || !bookingBdmId || !bookingStart}
                         onClick={handleBookCall}
-                      &gt;
+                      >
                         {booking ? (
-                          &lt;&gt;
-                            &lt;Loader2 className="mr-2 h-4 w-4 animate-spin" /&gt;
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Booking…
-                          &lt;/&gt;
+                          </>
                         ) : (
-                          &lt;&gt;
-                            &lt;PhoneCall className="mr-2 h-4 w-4" /&gt;
+                          <>
+                            <PhoneCall className="mr-2 h-4 w-4" />
                             Book BDM call
-                          &lt;/&gt;
+                          </>
                         )}
-                      &lt;/Button&gt;
-                    &lt;/div&gt;
-                    {selectedProspect.bdm_call_scheduled_at &amp;&amp; (
-                      &lt;p className="mt-2 text-xs text-slate-500"&gt;
+                      </Button>
+                    </div>
+                    {selectedProspect?.bdm_call_scheduled_at && (
+                      <p className="mt-2 text-xs text-slate-500">
                         BDM call scheduled at{" "}
                         {new Date(
                           selectedProspect.bdm_call_scheduled_at as string
@@ -610,15 +624,15 @@ export default function StaffSDRPage() {
                         {selectedProspect.bdm_call_teams_link
                           ? ` • Teams: ${selectedProspect.bdm_call_teams_link}`
                           : null}
-                      &lt;/p&gt;
+                      </p>
                     )}
-                  &lt;/div&gt;
-                &lt;/&gt;
+                  </div>
+                </>
               )}
-            &lt;/CardContent&gt;
-          &lt;/Card&gt;
-        &lt;/section&gt;
-      &lt;/div&gt;
-    &lt;/StaffLayout&gt;
+            </CardContent>
+          </Card>
+        </section>
+      </div>
+    </StaffLayout>
   );
 }

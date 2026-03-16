@@ -3801,6 +3801,84 @@ export type Database = {
           },
         ]
       }
+      sdr_prospects: {
+        Row: {
+          ai_dossier_json: Json | null
+          bdm_call_duration_minutes: number | null
+          bdm_call_event_id: string | null
+          bdm_call_scheduled_at: string | null
+          bdm_call_teams_link: string | null
+          bdm_user_id: string | null
+          company_name: string
+          company_number: string | null
+          created_at: string
+          created_by: string
+          enrichment_error: string | null
+          estimated_claim_band: string | null
+          id: string
+          last_enriched_at: string | null
+          rd_viability_score: number | null
+          status: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          ai_dossier_json?: Json | null
+          bdm_call_duration_minutes?: number | null
+          bdm_call_event_id?: string | null
+          bdm_call_scheduled_at?: string | null
+          bdm_call_teams_link?: string | null
+          bdm_user_id?: string | null
+          company_name: string
+          company_number?: string | null
+          created_at?: string
+          created_by: string
+          enrichment_error?: string | null
+          estimated_claim_band?: string | null
+          id?: string
+          last_enriched_at?: string | null
+          rd_viability_score?: number | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          ai_dossier_json?: Json | null
+          bdm_call_duration_minutes?: number | null
+          bdm_call_event_id?: string | null
+          bdm_call_scheduled_at?: string | null
+          bdm_call_teams_link?: string | null
+          bdm_user_id?: string | null
+          company_name?: string
+          company_number?: string | null
+          created_at?: string
+          created_by?: string
+          enrichment_error?: string | null
+          estimated_claim_band?: string | null
+          id?: string
+          last_enriched_at?: string | null
+          rd_viability_score?: number | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_prospects_bdm_user_id_fkey"
+            columns: ["bdm_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sdr_prospects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sidekick_evidence_items: {
         Row: {
           body: string | null
