@@ -303,6 +303,12 @@ export default function StaffHomePage() {
                           <div>Address: {row.companyAddress || "-"}</div>
                           <div>Contact: {row.companyContact || "-"}</div>
                         </div>
+                        <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
+                          <span>BDM: {row.claim.bd_owner?.full_name || "-"}</span>
+                          <span>Tech: {row.claim.technical_lead?.full_name || "-"}</span>
+                          <span>Cost: {row.claim.cost_lead?.full_name || "-"}</span>
+                          <span>QA: {row.claim.qa_reviewer?.full_name || "-"}</span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-slate-800">

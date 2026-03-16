@@ -63,7 +63,9 @@ export class ClaimService {
           organisations:org_id (id, name, organisation_code),
           bd_owner:bd_owner_id (id, full_name, email),
           technical_lead:technical_lead_id (id, full_name, email),
-          cost_lead:cost_lead_id (id, full_name, email)
+          cost_lead:cost_lead_id (id, full_name, email),
+          ops_owner:ops_owner_id (id, full_name, email),
+          qa_reviewer:qa_reviewer_id (id, full_name, email)
         `
         )
         .is("deleted_at", null)
