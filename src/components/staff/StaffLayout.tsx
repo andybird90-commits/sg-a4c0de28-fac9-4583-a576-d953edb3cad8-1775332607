@@ -31,9 +31,10 @@ import { authService } from "@/services/authService";
 interface StaffLayoutProps {
   children: React.ReactNode;
   title?: string;
+  fullWidth?: boolean;
 }
 
-export function StaffLayout({ children, title }: StaffLayoutProps) {
+export function StaffLayout({ children, title, fullWidth = false }: StaffLayoutProps) {
   const router = useRouter();
   const { user, profileWithOrg, isStaff, loading } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -292,7 +293,13 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
         {/* Main content */}
         <main className="flex-1 bg-background overflow-x-hidden overflow-y-auto lg:ml-64">
           <div className="px-4 sm:px-6 lg:px-8 py-6">
-            <div className="max-w-7xl mx-auto space-y-6">{children}</div>
+            <div
+              className={
+                fullWidth ? "w-full mx-auto space-y-6" : "max-w-7xl mx-auto space-y-6"
+              }
+            >
+              {children}
+            </div>
           </div>
         </main>
       </div>

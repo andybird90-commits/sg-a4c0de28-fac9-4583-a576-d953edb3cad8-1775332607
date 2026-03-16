@@ -327,7 +327,7 @@ export default function StaffSDRPage(): JSX.Element {
   ).length;
 
   return (
-    <StaffLayout title="SDR">
+    <StaffLayout title="SDR" fullWidth>
       <div className="mx-auto flex w-full max-w-none flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
