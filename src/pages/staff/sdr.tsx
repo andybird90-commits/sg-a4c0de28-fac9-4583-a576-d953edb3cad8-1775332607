@@ -40,6 +40,8 @@ export default function StaffSDRPage(): JSX.Element {
   const [bulkEnriching, setBulkEnriching] = useState(false);
   const [bulkEnrichedCount, setBulkEnrichedCount] = useState(0);
   const [bulkEnrichTotal, setBulkEnrichTotal] = useState(0);
+  const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
+  const [minScoreFilter, setMinScoreFilter] = useState<string>("");
 
   useEffect(() => {
     if (!user || appLoading) {
@@ -322,11 +324,29 @@ export default function StaffSDRPage(): JSX.Element {
   const enrichedProspects = prospects.filter(
     (prospect) => !!prospect.ai_dossier_json
   );
-  const sortedEnrichedProspects = [...enrichedProspects].sort((a, b) => {
-    const aScore = (a.rd_viability_score as number | null) ?? 0;
-    const bScore = (b.rd_viability_score as number | null) ?? 0;
-    return bScore - aScore;
+
+  const minScoreValue =
+    minScoreFilter.trim() === ""
+      ? null
+      : Number.parseFloat(minScoreFilter.trim());
+
+  const filteredEnrichedProspects = enrichedProspects.filter((prospect) => {
+    if (minScoreValue == null || Number.isNaN(minScoreValue)) {
+      return true;
+    }
+    const score = (prospect.rd_viability_score as number | null) ?? null;
+    if (score == null) return false;
+    return score >= minScoreValue;
   });
+
+  const sortedEnrichedProspects = [...filteredEnrichedProspects].sort(
+    (a, b) => {
+      const aScore = (a.rd_viability_score as number | null) ?? 0;
+      const bScore = (b.rd_viability_score as number | null) ?? 0;
+      return sortDirection === "desc" ? bScore - aScore : aScore - bScore;
+    }
+  );
+
   const unenrichedCount = prospects.filter(
     (prospect) => !prospect.ai_dossier_json
   ).length;
@@ -335,8 +355,7 @@ export default function StaffSDRPage(): JSX.Element {
       const status = (prospect.status as string | null) ?? "";
       const blockedStatuses = ["not_interested", "contacted"];
       return (
-        !prospect.bdm_call_scheduled_at &&
-        !blockedStatuses.includes(status)
+        !prospect.bdm_call_scheduled_at && !blockedStatuses.includes(status)
       );
     })
     .slice(0, 10);
@@ -453,40 +472,78 @@ export default function StaffSDRPage(): JSX.Element {
 
           {/* Middle column: enriched dossiers */}
           <Card className="h-[620px] overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <div>
-                <CardTitle className="text-base font-semibold text-slate-900">
-                  Enriched dossiers
-                </CardTitle>
-                <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-                  Prospects that already have an AI-generated R&amp;D dossier, sorted
-                  by R&amp;D score (highest first).
-                </p>
+            <CardHeader className="space-y-2">
+              <div className="flex flex-row items-start justify-between gap-4">
+                <div>
+                  <CardTitle className="text-base font-semibold text-slate-900">
+                    Enriched dossiers
+                  </CardTitle>
+                  <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+                    Prospects that already have an AI-generated R&amp;D dossier. Use
+                    the controls below to sort and filter by R&amp;D score.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkEnrich}
+                  disabled={bulkEnriching || unenrichedCount === 0}
+                >
+                  {bulkEnriching ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {bulkEnrichTotal > 0
+                        ? `Bulk enriching ${bulkEnrichedCount}/${bulkEnrichTotal}`
+                        : "Bulk enriching"}
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCcw className="mr-2 h-4 w-4" />
+                      {unenrichedCount > 0
+                        ? `Bulk enrich ${unenrichedCount} prospect${
+                            unenrichedCount === 1 ? "" : "s"
+                          }`
+                        : "Bulk enrich"}
+                    </>
+                  )}
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleBulkEnrich}
-                disabled={bulkEnriching || unenrichedCount === 0}
-              >
-                {bulkEnriching ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {bulkEnrichTotal > 0
-                      ? `Bulk enriching ${bulkEnrichedCount}/${bulkEnrichTotal}`
-                      : "Bulk enriching"}
-                  </>
-                ) : (
-                  <>
-                    <RefreshCcw className="mr-2 h-4 w-4" />
-                    {unenrichedCount > 0
-                      ? `Bulk enrich ${unenrichedCount} prospect${
-                          unenrichedCount === 1 ? "" : "s"
-                        }`
-                      : "Bulk enrich"}
-                  </>
-                )}
-              </Button>
+              <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500">Sort:</span>
+                  <Button
+                    variant={sortDirection === "desc" ? "default" : "outline"}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setSortDirection("desc")}
+                  >
+                    Highest first
+                  </Button>
+                  <Button
+                    variant={sortDirection === "asc" ? "default" : "outline"}
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setSortDirection("asc")}
+                  >
+                    Lowest first
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500">Min score:</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={minScoreFilter}
+                    onChange={(e) => setMinScoreFilter(e.target.value)}
+                    className="h-7 w-20 px-2 py-1 text-xs"
+                  />
+                </div>
+                <span className="ml-auto text-slate-500">
+                  {sortedEnrichedProspects.length} result
+                  {sortedEnrichedProspects.length === 1 ? "" : "s"}
+                </span>
+              </div>
             </CardHeader>
             <CardContent className="h-[560px] overflow-y-auto">
               {sortedEnrichedProspects.length === 0 ? (
@@ -735,7 +792,7 @@ export default function StaffSDRPage(): JSX.Element {
                       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Book BDM call
                       </h3>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <div className="flex-1 space-y-1">
                           <label className="block text-xs font-medium text-slate-600">
                             BDM
