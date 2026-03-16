@@ -67,18 +67,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         "estimated_claim_band": "0-25k" | "25k-50k" | "50k-100k" | "100k-250k" | "250k+",
         "claim_rationale": "Explain why this claim band based on company size, sector, typical R&D intensity",
         "core_business": "What do they actually do? (Products/Services)",
-        "technical_environment": "Technologies, processes, or scientific fields they operate in",
+        "technical_environment": "Technologies, systems, processes, or scientific fields they operate in. Be specific (e.g. bespoke logistics optimisation platform using Python + React + optimisation algorithms; in-house lab work in polymer chemistry).",
         "rd_indicators": [
           "List 3-5 specific areas where R&D likely occurs",
           "Focus on: product development, process innovation, technical challenges",
-          "Be specific to their industry and activities"
+          "Each bullet should be a concrete theme or initiative, not a generic statement"
         ],
         "previous_claims_likelihood": "high" | "medium" | "low",
         "prenotification_required": true | false,
         "prenotification_reason": "Why prenotification may be needed (or not)",
         "key_questions": [
-          "2-3 critical questions to ask in the feasibility meeting",
-          "Focus on validating R&D activities and understanding project scope"
+          "3-6 very specific questions to ask in the feasibility meeting",
+          "Each question MUST clearly reference at least one element from technical_environment or rd_indicators (e.g. a system, technology, product line, process, or R&D theme you described)",
+          "Avoid generic R&D questions that could apply to any company; make them feel tailored to this client"
         ],
         "risk_flags": [
           "Any red flags or concerns (e.g., low-margin sector, compliance history)"
@@ -87,6 +88,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           "Actionable steps for the BD team"
         ]
       }
+
+      When generating technical_environment and rd_indicators, be as concrete and company-specific as possible.
+
+      When generating key_questions:
+      - First, carefully read your own technical_environment and rd_indicators fields.
+      - Identify the main technologies, systems, product areas, and R&D themes you have described.
+      - For each major theme, write at least one question that probes uncertainty, technical difficulty, or future plans in that exact area.
+      - Explicitly name those technologies/systems/themes in the questions (e.g. refer to their logistics optimisation platform, data analytics tooling, bespoke ERP, lab work area, etc.).
+      - Do NOT use boilerplate questions like "What specific projects have involved R&D in the past year?" unless there is truly no usable technical detail to reference.
 
       Base your estimates on:
       - Company size indicators (if available from search)
