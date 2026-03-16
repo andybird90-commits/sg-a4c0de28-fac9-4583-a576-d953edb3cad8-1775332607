@@ -373,7 +373,7 @@ export default function StaffSDRPage(): JSX.Element {
           </p>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[0.7fr_1.9fr_1.4fr]">
+        <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-[0.8fr_1.8fr_1.6fr]">
           {/* Left column: upload + ranked prospects */}
           <div className="space-y-4">
             <Card className="w-full max-w-full">
@@ -401,7 +401,7 @@ export default function StaffSDRPage(): JSX.Element {
               </CardHeader>
             </Card>
 
-            <Card className="flex h-[700px] w-full max-w-full flex-col overflow-hidden">
+            <Card className="flex w-full max-w-full flex-col overflow-hidden lg:h-[700px]">
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-base font-semibold text-slate-900">
                   Ranked prospects
@@ -471,7 +471,7 @@ export default function StaffSDRPage(): JSX.Element {
           </div>
 
           {/* Middle column: enriched dossiers */}
-          <Card className="flex h-[700px] w-full max-w-full flex-col overflow-hidden">
+          <Card className="flex w-full max-w-full flex-col overflow-hidden lg:h-[700px]">
             <CardHeader className="space-y-2">
               <div className="flex flex-row items-start justify-between gap-4">
                 <div>
@@ -610,7 +610,7 @@ export default function StaffSDRPage(): JSX.Element {
           </Card>
 
           {/* Right column: dossier */}
-          <Card className="flex h-[700px] w-full max-w-full flex-col overflow-hidden">
+          <Card className="flex w-full max-w-full flex-col overflow-hidden lg:h-[700px]">
             <CardHeader>
               <CardTitle className="text-base font-semibold text-slate-900">
                 Dossier
@@ -646,84 +646,6 @@ export default function StaffSDRPage(): JSX.Element {
                         ) : null}
                       </div>
                     </div>
-
-                    <div className="flex flex-wrap gap-3 sm:items-end">
-                      <div className="min-w-[9rem] flex-1 space-y-1">
-                        <label className="block text-xs font-medium text-slate-600">
-                          BDM
-                        </label>
-                        <select
-                          className="block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
-                          value={bookingBdmId}
-                          onChange={(e) => setBookingBdmId(e.target.value)}
-                        >
-                          {bdmUsers.map((bdm) => (
-                            <option key={bdm.id} value={bdm.id}>
-                              {bdm.full_name || bdm.email || "Unnamed user"}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="min-w-[11rem] flex-[1.2] space-y-1">
-                        <label className="block text-xs font-medium text-slate-600">
-                          Start (your local time)
-                        </label>
-                        <Input
-                          type="datetime-local"
-                          value={bookingStart}
-                          onChange={(e) => setBookingStart(e.target.value)}
-                        />
-                      </div>
-                      <div className="w-28 space-y-1">
-                        <label className="block text-xs font-medium text-slate-600">
-                          Duration (min)
-                        </label>
-                        <Input
-                          type="number"
-                          min={15}
-                          max={180}
-                          value={bookingDuration}
-                          onChange={(e) =>
-                            setBookingDuration(
-                              Number.isNaN(parseInt(e.target.value, 10))
-                                ? 30
-                                : parseInt(e.target.value, 10)
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="flex items-end w-full sm:w-auto">
-                        <Button
-                          size="sm"
-                          className="w-full sm:w-auto sm:ml-1"
-                          disabled={booking || !bookingBdmId || !bookingStart}
-                          onClick={handleBookCall}
-                        >
-                          {booking ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Booking…
-                            </>
-                          ) : (
-                            <>
-                              <PhoneCall className="mr-2 h-4 w-4" />
-                              Book BDM call
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                    {selectedProspect?.bdm_call_scheduled_at && (
-                      <p className="mt-2 text-xs text-slate-500">
-                        BDM call scheduled at{" "}
-                        {new Date(
-                          selectedProspect.bdm_call_scheduled_at as string
-                        ).toLocaleString()}{" "}
-                        {selectedProspect.bdm_call_teams_link
-                          ? ` • Teams: ${selectedProspect.bdm_call_teams_link}`
-                          : null}
-                      </p>
-                    )}
 
                     <div className="mt-4 border-t border-slate-100 pt-3">
                       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -774,7 +696,7 @@ export default function StaffSDRPage(): JSX.Element {
                             }
                           />
                         </div>
-                        <div className="flex items-end w-full md:w-auto">
+                        <div className="flex w-full items-end md:w-auto">
                           <Button
                             size="sm"
                             className="w-full sm:w-auto sm:ml-1"
@@ -795,6 +717,67 @@ export default function StaffSDRPage(): JSX.Element {
                           </Button>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="mt-4 border-t border-slate-100 pt-3 space-y-3">
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Dossier details
+                      </h3>
+                      {dossier ? (
+                        <div className="space-y-3 text-sm text-slate-700">
+                          {dossier.rd_summary && (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                R&amp;D summary
+                              </p>
+                              <p className="mt-1 whitespace-pre-line">
+                                {dossier.rd_summary}
+                              </p>
+                            </div>
+                          )}
+
+                          {Array.isArray(dossier.key_signals) &&
+                            dossier.key_signals.length > 0 && (
+                              <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Key signals
+                                </p>
+                                <ul className="mt-1 list-disc space-y-1 pl-5">
+                                  {dossier.key_signals.map(
+                                    (item: string, idx: number) => (
+                                      <li key={idx}>{item}</li>
+                                    )
+                                  )}
+                                </ul>
+                              </div>
+                            )}
+
+                          {dossier.risks && (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Risks / caveats
+                              </p>
+                              <p className="mt-1 whitespace-pre-line">
+                                {dossier.risks}
+                              </p>
+                            </div>
+                          )}
+
+                          {!dossier.rd_summary &&
+                            (!Array.isArray(dossier.key_signals) ||
+                              dossier.key_signals.length === 0) &&
+                            !dossier.risks && (
+                              <p className="text-xs text-slate-500">
+                                This prospect is enriched, but detailed dossier text is
+                                not available.
+                              </p>
+                            )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-500">
+                          No dossier details available yet for this prospect.
+                        </p>
+                      )}
                     </div>
                   </>
                 )}
