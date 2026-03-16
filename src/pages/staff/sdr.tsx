@@ -373,7 +373,7 @@ export default function StaffSDRPage(): JSX.Element {
           </p>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[0.7fr_2.3fr_1fr]">
+        <section className="grid gap-6 lg:grid-cols-[0.7fr_2fr_1.3fr]">
           {/* Left column: upload + ranked prospects */}
           <div className="space-y-4">
             <Card className="w-full max-w-full">
@@ -558,7 +558,6 @@ export default function StaffSDRPage(): JSX.Element {
                       <TableRow>
                         <TableHead>Company</TableHead>
                         <TableHead className="w-32">R&amp;D score</TableHead>
-                        <TableHead className="w-28">Status</TableHead>
                         <TableHead className="w-40">BDM call</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -589,11 +588,6 @@ export default function StaffSDRPage(): JSX.Element {
                             ) : (
                               <span className="text-xs text-slate-500">Not scored</span>
                             )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-[11px]">
-                              {prospect.status.replace(/_/g, " ")}
-                            </Badge>
                           </TableCell>
                           <TableCell>
                             {prospect.bdm_call_scheduled_at ? (
