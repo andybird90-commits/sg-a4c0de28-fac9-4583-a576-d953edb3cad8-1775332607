@@ -268,6 +268,7 @@ export default function StaffHomePage() {
                   <th className="px-4 py-3 text-left">Client</th>
                   <th className="px-4 py-3 text-left">Year</th>
                   <th className="px-4 py-3 text-left">History</th>
+                  <th className="px-4 py-3 text-left">BDM</th>
                   <th className="px-4 py-3 text-left">Tech</th>
                   <th className="px-4 py-3 text-left">Cost</th>
                   <th className="px-4 py-3 text-left">QA</th>
@@ -326,7 +327,7 @@ export default function StaffHomePage() {
                       });
                     }} style={{ margin: "28px 0px", padding: "20px 6px" }}>
                     
-                        <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700">
+                        <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-707">
                           {row.unreadHistoryCount > 9 ?
                       "9+" :
                       row.unreadHistoryCount}
@@ -337,6 +338,9 @@ export default function StaffHomePage() {
                       "History"}
                         </span>
                       </button>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-800">
+                      {row.claim.bd_owner?.full_name || "-"}
                     </td>
                     <td className="px-4 py-3">
                       <StatusBox label="Tech" status={row.techStatus} />
@@ -362,8 +366,8 @@ export default function StaffHomePage() {
                       entityType="claim"
                       entityId={row.claim.id}
                       entityName={`${row.claim.organisations?.name || "Claim"} - FY ${
-                      row.claim.claim_year}`
-                      } />
+                      row.claim.claim_year}`}
+                        />
                     
                         <ChevronRight className="h-4 w-4 text-slate-400" />
                       </div>
