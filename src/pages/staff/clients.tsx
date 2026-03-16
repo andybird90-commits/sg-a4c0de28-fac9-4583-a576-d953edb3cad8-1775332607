@@ -19,14 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter } from
-"@/components/ui/dialog";
+  DialogFooter
+} from "@/components/ui/dialog";
 import { SidekickResearchPanel } from "@/components/staff/cif/SidekickResearchPanel";
 import { clientFeeReconciliationService } from "@/services/clientFeeReconciliationService";
 import { organisationNotificationStatusService } from "@/services/organisationNotificationStatusService";
 import type { NotificationStatusState } from "@/services/organisationNotificationStatusService";
-
-const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+import { clientCrmService, type CrmKpiSummary } from "@/services/clientCrmService";
 
 type Prospect = Database["public"]["Tables"]["prospects"]["Row"];
 type ClientToBeOnboarded = Database["public"]["Tables"]["clients_to_be_onboarded"]["Row"];
@@ -67,7 +66,8 @@ const createClientFormState = (client: ClientToBeOnboarded): ClientFormState => 
   address: client.address || "",
   company_number: client.company_number || "",
   utr: client.utr || "",
-  fee_percent: client.fee_percent !== null && client.fee_percent !== undefined ? String(client.fee_percent) : "",
+  fee_percent:
+    client.fee_percent !== null && client.fee_percent !== undefined ? String(client.fee_percent) : "",
   year_end_month: client.year_end_month || "",
   ref_by: client.ref_by || "",
   comments: client.comments || ""
@@ -87,26 +87,26 @@ const getRegisteredAddressFromEnrichment = (data: any): string | null => {
 
   if (data.registered_address) {
     return [
-    data.registered_address.address_line_1,
-    data.registered_address.address_line_2,
-    data.registered_address.locality,
-    data.registered_address.postal_code,
-    data.registered_address.country].
-
-    filter(Boolean).
-    join(", ");
+      data.registered_address.address_line_1,
+      data.registered_address.address_line_2,
+      data.registered_address.locality,
+      data.registered_address.postal_code,
+      data.registered_address.country
+    ]
+      .filter(Boolean)
+      .join(", ");
   }
 
   if (data.registered_office_address) {
     return [
-    data.registered_office_address.address_line_1,
-    data.registered_office_address.address_line_2,
-    data.registered_office_address.locality,
-    data.registered_office_address.postal_code,
-    data.registered_office_address.country].
-
-    filter(Boolean).
-    join(", ");
+      data.registered_office_address.address_line_1,
+      data.registered_office_address.address_line_2,
+      data.registered_office_address.locality,
+      data.registered_office_address.postal_code,
+      data.registered_office_address.country
+    ]
+      .filter(Boolean)
+      .join(", ");
   }
 
   return null;
@@ -136,8 +136,10 @@ export default function StaffClients() {
   const [clientResearchFallbackText, setClientResearchFallbackText] = useState("");
   const [clientSidekickLoading, setClientSidekickLoading] = useState(false);
   const [notificationStatuses, setNotificationStatuses] = useState<
-    Record<string, NotificationStatusState>>(
-    {});
+    Record<string, NotificationStatusState>
+  >({});
+  const [crmKpis, setCrmKpis] = useState<CrmKpiSummary | null>(null);
+  const [crmKpisLoading, setCrmKpisLoading] = useState(false);
 
   const [searchToOnboard, setSearchToOnboard] = useState<string>("");
   const [sortToOnboard, setSortToOnboard] = useState<"name-asc" | "name-desc">("name-asc");
@@ -150,15 +152,16 @@ export default function StaffClients() {
       return;
     }
     void loadProspects();
+    void loadCrmKpis();
   }, [isStaff]);
 
   const loadProspects = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.
-      from("prospects").
-      select("*").
-      order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("prospects")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error loading prospects:", error);
@@ -173,10 +176,10 @@ export default function StaffClients() {
         return;
       }
 
-      const { data: clientsData, error: clientsError } = await supabase.
-      from("clients_to_be_onboarded").
-      select("*").
-      order("created_at", { ascending: false });
+      const { data: clientsData, error: clientsError } = await supabase
+        .from("clients_to_be_onboarded")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (clientsError) {
         console.error("Error loading clients_to_be_onboarded:", clientsError);
@@ -209,6 +212,18 @@ export default function StaffClients() {
       setClientsToOnboard([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCrmKpis = async () => {
+    setCrmKpisLoading(true);
+    try {
+      const data = await clientCrmService.getCrmKpis();
+      setCrmKpis(data);
+    } catch (error) {
+      console.error("Error loading CRM KPIs:", error);
+    } finally {
+      setCrmKpisLoading(false);
     }
   };
 
@@ -262,14 +277,17 @@ export default function StaffClients() {
           setClientAnalysisData(researchData);
 
           const summary =
-          typeof researchData?.feasibility_summary === "string" ?
-          researchData.feasibility_summary.trim() :
-          "";
+            typeof researchData?.feasibility_summary === "string"
+              ? researchData.feasibility_summary.trim()
+              : "";
           if (summary) {
             setClientResearchFallbackText(summary);
           }
         } else {
-          console.error("Sidekick research returned non-OK status for imported client:", researchRes.status);
+          console.error(
+            "Sidekick research returned non-OK status for imported client:",
+            researchRes.status
+          );
         }
       } catch (researchError) {
         console.error("Error loading AI research for imported client:", researchError);
@@ -347,10 +365,10 @@ export default function StaffClients() {
         comments: clientForm.comments.trim() || null
       };
 
-      const { error } = await supabase.
-      from("clients_to_be_onboarded").
-      update(updatePayload).
-      eq("id", selectedClient.id);
+      const { error } = await supabase
+        .from("clients_to_be_onboarded")
+        .update(updatePayload)
+        .eq("id", selectedClient.id);
 
       if (error) {
         console.error("Error updating client_to_be_onboarded:", error);
@@ -394,10 +412,10 @@ export default function StaffClients() {
 
     setClientDeleting(true);
     try {
-      const { error } = await supabase.
-      from("clients_to_be_onboarded").
-      delete().
-      eq("id", selectedClient.id);
+      const { error } = await supabase
+        .from("clients_to_be_onboarded")
+        .delete()
+        .eq("id", selectedClient.id);
 
       if (error) {
         console.error("Error deleting client_to_be_onboarded:", error);
@@ -500,9 +518,9 @@ export default function StaffClients() {
       }
 
       // 3. Update prospect record
-      const { error: updateError } = await supabase.
-      from("prospects").
-      update({
+      const { error: updateError } = await supabase
+      .from("prospects")
+      .update({
         company_name: lookupData.company_name || prospect.company_name,
         company_status: lookupData.company_status || prospect.company_status,
         registered_address: registeredAddress,
@@ -512,8 +530,8 @@ export default function StaffClients() {
         last_accounts_date: lookupData.last_accounts_date || prospect.last_accounts_date,
         ai_research_data: aiResearchData || null,
         last_enriched_at: new Date().toISOString()
-      } as Partial<Prospect>).
-      eq("id", prospect.id);
+      } as Partial<Prospect>)
+      .eq("id", prospect.id);
 
       if (updateError) {
         console.error("Error updating prospect after enrichment:", updateError);
@@ -545,7 +563,8 @@ export default function StaffClients() {
 
   const enrichImportedClient = async (
   client: ClientToBeOnboarded,
-  options?: {suppressToast?: boolean;}) =>
+  options?: {suppressToast?: boolean;})
+  =>
   {
     if (!client.company_number || !isValidCompaniesHouseNumber(client.company_number)) {
       if (!options?.suppressToast) {
@@ -599,10 +618,10 @@ export default function StaffClients() {
         company_number: lookupData.company_number || client.company_number
       };
 
-      const { error: updateError } = await supabase.
-      from("clients_to_be_onboarded").
-      update(updatePayload).
-      eq("id", client.id);
+      const { error: updateError } = await supabase
+      .from("clients_to_be_onboarded")
+      .update(updatePayload)
+      .eq("id", client.id);
 
       if (updateError) {
         console.error("Error updating imported client after enrichment:", updateError);
@@ -752,10 +771,10 @@ export default function StaffClients() {
     }
 
     try {
-      const { error } = await supabase.
-      from("prospects").
-      delete().
-      eq("id", prospect.id);
+      const { error } = await supabase
+      .from("prospects")
+      .delete()
+      .eq("id", prospect.id);
 
       if (error) {
         console.error("Error deleting prospect:", error);
@@ -920,8 +939,9 @@ export default function StaffClients() {
     <>
       <SEO
         title="Clients - Staff Portal"
-        description="Manage client onboarding and R&D engagement" />
-      
+        description="Manage client onboarding and R&D engagement"
+      />
+
       <StaffLayout>
         <div className="p-6 lg:p-8 space-y-6">
           <div className="flex items-center justify-between gap-4">
@@ -937,12 +957,106 @@ export default function StaffClients() {
               variant="outline"
               size="sm"
               onClick={() => loadProspects()}
-              disabled={loading}>
-              
+              disabled={loading}
+            >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
           </div>
+
+          {crmKpisLoading && !crmKpis && (
+            <p className="text-sm text-muted-foreground">
+              Loading relationship insights…
+            </p>
+          )}
+
+          {crmKpis && (
+            <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>No contact in 30 days</CardDescription>
+                  <CardTitle className="text-2xl">
+                    {crmKpis.noContactIn30Days}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    Clients without any logged activity in the last 30 days.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Follow-ups due today</CardDescription>
+                  <CardTitle className="text-2xl">
+                    {crmKpis.followUpsDueToday}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    Activities with follow-up dates scheduled for today.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Onboarding/CIF in progress</CardDescription>
+                  <CardTitle className="text-2xl">
+                    {crmKpis.onboardingInProgress}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    Clients with CIFs not yet approved or archived.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Active claim clients</CardDescription>
+                  <CardTitle className="text-2xl">
+                    {crmKpis.activeClaimClients}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    Organisations with at least one open R&amp;D claim.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>High-priority dossiers</CardDescription>
+                  <CardTitle className="text-2xl">
+                    {crmKpis.highPriorityDossiers}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    Active client dossiers with confidence score ≥ 70.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Overdue tasks</CardDescription>
+                  <CardTitle className="text-2xl">
+                    {crmKpis.overdueTasks}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">
+                    Open client tasks with due dates in the past.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Clients to be onboarded */}
