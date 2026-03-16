@@ -401,7 +401,7 @@ export default function StaffSDRPage(): JSX.Element {
               </CardHeader>
             </Card>
 
-            <Card className="h-[700px] overflow-hidden">
+            <Card className="flex h-[700px] flex-col overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-base font-semibold text-slate-900">
                   Ranked prospects
@@ -421,7 +421,7 @@ export default function StaffSDRPage(): JSX.Element {
                   )}
                 </Button>
               </CardHeader>
-              <CardContent className="h-[640px] space-y-2 overflow-y-auto">
+              <CardContent className="flex-1 space-y-2 overflow-y-auto">
                 {loadingProspects && prospects.length === 0 ? (
                   <div className="flex h-full items-center justify-center text-sm text-slate-500">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -471,7 +471,7 @@ export default function StaffSDRPage(): JSX.Element {
           </div>
 
           {/* Middle column: enriched dossiers */}
-          <Card className="h-[700px] overflow-hidden">
+          <Card className="flex h-[700px] flex-col overflow-hidden">
             <CardHeader className="space-y-2">
               <div className="flex flex-row items-start justify-between gap-4">
                 <div>
@@ -545,7 +545,7 @@ export default function StaffSDRPage(): JSX.Element {
                 </span>
               </div>
             </CardHeader>
-            <CardContent className="h-[640px] overflow-y-auto">
+            <CardContent className="flex-1 overflow-y-auto">
               {sortedEnrichedProspects.length === 0 ? (
                 <p className="text-sm text-slate-500">
                   No enriched dossiers yet. Use the Enrich button on a prospect or run
@@ -616,14 +616,14 @@ export default function StaffSDRPage(): JSX.Element {
           </Card>
 
           {/* Right column: dossier */}
-          <Card className="h-[700px] overflow-hidden">
+          <Card className="flex h-[700px] flex-col overflow-hidden">
             <CardHeader>
               <CardTitle className="text-base font-semibold text-slate-900">
                 Dossier
               </CardTitle>
             </CardHeader>
-            <CardContent className="h-[640px] overflow-y-auto">
-              <div className="mx-auto flex h-full w-full flex-col gap-4">
+            <CardContent className="flex-1 overflow-y-auto">
+              <div className="mx-auto flex w-full flex-col gap-4">
                 {!selectedProspect ? (
                   <p className="text-sm text-slate-500">
                     Select a prospect on the left to view its dossier.
