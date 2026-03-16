@@ -373,7 +373,7 @@ export default function StaffSDRPage(): JSX.Element {
           </p>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[1fr_1.2fr_1.8fr]">
+        <section className="grid gap-6 lg:grid-cols-[0.9fr_1.7fr_1.4fr]">
           {/* Left column: upload + ranked prospects */}
           <div className="space-y-4">
             <Card>
@@ -623,7 +623,7 @@ export default function StaffSDRPage(): JSX.Element {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto">
-              <div className="mx-auto flex w-full flex-col gap-4">
+              <div className="flex w-full flex-col gap-4">
                 {!selectedProspect ? (
                   <p className="text-sm text-slate-500">
                     Select a prospect on the left to view its dossier.
