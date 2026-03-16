@@ -83,7 +83,7 @@ export default function StaffHomePage() {
     return d.toLocaleDateString("en-GB", {
       day: "numeric",
       month: "short",
-      year: "numeric",
+      year: "numeric"
     });
   };
 
@@ -94,7 +94,7 @@ export default function StaffHomePage() {
     return new Intl.NumberFormat("en-GB", {
       style: "currency",
       currency: "GBP",
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(value);
   };
 
@@ -220,7 +220,7 @@ export default function StaffHomePage() {
           expectedFilingDate: item.expectedFilingDate,
           daysUntilFiling: item.daysUntilFiling,
           predictedRevenue: item.predictedRevenue,
-          confidence: item.confidence,
+          confidence: item.confidence
         }));
         setUpcomingClients(upcomingRows);
       } finally {
@@ -318,7 +318,7 @@ export default function StaffHomePage() {
                         pathname: `/staff/claims/${row.claim.id}`,
                         query: { tab: "history" }
                       });
-                    }} style={{ margin: "20px 0px" }}>
+                    }} style={{ margin: "28px 0px", padding: "20px 6px" }}>
                     
                         <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-700">
                           {row.unreadHistoryCount > 9 ?
@@ -379,12 +379,12 @@ export default function StaffHomePage() {
             </p>
           </div>
 
-          {upcomingClients.length === 0 ? (
-            <div className="px-4 py-6 text-sm text-slate-500">
+          {upcomingClients.length === 0 ?
+          <div className="px-4 py-6 text-sm text-slate-500">
               No clients are predicted to file in the next 30 days.
-            </div>
-          ) : (
-            <>
+            </div> :
+
+          <>
               <table className="w-full min-w-[720px] text-sm">
                 <thead>
                   <tr className="border-b bg-white text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -397,11 +397,11 @@ export default function StaffHomePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(showAllUpcoming
-                    ? upcomingClients
-                    : upcomingClients.slice(0, 5)
-                  ).map((client) => (
-                    <tr key={client.id} className="border-b last:border-0">
+                  {(showAllUpcoming ?
+                upcomingClients :
+                upcomingClients.slice(0, 5)).
+                map((client) =>
+                <tr key={client.id} className="border-b last:border-0">
                       <td className="px-4 py-3 text-slate-900">
                         {client.clientName}
                       </td>
@@ -418,28 +418,28 @@ export default function StaffHomePage() {
                         {formatCurrency(client.predictedRevenue)}
                       </td>
                       <td className="px-4 py-3 text-slate-800">
-                        {client.confidence != null
-                          ? `${client.confidence}%`
-                          : "-"}
+                        {client.confidence != null ?
+                    `${client.confidence}%` :
+                    "-"}
                       </td>
                     </tr>
-                  ))}
+                )}
                 </tbody>
               </table>
 
-              {upcomingClients.length > 5 && (
-                <div className="flex justify-end border-t bg-white px-4 py-2">
+              {upcomingClients.length > 5 &&
+            <div className="flex justify-end border-t bg-white px-4 py-2">
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAllUpcoming((prev) => !prev)}
-                  >
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAllUpcoming((prev) => !prev)}>
+                
                     {showAllUpcoming ? "Show less" : "Show more"}
                   </Button>
                 </div>
-              )}
+            }
             </>
-          )}
+          }
         </div>
       </div>
     </StaffLayout>);
