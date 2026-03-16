@@ -373,7 +373,7 @@ export default function StaffSDRPage(): JSX.Element {
           </p>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[0.8fr_2fr_1.2fr]">
+        <section className="grid gap-6 lg:grid-cols-[0.7fr_2.3fr_1fr]">
           {/* Left column: upload + ranked prospects */}
           <div className="space-y-4">
             <Card>
