@@ -252,12 +252,10 @@ export default function StaffHomePage() {
                       <> • {row.evidenceCount} evidence items</>
                       }
                         </div>
-                        {(row.companyAddress || row.companyContact) &&
-                    <div className="space-y-0.5 text-[11px] text-slate-500">
-                            {row.companyAddress && <div>{row.companyAddress}</div>}
-                            {row.companyContact && <div>{row.companyContact}</div>}
-                          </div>
-                    }
+                        <div className="mt-0.5 space-y-0.5 text-[11px] text-slate-500">
+                          <div>Address: {row.companyAddress || "-"}</div>
+                          <div>Contact: {row.companyContact || "-"}</div>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-slate-800">
