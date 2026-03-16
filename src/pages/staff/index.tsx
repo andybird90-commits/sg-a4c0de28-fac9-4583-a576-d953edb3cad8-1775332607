@@ -339,8 +339,8 @@ export default function StaffHomePage() {
                         </span>
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-800">
-                      {row.claim.bd_owner?.full_name || "-"}
+                    <td className="px-4 py-3">
+                      <StatusBox label="BDM" status="complete" />
                     </td>
                     <td className="px-4 py-3">
                       <StatusBox label="Tech" status={row.techStatus} />
