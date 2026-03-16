@@ -328,7 +328,7 @@ export default function StaffSDRPage(): JSX.Element {
 
   return (
     <StaffLayout title="SDR">
-      <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-none flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         <header className="space-y-2">
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
             SDR Radar
@@ -550,7 +550,7 @@ export default function StaffSDRPage(): JSX.Element {
               </CardTitle>
             </CardHeader>
             <CardContent className="h-[560px] overflow-y-auto">
-              <div className="mx-auto flex h-full w-full max-w-xl flex-col gap-4">
+              <div className="mx-auto flex h-full w-full flex-col gap-4">
                 {!selectedProspect ? (
                   <p className="text-sm text-slate-500">
                     Select a prospect on the left to view its dossier.
