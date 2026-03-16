@@ -144,7 +144,6 @@ export default function StaffSDRPage(): JSX.Element {
       console.error("Error processing CSV upload:", err);
     } finally {
       setUploading(false);
-      // reset input so same file can be uploaded again if needed
       if (event.target) {
         event.target.value = "";
       }
@@ -350,6 +349,7 @@ export default function StaffSDRPage(): JSX.Element {
   const unenrichedCount = prospects.filter(
     (prospect) => !prospect.ai_dossier_json
   ).length;
+
   const callQueue = sortedEnrichedProspects
     .filter((prospect) => {
       const status = (prospect.status as string | null) ?? "";
@@ -376,7 +376,7 @@ export default function StaffSDRPage(): JSX.Element {
         <section className="grid gap-6 lg:grid-cols-[0.7fr_2.3fr_1fr]">
           {/* Left column: upload + ranked prospects */}
           <div className="space-y-4">
-            <Card>
+            <Card className="w-full max-w-full">
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <div>
                   <CardTitle className="text-base font-semibold text-slate-900">
@@ -401,7 +401,7 @@ export default function StaffSDRPage(): JSX.Element {
               </CardHeader>
             </Card>
 
-            <Card className="flex h-[700px] flex-col overflow-hidden">
+            <Card className="flex h-[700px] w-full max-w-full flex-col overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-base font-semibold text-slate-900">
                   Ranked prospects
@@ -471,7 +471,7 @@ export default function StaffSDRPage(): JSX.Element {
           </div>
 
           {/* Middle column: enriched dossiers */}
-          <Card className="flex h-[700px] flex-col overflow-hidden">
+          <Card className="flex h-[700px] w-full max-w-full flex-col overflow-hidden">
             <CardHeader className="space-y-2">
               <div className="flex flex-row items-start justify-between gap-4">
                 <div>
@@ -552,7 +552,7 @@ export default function StaffSDRPage(): JSX.Element {
                   a bulk enrich.
                 </p>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="w-full max-w-full overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -616,14 +616,14 @@ export default function StaffSDRPage(): JSX.Element {
           </Card>
 
           {/* Right column: dossier */}
-          <Card className="flex h-[700px] flex-col overflow-hidden">
+          <Card className="flex h-[700px] w-full max-w-full flex-col overflow-hidden">
             <CardHeader>
               <CardTitle className="text-base font-semibold text-slate-900">
                 Dossier
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto">
-              <div className="flex w-full flex-col gap-4">
+              <div className="flex w-full max-w-full flex-col gap-4">
                 {!selectedProspect ? (
                   <p className="text-sm text-slate-500">
                     Select a prospect on the left to view its dossier.
