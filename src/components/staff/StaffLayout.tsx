@@ -46,7 +46,7 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
     icon: LayoutDashboard
   },
   {
-    path: "/sdr",
+    path: "/staff/sdr",
     label: "SDR",
     icon: Headset
   },

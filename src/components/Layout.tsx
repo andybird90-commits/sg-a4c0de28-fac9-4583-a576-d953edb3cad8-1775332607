@@ -48,7 +48,6 @@ export function Layout({ children, showNav = true }: LayoutProps) {
 
   const navItems: NavItem[] = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/sdr", label: "SDR", icon: Layers },
   { href: "/messages", label: "Messages", icon: MessageSquare },
   { href: "/evidence/capture", label: "Capture", icon: Camera },
   { href: "/evidence", label: "Evidence", icon: Layers },
