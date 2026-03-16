@@ -7,6 +7,7 @@ import { MessageWidget } from "@/components/MessageWidget";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, PoundSterling } from "lucide-react";
 import { messageService } from "@/services/messageService";
+import { pipelineService } from "@/services/pipelineService";
 
 type StageStatus = "not_started" | "in_progress" | "complete" | "blocked" | null | undefined;
 
@@ -58,10 +59,44 @@ interface BoardRow {
   unreadHistoryCount: number;
 }
 
+interface UpcomingClientRow {
+  id: string;
+  clientName: string;
+  organisationCode: string | null;
+  expectedFilingDate: string | null;
+  daysUntilFiling: number | null;
+  predictedRevenue: number | null;
+  confidence: number | null;
+}
+
 export default function StaffHomePage() {
   const router = useRouter();
   const [rows, setRows] = useState<BoardRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [upcomingClients, setUpcomingClients] = useState<UpcomingClientRow[]>([]);
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+
+  const formatFilingDate = (value: string | null): string => {
+    if (!value) return "-";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const formatCurrency = (value: number | null): string => {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+      return "-";
+    }
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
 
   useEffect(() => {
     async function load() {
@@ -176,6 +211,18 @@ export default function StaffHomePage() {
         });
 
         setRows(nextRows);
+
+        const upcoming = await pipelineService.getUpcomingClientFilings(30);
+        const upcomingRows: UpcomingClientRow[] = upcoming.map((item) => ({
+          id: item.pipelineId,
+          clientName: item.clientName,
+          organisationCode: item.organisationCode,
+          expectedFilingDate: item.expectedFilingDate,
+          daysUntilFiling: item.daysUntilFiling,
+          predictedRevenue: item.predictedRevenue,
+          confidence: item.confidence,
+        }));
+        setUpcomingClients(upcomingRows);
       } finally {
         setLoading(false);
       }
@@ -320,6 +367,79 @@ export default function StaffHomePage() {
               </tbody>
             </table>
           }
+        </div>
+
+        <div className="mt-8 overflow-hidden rounded-xl border bg-white shadow-sm">
+          <div className="border-b bg-slate-50 px-4 py-3">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Clients due to submit (next 30 days)
+            </h2>
+            <p className="text-xs text-slate-500">
+              Based on predicted accounts filing dates from Companies House.
+            </p>
+          </div>
+
+          {upcomingClients.length === 0 ? (
+            <div className="px-4 py-6 text-sm text-slate-500">
+              No clients are predicted to file in the next 30 days.
+            </div>
+          ) : (
+            <>
+              <table className="w-full min-w-[720px] text-sm">
+                <thead>
+                  <tr className="border-b bg-white text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="px-4 py-3 text-left">Client</th>
+                    <th className="px-4 py-3 text-left">Org code</th>
+                    <th className="px-4 py-3 text-left">Predicted filing</th>
+                    <th className="px-4 py-3 text-left">Days</th>
+                    <th className="px-4 py-3 text-left">Est. revenue</th>
+                    <th className="px-4 py-3 text-left">Confidence</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(showAllUpcoming
+                    ? upcomingClients
+                    : upcomingClients.slice(0, 5)
+                  ).map((client) => (
+                    <tr key={client.id} className="border-b last:border-0">
+                      <td className="px-4 py-3 text-slate-900">
+                        {client.clientName}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {client.organisationCode || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-800">
+                        {formatFilingDate(client.expectedFilingDate)}
+                      </td>
+                      <td className="px-4 py-3 text-slate-800">
+                        {client.daysUntilFiling ?? "-"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-800">
+                        {formatCurrency(client.predictedRevenue)}
+                      </td>
+                      <td className="px-4 py-3 text-slate-800">
+                        {client.confidence != null
+                          ? `${client.confidence}%`
+                          : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {upcomingClients.length > 5 && (
+                <div className="flex justify-end border-t bg-white px-4 py-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAllUpcoming((prev) => !prev)}
+                  >
+                    {showAllUpcoming ? "Show less" : "Show more"}
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </StaffLayout>);

@@ -705,6 +705,99 @@ export async function getPipelineSummary() {
   };
 }
 
+export interface UpcomingClientFiling {
+  pipelineId: string;
+  orgId: string | null;
+  clientName: string;
+  organisationCode: string | null;
+  expectedFilingDate: string | null;
+  predictedRevenue: number | null;
+  confidence: number | null;
+  daysUntilFiling: number | null;
+}
+
+export async function getUpcomingClientFilings(
+  windowDays = 30
+): Promise<UpcomingClientFiling[]> {
+  const today = new Date();
+  const end = new Date(today.getTime() + windowDays * 24 * 60 * 60 * 1000);
+
+  const formatDate = (d: Date): string => d.toISOString().split("T")[0];
+
+  const { data, error } = await supabase
+    .from("pipeline_entries")
+    .select(
+      `
+      id,
+      org_id,
+      expected_accounts_filing_date,
+      predicted_revenue,
+      filing_confidence_score,
+      organisations:organisations!pipeline_entries_org_id_fkey(
+        id,
+        name,
+        organisation_code
+      )
+    `
+    )
+    .gte("expected_accounts_filing_date", formatDate(today))
+    .lte("expected_accounts_filing_date", formatDate(end))
+    .order("expected_accounts_filing_date", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching upcoming client filings:", error);
+    return [];
+  }
+
+  const nowMs = today.getTime();
+
+  return (data || [])
+    .map((row: any): UpcomingClientFiling => {
+      const expected = row.expected_accounts_filing_date as string | null;
+      let daysUntil: number | null = null;
+      if (expected) {
+        const d = new Date(expected);
+        if (!Number.isNaN(d.getTime())) {
+          daysUntil = Math.max(
+            0,
+            Math.round((d.getTime() - nowMs) / (1000 * 60 * 60 * 24))
+          );
+        }
+      }
+
+      const org =
+        (row.organisations as
+          | {
+              id: string;
+              name: string;
+              organisation_code: string | null;
+            }
+          | null
+          | undefined) ?? null;
+
+      return {
+        pipelineId: row.id as string,
+        orgId: (row.org_id as string | null) ?? null,
+        clientName: org?.name || "Unknown client",
+        organisationCode: org?.organisation_code ?? null,
+        expectedFilingDate: expected,
+        predictedRevenue:
+          typeof row.predicted_revenue === "number"
+            ? row.predicted_revenue
+            : null,
+        confidence:
+          typeof row.filing_confidence_score === "number"
+            ? row.filing_confidence_score
+            : null,
+        daysUntilFiling: daysUntil,
+      };
+    })
+    .sort((a, b) => {
+      if (!a.expectedFilingDate || !b.expectedFilingDate) return 0;
+      return a.expectedFilingDate.localeCompare(b.expectedFilingDate);
+    });
+}
+
 const isValidCompaniesHouseNumber = (
   value: string | null | undefined
 ): boolean => {
@@ -960,6 +1053,7 @@ export const pipelineService = {
   refreshPipelinePredictions,
   refreshAllPipelinePredictions,
   getPipelineSummary,
+  getUpcomingClientFilings,
   calculatePredictedFilingDate,
   calculatePipelineStartDate,
   syncPipelineFromClients,
