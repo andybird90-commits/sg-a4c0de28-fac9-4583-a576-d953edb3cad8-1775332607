@@ -15,7 +15,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { Loader2, Upload, PhoneCall, XCircle, RefreshCcw } from "lucide-react";
+import { Loader2, Upload, PhoneCall, RefreshCcw } from "lucide-react";
 
 type SdrProspect = Tables<"sdr_prospects">;
 
@@ -28,7 +28,9 @@ interface BdmUser {
 export default function StaffSDRPage(): JSX.Element {
   const { user, loading: appLoading } = useApp();
   const [prospects, setProspects] = useState<SdrProspect[]>([]);
-  const [selectedProspect, setSelectedProspect] = useState<SdrProspect | null>(null);
+  const [selectedProspect, setSelectedProspect] = useState<SdrProspect | null>(
+    null
+  );
   const [loadingProspects, setLoadingProspects] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
@@ -104,7 +106,9 @@ export default function StaffSDRPage(): JSX.Element {
     }
   };
 
-  const handleCsvUpload = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
+  const handleCsvUpload = async (
+    event: ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
     if (!user) return;
     const file = event.target.files?.[0];
     if (!file) return;
@@ -368,12 +372,12 @@ export default function StaffSDRPage(): JSX.Element {
             SDR Radar
           </h1>
           <p className="max-w-2xl text-sm text-slate-600 sm:text-base">
-            Upload prospect companies, let the assistant build R&amp;D dossiers, then
-            rank and book BDM discovery calls from a single workspace.
+            Upload prospect companies, let the assistant build R&amp;D dossiers,
+            then rank and book BDM discovery calls from a single workspace.
           </p>
         </header>
 
-        <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-[0.8fr_1.8fr_1.6fr]">
+        <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-[0.8fr_1.7fr_1.9fr]">
           {/* Left column: upload + ranked prospects */}
           <div className="space-y-4">
             <Card className="w-full max-w-full">
@@ -383,8 +387,8 @@ export default function StaffSDRPage(): JSX.Element {
                     Prospect upload
                   </CardTitle>
                   <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-                    Upload a CSV with one company per line (name, optional company
-                    number).
+                    Upload a CSV with one company per line (name, optional
+                    company number).
                   </p>
                 </div>
                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 sm:text-sm">
@@ -459,7 +463,9 @@ export default function StaffSDRPage(): JSX.Element {
                             (prospect.rd_viability_score as number | null) ?? null
                           )}
                           <Badge variant="outline" className="text-[11px]">
-                            {prospect.status.replace(/_/g, " ")}
+                            {(
+                              (prospect.status as string | null) ?? "new"
+                            ).replace(/_/g, " ")}
                           </Badge>
                         </div>
                       </div>
@@ -479,8 +485,8 @@ export default function StaffSDRPage(): JSX.Element {
                     Enriched dossiers
                   </CardTitle>
                   <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-                    Prospects that already have an AI-generated R&amp;D dossier. Use
-                    the controls below to sort and filter by R&amp;D score.
+                    Prospects that already have an AI-generated R&amp;D dossier.
+                    Use the controls below to sort and filter by R&amp;D score.
                   </p>
                 </div>
                 <Button
@@ -519,14 +525,6 @@ export default function StaffSDRPage(): JSX.Element {
                   >
                     Highest first
                   </Button>
-                  <Button
-                    variant={sortDirection === "asc" ? "default" : "outline"}
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => setSortDirection("asc")}
-                  >
-                    Lowest first
-                  </Button>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-slate-500">Min score:</span>
@@ -548,8 +546,8 @@ export default function StaffSDRPage(): JSX.Element {
             <CardContent className="flex-1 overflow-y-auto">
               {sortedEnrichedProspects.length === 0 ? (
                 <p className="text-sm text-slate-500">
-                  No enriched dossiers yet. Use the Enrich button on a prospect or run
-                  a bulk enrich.
+                  No enriched dossiers yet. Use the Enrich button on a prospect
+                  or run a bulk enrich.
                 </p>
               ) : (
                 <div className="w-full max-w-full overflow-x-auto">
@@ -583,10 +581,15 @@ export default function StaffSDRPage(): JSX.Element {
                           <TableCell>
                             {prospect.rd_viability_score != null ? (
                               <span>
-                                {(prospect.rd_viability_score as number).toFixed(1)} / 100
+                                {(
+                                  prospect.rd_viability_score as number
+                                ).toFixed(1)}{" "}
+                                / 100
                               </span>
                             ) : (
-                              <span className="text-xs text-slate-500">Not scored</span>
+                              <span className="text-xs text-slate-500">
+                                Not scored
+                              </span>
                             )}
                           </TableCell>
                           <TableCell>
@@ -597,7 +600,9 @@ export default function StaffSDRPage(): JSX.Element {
                                 ).toLocaleString()}
                               </span>
                             ) : (
-                              <span className="text-xs text-slate-500">Not booked</span>
+                              <span className="text-xs text-slate-500">
+                                Not booked
+                              </span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -637,7 +642,8 @@ export default function StaffSDRPage(): JSX.Element {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         {renderScoreBadge(
-                          (selectedProspect.rd_viability_score as number | null) ?? null
+                          (selectedProspect.rd_viability_score as number | null) ??
+                            null
                         )}
                         {selectedProspect.estimated_claim_band ? (
                           <Badge variant="outline">
@@ -768,8 +774,8 @@ export default function StaffSDRPage(): JSX.Element {
                               dossier.key_signals.length === 0) &&
                             !dossier.risks && (
                               <p className="text-xs text-slate-500">
-                                This prospect is enriched, but detailed dossier text is
-                                not available.
+                                This prospect is enriched, but detailed dossier
+                                text is not available.
                               </p>
                             )}
                         </div>
@@ -793,14 +799,14 @@ export default function StaffSDRPage(): JSX.Element {
                 Next 10 calls
               </CardTitle>
               <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-                Highest-scoring enriched prospects without a booked BDM call. As you
-                mark calls done, new ones automatically appear so you always have the
-                next 10 ready.
+                Highest-scoring enriched prospects without a booked BDM call. As
+                you mark calls done, new ones automatically appear so you always
+                have the next 10 ready.
               </p>
             </div>
             <p className="text-xs text-slate-500">
-              {callQueue.length} of {sortedEnrichedProspects.length} prospects in call
-              queue
+              {callQueue.length} of {sortedEnrichedProspects.length} prospects
+              in call queue
             </p>
           </CardHeader>
           <CardContent>
@@ -840,7 +846,9 @@ export default function StaffSDRPage(): JSX.Element {
                           <p className="mt-1 text-xs text-slate-500">
                             Status:{" "}
                             <span className="font-medium">
-                              {prospect.status.replace(/_/g, " ")}
+                              {(
+                                (prospect.status as string | null) ?? "new"
+                              ).replace(/_/g, " ")}
                             </span>
                           </p>
                         </div>
@@ -874,8 +882,8 @@ export default function StaffSDRPage(): JSX.Element {
                             </>
                           ) : (
                             <p className="text-xs text-slate-500">
-                              No script available yet. Enrich the dossier to generate
-                              one.
+                              No script available yet. Enrich the dossier to
+                              generate one.
                             </p>
                           )}
                         </div>
