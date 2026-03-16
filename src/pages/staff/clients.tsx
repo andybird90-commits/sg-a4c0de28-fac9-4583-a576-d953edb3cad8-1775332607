@@ -1168,32 +1168,38 @@ export default function StaffClients() {
                           {filteredClientsToOnboard.map((client) =>
                       <Card
                         key={client.id}
-                        className="border border-border bg-[#0F1D2D] text-secondary-foreground hover:bg-[#14273A] hover:border-border hover:shadow-professional-md transition-colors cursor-pointer"
+                        className="border border-slate-200 bg-white hover:bg-slate-50 hover:shadow-sm transition-shadow cursor-pointer"
                         onClick={() => handleOpenClientDetail(client)}>
                         
-                              <CardContent className="py-3 px-4">
+                              <CardContent className="py-2.5 px-3.5">
                                 <div className="flex items-start justify-between gap-4">
                                   <div>
-                                    <p className="font-semibold text-sm">
+                                    <p className="font-semibold text-sm flex items-center gap-2">
                                       {client.company_name}
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] px-1.5 py-0.5 rounded-full"
+                                      >
+                                        To onboard
+                                      </Badge>
                                     </p>
                                     {client.company_number &&
-                              <p className="text-xs text-muted-foreground mt-1" style={{ color: "#ffffff" }}>
+                              <p className="text-xs text-muted-foreground mt-0.5">
                                         Company no. {client.company_number}
                                       </p>
                               }
                                     {client.contact_name &&
-                              <p className="text-xs text-muted-foreground mt-0.5" style={{ color: "#ffffff" }}>
+                              <p className="text-xs text-muted-foreground mt-0.5">
                                         Contact: {client.contact_name}
                                       </p>
                               }
                                     {client.email &&
-                              <p className="text-xs text-muted-foreground mt-0.5 break-all" style={{ color: "#ffffff" }}>
+                              <p className="text-xs text-muted-foreground mt-0.5 break-all">
                                         {client.email}
                                       </p>
                               }
                                     {client.address &&
-                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2" style={{ color: "#ffffff" }}>
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                                         {client.address}
                                       </p>
                               }
@@ -1239,7 +1245,7 @@ export default function StaffClients() {
                             key={prospect.id}
                             className="border border-slate-200 hover:shadow-sm transition-shadow">
                             
-                                <CardContent className="py-3 px-4 flex items-start justify-between gap-4">
+                                <CardContent className="py-3 px-4 flex items-center justify-between gap-4">
                                   <div>
                                     <div className="flex items-center gap-2">
                                       <p className="font-semibold text-sm">
@@ -1382,6 +1388,12 @@ export default function StaffClients() {
                           <div>
                             <p className="font-semibold text-sm flex items-center gap-2">
                               {prospect.company_name}
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] px-1.5 py-0.5 rounded-full"
+                              >
+                                Onboarded
+                              </Badge>
                               {prospect.org_id &&
                           (() => {
                             const status = notificationStatuses[prospect.org_id];
