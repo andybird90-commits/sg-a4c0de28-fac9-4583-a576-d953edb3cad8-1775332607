@@ -73,6 +73,11 @@ const createClientFormState = (client: ClientToBeOnboarded): ClientFormState => 
   comments: client.comments || ""
 });
 
+const delay = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
 const isValidCompaniesHouseNumber = (value: string | null | undefined): boolean => {
   if (!value) return false;
   const cleaned = value.trim().toUpperCase();
@@ -562,10 +567,9 @@ export default function StaffClients() {
   };
 
   const enrichImportedClient = async (
-  client: ClientToBeOnboarded,
-  options?: {suppressToast?: boolean;})
-  =>
-  {
+    client: ClientToBeOnboarded,
+    options?: { suppressToast?: boolean }
+  ) => {
     if (!client.company_number || !isValidCompaniesHouseNumber(client.company_number)) {
       if (!options?.suppressToast) {
         toast({
