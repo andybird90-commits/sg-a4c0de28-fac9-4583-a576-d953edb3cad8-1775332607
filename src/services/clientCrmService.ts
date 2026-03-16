@@ -10,6 +10,11 @@ type OrganisationRow = Database["public"]["Tables"]["organisations"]["Row"];
 type ClaimRow = Database["public"]["Tables"]["claims"]["Row"];
 type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
 
+type ClientDossierInsert = Database["public"]["Tables"]["client_dossiers"]["Insert"];
+type ClientContactInsert = Database["public"]["Tables"]["client_contacts"]["Insert"];
+type ClientActivityInsert = Database["public"]["Tables"]["client_activities"]["Insert"];
+type ClientTaskInsert = Database["public"]["Tables"]["client_tasks"]["Insert"];
+
 export interface ClientSummary {
   organisation: OrganisationRow;
   primaryContact: ClientContactRow | null;
@@ -74,11 +79,11 @@ async function getClientDossier(clientId: string): Promise<ClientDossierRow | nu
 
 async function upsertClientDossier(
   clientId: string,
-  payload: Partial<ClientDossierRow>
+  payload: Partial<ClientDossierInsert>
 ): Promise<ClientDossierRow | null> {
-  const insertPayload: Partial<ClientDossierRow> = {
-    ...payload,
-    client_id: clientId
+  const insertPayload: ClientDossierInsert = {
+    client_id: clientId,
+    ...payload
   };
 
   const { data, error } = await supabase
@@ -116,11 +121,11 @@ async function getClientContacts(clientId: string): Promise<ClientContactRow[]> 
 
 async function upsertClientContact(
   clientId: string,
-  contact: Partial<ClientContactRow>
+  contact: Partial<ClientContactInsert>
 ): Promise<ClientContactRow | null> {
-  const payload: Partial<ClientContactRow> = {
-    ...contact,
-    client_id: clientId
+  const payload: ClientContactInsert = {
+    client_id: clientId,
+    ...contact
   };
 
   const { data, error } = await supabase
@@ -163,7 +168,7 @@ async function logActivity(input: LogActivityInput): Promise<ClientActivityRow |
     throw new Error("Not authenticated");
   }
 
-  const activityPayload: Partial<ClientActivityRow> = {
+  const activityPayload: ClientActivityInsert = {
     client_id: clientId,
     contact_id: contactId ?? null,
     type,
@@ -244,7 +249,7 @@ async function createTask(input: CreateTaskInput): Promise<ClientTaskRow | null>
     throw new Error("Not authenticated");
   }
 
-  const payload: Partial<ClientTaskRow> = {
+  const payload: ClientTaskInsert = {
     client_id: clientId,
     related_claim_id: relatedClaimId ?? null,
     assigned_to_user_id: assignedToUserId,

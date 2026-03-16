@@ -1510,6 +1510,349 @@ export type Database = {
           },
         ]
       }
+      client_activities: {
+        Row: {
+          body: string | null
+          client_id: string
+          contact_id: string | null
+          created_at: string
+          created_by: string
+          direction: string
+          follow_up_date: string | null
+          follow_up_required: boolean
+          id: string
+          outcome: string | null
+          subject: string | null
+          summary: string | null
+          type: string
+        }
+        Insert: {
+          body?: string | null
+          client_id: string
+          contact_id?: string | null
+          created_at?: string
+          created_by: string
+          direction: string
+          follow_up_date?: string | null
+          follow_up_required?: boolean
+          id?: string
+          outcome?: string | null
+          subject?: string | null
+          summary?: string | null
+          type: string
+        }
+        Update: {
+          body?: string | null
+          client_id?: string
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string
+          direction?: string
+          follow_up_date?: string | null
+          follow_up_required?: boolean
+          id?: string
+          outcome?: string | null
+          subject?: string | null
+          summary?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_activities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "client_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_activities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_activity_links: {
+        Row: {
+          activity_id: string
+          entity_id: string
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          activity_id: string
+          entity_id: string
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          activity_id?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_activity_links_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "client_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_contacts: {
+        Row: {
+          active: boolean
+          client_id: string
+          created_at: string
+          email: string | null
+          first_name: string | null
+          full_name: string | null
+          id: string
+          is_decision_maker: boolean
+          is_primary: boolean
+          last_name: string | null
+          mobile: string | null
+          notes: string | null
+          phone: string | null
+          preferred_contact_method: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          client_id: string
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          id?: string
+          is_decision_maker?: boolean
+          is_primary?: boolean
+          last_name?: string | null
+          mobile?: string | null
+          notes?: string | null
+          phone?: string | null
+          preferred_contact_method?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          client_id?: string
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          id?: string
+          is_decision_maker?: boolean
+          is_primary?: boolean
+          last_name?: string | null
+          mobile?: string | null
+          notes?: string | null
+          phone?: string | null
+          preferred_contact_method?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_dossiers: {
+        Row: {
+          business_summary: string | null
+          claim_likelihood: string | null
+          client_id: string
+          confidence_score: number | null
+          created_at: string
+          documents_to_request_json: Json | null
+          generated_at: string | null
+          id: string
+          innovation_signals_json: Json | null
+          key_questions_json: Json | null
+          likely_buyer_personas_json: Json | null
+          likely_objections_json: Json | null
+          likely_pain_points_json: Json | null
+          likely_qualifying_themes_json: Json | null
+          owner_user_id: string | null
+          potential_claim_size_band: string | null
+          rd_fit_summary: string | null
+          recommended_approach: string | null
+          recommended_next_step: string | null
+          refreshed_at: string | null
+          staff_locked: boolean
+          staff_notes: string | null
+          status: string
+          technical_environment: string | null
+          updated_at: string
+          watchouts_json: Json | null
+        }
+        Insert: {
+          business_summary?: string | null
+          claim_likelihood?: string | null
+          client_id: string
+          confidence_score?: number | null
+          created_at?: string
+          documents_to_request_json?: Json | null
+          generated_at?: string | null
+          id?: string
+          innovation_signals_json?: Json | null
+          key_questions_json?: Json | null
+          likely_buyer_personas_json?: Json | null
+          likely_objections_json?: Json | null
+          likely_pain_points_json?: Json | null
+          likely_qualifying_themes_json?: Json | null
+          owner_user_id?: string | null
+          potential_claim_size_band?: string | null
+          rd_fit_summary?: string | null
+          recommended_approach?: string | null
+          recommended_next_step?: string | null
+          refreshed_at?: string | null
+          staff_locked?: boolean
+          staff_notes?: string | null
+          status?: string
+          technical_environment?: string | null
+          updated_at?: string
+          watchouts_json?: Json | null
+        }
+        Update: {
+          business_summary?: string | null
+          claim_likelihood?: string | null
+          client_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          documents_to_request_json?: Json | null
+          generated_at?: string | null
+          id?: string
+          innovation_signals_json?: Json | null
+          key_questions_json?: Json | null
+          likely_buyer_personas_json?: Json | null
+          likely_objections_json?: Json | null
+          likely_pain_points_json?: Json | null
+          likely_qualifying_themes_json?: Json | null
+          owner_user_id?: string | null
+          potential_claim_size_band?: string | null
+          rd_fit_summary?: string | null
+          recommended_approach?: string | null
+          recommended_next_step?: string | null
+          refreshed_at?: string | null
+          staff_locked?: boolean
+          staff_notes?: string | null
+          status?: string
+          technical_environment?: string | null
+          updated_at?: string
+          watchouts_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_dossiers_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_dossiers_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_tasks: {
+        Row: {
+          assigned_to_user_id: string
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_at: string | null
+          id: string
+          priority: string
+          related_claim_id: string | null
+          status: string
+          task_type: string | null
+          title: string
+        }
+        Insert: {
+          assigned_to_user_id: string
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: string
+          related_claim_id?: string | null
+          status?: string
+          task_type?: string | null
+          title: string
+        }
+        Update: {
+          assigned_to_user_id?: string
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: string
+          related_claim_id?: string | null
+          status?: string
+          task_type?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_tasks_assigned_to_user_id_fkey"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_tasks_related_claim_id_fkey"
+            columns: ["related_claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients_to_be_onboarded: {
         Row: {
           address: string | null
