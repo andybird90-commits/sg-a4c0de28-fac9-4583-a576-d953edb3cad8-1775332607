@@ -322,9 +322,24 @@ export default function StaffSDRPage(): JSX.Element {
   const enrichedProspects = prospects.filter(
     (prospect) => !!prospect.ai_dossier_json
   );
+  const sortedEnrichedProspects = [...enrichedProspects].sort((a, b) => {
+    const aScore = (a.rd_viability_score as number | null) ?? 0;
+    const bScore = (b.rd_viability_score as number | null) ?? 0;
+    return bScore - aScore;
+  });
   const unenrichedCount = prospects.filter(
     (prospect) => !prospect.ai_dossier_json
   ).length;
+  const callQueue = sortedEnrichedProspects
+    .filter((prospect) => {
+      const status = (prospect.status as string | null) ?? "";
+      const blockedStatuses = ["not_interested", "contacted"];
+      return (
+        !prospect.bdm_call_scheduled_at &&
+        !blockedStatuses.includes(status)
+      );
+    })
+    .slice(0, 10);
 
   return (
     <StaffLayout title="SDR" fullWidth>
@@ -339,7 +354,7 @@ export default function StaffSDRPage(): JSX.Element {
           </p>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[1.1fr_1.1fr_1.8fr]">
+        <section className="grid gap-6 lg:grid-cols-[1fr_1.2fr_1.8fr]">
           {/* Left column: upload + ranked prospects */}
           <div className="space-y-4">
             <Card>
@@ -444,7 +459,8 @@ export default function StaffSDRPage(): JSX.Element {
                   Enriched dossiers
                 </CardTitle>
                 <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-                  Prospects that already have an AI-generated R&amp;D dossier.
+                  Prospects that already have an AI-generated R&amp;D dossier, sorted
+                  by R&amp;D score (highest first).
                 </p>
               </div>
               <Button
@@ -473,7 +489,7 @@ export default function StaffSDRPage(): JSX.Element {
               </Button>
             </CardHeader>
             <CardContent className="h-[560px] overflow-y-auto">
-              {enrichedProspects.length === 0 ? (
+              {sortedEnrichedProspects.length === 0 ? (
                 <p className="text-sm text-slate-500">
                   No enriched dossiers yet. Use the Enrich button on a prospect or run
                   a bulk enrich.
@@ -490,7 +506,7 @@ export default function StaffSDRPage(): JSX.Element {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {enrichedProspects.map((prospect) => (
+                      {sortedEnrichedProspects.map((prospect) => (
                         <TableRow
                           key={prospect.id as string}
                           className="cursor-pointer"
@@ -801,6 +817,134 @@ export default function StaffSDRPage(): JSX.Element {
             </CardContent>
           </Card>
         </section>
+
+        <Card className="mt-6 w-full">
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-base font-semibold text-slate-900">
+                Next 10 calls
+              </CardTitle>
+              <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+                Highest-scoring enriched prospects without a booked BDM call. As you
+                mark calls done, new ones automatically appear so you always have the
+                next 10 ready.
+              </p>
+            </div>
+            <p className="text-xs text-slate-500">
+              {callQueue.length} of {sortedEnrichedProspects.length} prospects in call
+              queue
+            </p>
+          </CardHeader>
+          <CardContent>
+            {callQueue.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                There are no enriched prospects waiting for a call. Enrich more
+                prospects or update outcomes to see new calls here.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {callQueue.map((prospect, index) => {
+                  const prospectDossier = getDossier(prospect);
+                  const score =
+                    (prospect.rd_viability_score as number | null) ?? null;
+
+                  return (
+                    <div
+                      key={prospect.id as string}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-500">
+                              Call #{index + 1}
+                            </span>
+                            {score != null && renderScoreBadge(score)}
+                          </div>
+                          <p className="mt-1 truncate text-sm font-semibold text-slate-900">
+                            {prospect.company_name}
+                          </p>
+                          {prospect.company_number ? (
+                            <p className="text-xs text-slate-500">
+                              Company no: {prospect.company_number}
+                            </p>
+                          ) : null}
+                          <p className="mt-1 text-xs text-slate-500">
+                            Status:{" "}
+                            <span className="font-medium">
+                              {prospect.status.replace(/_/g, " ")}
+                            </span>
+                          </p>
+                        </div>
+
+                        <div className="flex-1 space-y-1">
+                          {prospectDossier?.call_script_intro ||
+                          prospectDossier?.call_script_main ? (
+                            <>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Call script
+                              </p>
+                              {prospectDossier?.call_script_intro ? (
+                                <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
+                                  {prospectDossier.call_script_intro}
+                                </p>
+                              ) : null}
+                              {prospectDossier?.call_script_main ? (
+                                <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
+                                  {prospectDossier.call_script_main}
+                                </p>
+                              ) : null}
+                            </>
+                          ) : prospectDossier?.rd_summary ? (
+                            <>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                R&amp;D summary
+                              </p>
+                              <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
+                                {prospectDossier.rd_summary}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-xs text-slate-500">
+                              No script available yet. Enrich the dossier to generate
+                              one.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-3 text-xs"
+                          onClick={() => {
+                            setSelectedProspect(prospect);
+                            if (typeof window !== "undefined") {
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }
+                          }}
+                        >
+                          View in dossier panel
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-3 text-xs"
+                          onClick={() =>
+                            void handleMarkOutcome(prospect, "contacted")
+                          }
+                        >
+                          Mark call done
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </StaffLayout>
   );
