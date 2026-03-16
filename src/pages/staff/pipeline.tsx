@@ -432,81 +432,180 @@ export default function PipelinePage() {
           </div>
         </div>
 
-        {/* Pipeline charts */}
-        <section className="grid gap-4 md:grid-cols-2">
+        {/* Charts section - stacked vertically, with mobile tables */}
+        <section className="space-y-4">
+          {/* Pipeline Revenue by Month */}
           <Card className="p-4">
-            <h2 className="text-sm font-semibold text-slate-800">
-              Pipeline Revenue by Month
-            </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Based on expected filing dates and predicted revenue
-            </p>
-            <div className="mt-4 flex items-end gap-2 overflow-x-auto pb-2">
-              {revenueByMonth.map(({ month, revenue, count }) => {
-                const heightPercent =
-                  maxRevenue > 0 ? Math.max((revenue / maxRevenue) * 100, 4) : 0;
-                return (
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Pipeline Revenue by Month
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Based on expected filing dates and predicted revenue
+                </p>
+              </div>
+            </div>
+            <div className="mt-4">
+              {/* Desktop chart */}
+              <div className="hidden gap-2 md:flex">
+                {revenueByMonth.map((m) => (
                   <div
-                    key={`rev-${month.toISOString()}`}
-                    className="flex flex-col items-center min-w-[40px]"
+                    key={m.month.toISOString()}
+                    className="flex-1 text-center text-[11px]"
                   >
-                    <div className="flex h-28 w-6 items-end rounded-full bg-slate-100">
-                      <div
-                        className="w-full rounded-full bg-emerald-500"
-                        style={{ height: `${heightPercent}%` }}
-                        aria-hidden="true"
-                      />
+                    <div className="flex h-40 items-end justify-center">
+                      <div className="flex w-4 flex-col justify-end">
+                        <div className="mb-1 text-[10px] font-medium text-slate-700">
+                          £
+                          {m.revenue.toLocaleString("en-GB", {
+                            maximumFractionDigits: 0,
+                          })}
+                        </div>
+                        <div
+                          className="mx-auto w-3 rounded-full bg-emerald-500"
+                          style={{
+                            height:
+                              maxRevenue > 0
+                                ? `${Math.max(8, (m.revenue / maxRevenue) * 100)}%`
+                                : "8%",
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="mt-2 text-[10px] font-medium text-slate-700">
-                      £{revenue.toLocaleString()}
+                    <div className="mt-1 font-medium text-slate-700">
+                      {format(m.month, "MMM yy")}
                     </div>
-                    <div className="mt-1 text-[10px] text-slate-500">
-                      {format(month, "MMM yy")}
-                    </div>
-                    <div className="mt-0.5 text-[9px] text-slate-400">
-                      {count} clients
+                    <div className="text-[10px] text-slate-500">
+                      {m.count} clients
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+              {/* Mobile table */}
+              <div className="md:hidden">
+                <div className="overflow-x-auto rounded-md border border-slate-200 bg-white">
+                  <table className="min-w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500">
+                      <tr>
+                        <th className="px-3 py-2 font-medium">Month</th>
+                        <th className="px-3 py-2 font-medium">Revenue</th>
+                        <th className="px-3 py-2 font-medium">Customers</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {revenueByMonth.map((m) => (
+                        <tr
+                          key={m.month.toISOString()}
+                          className="border-t border-slate-100"
+                        >
+                          <td className="px-3 py-2 text-slate-900">
+                            {format(m.month, "MMM yy")}
+                          </td>
+                          <td className="px-3 py-2 text-slate-900">
+                            £
+                            {m.revenue.toLocaleString("en-GB", {
+                              maximumFractionDigits: 0,
+                            })}
+                          </td>
+                          <td className="px-3 py-2 text-slate-700">
+                            {m.count}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </Card>
 
+          {/* Customers per Month */}
           <Card className="p-4">
-            <h2 className="text-sm font-semibold text-slate-800">
-              Customers per Month
-            </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Number of customers expected to file in each month
-            </p>
-            <div className="mt-4 flex items-end gap-2 overflow-x-auto pb-2">
-              {revenueByMonth.map(({ month, revenue, count }) => {
-                const heightPercent =
-                  maxCount > 0 ? Math.max((count / maxCount) * 100, 4) : 0;
-                return (
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Customers per Month
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Number of customers expected to file in each month
+                </p>
+              </div>
+            </div>
+            <div className="mt-4">
+              {/* Desktop chart */}
+              <div className="hidden gap-2 md:flex">
+                {revenueByMonth.map((m) => (
                   <div
-                    key={`cnt-${month.toISOString()}`}
-                    className="flex flex-col items-center min-w-[40px]"
+                    key={m.month.toISOString()}
+                    className="flex-1 text-center text-[11px]"
                   >
-                    <div className="flex h-28 w-6 items-end rounded-full bg-slate-100">
-                      <div
-                        className="w-full rounded-full bg-blue-500"
-                        style={{ height: `${heightPercent}%` }}
-                        aria-hidden="true"
-                      />
+                    <div className="flex h-40 items-end justify-center">
+                      <div className="flex w-4 flex-col justify-end">
+                        <div className="mb-1 text-[10px] font-medium text-slate-700">
+                          {m.count}
+                        </div>
+                        <div
+                          className="mx-auto w-3 rounded-full bg-blue-500"
+                          style={{
+                            height:
+                              maxCount > 0
+                                ? `${Math.max(
+                                    8,
+                                    (m.count / maxCount) * 100
+                                  )}%`
+                                : "8%",
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="mt-2 text-[10px] font-medium text-slate-700">
-                      {count.toLocaleString()}
+                    <div className="mt-1 font-medium text-slate-700">
+                      {format(m.month, "MMM yy")}
                     </div>
-                    <div className="mt-1 text-[10px] text-slate-500">
-                      {format(month, "MMM yy")}
-                    </div>
-                    <div className="mt-0.5 text-[9px] text-slate-400">
-                      £{revenue.toLocaleString()}
+                    <div className="text-[10px] text-slate-500">
+                      £
+                      {m.revenue.toLocaleString("en-GB", {
+                        maximumFractionDigits: 0,
+                      })}
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+              {/* Mobile table */}
+              <div className="md:hidden">
+                <div className="overflow-x-auto rounded-md border border-slate-200 bg-white">
+                  <table className="min-w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500">
+                      <tr>
+                        <th className="px-3 py-2 font-medium">Month</th>
+                        <th className="px-3 py-2 font-medium">Customers</th>
+                        <th className="px-3 py-2 font-medium">Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {revenueByMonth.map((m) => (
+                        <tr
+                          key={m.month.toISOString()}
+                          className="border-t border-slate-100"
+                        >
+                          <td className="px-3 py-2 text-slate-900">
+                            {format(m.month, "MMM yy")}
+                          </td>
+                          <td className="px-3 py-2 text-slate-900">
+                            {m.count}
+                          </td>
+                          <td className="px-3 py-2 text-slate-700">
+                            £
+                            {m.revenue.toLocaleString("en-GB", {
+                              maximumFractionDigits: 0,
+                            })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </Card>
         </section>
