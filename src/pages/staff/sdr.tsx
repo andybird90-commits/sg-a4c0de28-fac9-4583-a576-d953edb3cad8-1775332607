@@ -622,7 +622,7 @@ export default function StaffSDRPage(): JSX.Element {
                 Dossier
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto">
+            <CardContent className="flex-1 w-full max-w-full overflow-y-auto overflow-x-hidden">
               <div className="flex w-full max-w-full flex-col gap-4">
                 {!selectedProspect ? (
                   <p className="text-sm text-slate-500">
@@ -653,138 +653,81 @@ export default function StaffSDRPage(): JSX.Element {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEnrich(selectedProspect)}
-                        disabled={!!enrichingId}
-                      >
-                        {enrichingId === selectedProspect.id ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Enriching…
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCcw className="mr-2 h-4 w-4" />
-                            Enrich / refresh dossier
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          handleMarkOutcome(selectedProspect, "not_interested")
-                        }
-                      >
-                        <XCircle className="mr-2 h-4 w-4" />
-                        Mark not interested
-                      </Button>
-                    </div>
-
-                    {dossier ? (
-                      <div className="space-y-3 text-sm text-slate-700">
-                        {dossier.rd_summary ? (
-                          <section>
-                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              R&amp;D summary
-                            </h3>
-                            <p className="mt-1 whitespace-pre-line">{dossier.rd_summary}</p>
-                          </section>
-                        ) : null}
-
-                        {dossier.what_they_do ? (
-                          <section>
-                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              What they do
-                            </h3>
-                            <p className="mt-1 whitespace-pre-line">
-                              {dossier.what_they_do}
-                            </p>
-                          </section>
-                        ) : null}
-
-                        {dossier.technical_focus ? (
-                          <section>
-                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Technical focus
-                            </h3>
-                            <p className="mt-1 whitespace-pre-line">
-                              {dossier.technical_focus}
-                            </p>
-                          </section>
-                        ) : null}
-
-                        {dossier.where_rd_is_happening ? (
-                          <section>
-                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Where R&amp;D is likely happening
-                            </h3>
-                            <p className="mt-1 whitespace-pre-line">
-                              {dossier.where_rd_is_happening}
-                            </p>
-                          </section>
-                        ) : null}
-
-                        {dossier.rd_tax_fit ? (
-                          <section>
-                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              R&amp;D tax fit (hypotheses)
-                            </h3>
-                            <p className="mt-1 whitespace-pre-line">{dossier.rd_tax_fit}</p>
-                          </section>
-                        ) : null}
-
-                        {Array.isArray(dossier.questions_to_validate) &&
-                        dossier.questions_to_validate.length > 0 ? (
-                          <section>
-                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Questions to validate quickly
-                            </h3>
-                            <ul className="mt-1 list-disc space-y-1 pl-4">
-                              {dossier.questions_to_validate.map(
-                                (q: string, idx: number) => (
-                                  <li key={idx}>{q}</li>
-                                )
-                              )}
-                            </ul>
-                          </section>
-                        ) : null}
-
-                        {dossier.call_script_intro || dossier.call_script_main ? (
-                          <section>
-                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Call script
-                            </h3>
-                            {dossier.call_script_intro ? (
-                              <p className="mt-1 whitespace-pre-line">
-                                {dossier.call_script_intro}
-                              </p>
-                            ) : null}
-                            {dossier.call_script_main ? (
-                              <p className="mt-2 whitespace-pre-line">
-                                {dossier.call_script_main}
-                              </p>
-                            ) : null}
-                          </section>
-                        ) : null}
-
-                        {dossier.confidence_note ? (
-                          <section>
-                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Confidence note
-                            </h3>
-                            <p className="mt-1 whitespace-pre-line text-xs text-slate-500">
-                              {dossier.confidence_note}
-                            </p>
-                          </section>
-                        ) : null}
+                    <div className="flex flex-wrap gap-3 sm:items-end">
+                      <div className="min-w-[9rem] flex-1 space-y-1">
+                        <label className="block text-xs font-medium text-slate-600">
+                          BDM
+                        </label>
+                        <select
+                          className="block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+                          value={bookingBdmId}
+                          onChange={(e) => setBookingBdmId(e.target.value)}
+                        >
+                          {bdmUsers.map((bdm) => (
+                            <option key={bdm.id} value={bdm.id}>
+                              {bdm.full_name || bdm.email || "Unnamed user"}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                    ) : (
-                      <p className="text-sm text-slate-500">
-                        No dossier yet. Click "Enrich / refresh dossier" to generate one.
+                      <div className="min-w-[11rem] flex-[1.2] space-y-1">
+                        <label className="block text-xs font-medium text-slate-600">
+                          Start (your local time)
+                        </label>
+                        <Input
+                          type="datetime-local"
+                          value={bookingStart}
+                          onChange={(e) => setBookingStart(e.target.value)}
+                        />
+                      </div>
+                      <div className="w-28 space-y-1">
+                        <label className="block text-xs font-medium text-slate-600">
+                          Duration (min)
+                        </label>
+                        <Input
+                          type="number"
+                          min={15}
+                          max={180}
+                          value={bookingDuration}
+                          onChange={(e) =>
+                            setBookingDuration(
+                              Number.isNaN(parseInt(e.target.value, 10))
+                                ? 30
+                                : parseInt(e.target.value, 10)
+                            )
+                          }
+                        />
+                      </div>
+                      <div className="flex items-end w-full sm:w-auto">
+                        <Button
+                          size="sm"
+                          className="w-full sm:w-auto sm:ml-1"
+                          disabled={booking || !bookingBdmId || !bookingStart}
+                          onClick={handleBookCall}
+                        >
+                          {booking ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Booking…
+                            </>
+                          ) : (
+                            <>
+                              <PhoneCall className="mr-2 h-4 w-4" />
+                              Book BDM call
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    {selectedProspect?.bdm_call_scheduled_at && (
+                      <p className="mt-2 text-xs text-slate-500">
+                        BDM call scheduled at{" "}
+                        {new Date(
+                          selectedProspect.bdm_call_scheduled_at as string
+                        ).toLocaleString()}{" "}
+                        {selectedProspect.bdm_call_teams_link
+                          ? ` • Teams: ${selectedProspect.bdm_call_teams_link}`
+                          : null}
                       </p>
                     )}
 
@@ -792,8 +735,8 @@ export default function StaffSDRPage(): JSX.Element {
                       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Book BDM call
                       </h3>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <div className="flex-1 space-y-1">
+                      <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end">
+                        <div className="w-full space-y-1 md:min-w-[9rem] md:flex-1">
                           <label className="block text-xs font-medium text-slate-600">
                             BDM
                           </label>
@@ -809,7 +752,7 @@ export default function StaffSDRPage(): JSX.Element {
                             ))}
                           </select>
                         </div>
-                        <div className="flex-1 space-y-1">
+                        <div className="w-full space-y-1 md:min-w-[11rem] md:flex-[1.2]">
                           <label className="block text-xs font-medium text-slate-600">
                             Start (your local time)
                           </label>
@@ -819,7 +762,7 @@ export default function StaffSDRPage(): JSX.Element {
                             onChange={(e) => setBookingStart(e.target.value)}
                           />
                         </div>
-                        <div className="w-28 space-y-1">
+                        <div className="w-full space-y-1 md:w-28">
                           <label className="block text-xs font-medium text-slate-600">
                             Duration (min)
                           </label>
@@ -837,36 +780,27 @@ export default function StaffSDRPage(): JSX.Element {
                             }
                           />
                         </div>
-                        <Button
-                          size="sm"
-                          className="sm:ml-1"
-                          disabled={booking || !bookingBdmId || !bookingStart}
-                          onClick={handleBookCall}
-                        >
-                          {booking ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Booking…
-                            </>
-                          ) : (
-                            <>
-                              <PhoneCall className="mr-2 h-4 w-4" />
-                              Book BDM call
-                            </>
-                          )}
-                        </Button>
+                        <div className="flex items-end w-full md:w-auto">
+                          <Button
+                            size="sm"
+                            className="w-full sm:w-auto sm:ml-1"
+                            disabled={booking || !bookingBdmId || !bookingStart}
+                            onClick={handleBookCall}
+                          >
+                            {booking ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Booking…
+                              </>
+                            ) : (
+                              <>
+                                <PhoneCall className="mr-2 h-4 w-4" />
+                                Book BDM call
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                      {selectedProspect?.bdm_call_scheduled_at && (
-                        <p className="mt-2 text-xs text-slate-500">
-                          BDM call scheduled at{" "}
-                          {new Date(
-                            selectedProspect.bdm_call_scheduled_at as string
-                          ).toLocaleString()}{" "}
-                          {selectedProspect.bdm_call_teams_link
-                            ? ` • Teams: ${selectedProspect.bdm_call_teams_link}`
-                            : null}
-                        </p>
-                      )}
                     </div>
                   </>
                 )}
