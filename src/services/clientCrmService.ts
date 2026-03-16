@@ -321,8 +321,10 @@ async function getCrmKpis(): Promise<CrmKpiSummary> {
       .eq("archived", false),
     supabase
       .from("claims")
-      .select("org_id", { count: "exact", head: true })
-      .neq("status", "completed"),
+      .select("org_id, status, deleted_at")
+      .is("deleted_at", null)
+      .neq("status", "completed")
+      .neq("status", "cancelled"),
     supabase
       .from("client_dossiers")
       .select("id", { count: "exact", head: true })
@@ -338,7 +340,19 @@ async function getCrmKpis(): Promise<CrmKpiSummary> {
   const noContactIn30Days = (noContactRes.data || []).length;
   const followUpsDueToday = followUpsRes.count || 0;
   const onboardingInProgress = onboardingRes.count || 0;
-  const activeClaimClients = activeClaimsRes.count || 0;
+
+  const activeClaimOrgIds = Array.isArray(activeClaimsRes.data)
+    ? Array.from(
+        new Set(
+          (activeClaimsRes.data as { org_id: string | null }[])
+            .map((row) => row.org_id)
+            .filter((id): id is string => typeof id === "string" && id.length > 0)
+        )
+      )
+    : [];
+
+  const activeClaimClients = activeClaimOrgIds.length;
+
   const highPriorityDossiers = highPriorityDossiersRes.count || 0;
   const overdueTasks = overdueTasksRes.count || 0;
 
