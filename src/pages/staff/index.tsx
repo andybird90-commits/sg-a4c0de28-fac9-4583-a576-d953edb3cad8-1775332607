@@ -239,8 +239,8 @@ export default function StaffHomePage() {
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
               Claims Board
             </h1>
-            <p className="text-sm text-slate-500">
-              Monday-style view of all active claims with completion status.
+            <p className="text-sm text-slate-500">All active claims with completion status.
+
             </p>
           </div>
           <Button
@@ -366,8 +366,8 @@ export default function StaffHomePage() {
                       entityType="claim"
                       entityId={row.claim.id}
                       entityName={`${row.claim.organisations?.name || "Claim"} - FY ${
-                      row.claim.claim_year}`}
-                        />
+                      row.claim.claim_year}`} />
+                    
                     
                         <ChevronRight className="h-4 w-4 text-slate-400" />
                       </div>
