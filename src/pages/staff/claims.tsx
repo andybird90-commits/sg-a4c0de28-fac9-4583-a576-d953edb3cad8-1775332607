@@ -67,13 +67,16 @@ export default function ClaimsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showAssignedToMe, setShowAssignedToMe] = useState(false);
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
         const [activeClaims, deletedClaims] = await Promise.all([
-        claimService.getAllClaims(),
+        claimService.getAllClaims(
+          showAssignedToMe ? { assigned_to_me: true } : undefined
+        ),
         claimService.getDeletedClaims()]
         );
         setClaims(activeClaims);
@@ -91,7 +94,7 @@ export default function ClaimsPage() {
     }
 
     loadData();
-  }, [toast]);
+  }, [toast, showAssignedToMe]);
 
   const filteredClaims = claims.filter((claim) => {
     const matchesSearch =
@@ -196,6 +199,12 @@ export default function ClaimsPage() {
                   onClick={() => setStatusFilter("review")} style={{ color: "#1a1a1a" }}>
                   
                   Review
+                </Button>
+                <Button
+                  variant={showAssignedToMe ? "default" : "outline"}
+                  onClick={() => setShowAssignedToMe((prev) => !prev)}
+                  style={{ color: "#1a1a1a" }}>
+                  {showAssignedToMe ? "Show all" : "My claims only"}
                 </Button>
               </div>
             </div>

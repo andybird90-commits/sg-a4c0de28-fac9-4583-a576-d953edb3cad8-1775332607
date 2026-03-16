@@ -75,6 +75,7 @@ export default function StaffHomePage() {
   const [loading, setLoading] = useState(true);
   const [upcomingClients, setUpcomingClients] = useState<UpcomingClientRow[]>([]);
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+  const [showAssignedToMe, setShowAssignedToMe] = useState(false);
 
   const formatFilingDate = (value: string | null): string => {
     if (!value) return "-";
@@ -102,7 +103,9 @@ export default function StaffHomePage() {
     async function load() {
       setLoading(true);
       try {
-        const claims = await claimService.getAllClaims();
+        const claims = await claimService.getAllClaims(
+          showAssignedToMe ? { assigned_to_me: true } : undefined
+        );
 
         const unreadByClaim =
         await messageService.getUnreadCountsForClaims(
@@ -229,7 +232,7 @@ export default function StaffHomePage() {
     }
 
     load();
-  }, []);
+  }, [showAssignedToMe]);
 
   return (
     <StaffLayout>
@@ -239,17 +242,24 @@ export default function StaffHomePage() {
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
               Claims Board
             </h1>
-            <p className="text-sm text-slate-500">All active claims with completion status.
-
+            <p className="text-sm text-slate-500">
+              Monday-style view of all active claims with completion status.
             </p>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => router.push("/staff/claims")}>
-            
-            View list
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={showAssignedToMe ? "default" : "outline"}
+              onClick={() => setShowAssignedToMe((prev) => !prev)}>
+              {showAssignedToMe ? "Show all claims" : "My claims only"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => router.push("/staff/claims")}>
+              View list
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-x-auto rounded-xl border bg-white shadow-sm">

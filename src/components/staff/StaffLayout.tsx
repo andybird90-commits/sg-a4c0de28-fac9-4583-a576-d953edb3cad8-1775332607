@@ -16,7 +16,11 @@ import {
   LogOut,
   Menu,
   X,
-  Book } from
+  Book,
+  Users2,
+  ClipboardList,
+  Headset,
+  GraduationCap } from
 "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -40,6 +44,11 @@ export function StaffLayout({ children, title }: StaffLayoutProps) {
     path: "/staff",
     label: "Dashboard",
     icon: LayoutDashboard
+  },
+  {
+    path: "/sdr",
+    label: "SDR",
+    icon: Headset
   },
   {
     path: "/staff/cif",

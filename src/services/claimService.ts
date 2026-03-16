@@ -89,7 +89,7 @@ export class ClaimService {
         } = await supabase.auth.getUser();
         if (user) {
           query = query.or(
-            `bd_owner_id.eq.${user.id},technical_lead_id.eq.${user.id},cost_lead_id.eq.${user.id},ops_owner_id.eq.${user.id}`
+            `bd_owner_id.eq.${user.id},technical_lead_id.eq.${user.id},cost_lead_id.eq.${user.id},ops_owner_id.eq.${user.id},qa_reviewer_id.eq.${user.id}`
           );
         }
       }
