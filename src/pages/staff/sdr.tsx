@@ -191,7 +191,7 @@ export default function StaffSDRPage(): JSX.Element {
       return;
     }
 
-    const queue = prospects.filter((p) => !p.ai_dossier_json);
+    const queue = unenrichedProspects;
 
     if (queue.length === 0) {
       return;
@@ -324,6 +324,9 @@ export default function StaffSDRPage(): JSX.Element {
   };
 
   const dossier = getDossier(selectedProspect);
+  const unenrichedProspects = prospects.filter(
+    (prospect) => !prospect.ai_dossier_json
+  );
   const enrichedProspects = prospects.filter(
     (prospect) => !!prospect.ai_dossier_json
   );
@@ -350,9 +353,7 @@ export default function StaffSDRPage(): JSX.Element {
     }
   );
 
-  const unenrichedCount = prospects.filter(
-    (prospect) => !prospect.ai_dossier_json
-  ).length;
+  const unenrichedCount = unenrichedProspects.length;
 
   const callQueue = sortedEnrichedProspects
     .filter((prospect) => {
@@ -426,17 +427,18 @@ export default function StaffSDRPage(): JSX.Element {
                 </Button>
               </CardHeader>
               <CardContent className="flex-1 space-y-2 overflow-y-auto">
-                {loadingProspects && prospects.length === 0 ? (
+                {loadingProspects && unenrichedProspects.length === 0 ? (
                   <div className="flex h-full items-center justify-center text-sm text-slate-500">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Loading prospects…
                   </div>
-                ) : prospects.length === 0 ? (
+                ) : unenrichedProspects.length === 0 ? (
                   <p className="text-sm text-slate-500">
-                    No SDR prospects yet. Upload a CSV to get started.
+                    There are no unenriched SDR prospects. Upload a CSV to add new
+                    prospects, or review enriched dossiers in the middle column.
                   </p>
                 ) : (
-                  prospects.map((prospect) => (
+                  unenrichedProspects.map((prospect) => (
                     <button
                       key={prospect.id as string}
                       type="button"
@@ -730,7 +732,7 @@ export default function StaffSDRPage(): JSX.Element {
                         Dossier details
                       </h3>
                       {dossier ? (
-                        <div className="space-y-3 text-sm text-slate-700">
+                        <div className="space-y-4 text-sm text-slate-700">
                           {dossier.rd_summary && (
                             <div>
                               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -741,6 +743,66 @@ export default function StaffSDRPage(): JSX.Element {
                               </p>
                             </div>
                           )}
+
+                          {dossier.what_they_do && (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                What they do
+                              </p>
+                              <p className="mt-1 whitespace-pre-line">
+                                {dossier.what_they_do}
+                              </p>
+                            </div>
+                          )}
+
+                          {dossier.technical_focus && (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Technical focus
+                              </p>
+                              <p className="mt-1 whitespace-pre-line">
+                                {dossier.technical_focus}
+                              </p>
+                            </div>
+                          )}
+
+                          {dossier.where_rd_is_happening && (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Where R&amp;D is happening
+                              </p>
+                              <p className="mt-1 whitespace-pre-line">
+                                {dossier.where_rd_is_happening}
+                              </p>
+                            </div>
+                          )}
+
+                          {dossier.rd_tax_fit && (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                R&amp;D tax fit
+                              </p>
+                              <p className="mt-1 whitespace-pre-line">
+                                {dossier.rd_tax_fit}
+                              </p>
+                            </div>
+                          )}
+
+                          {Array.isArray(dossier.questions_to_validate) &&
+                            dossier.questions_to_validate.length > 0 && (
+                              <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Questions to validate
+                                </p>
+                                <ul className="mt-1 list-disc space-y-1 pl-5">
+                                  {dossier.questions_to_validate.map(
+                                    (item: string, idx: number) => (
+                                      <li key={idx}>{item}</li>
+                                    )
+                                  )}
+                                </ul>
+                              </div>
+                            )}
 
                           {Array.isArray(dossier.key_signals) &&
                             dossier.key_signals.length > 0 && (
@@ -769,10 +831,28 @@ export default function StaffSDRPage(): JSX.Element {
                             </div>
                           )}
 
+                          {dossier.confidence_note && (
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Confidence note
+                              </p>
+                              <p className="mt-1 whitespace-pre-line">
+                                {dossier.confidence_note}
+                              </p>
+                            </div>
+                          )}
+
                           {!dossier.rd_summary &&
+                            !dossier.what_they_do &&
+                            !dossier.technical_focus &&
+                            !dossier.where_rd_is_happening &&
+                            !dossier.rd_tax_fit &&
+                            (!Array.isArray(dossier.questions_to_validate) ||
+                              dossier.questions_to_validate.length === 0) &&
                             (!Array.isArray(dossier.key_signals) ||
                               dossier.key_signals.length === 0) &&
-                            !dossier.risks && (
+                            !dossier.risks &&
+                            !dossier.confidence_note && (
                               <p className="text-xs text-slate-500">
                                 This prospect is enriched, but detailed dossier
                                 text is not available.
