@@ -60,7 +60,6 @@ export default function StaffSDRPage(): JSX.Element {
       const { data, error } = await supabase
         .from("sdr_prospects")
         .select("*")
-        .eq("created_by", user.id)
         .order("rd_viability_score", { ascending: false })
         .order("created_at", { ascending: false });
 
@@ -324,12 +323,23 @@ export default function StaffSDRPage(): JSX.Element {
   };
 
   const dossier = getDossier(selectedProspect);
-  const unenrichedProspects = prospects.filter(
-    (prospect) => !prospect.ai_dossier_json
-  );
-  const enrichedProspects = prospects.filter(
-    (prospect) => !!prospect.ai_dossier_json
-  );
+
+  const getProspectStatus = (prospect: SdrProspect): string => {
+    const rawStatus = (prospect.status as string | null) ?? "new";
+    return rawStatus.toLowerCase();
+  };
+
+  const unenrichedProspects = prospects.filter((prospect) => {
+    const hasDossier = prospect.ai_dossier_json !== null;
+    const status = getProspectStatus(prospect);
+    return !hasDossier && status === "new";
+  });
+
+  const enrichedProspects = prospects.filter((prospect) => {
+    const hasDossier = prospect.ai_dossier_json !== null;
+    const status = getProspectStatus(prospect);
+    return hasDossier || status !== "new";
+  });
 
   const minScoreValue =
     minScoreFilter.trim() === ""
@@ -408,23 +418,52 @@ export default function StaffSDRPage(): JSX.Element {
 
             <Card className="flex w-full max-w-full flex-col overflow-hidden lg:h-[700px]">
               <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                <CardTitle className="text-base font-semibold text-slate-900">
-                  Ranked prospects
-                </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={loadProspects}
-                  disabled={loadingProspects}
-                  aria-label="Refresh prospects"
-                >
-                  {loadingProspects ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCcw className="h-4 w-4" />
-                  )}
-                </Button>
+                <div className="flex flex-col gap-1">
+                  <CardTitle className="text-base font-semibold text-slate-900">
+                    Ranked prospects
+                  </CardTitle>
+                  <p className="text-xs text-slate-500">
+                    Unenriched companies ready for the assistant to build R&amp;D dossiers.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkEnrich}
+                    disabled={bulkEnriching || unenrichedCount === 0}
+                  >
+                    {bulkEnriching ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {bulkEnrichTotal > 0
+                          ? `Bulk enriching ${bulkEnrichedCount}/${bulkEnrichTotal}`
+                          : "Bulk enriching"}
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCcw className="mr-2 h-4 w-4" />
+                        {unenrichedCount > 0
+                          ? `Bulk enrich ${unenrichedCount}`
+                          : "Bulk enrich"}
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={loadProspects}
+                    disabled={loadingProspects}
+                    aria-label="Refresh prospects"
+                  >
+                    {loadingProspects ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCcw className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="flex-1 space-y-2 overflow-y-auto">
                 {loadingProspects && unenrichedProspects.length === 0 ? (
@@ -491,32 +530,8 @@ export default function StaffSDRPage(): JSX.Element {
                     Use the controls below to sort and filter by R&amp;D score.
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBulkEnrich}
-                  disabled={bulkEnriching || unenrichedCount === 0}
-                >
-                  {bulkEnriching ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {bulkEnrichTotal > 0
-                        ? `Bulk enriching ${bulkEnrichedCount}/${bulkEnrichTotal}`
-                        : "Bulk enriching"}
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCcw className="mr-2 h-4 w-4" />
-                      {unenrichedCount > 0
-                        ? `Bulk enrich ${unenrichedCount} prospect${
-                            unenrichedCount === 1 ? "" : "s"
-                          }`
-                        : "Bulk enrich"}
-                    </>
-                  )}
-                </Button>
               </div>
-              <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
+              <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                 <div className="flex items-center gap-2">
                   <span className="text-slate-500">Sort:</span>
                   <Button
