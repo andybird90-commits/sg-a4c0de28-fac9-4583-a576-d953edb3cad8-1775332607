@@ -80,9 +80,13 @@ export default function StaffSDRPage(): JSX.Element {
       return true;
     }
 
+    const status = getProspectStatus(prospect);
+    if (status === "enriched") {
+      return true;
+    }
+
     // Fallback: if there is a viability score and status is not strictly "new",
     // treat as enriched so they appear in the middle column.
-    const status = getProspectStatus(prospect);
     const score =
       (prospect.rd_viability_score as number | null | undefined) ?? null;
     if (status !== "new" || score !== null) {
@@ -135,6 +139,24 @@ export default function StaffSDRPage(): JSX.Element {
             hasAiDossier: p.ai_dossier_json !== null,
             hasDossierColumn: anyP.has_dossier ?? null,
             lastEnrichedAt: anyP.last_enriched_at ?? null,
+            score: (p.rd_viability_score as number | null) ?? null,
+          };
+        })
+      );
+
+      const enrichedCandidates = list.filter((p) => hasDossierFlag(p));
+
+      console.log(
+        "SDR enriched candidates",
+        enrichedCandidates.length,
+        enrichedCandidates.slice(0, 10).map((p) => {
+          const anyP = p as any;
+          return {
+            id: p.id,
+            status: anyP.status ?? null,
+            outcome: anyP.outcome ?? null,
+            lastEnrichedAt: anyP.last_enriched_at ?? null,
+            hasAiDossier: p.ai_dossier_json !== null,
             score: (p.rd_viability_score as number | null) ?? null,
           };
         })
