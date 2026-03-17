@@ -53,6 +53,45 @@ export default function StaffSDRPage(): JSX.Element {
     void loadBdmUsers();
   }, [user, appLoading]);
 
+  const getProspectStatus = (prospect: SdrProspect): string => {
+    const anyProspect = prospect as any;
+    const rawStatus =
+      (anyProspect.status as string | null) ??
+      (anyProspect.outcome as string | null) ??
+      "new";
+    return rawStatus.toLowerCase();
+  };
+
+  const hasDossierFlag = (prospect: SdrProspect): boolean => {
+    const anyProspect = prospect as any;
+
+    if (
+      prospect.ai_dossier_json !== null &&
+      prospect.ai_dossier_json !== undefined
+    ) {
+      return true;
+    }
+
+    if (anyProspect.has_dossier === true) {
+      return true;
+    }
+
+    if (anyProspect.last_enriched_at != null) {
+      return true;
+    }
+
+    // Fallback: if there is a viability score and status is not strictly "new",
+    // treat as enriched so they appear in the middle column.
+    const status = getProspectStatus(prospect);
+    const score =
+      (prospect.rd_viability_score as number | null | undefined) ?? null;
+    if (status !== "new" || score !== null) {
+      return true;
+    }
+
+    return false;
+  };
+
   const loadProspects = async (): Promise<void> => {
     if (!user) return;
     try {
@@ -74,8 +113,8 @@ export default function StaffSDRPage(): JSX.Element {
       const withDossierCount = list.filter((p) => hasDossierFlag(p)).length;
 
       const nonNewStatusCount = list.filter((p) => {
-        const rawStatus = (p.status as string | null) ?? "new";
-        return rawStatus.toLowerCase() !== "new";
+        const status = getProspectStatus(p);
+        return status !== "new";
       }).length;
 
       console.log("SDR prospects loaded", {
@@ -86,16 +125,19 @@ export default function StaffSDRPage(): JSX.Element {
 
       console.log(
         "SDR sample",
-        list.slice(0, 10).map((p) => ({
-          id: p.id,
-          status: (p.status as string | null) ?? null,
-          statusLower: ((p.status as string | null) ?? null)?.toLowerCase() ?? null,
-          hasAiDossier: p.ai_dossier_json !== null,
-          hasDossierFlag: hasDossierFlag(p),
-          score: (p.rd_viability_score as number | null) ?? null,
-          hasDossierColumn: (p as any).has_dossier ?? null,
-          lastEnrichedAt: (p as any).last_enriched_at ?? null,
-        }))
+        list.slice(0, 10).map((p) => {
+          const anyP = p as any;
+          return {
+            id: p.id,
+            status: anyP.status ?? null,
+            outcome: anyP.outcome ?? null,
+            statusLower: getProspectStatus(p),
+            hasAiDossier: p.ai_dossier_json !== null,
+            hasDossierColumn: anyP.has_dossier ?? null,
+            lastEnrichedAt: anyP.last_enriched_at ?? null,
+            score: (p.rd_viability_score as number | null) ?? null,
+          };
+        })
       );
 
       setProspects(list);
@@ -352,25 +394,6 @@ export default function StaffSDRPage(): JSX.Element {
   };
 
   const dossier = getDossier(selectedProspect);
-
-  const getProspectStatus = (prospect: SdrProspect): string => {
-    const rawStatus = (prospect.status as string | null) ?? "new";
-    return rawStatus.toLowerCase();
-  };
-
-  const hasDossierFlag = (prospect: SdrProspect): boolean => {
-    const anyProspect = prospect as any;
-    if (prospect.ai_dossier_json !== null && prospect.ai_dossier_json !== undefined) {
-      return true;
-    }
-    if (anyProspect.has_dossier === true) {
-      return true;
-    }
-    if (anyProspect.last_enriched_at != null) {
-      return true;
-    }
-    return false;
-  };
 
   const unenrichedProspects = prospects.filter((prospect) => {
     const hasDossier = hasDossierFlag(prospect);
