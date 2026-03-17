@@ -71,9 +71,7 @@ export default function StaffSDRPage(): JSX.Element {
 
       const list: SdrProspect[] = (data as SdrProspect[]) || [];
 
-      const withDossierCount = list.filter(
-        (p) => p.ai_dossier_json !== null
-      ).length;
+      const withDossierCount = list.filter((p) => hasDossierFlag(p)).length;
 
       const nonNewStatusCount = list.filter((p) => {
         const rawStatus = (p.status as string | null) ?? "new";
@@ -86,15 +84,17 @@ export default function StaffSDRPage(): JSX.Element {
         nonNewStatusCount,
       });
 
-      // New: log a small sample so we can see real values
       console.log(
         "SDR sample",
         list.slice(0, 10).map((p) => ({
           id: p.id,
           status: (p.status as string | null) ?? null,
           statusLower: ((p.status as string | null) ?? null)?.toLowerCase() ?? null,
-          hasDossier: p.ai_dossier_json !== null,
+          hasAiDossier: p.ai_dossier_json !== null,
+          hasDossierFlag: hasDossierFlag(p),
           score: (p.rd_viability_score as number | null) ?? null,
+          hasDossierColumn: (p as any).has_dossier ?? null,
+          lastEnrichedAt: (p as any).last_enriched_at ?? null,
         }))
       );
 
@@ -358,14 +358,28 @@ export default function StaffSDRPage(): JSX.Element {
     return rawStatus.toLowerCase();
   };
 
+  const hasDossierFlag = (prospect: SdrProspect): boolean => {
+    const anyProspect = prospect as any;
+    if (prospect.ai_dossier_json !== null && prospect.ai_dossier_json !== undefined) {
+      return true;
+    }
+    if (anyProspect.has_dossier === true) {
+      return true;
+    }
+    if (anyProspect.last_enriched_at != null) {
+      return true;
+    }
+    return false;
+  };
+
   const unenrichedProspects = prospects.filter((prospect) => {
-    const hasDossier = prospect.ai_dossier_json !== null;
+    const hasDossier = hasDossierFlag(prospect);
     const status = getProspectStatus(prospect);
     return !hasDossier && status === "new";
   });
 
   const enrichedProspects = prospects.filter((prospect) => {
-    const hasDossier = prospect.ai_dossier_json !== null;
+    const hasDossier = hasDossierFlag(prospect);
     const status = getProspectStatus(prospect);
     return hasDossier || status !== "new";
   });
