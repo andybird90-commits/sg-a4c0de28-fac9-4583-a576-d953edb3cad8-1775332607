@@ -86,6 +86,18 @@ export default function StaffSDRPage(): JSX.Element {
         nonNewStatusCount,
       });
 
+      // New: log a small sample so we can see real values
+      console.log(
+        "SDR sample",
+        list.slice(0, 10).map((p) => ({
+          id: p.id,
+          status: (p.status as string | null) ?? null,
+          statusLower: ((p.status as string | null) ?? null)?.toLowerCase() ?? null,
+          hasDossier: p.ai_dossier_json !== null,
+          score: (p.rd_viability_score as number | null) ?? null,
+        }))
+      );
+
       setProspects(list);
       if (!selectedProspect && list.length > 0) {
         setSelectedProspect(list[0]);
@@ -524,46 +536,10 @@ export default function StaffSDRPage(): JSX.Element {
 
           {/* Middle column: enriched dossiers */}
           <Card className="flex w-full max-w-full flex-col overflow-hidden lg:h-[700px]">
-            <CardHeader className="space-y-2">
-              <div className="flex flex-row items-start justify-between gap-4">
-                <div>
-                  <CardTitle className="text-base font-semibold text-slate-900">
-                    Enriched dossiers
-                  </CardTitle>
-                  <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-                    Prospects that already have an AI-generated R&amp;D dossier.
-                    Use the controls below to sort and filter by R&amp;D score.
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-500">Sort:</span>
-                  <Button
-                    variant={sortDirection === "desc" ? "default" : "outline"}
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => setSortDirection("desc")}
-                  >
-                    Highest first
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-500">Min score:</span>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={minScoreFilter}
-                    onChange={(e) => setMinScoreFilter(e.target.value)}
-                    className="h-7 w-20 px-2 py-1 text-xs"
-                  />
-                </div>
-                <span className="ml-auto text-slate-500">
-                  {sortedEnrichedProspects.length} result
-                  {sortedEnrichedProspects.length === 1 ? "" : "s"}
-                </span>
-              </div>
+            <CardHeader>
+              <CardTitle className="text-base font-semibold text-slate-900">
+                Enriched dossiers
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto">
               {sortedEnrichedProspects.length === 0 ? (
