@@ -70,6 +70,22 @@ export default function StaffSDRPage(): JSX.Element {
       }
 
       const list: SdrProspect[] = (data as SdrProspect[]) || [];
+
+      const withDossierCount = list.filter(
+        (p) => p.ai_dossier_json !== null
+      ).length;
+
+      const nonNewStatusCount = list.filter((p) => {
+        const rawStatus = (p.status as string | null) ?? "new";
+        return rawStatus.toLowerCase() !== "new";
+      }).length;
+
+      console.log("SDR prospects loaded", {
+        total: list.length,
+        withDossierCount,
+        nonNewStatusCount,
+      });
+
       setProspects(list);
       if (!selectedProspect && list.length > 0) {
         setSelectedProspect(list[0]);
@@ -489,28 +505,15 @@ export default function StaffSDRPage(): JSX.Element {
                           : "border-slate-200 bg-white"
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-slate-900">
-                            {prospect.company_name}
-                          </p>
-                          {prospect.company_number ? (
-                            <p className="mt-0.5 text-xs text-slate-500">
-                              Company no: {prospect.company_number}
-                            </p>
-                          ) : null}
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          {renderScoreBadge(
-                            (prospect.rd_viability_score as number | null) ??
-                            null
-                          )}
-                          <Badge variant="outline" className="text-[11px]">
-                            {(
-                              (prospect.status as string | null) ?? "new"
-                            ).replace(/_/g, " ")}
-                          </Badge>
-                        </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-slate-900">
+                          {prospect.company_name}
+                        </span>
+                        {prospect.company_number ? (
+                          <span className="text-xs text-slate-500">
+                            Company no: {prospect.company_number}
+                          </span>
+                        ) : null}
                       </div>
                     </button>
                   ))
