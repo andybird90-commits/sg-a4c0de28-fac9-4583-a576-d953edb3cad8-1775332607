@@ -449,6 +449,21 @@ export default function StaffSDRPage(): JSX.Element {
 
   const unenrichedCount = unenrichedProspects.length;
 
+  // Ranked list for the left column: show all prospects, ordered by score then recency
+  const rankedProspects = [...prospects].sort((a, b) => {
+    const aScore = (a.rd_viability_score as number | null) ?? -1;
+    const bScore = (b.rd_viability_score as number | null) ?? -1;
+
+    if (aScore !== bScore) {
+      // Higher scores first; -1 means "no score" so they fall to the bottom
+      return sortDirection === "desc" ? bScore - aScore : aScore - bScore;
+    }
+
+    const aCreated = new Date(a.created_at as string).getTime();
+    const bCreated = new Date(b.created_at as string).getTime();
+    return bCreated - aCreated;
+  });
+
   const callQueue = sortedEnrichedProspects
     .filter((prospect) => {
       const status = (prospect.status as string | null) ?? "";
