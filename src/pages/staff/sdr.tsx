@@ -61,7 +61,8 @@ export default function StaffSDRPage(): JSX.Element {
         .from("sdr_prospects")
         .select("*")
         .order("rd_viability_score", { ascending: false })
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(0, 4999);
 
       if (error) {
         console.error("Error loading SDR prospects:", error);
@@ -501,7 +502,8 @@ export default function StaffSDRPage(): JSX.Element {
                         </div>
                         <div className="flex flex-col items-end gap-1">
                           {renderScoreBadge(
-                            (prospect.rd_viability_score as number | null) ?? null
+                            (prospect.rd_viability_score as number | null) ??
+                            null
                           )}
                           <Badge variant="outline" className="text-[11px]">
                             {(
