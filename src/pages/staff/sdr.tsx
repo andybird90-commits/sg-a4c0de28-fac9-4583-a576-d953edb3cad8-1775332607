@@ -65,27 +65,29 @@ export default function StaffSDRPage(): JSX.Element {
   const hasDossierFlag = (prospect: SdrProspect): boolean => {
     const anyProspect = prospect as any;
 
+    // Direct enrichment markers written by the API
     if (
       prospect.ai_dossier_json !== null &&
       prospect.ai_dossier_json !== undefined
     ) {
       return true;
     }
-
-    if (anyProspect.has_dossier === true) {
-      return true;
-    }
-
     if (anyProspect.last_enriched_at != null) {
       return true;
     }
 
+    // Explicit enriched status
     const status = getProspectStatus(prospect);
     if (status === "enriched") {
       return true;
     }
 
-    // Fallback: if there is a viability score and status is not strictly "new",
+    // Legacy / fallback: a dedicated has_dossier column
+    if (anyProspect.has_dossier === true) {
+      return true;
+    }
+
+    // Final fallback: if there is a viability score and status is not strictly "new",
     // treat as enriched so they appear in the middle column.
     const score =
       (prospect.rd_viability_score as number | null | undefined) ?? null;
@@ -144,12 +146,57 @@ export default function StaffSDRPage(): JSX.Element {
         })
       );
 
-      const enrichedCandidates = list.filter((p) => hasDossierFlag(p));
+      const enrichedByFlag = list.filter((p) => hasDossierFlag(p));
+      const enrichedByStatus = list.filter(
+        (p) => getProspectStatus(p) === "enriched"
+      );
+      const withAiJson = list.filter(
+        (p) => p.ai_dossier_json !== null && p.ai_dossier_json !== undefined
+      );
+      const withLastEnriched = list.filter(
+        (p) => (p as any).last_enriched_at != null
+      );
+
+      console.log("SDR enriched diagnostics", {
+        enrichedByFlagCount: enrichedByFlag.length,
+        enrichedByStatusCount: enrichedByStatus.length,
+        withAiJsonCount: withAiJson.length,
+        withLastEnrichedCount: withLastEnriched.length,
+      });
 
       console.log(
-        "SDR enriched candidates",
-        enrichedCandidates.length,
-        enrichedCandidates.slice(0, 10).map((p) => {
+        "SDR enrichedByFlag sample",
+        enrichedByFlag.slice(0, 5).map((p) => {
+          const anyP = p as any;
+          return {
+            id: p.id,
+            status: anyP.status ?? null,
+            outcome: anyP.outcome ?? null,
+            lastEnrichedAt: anyP.last_enriched_at ?? null,
+            hasAiDossier: p.ai_dossier_json !== null,
+            score: (p.rd_viability_score as number | null) ?? null,
+          };
+        })
+      );
+
+      console.log(
+        "SDR withAiJson sample",
+        withAiJson.slice(0, 5).map((p) => {
+          const anyP = p as any;
+          return {
+            id: p.id,
+            status: anyP.status ?? null,
+            outcome: anyP.outcome ?? null,
+            lastEnrichedAt: anyP.last_enriched_at ?? null,
+            hasAiDossier: p.ai_dossier_json !== null,
+            score: (p.rd_viability_score as number | null) ?? null,
+          };
+        })
+      );
+
+      console.log(
+        "SDR withLastEnriched sample",
+        withLastEnriched.slice(0, 5).map((p) => {
           const anyP = p as any;
           return {
             id: p.id,
