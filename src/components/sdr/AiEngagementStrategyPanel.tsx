@@ -4,13 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 
 type SdrProspect = Tables<"sdr_prospects">;
 
-type Channel = "email" | "call" | "face_to_face";
+type Channel = "email" | "call" | "face_to_face" | "linkedin" | "research";
 type ConfidenceLevel = "high" | "medium" | "low";
 type AccountPersona =
   | "owner_led_practical_sme"
@@ -20,31 +19,49 @@ type AccountPersona =
   | "procurement_or_compliance_led_organisation"
   | "relationship_led_local_business";
 
+type AccountTier = "direct_access" | "mid_market_structured" | "enterprise_complex";
+
+type AccessStrategy =
+  | "direct_call"
+  | "insight_led_email"
+  | "named_contact_research_first"
+  | "linkedin_plus_email"
+  | "referral_or_warm_intro"
+  | "divisional_entry_point"
+  | "event_or_network_route"
+  | "local_meeting_pursuit"
+  | "direct_email_to_decision_maker"
+  | "nurture_before_outreach";
+
+interface ChannelScores {
+  email: number;
+  call: number;
+  face_to_face: number;
+  linkedin: number;
+  research: number;
+}
+
 interface EngagementStrategyJson {
-  recommended_first_touch: Channel;
-  fallback_touch: Channel;
+  recommended_access_strategy: AccessStrategy;
+  recommended_first_channel: Channel;
+  fallback_channel: Channel;
   confidence: ConfidenceLevel;
   account_persona: AccountPersona;
-  channel_scores: {
-    email: number;
-    call: number;
-    face_to_face: number;
-  };
-  supporting_scores: {
-    digital_maturity_score: number;
-    relationship_score: number;
-    local_visit_score: number;
-    decision_maker_access_score: number;
-    education_need_score: number;
-    commercial_value_score: number;
-    urgency_trigger_score: number;
-  };
+  account_tier: AccountTier;
+  gatekeeper_risk_score: number;
+  organisational_complexity_score: number;
+  named_contact_required: boolean;
+  named_contact_found: boolean;
+  warm_route_potential_score: number;
+  credibility_threshold_score: number;
+  channel_scores: ChannelScores;
   reason_codes: string[];
   evidence_summary: string[];
-  suggested_opener: string;
+  route_rationale: string;
+  stakeholder_hypothesis: string;
   suggested_subject_line: string;
-  suggested_call_opener: string;
-  suggested_meeting_angle: string;
+  suggested_first_email: string;
+  suggested_call_purpose: string;
   next_best_action: string;
 }
 
@@ -58,7 +75,10 @@ interface AiEngagementStrategyPanelProps {
 function formatChannelLabel(value: Channel): string {
   if (value === "face_to_face") return "Face to face";
   if (value === "email") return "Email";
-  return "Call";
+  if (value === "call") return "Call";
+  if (value === "linkedin") return "LinkedIn";
+  if (value === "research") return "Research / stakeholder mapping";
+  return value;
 }
 
 function formatConfidence(value: ConfidenceLevel | null): string {
@@ -81,7 +101,49 @@ function formatPersona(value: AccountPersona | null): string {
   return map[value] || value;
 }
 
-export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps): JSX.Element | null {
+function formatAccountTier(value: AccountTier | null): string {
+  if (!value) return "";
+  if (value === "direct_access") return "Direct access";
+  if (value === "mid_market_structured") return "Mid-market / structured";
+  return "Enterprise / complex";
+}
+
+function formatAccessStrategy(value: AccessStrategy | null): string {
+  if (!value) return "";
+  const map: Record<AccessStrategy, string> = {
+    direct_call: "Direct call",
+    insight_led_email: "Insight-led email",
+    named_contact_research_first: "Named contact research first",
+    linkedin_plus_email: "LinkedIn plus email",
+    referral_or_warm_intro: "Referral or warm introduction",
+    divisional_entry_point: "Divisional entry point",
+    event_or_network_route: "Event or network-based route",
+    local_meeting_pursuit: "Local meeting pursuit",
+    direct_email_to_decision_maker: "Direct email to decision maker",
+    nurture_before_outreach: "Nurture before outreach",
+  };
+  return map[value] || value;
+}
+
+function formatRisk(score: number | null): string {
+  if (score == null || Number.isNaN(score)) return "Not scored";
+  const value = clamp(score);
+  let label = "Medium";
+  if (value < 40) label = "Low";
+  else if (value >= 70) label = "High";
+  return `${label} (${value}/100)`;
+}
+
+function clamp(value: number): number {
+  if (Number.isNaN(value)) return 0;
+  if (value < 0) return 0;
+  if (value > 100) return 100;
+  return Math.round(value);
+}
+
+export function AiEngagementStrategyPanel(
+  props: AiEngagementStrategyPanelProps
+): JSX.Element | null {
   const { prospect, onProspectUpdated, onGenerateStrategy, generating } = props;
   const [savingOverride, setSavingOverride] = useState(false);
   const [overrideValue, setOverrideValue] = useState<string>("");
@@ -104,8 +166,12 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
       setOverrideNotes("");
       return;
     }
-    setOverrideValue((prospect.engagement_observed_real_preference as string | null) ?? "");
-    setOverrideNotes((prospect.engagement_observed_preference_notes as string | null) ?? "");
+    setOverrideValue(
+      (prospect.engagement_observed_real_preference as string | null) ?? ""
+    );
+    setOverrideNotes(
+      (prospect.engagement_observed_preference_notes as string | null) ?? ""
+    );
   }, [prospect?.id]);
 
   if (!prospect) {
@@ -114,13 +180,13 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
 
   const livePreference: Channel | null =
     ((prospect.engagement_observed_real_preference as Channel | null) ??
-      (strategy ? strategy.recommended_first_touch : null)) || null;
+      (strategy ? strategy.recommended_first_channel : null)) || null;
 
   const observedLabel =
     (prospect.engagement_observed_real_preference as string | null) != null &&
     (prospect.engagement_observed_real_preference as string | null) !== ""
       ? "Human confirmed preference"
-      : "AI recommended first touch";
+      : "AI recommended first channel";
 
   const handleSaveOverride = async (): Promise<void> => {
     if (!prospect) return;
@@ -149,9 +215,15 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
     await onGenerateStrategy(prospect.id as string);
   };
 
-  const personaValue = (prospect.engagement_account_persona as AccountPersona | null) ?? (strategy?.account_persona ?? null);
+  const personaValue =
+    (prospect.engagement_account_persona as AccountPersona | null) ??
+    (strategy?.account_persona ?? null);
   const confidenceValue =
-    (prospect.engagement_confidence as ConfidenceLevel | null) ?? (strategy?.confidence ?? null);
+    (prospect.engagement_confidence as ConfidenceLevel | null) ??
+    (strategy?.confidence ?? null);
+
+  const accountTierValue = strategy?.account_tier ?? null;
+  const accessStrategyValue = strategy?.recommended_access_strategy ?? null;
 
   return (
     <Card className="mt-6 border-slate-200">
@@ -166,14 +238,24 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
                 {observedLabel}: {formatChannelLabel(livePreference)}
               </Badge>
             )}
-            {confidenceValue && (
+            {accessStrategyValue && (
               <Badge variant="secondary" className="text-xs">
-                {formatConfidence(confidenceValue)}
+                {formatAccessStrategy(accessStrategyValue)}
+              </Badge>
+            )}
+            {accountTierValue && (
+              <Badge variant="outline" className="text-xs">
+                {formatAccountTier(accountTierValue)}
               </Badge>
             )}
             {personaValue && (
               <Badge variant="outline" className="text-xs">
                 {formatPersona(personaValue)}
+              </Badge>
+            )}
+            {confidenceValue && (
+              <Badge variant="secondary" className="text-xs">
+                {formatConfidence(confidenceValue)}
               </Badge>
             )}
             <Button
@@ -197,8 +279,10 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
           </div>
         </div>
         <p className="text-xs text-slate-500">
-          Recommended first touch is an AI suggestion based on Companies House and public web
-          signals. It is not a confirmed client preference.
+          This AI access strategy focuses on the most credible route into the
+          account based on public signals. It is not a confirmed client
+          preference and should be combined with SDR judgement and human
+          feedback.
         </p>
       </CardHeader>
       <CardContent className="space-y-5 pt-4">
@@ -207,33 +291,67 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
             <div className="grid gap-4 md:grid-cols-3">
               <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Recommended first touch
+                  Recommended access strategy
                 </p>
                 <p className="text-sm font-medium text-slate-900">
-                  {formatChannelLabel(strategy.recommended_first_touch)}
+                  {formatAccessStrategy(strategy.recommended_access_strategy)}
                 </p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Fallback touch
+                  First channel
                 </p>
                 <p className="text-sm font-medium text-slate-900">
-                  {formatChannelLabel(strategy.fallback_touch)}
+                  {formatChannelLabel(strategy.recommended_first_channel)}
                 </p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Next best action
+                  Fallback channel
                 </p>
-                <p className="text-sm text-slate-800 break-words">
-                  {strategy.next_best_action || "Not specified"}
+                <p className="text-sm font-medium text-slate-900">
+                  {formatChannelLabel(strategy.fallback_channel)}
                 </p>
               </div>
             </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Gatekeeper risk
+                </p>
+                <p className="text-sm text-slate-800">
+                  {formatRisk(strategy.gatekeeper_risk_score)}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Organisational complexity
+                </p>
+                <p className="text-sm text-slate-800">
+                  {formatRisk(strategy.organisational_complexity_score)}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Named contact
+                </p>
+                <p className="text-sm text-slate-800">
+                  Required: {strategy.named_contact_required ? "Yes" : "No"} ·
+                  Found: {strategy.named_contact_found ? "Yes" : "No"}
+                </p>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Why this recommendation
+                Why this route
               </p>
+              {strategy.route_rationale ? (
+                <p className="whitespace-pre-line text-sm text-slate-700">
+                  {strategy.route_rationale}
+                </p>
+              ) : null}
               {strategy.evidence_summary && strategy.evidence_summary.length > 0 ? (
                 <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
                   {strategy.evidence_summary.slice(0, 5).map((item, idx) => (
@@ -246,33 +364,44 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
                 </p>
               )}
             </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Suggested opener
+                  Stakeholder hypothesis
                 </p>
                 <p className="whitespace-pre-line text-sm text-slate-700">
-                  {strategy.suggested_opener || "No opener generated yet."}
+                  {strategy.stakeholder_hypothesis ||
+                    "No stakeholder hypothesis generated yet."}
                 </p>
                 <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Suggested meeting angle
+                  Suggested first email
                 </p>
                 <p className="whitespace-pre-line text-sm text-slate-700">
-                  {strategy.suggested_meeting_angle || "No meeting angle generated yet."}
+                  {strategy.suggested_first_email ||
+                    "No first email suggestion generated yet."}
                 </p>
               </div>
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Suggested email subject line
+                  Suggested subject line
                 </p>
-                <p className="text-sm text-slate-700">
-                  {strategy.suggested_subject_line || "No subject line generated yet."}
+                <p className="text-sm text-slate-700 break-words">
+                  {strategy.suggested_subject_line ||
+                    "No subject line generated yet."}
                 </p>
                 <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Suggested call opener
+                  Suggested call purpose
                 </p>
                 <p className="whitespace-pre-line text-sm text-slate-700">
-                  {strategy.suggested_call_opener || "No call opener generated yet."}
+                  {strategy.suggested_call_purpose ||
+                    "No call purpose generated yet."}
+                </p>
+                <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Next best action
+                </p>
+                <p className="whitespace-pre-line break-words text-sm text-slate-800">
+                  {strategy.next_best_action || "Not specified"}
                 </p>
               </div>
             </div>
@@ -282,6 +411,7 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
             No AI engagement strategy has been generated yet for this prospect.
           </p>
         )}
+
         <div className="space-y-3 border-t border-slate-100 pt-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -289,7 +419,10 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
             </p>
             {strategy && (
               <p className="text-[11px] text-slate-500">
-                AI suggested {formatChannelLabel(strategy.recommended_first_touch)} first.
+                AI suggested{" "}
+                {formatChannelLabel(strategy.recommended_first_channel)} first
+                via {formatAccessStrategy(strategy.recommended_access_strategy)}{" "}
+                route.
               </p>
             )}
           </div>
@@ -307,6 +440,7 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
                 <option value="email">Email first</option>
                 <option value="call">Call first</option>
                 <option value="face_to_face">Face to face</option>
+                <option value="linkedin">LinkedIn first</option>
               </select>
             </div>
             <div className="space-y-1">
@@ -339,9 +473,14 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
             </Button>
             {prospect.engagement_last_tested_channel && (
               <p className="text-[11px] text-slate-500">
-                Last tested channel: {formatChannelLabel(prospect.engagement_last_tested_channel as Channel)}
+                Last tested channel:{" "}
+                {formatChannelLabel(
+                  prospect.engagement_last_tested_channel as Channel
+                )}
                 {prospect.engagement_last_tested_outcome
-                  ? ` · Outcome: ${String(prospect.engagement_last_tested_outcome)}`
+                  ? ` · Outcome: ${String(
+                      prospect.engagement_last_tested_outcome
+                    )}`
                   : ""}
               </p>
             )}
