@@ -200,51 +200,20 @@ export function AiEngagementStrategyPanel(
           </button>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap gap-6">
             <div>
-              <div className="text-xs uppercase text-muted-foreground">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
                 Live working preference
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">{livePreference ?? "Unknown"}</Badge>
-                <span className="text-xs text-muted-foreground">
-                  {observedLabel}
-                </span>
+              </p>
+              <div className="mt-1 flex items-center gap-2">
+                <Badge variant="secondary">
+                  {strategy?.recommended_first_channel ?? "unknown"}
+                </Badge>
+                <p className="text-sm text-muted-foreground">
+                  AI recommended first channel
+                </p>
               </div>
             </div>
-
-            {personaValue && (
-              <div>
-                <div className="text-xs uppercase text-muted-foreground">
-                  Account persona
-                </div>
-                <div className="text-xs">
-                  {formatPersonaLabel(personaValue)}
-                </div>
-              </div>
-            )}
-
-            {accountTierValue && (
-              <div>
-                <div className="text-xs uppercase text-muted-foreground">
-                  Account tier
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  {accountTierValue.replace(/_/g, " ")}
-                </Badge>
-              </div>
-            )}
-
-            {confidenceValue && (
-              <div>
-                <div className="text-xs uppercase text-muted-foreground">
-                  AI confidence
-                </div>
-                <Badge variant="secondary" className="text-xs">
-                  {confidenceValue}
-                </Badge>
-              </div>
-            )}
           </div>
 
           <Separator />
