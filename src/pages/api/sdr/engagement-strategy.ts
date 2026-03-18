@@ -25,6 +25,16 @@ type AccessStrategy =
   | "direct_email_to_decision_maker"
   | "nurture_before_outreach";
 
+function normaliseChannelForDb(
+  channel: Channel | null | undefined
+): "email" | "call" | "face_to_face" | null {
+  if (!channel) return null;
+  if (channel === "email" || channel === "call" || channel === "face_to_face") {
+    return channel;
+  }
+  return null;
+}
+
 interface ChannelScores {
   email: number;
   call: number;
@@ -444,7 +454,7 @@ function computeEngagementPreference(input: {
       whatNotToDo.push(
         "Do not bombard with calls without email context.",
         "Do not oversell the complexity or size of the opportunity on first touch.",
-        "Do not assume departmental inboxes or web contact forms will be effective entry points."
+        "Do not rely on generic web forms as the main route into the organisation."
       );
     } else {
       primaryRoute = "Email first";
@@ -605,8 +615,12 @@ function applyEnterpriseFallback(params: {
 
   updated.account_tier = "enterprise_complex";
 
+  const isEnterpriseLikeForPersona =
+    enterpriseIndicators.indicator_count >= 2 ||
+    enterpriseIndicators.major_brand_match;
+
   if (
-    enterpriseIndicators.indicator_count >= 3 &&
+    isEnterpriseLikeForPersona &&
     (updated.account_persona === "owner_led_practical_sme" ||
       updated.account_persona === "relationship_led_local_business")
   ) {
@@ -705,6 +719,10 @@ export default async function handler(
       .maybeSingle();
 
     if (prospectError || !prospect) {
+      console.error("SDR engagement-strategy: prospect fetch failed", {
+        prospectId,
+        error: prospectError,
+      });
       res.status(404).json({ message: "Prospect not found" });
       return;
     }
@@ -800,7 +818,7 @@ export default async function handler(
       filingConfidenceScore,
     });
 
-    let accountTier = computeAccountTier({
+    const accountTier = computeAccountTier({
       persona,
       isClearlyCorporate,
       numberOfDirectors,
@@ -809,12 +827,12 @@ export default async function handler(
       hasLinkedinCompanyPage,
     });
 
-    if (enterpriseIndicators.indicator_count >= 2) {
-      accountTier = "enterprise_complex";
-    }
+    const isEnterpriseLikeForPersona =
+      enterpriseIndicators.indicator_count >= 2 ||
+      enterpriseIndicators.major_brand_match;
 
     if (
-      enterpriseIndicators.indicator_count >= 3 &&
+      isEnterpriseLikeForPersona &&
       (persona === "owner_led_practical_sme" ||
         persona === "relationship_led_local_business")
     ) {
@@ -1016,8 +1034,12 @@ export default async function handler(
       .from("sdr_prospects")
       .update({
         engagement_strategy_json: strategy as unknown,
-        engagement_recommended_first_touch: strategy.recommended_first_channel,
-        engagement_fallback_touch: strategy.fallback_channel,
+        engagement_recommended_first_touch: normaliseChannelForDb(
+          strategy.recommended_first_channel
+        ),
+        engagement_fallback_touch: normaliseChannelForDb(
+          strategy.fallback_channel
+        ),
         engagement_confidence: strategy.confidence,
         engagement_account_persona: strategy.account_persona,
         engagement_email_score: strategy.channel_scores.email,
@@ -1052,17 +1074,29 @@ export default async function handler(
       .maybeSingle();
 
     if (updateError || !updated) {
+      console.error("SDR engagement-strategy: failed to save strategy", {
+        prospectId,
+        error: updateError,
+      });
       res
         .status(500)
-        .json({ message: "Failed to save engagement strategy", strategy });
+        .json({
+          message: "Failed to save engagement strategy",
+          error: updateError,
+        });
       return;
     }
 
     res.status(200).json({ strategy, prospect: updated });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to generate engagement strategy" });
+    console.error("SDR engagement-strategy: unhandled error", error);
+    res.status(500).json({
+      message: "Failed to generate engagement strategy",
+      error:
+        error instanceof Error
+          ? { name: error.name, message: error.message, stack: error.stack }
+          : error,
+    });
   }
 }
 
@@ -1340,7 +1374,7 @@ function computeAccountTier(input: {
   companyAgeYears: number | null;
   isTechnicalSector: boolean;
   hasLinkedinCompanyPage: boolean;
-}: AccountTier {
+}): AccountTier {
   const {
     persona,
     isClearlyCorporate,
@@ -1590,39 +1624,14 @@ function computeConfidence(evidenceStrength: number): ConfidenceLevel {
 
 async function getTextualFields(
   _openaiApiKey: string,
-  params: {
-    enriched: {
-      companyName: string;
-      companyNumber: string | null;
-      chSnapshot: any;
-      webContext: string;
-      persona: AccountPersona;
-      accountTier: AccountTier;
-      supportingScores: SupportingScores;
-      channelScores: ChannelScores;
-      recommendedAccessStrategy: AccessStrategy;
-      recommendedFirstChannel: Channel;
-      fallbackChannel: Channel;
-      confidence: ConfidenceLevel;
-      hasLinkedinPresence: boolean;
-      hasLinkedinCompanyPage: boolean;
-      hasLinkedinNamedContact: boolean;
-      gatekeeperRiskScore: number;
-      organisationalComplexityScore: number;
-      warmRoutePotentialScore: number;
-      credibilityThresholdScore: number;
-      namedContactRequired: boolean;
-      enterpriseIndicators: EnterpriseIndicators;
-      directColdCallRecommended: boolean;
-      linkedinSignalSummary: string;
-    };
-    skeleton: EngagementStrategy;
-  }
+  params: { enriched: any; skeleton: EngagementStrategy }
 ): Promise<TextualStrategyFields> {
   const { enriched, skeleton } = params;
   const {
     companyName,
     companyNumber,
+    chSnapshot,
+    webContext,
     persona,
     accountTier,
     supportingScores,
@@ -1636,9 +1645,12 @@ async function getTextualFields(
     hasLinkedinNamedContact,
     gatekeeperRiskScore,
     organisationalComplexityScore,
+    warmRoutePotentialScore,
     credibilityThresholdScore,
+    namedContactRequired,
     enterpriseIndicators,
     directColdCallRecommended,
+    linkedinSignalSummary,
   } = enriched;
 
   const reasonCodes: string[] = [];
@@ -1661,10 +1673,9 @@ async function getTextualFields(
   }
 
   evidenceSummary.push(
-    `Persona: ${persona.replace(/_/g, " ")}, tier: ${accountTier.replace(
-      /_/g,
-      " "
-    )}.`
+    `Persona: ${String(persona).replace(/_/g, " ")}, tier: ${String(
+      accountTier
+    ).replace(/_/g, " ")}.`
   );
   evidenceSummary.push(
     `Email score: ${channelScores.email}, call score: ${channelScores.call}, LinkedIn score: ${channelScores.linkedin}, research score: ${channelScores.research}.`
@@ -1672,6 +1683,7 @@ async function getTextualFields(
   evidenceSummary.push(
     `Gatekeeper risk: ${gatekeeperRiskScore}, organisational complexity: ${organisationalComplexityScore}, credibility threshold: ${credibilityThresholdScore}.`
   );
+  evidenceSummary.push(`Overall confidence: ${confidence}.`);
 
   const isEnterpriseLike =
     accountTier === "enterprise_complex" ||
