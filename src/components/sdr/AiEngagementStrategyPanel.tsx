@@ -16,8 +16,9 @@ type SdrProspect = Database["public"]["Tables"]["sdr_prospects"]["Row"];
 type Channel = "email" | "call" | "face_to_face" | "linkedin" | "research";
 
 interface EngagementPreference {
-  primaryRoute: string;
-  secondaryRoute: string | null;
+  mode: "standard" | "enterprise";
+  primaryRoute?: string;
+  secondaryRoute?: string | null;
   recommendedPersona: string;
   tone: string;
   gatekeeperRisk: "Low" | "Medium" | "High";
@@ -26,6 +27,13 @@ interface EngagementPreference {
   rationale: string[];
   suggestedSequence: string[];
   whatNotToDo: string[];
+  primaryAccessModel?: string;
+  deliveryChannelGuidance?: string;
+  recommendationStatus?: "clear" | "exploratory" | "limited signal but strategically directional";
+  businessUnitTargetingRequired?: boolean;
+  namedContactRequired?: boolean;
+  phoneUseRule?: string;
+  likelyStakeholderClass?: string;
 }
 
 interface EngagementStrategyJson {
@@ -65,6 +73,23 @@ interface AiEngagementStrategyPanelProps {
   onProspectUpdated: (prospect: SdrProspect) => void;
   onGenerateStrategy: (prospectId: string) => Promise<void>;
   generating: boolean;
+}
+
+function formatPersonaLabel(persona: string | null | undefined): string {
+  if (!persona) return "Unknown";
+
+  const map: Record<string, string> = {
+    owner_led_practical_sme: "Owner-led practical SME",
+    operationally_stretched_growth_company:
+      "Operationally stretched growth company",
+    formal_mid_market_business: "Formal mid-market business",
+    technical_engineering_led_business: "Technical, engineering-led business",
+    procurement_or_compliance_led_organisation:
+      "Procurement or compliance-led organisation",
+    relationship_led_local_business: "Relationship-led local business",
+  };
+
+  return map[persona] ?? persona.replace(/_/g, " ");
 }
 
 export function AiEngagementStrategyPanel(
@@ -193,7 +218,9 @@ export function AiEngagementStrategyPanel(
                 <div className="text-xs uppercase text-muted-foreground">
                   Account persona
                 </div>
-                <div className="text-xs">{personaValue}</div>
+                <div className="text-xs">
+                  {formatPersonaLabel(personaValue)}
+                </div>
               </div>
             )}
 
@@ -280,12 +307,166 @@ export function AiEngagementStrategyPanel(
                 prospect.
               </p>
               <p className="text-muted-foreground">
-                Refresh the AI strategy to infer a primary route, tone, and
-                sequence based on the latest enrichment. For major enterprises,
-                this will default to a research-led, account-based approach
-                rather than generic cold calling.
+                Refresh the AI strategy to infer a route into the account based
+                on the latest enrichment. For major enterprises this focuses on
+                access strategy and stakeholder mapping, not just channel
+                choice.
               </p>
             </div>
+          ) : engagementPreference.mode === "enterprise" ? (
+            <>
+              <div className="flex flex-wrap items-center gap-4">
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">
+                    Primary access model
+                  </div>
+                  <div className="font-medium">
+                    {engagementPreference.primaryAccessModel ??
+                      "Stakeholder-mapped account-based outreach"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">
+                    Gatekeeper risk
+                  </div>
+                  <Badge
+                    variant={
+                      engagementPreference.gatekeeperRisk === "High"
+                        ? "destructive"
+                        : engagementPreference.gatekeeperRisk === "Medium"
+                        ? "secondary"
+                        : "outline"
+                    }
+                  >
+                    {engagementPreference.gatekeeperRisk}
+                  </Badge>
+                </div>
+                {engagementPreference.recommendationStatus && (
+                  <div>
+                    <div className="text-xs uppercase text-muted-foreground">
+                      Recommendation status
+                    </div>
+                    <div>{engagementPreference.recommendationStatus}</div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">
+                    Confidence
+                  </div>
+                  <div>
+                    {(engagementPreference.confidence * 100).toFixed(0)}%
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <div className="text-xs uppercase text-muted-foreground">
+                  Suggested target persona
+                </div>
+                <div>{engagementPreference.recommendedPersona}</div>
+              </div>
+
+              {engagementPreference.likelyStakeholderClass && (
+                <div className="space-y-2">
+                  <div className="text-xs uppercase text-muted-foreground">
+                    Likely stakeholder class
+                  </div>
+                  <div>{engagementPreference.likelyStakeholderClass}</div>
+                </div>
+              )}
+
+              {engagementPreference.deliveryChannelGuidance && (
+                <div className="space-y-2">
+                  <div className="text-xs uppercase text-muted-foreground">
+                    Delivery channel guidance
+                  </div>
+                  <div>{engagementPreference.deliveryChannelGuidance}</div>
+                </div>
+              )}
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">
+                    Business unit targeting required
+                  </div>
+                  <div>
+                    {engagementPreference.businessUnitTargetingRequired
+                      ? "Yes"
+                      : "No"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">
+                    Named contact required
+                  </div>
+                  <div>
+                    {engagementPreference.namedContactRequired ? "Yes" : "No"}
+                  </div>
+                </div>
+                {engagementPreference.phoneUseRule && (
+                  <div>
+                    <div className="text-xs uppercase text-muted-foreground">
+                      Phone use rule
+                    </div>
+                    <div>{engagementPreference.phoneUseRule}</div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-xs uppercase text-muted-foreground">
+                  Recommended tone
+                </div>
+                <div>{engagementPreference.tone}</div>
+              </div>
+
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="why">
+                  <AccordionTrigger className="text-sm">
+                    Why this approach?
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="list-disc space-y-1 pl-5">
+                      {engagementPreference.rationale.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="sequence">
+                  <AccordionTrigger className="text-sm">
+                    Suggested first-touch sequence
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <ol className="list-decimal space-y-1 pl-5">
+                      {engagementPreference.suggestedSequence.map(
+                        (step, index) => (
+                          <li key={index}>{step}</li>
+                        )
+                      )}
+                    </ol>
+                  </AccordionContent>
+                </AccordionItem>
+                {engagementPreference.whatNotToDo.length > 0 && (
+                  <AccordionItem value="what-not-to-do">
+                    <AccordionTrigger className="text-sm">
+                      What not to do
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="list-disc space-y-1 pl-5">
+                        {engagementPreference.whatNotToDo.map(
+                          (warning, index) => (
+                            <li key={index}>{warning}</li>
+                          )
+                        )}
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+              </Accordion>
+            </>
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-3">
@@ -294,7 +475,7 @@ export function AiEngagementStrategyPanel(
                     Primary route
                   </div>
                   <div className="font-medium">
-                    {engagementPreference.primaryRoute}
+                    {engagementPreference.primaryRoute ?? "Email first"}
                   </div>
                 </div>
                 {engagementPreference.secondaryRoute && (

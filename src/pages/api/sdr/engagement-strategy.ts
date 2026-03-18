@@ -92,8 +92,9 @@ interface EnterpriseIndicators {
 }
 
 interface EngagementPreference {
-  primaryRoute: string;
-  secondaryRoute: string | null;
+  mode: "standard" | "enterprise";
+  primaryRoute?: string;
+  secondaryRoute?: string | null;
   recommendedPersona: string;
   tone: string;
   gatekeeperRisk: "Low" | "Medium" | "High";
@@ -102,6 +103,13 @@ interface EngagementPreference {
   rationale: string[];
   suggestedSequence: string[];
   whatNotToDo: string[];
+  primaryAccessModel?: string;
+  deliveryChannelGuidance?: string;
+  recommendationStatus?: "clear" | "exploratory" | "limited signal but strategically directional";
+  businessUnitTargetingRequired?: boolean;
+  namedContactRequired?: boolean;
+  phoneUseRule?: string;
+  likelyStakeholderClass?: string;
 }
 
 function clampScore(value: number): number {
@@ -286,13 +294,6 @@ function computeEngagementPreference(input: {
 
   const relationshipLedScore = supportingScores.relationship_score;
 
-  const procurementBarrierScore =
-    (enterpriseIndicators.defence_or_aerospace ||
-    enterpriseIndicators.regulated_infrastructure_or_utility
-      ? 40
-      : 0) +
-    (enterpriseIndicators.corporate_site_signals ? 20 : 0);
-
   const technicalRelevanceScore = isTechnicalSector
     ? 60
     : supportingScores.education_need_score;
@@ -308,17 +309,6 @@ function computeEngagementPreference(input: {
     (enterpriseScaleScore > 70 ? 20 : 0) -
     (gatekeeperRiskScore > 70 ? 30 : 0);
 
-  const isEnterpriseLike =
-    enterpriseScaleScore >= 75 ||
-    procurementBarrierScore >= 40 ||
-    accountTier === "enterprise_complex";
-
-  const isHighlyGatekept =
-    gatekeeperRiskScore >= 70 ||
-    clampScore(accessMeta.credibilityThresholdScore) >= 70;
-
-  const hasStrongDirectAccess = directAccessScore >= 55 && !isHighlyGatekept;
-
   const dataWeak = evidenceStrength < 0.35;
 
   const gatekeeperRiskBand: EngagementPreference["gatekeeperRisk"] =
@@ -328,10 +318,132 @@ function computeEngagementPreference(input: {
       ? "Medium"
       : "Low";
 
+  const isEnterpriseAccessMode =
+    (enterpriseScaleScore >= 75 && gatekeeperRiskScore >= 70) ||
+    isDefenceOrAerospaceOrRegulated ||
+    enterpriseIndicators.indicator_count >= 2;
+
+  if (isEnterpriseAccessMode) {
+    const businessUnitTargetingRequired =
+      enterpriseScaleScore >= 75 || enterpriseIndicators.indicator_count >= 2;
+
+    let recommendationStatus: EngagementPreference["recommendationStatus"];
+    if (evidenceStrength < 0.35) {
+      recommendationStatus = "exploratory";
+    } else if (evidenceStrength < 0.7) {
+      recommendationStatus = "limited signal but strategically directional";
+    } else {
+      recommendationStatus = "clear";
+    }
+
+    let primaryAccessModel = "Stakeholder-mapped account-based outreach";
+    if (accessMeta.namedContactRequired && hasLinkedinNamedContact) {
+      primaryAccessModel = "Named-contact-first outreach";
+    } else if (
+      accessMeta.warmRoutePotentialScore >= 60 &&
+      (hasLinkedinPresence || hasContactSignal)
+    ) {
+      primaryAccessModel = "Authority-led introduction path";
+    } else if (businessUnitTargetingRequired) {
+      primaryAccessModel = "Business-unit-specific relevance sequence";
+    }
+
+    const namedContactRequired = true;
+
+    let phoneUseRule = "Routing only until named stakeholder identified";
+    if (!hasDirectPhoneSignal) {
+      phoneUseRule =
+        "Avoid as first touch; use only to support routing once a stakeholder path exists.";
+    } else if (gatekeeperRiskScore >= 80) {
+      phoneUseRule =
+        "Routing only; do not use phone for blind pitching or generic discovery.";
+    }
+
+    let likelyStakeholderClass =
+      "Finance, tax, or commercial sponsorship tied to the relevant technical or innovation activity.";
+    if (isDefenceOrAerospaceOrRegulated || isTechnicalSector) {
+      likelyStakeholderClass =
+        "Engineering, programme, innovation, or finance/tax ownership linked to the relevant business area.";
+    }
+
+    const recommendedPersonaText =
+      "Finance, tax, engineering, or innovation leadership within the relevant business unit.";
+    const tone =
+      "Strategic, credibility-first guidance on how to reach the right stakeholders in a complex, gatekept organisation.";
+
+    const rationale: string[] = [];
+    const suggestedSequence: string[] = [];
+    const whatNotToDo: string[] = [];
+
+    if (recommendationStatus === "exploratory") {
+      rationale.push(
+        "Signals confirm a complex, gatekept organisation but available data is limited, so the recommendation focuses on direction rather than a hard prescription.",
+        "Treat early work as discovery of the right business unit and stakeholders, not as a pure outbound volume play.",
+        "Channel availability (email, phone, LinkedIn) is less important than mapping who actually owns R&D, innovation, or tax in the relevant area."
+      );
+      suggestedSequence.push(
+        "Identify the most relevant business unit or programme for R&D or innovation (e.g. defence platform, engineering division, or specific programme).",
+        "Map likely stakeholders across engineering, programme leadership, and finance/tax for that business unit.",
+        "Craft a short, authority-led note that anchors on relevance to that business unit, not generic R&D tax language.",
+        "Use email or LinkedIn only once a named stakeholder path is clear; use phone solely to verify routing, not to deliver a blind pitch."
+      );
+    } else {
+      rationale.push(
+        "Signals indicate an enterprise or heavily structured organisation with high gatekeeper risk and layered decision-making.",
+        "Generic switchboard outreach or untargeted email blasts are unlikely to reach the right stakeholder or be taken seriously.",
+        "A stakeholder-mapped, account-based approach that focuses on the right business unit and named contacts is more credible and commercially realistic."
+      );
+      suggestedSequence.push(
+        "Identify the business unit or programme most aligned to the R&D or innovation context you care about.",
+        "Map 3–5 likely stakeholders across engineering/programme leadership and finance/tax within that unit.",
+        "Use internal networks, LinkedIn, and existing clients/partners to validate and prioritise named contacts.",
+        "Send a concise, insight-led email to a chosen stakeholder that anchors on sector- and business-unit relevance.",
+        "Follow up selectively with email or LinkedIn, and only use phone to route to a named person, not to deliver a generic pitch."
+      );
+    }
+
+    whatNotToDo.push(
+      "Do not call the main switchboard and pitch blindly.",
+      "Do not ask generic questions like 'who handles R&D tax?' or 'who is responsible for innovation claims?'.",
+      "Do not assume the first responder is the correct stakeholder or decision maker.",
+      "Do not use a generic SDR script; tailor language to the business unit, programmes, and technical context.",
+      "Do not treat channel availability as proof that a channel is strategically appropriate."
+    );
+
+    return {
+      mode: "enterprise",
+      primaryRoute: undefined,
+      secondaryRoute: null,
+      recommendedPersona: recommendedPersonaText,
+      tone,
+      gatekeeperRisk: gatekeeperRiskBand,
+      directColdCallRecommended: false,
+      confidence: evidenceStrength,
+      rationale,
+      suggestedSequence,
+      whatNotToDo,
+      primaryAccessModel,
+      deliveryChannelGuidance:
+        "Use email or LinkedIn only after relevance is anchored to a named stakeholder or business unit. Use phone strictly for routing or to support agreed follow-up, not as a blind first-touch pitch.",
+      recommendationStatus,
+      businessUnitTargetingRequired,
+      namedContactRequired,
+      phoneUseRule,
+      likelyStakeholderClass,
+    };
+  }
+
+  // STANDARD MODE (SME / MID-MARKET) – channel-first, but still context-aware
+
+  const isRelationshipLed =
+    relationshipLedScore >= 65 || isLocalRelationshipBusiness;
+
+  const hasStrongDirectAccess = directAccessScore >= 55 && gatekeeperRiskScore < 70;
+
   let primaryRoute = "Email first";
   let secondaryRoute: string | null = null;
   let recommendedPersona =
-    "Finance, tax, engineering, or innovation leadership";
+    "Finance, tax, engineering, or innovation stakeholder best aligned to R&D activity";
   const tone =
     "Credibility-first, low-pressure, insight-led and relevant to the prospect's context";
   let directColdCallRecommended = false;
@@ -345,24 +457,25 @@ function computeEngagementPreference(input: {
     directColdCallRecommended = false;
 
     rationale.push(
-      "Available signals are limited, so a cautious, research-led approach is safer than a bold channel assumption.",
-      "Email allows you to test relevance and interest without overstepping with a hard call.",
+      "Available signals are limited, so the recommendation is exploratory and focuses on low-friction channels.",
+      "Email allows you to test relevance and interest without overcommitting to a hard call.",
       "LinkedIn can be used to validate stakeholders and add light-touch familiarity if profiles exist."
     );
 
     suggestedSequence.push(
-      "Research and identify likely stakeholders in finance, tax, engineering, or innovation.",
+      "Identify a likely stakeholder in finance, tax, engineering, or innovation.",
       "Send a concise, authority-led email that anchors on relevance to their sector and R&D profile.",
       "Lightly follow up via email or LinkedIn rather than phone until a named contact engages."
     );
 
     whatNotToDo.push(
-      "Do not bombard with calls without email context.",
+      "Do not bombard with calls without prior email context.",
       "Do not oversell the complexity or size of the opportunity on first touch.",
-      "Do not assume the first person who replies is the decision maker."
+      "Do not assume the first person who replies is the final decision maker."
     );
 
     return {
+      mode: "standard",
       primaryRoute,
       secondaryRoute,
       recommendedPersona,
@@ -375,71 +488,18 @@ function computeEngagementPreference(input: {
       whatNotToDo,
     };
   }
-
-  if (isEnterpriseLike || isHighlyGatekept) {
-    primaryRoute = "Multi-touch account-based sequence";
-    secondaryRoute = hasLinkedinPresence
-      ? "LinkedIn-assisted outreach"
-      : "Direct named email outreach";
-    directColdCallRecommended = false;
-
-    if (isDefenceOrAerospaceOrRegulated || isTechnicalSector) {
-      recommendedPersona =
-        "Head of Engineering, Technical Director, R&D Programme Lead, or Group Tax/Finance stakeholder";
-    } else {
-      recommendedPersona =
-        "Group Finance or Tax lead, Finance Business Partner, Divisional FD, or Innovation Lead";
-    }
-
-    rationale.push(
-      "Signals indicate an enterprise or heavily structured organisation with likely gatekeepers and layered decision-making.",
-      "Generic switchboard cold calls are likely to be screened out and will not reach the right stakeholder.",
-      "An account-based sequence focused on named senior roles is more credible and better aligned with corporate buying behaviour."
-    );
-
-    suggestedSequence.push(
-      "Map stakeholders in engineering, innovation, finance, and tax to identify named senior contacts.",
-      "Send a concise, insight-led email to a chosen stakeholder that anchors on sector-specific R&D value.",
-      "Use LinkedIn or internal networks to validate and warm the relationship where possible.",
-      "If using the switchboard, do so only to route to a named person, not to deliver the core pitch.",
-      "Follow with a second touch that carries proof, relevance, or a short case example for similar organisations."
-    );
-
-    whatNotToDo.push(
-      "Do not call the main switchboard and pitch blindly.",
-      "Do not ask generic questions like 'Can I speak to the person responsible for R&D tax?'",
-      "Do not open with a hard sell or imply the conversation is purely about tax savings.",
-      "Do not assume the first person who answers is the decision maker."
-    );
-
-    return {
-      primaryRoute,
-      secondaryRoute,
-      recommendedPersona,
-      tone,
-      gatekeeperRisk: gatekeeperRiskBand,
-      directColdCallRecommended,
-      confidence: evidenceStrength,
-      rationale,
-      suggestedSequence,
-      whatNotToDo,
-    };
-  }
-
-  const isRelationshipLed =
-    relationshipLedScore >= 65 || isLocalRelationshipBusiness;
 
   if (ownerManagedScore >= 70) {
     if (hasStrongDirectAccess && likelyPhoneReceptivenessScore > 30) {
       primaryRoute = "Email first";
-      secondaryRoute = "Switchboard only as routing step";
+      secondaryRoute = "Switchboard or direct call as follow-up";
       directColdCallRecommended = true;
 
       recommendedPersona =
         "Owner, Managing Director, or a senior operational/finance decision maker";
 
       rationale.push(
-        "Signals point to an owner-managed or local relationship-led organisation with relatively low formal gatekeeping.",
+        "Signals point to an owner-managed or relationship-led organisation with relatively low formal gatekeeping.",
         "A direct but respectful email to the MD/owner, followed by a considered call, is likely to be acceptable.",
         "Phone can work here, but only after you have anchored relevance and avoided a generic sales pitch."
       );
@@ -454,13 +514,15 @@ function computeEngagementPreference(input: {
       whatNotToDo.push(
         "Do not bombard with calls without email context.",
         "Do not oversell the complexity or size of the opportunity on first touch.",
-        "Do not rely on generic web forms as the main route into the organisation."
+        "Do not rely solely on generic web forms as the main route into the organisation."
       );
     } else {
       primaryRoute = "Email first";
       secondaryRoute = isRelationshipLed
         ? "Face-to-face / meeting request"
-        : "LinkedIn-assisted outreach";
+        : hasLinkedinPresence
+        ? "LinkedIn-assisted outreach"
+        : null;
       directColdCallRecommended = false;
 
       recommendedPersona =
@@ -479,13 +541,14 @@ function computeEngagementPreference(input: {
       );
 
       whatNotToDo.push(
-        "Do not rely on generic web forms as the main route into the organisation.",
+        "Do not rely solely on generic web forms as the main route into the organisation.",
         "Do not treat the first response as the final decision; expect some internal routing.",
         "Do not open with aggressive or volume-driven sales language."
       );
     }
 
     return {
+      mode: "standard",
       primaryRoute,
       secondaryRoute,
       recommendedPersona,
@@ -528,12 +591,13 @@ function computeEngagementPreference(input: {
     );
 
     whatNotToDo.push(
-      "Do not rely on generic web forms as the main route into the organisation.",
+      "Do not rely solely on generic web forms as the main route into the organisation.",
       "Do not treat the first response as the final decision; expect some internal routing.",
       "Do not open with aggressive or volume-driven sales language."
     );
 
     return {
+      mode: "standard",
       primaryRoute,
       secondaryRoute,
       recommendedPersona,
@@ -569,12 +633,13 @@ function computeEngagementPreference(input: {
   );
 
   whatNotToDo.push(
-    "Do not rely on generic web forms as the main route into the organisation.",
+    "Do not rely solely on generic web forms as the main route into the organisation.",
     "Do not treat the first response as the final decision; expect some internal routing.",
     "Do not open with aggressive or volume-driven sales language."
   );
 
   return {
+    mode: "standard",
     primaryRoute,
     secondaryRoute,
     recommendedPersona,
@@ -668,7 +733,7 @@ function applyEnterpriseFallback(params: {
   if (!updated.stakeholder_hypothesis || updated.stakeholder_hypothesis === "") {
     if (isDefenceOrAerospaceOrRegulated || isTechnicalSector) {
       updated.stakeholder_hypothesis =
-        "Divisional finance, tax, engineering programme, innovation or technical leadership (e.g. engineering director, head of tax, R&D programme manager).";
+        "Divisional finance, tax, engineering programme, innovation or technical leadership (e.g. engineering director, head of tax, R&D programme manager, divisional FD).";
     } else {
       updated.stakeholder_hypothesis =
         "Head of tax, head of engineering, innovation lead or divisional finance leadership (e.g. divisional FD or finance business partner).";
@@ -1672,10 +1737,14 @@ async function getTextualFields(
     reasonCodes.push("direct_access_call_possible");
   }
 
+  const personaForSummary =
+    skeleton.account_persona ?? (persona as string | null);
+
   evidenceSummary.push(
-    `Persona: ${String(persona).replace(/_/g, " ")}, tier: ${String(
-      accountTier
-    ).replace(/_/g, " ")}.`
+    `Persona: ${String(personaForSummary ?? "").replace(
+      /_/g,
+      " "
+    )}, tier: ${String(accountTier).replace(/_/g, " ")}.`
   );
   evidenceSummary.push(
     `Email score: ${channelScores.email}, call score: ${channelScores.call}, LinkedIn score: ${channelScores.linkedin}, research score: ${channelScores.research}.`
