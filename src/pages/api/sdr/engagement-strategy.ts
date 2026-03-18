@@ -25,6 +25,11 @@ type AccessStrategy =
   | "direct_email_to_decision_maker"
   | "nurture_before_outreach";
 
+function clampScore(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, value));
+}
+
 function normaliseChannelForDb(
   channel: Channel | null | undefined
 ): "email" | "call" | "face_to_face" | null {
@@ -35,50 +40,31 @@ function normaliseChannelForDb(
   return null;
 }
 
-interface ChannelScores {
-  email: number;
-  call: number;
-  face_to_face: number;
-  linkedin: number;
-  research: number;
-}
+interface EngagementPreference {
+  mode: "standard" | "enterprise";
+  primaryRoute?: string;
+  secondaryRoute?: string | null;
 
-interface SupportingScores {
-  digital_maturity_score: number;
-  relationship_score: number;
-  local_visit_score: number;
-  decision_maker_access_score: number;
-  education_need_score: number;
-  commercial_value_score: number;
-  urgency_trigger_score: number;
-}
+  recommendedPersona: string;
+  tone: string;
+  gatekeeperRisk: "Low" | "Medium" | "High";
+  directColdCallRecommended: boolean;
+  confidence: number;
 
-interface TextualStrategyFields {
-  reason_codes: string[];
-  evidence_summary: string[];
-  route_rationale: string;
-  stakeholder_hypothesis: string;
-  suggested_subject_line: string;
-  suggested_first_email: string;
-  suggested_call_purpose: string;
-  next_best_action: string;
-}
+  rationale: string[];
+  suggestedSequence: string[];
+  whatNotToDo: string[];
 
-interface EngagementStrategy extends TextualStrategyFields {
-  recommended_access_strategy: AccessStrategy;
-  recommended_first_channel: Channel;
-  fallback_channel: Channel;
-  confidence: ConfidenceLevel;
-  account_persona: AccountPersona;
-  account_tier: AccountTier;
-  gatekeeper_risk_score: number;
-  organisational_complexity_score: number;
-  named_contact_required: boolean;
-  named_contact_found: boolean;
-  warm_route_potential_score: number;
-  credibility_threshold_score: number;
-  direct_cold_call_recommended: boolean;
-  channel_scores: ChannelScores;
+  primaryAccessModel?: string;
+  deliveryChannelGuidance?: string;
+  recommendationStatus?:
+    | "clear"
+    | "exploratory"
+    | "limited signal but strategically directional";
+  businessUnitTargetingRequired?: boolean;
+  namedContactRequired?: boolean;
+  phoneUseRule?: string;
+  likelyStakeholderClass?: string;
 }
 
 interface EnterpriseIndicators {
@@ -109,6 +95,7 @@ function detectEnterpriseIndicators(input: {
     "airbus",
     "airbus defence and space",
     "bae systems",
+    "bae",
     "rolls-royce",
     "siemens",
     "jacobs",
@@ -125,9 +112,9 @@ function detectEnterpriseIndicators(input: {
     "network rail",
   ];
 
-  const majorBrandMatch = MAJOR_BRAND_KEYWORDS.some((keyword) =>
-    nameLower.includes(keyword)
-  );
+  const majorBrandMatch =
+    MAJOR_BRAND_KEYWORDS.some((keyword) => nameLower.includes(keyword)) ||
+    /\bbae\b/.test(nameNoPunct);
 
   const plcLikeName =
     nameLower.includes(" plc") ||
@@ -200,9 +187,11 @@ function detectEnterpriseIndicators(input: {
 
   let indicatorCount = 0;
   if (majorBrandMatch) indicatorCount += 1;
-  if (plcLikeName || input.isClearlyCorporate || input.hasLinkedinCompanyPage)
+  if (plcLikeName || input.isClearlyCorporate || input.hasLinkedinCompanyPage) {
     indicatorCount += 1;
+  }
   if (publicSectorOrAgency) indicatorCount += 1;
+  if (procurementSignals) indicatorCount += 1;
   if (defenceOrAerospace) indicatorCount += 1;
   if (regulatedInfraOrUtility) indicatorCount += 1;
   if (corporateSiteSignals) indicatorCount += 1;
@@ -237,7 +226,11 @@ function applyEnterpriseFallback(params: {
   } = params;
 
   const strongEnterpriseSignals =
-    enterpriseIndicators.major_brand_match || enterpriseIndicators.indicator_count >= 2;
+    enterpriseIndicators.major_brand_match ||
+    enterpriseIndicators.public_sector_or_agency ||
+    enterpriseIndicators.procurement_signals ||
+    enterpriseIndicators.indicator_count >= 2;
+
   const isEnterpriseTier =
     strategy.account_tier === "enterprise_complex" || strongEnterpriseSignals;
 
@@ -250,7 +243,9 @@ function applyEnterpriseFallback(params: {
   updated.account_tier = "enterprise_complex";
   const isEnterpriseLikeForPersona =
     enterpriseIndicators.indicator_count >= 2 ||
-    enterpriseIndicators.major_brand_match;
+    enterpriseIndicators.major_brand_match ||
+    enterpriseIndicators.public_sector_or_agency ||
+    enterpriseIndicators.procurement_signals;
 
   if (
     isEnterpriseLikeForPersona &&
@@ -280,9 +275,6 @@ function applyEnterpriseFallback(params: {
     clampScore(updated.credibility_threshold_score),
     75
   );
-  updated.warm_route_potential_score = clampScore(
-    updated.warm_route_potential_score
-  );
 
   const hasNamedContact = updated.named_contact_found === true;
   const hasDirectAccess = hasNamedContact && hasDirectPhoneSignal;
@@ -291,25 +283,13 @@ function applyEnterpriseFallback(params: {
 
   updated.direct_cold_call_recommended = false;
 
-  const noDirectAccess = !hasDirectAccess;
-
-  if (noDirectAccess && updated.recommended_access_strategy === "direct_call") {
+  if (!hasDirectAccess && updated.recommended_access_strategy === "direct_call") {
     updated.recommended_first_channel = "research";
     updated.recommended_access_strategy = "named_contact_research_first";
     updated.fallback_channel =
       updated.channel_scores.email >= updated.channel_scores.linkedin
         ? "email"
         : "linkedin";
-  }
-
-  if (!updated.stakeholder_hypothesis || updated.stakeholder_hypothesis === "") {
-    if (isDefenceOrAerospaceOrRegulated || isTechnicalSector) {
-      updated.stakeholder_hypothesis =
-        "Divisional finance, tax, engineering programme, innovation or technical leadership (e.g. engineering director, head of tax, R&D programme manager, divisional FD).";
-    } else {
-      updated.stakeholder_hypothesis =
-        "Head of tax, head of engineering, innovation lead or divisional finance leadership (e.g. divisional FD or finance business partner).";
-    }
   }
 
   if (!updated.next_best_action || updated.next_best_action === "") {
@@ -479,7 +459,7 @@ function computeEngagementPreference(input: {
       );
       suggestedSequence.push(
         "Identify the most relevant business unit or programme for R&D or innovation (e.g. defence platform, engineering division, or specific programme).",
-        "Map likely stakeholders across engineering, programme leadership, and finance/tax for that business unit.",
+        "Map likely stakeholders across engineering, programme leadership, and finance/tax within that unit.",
         "Craft a short, authority-led note that anchors on relevance to that business unit, not generic R&D tax language.",
         "Use email or LinkedIn only once a named stakeholder path is clear; use phone solely to verify routing, not to deliver a blind pitch."
       );
