@@ -225,7 +225,7 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Next best action
                 </p>
-                <p className="text-sm text-slate-800">
+                <p className="text-sm text-slate-800 break-words">
                   {strategy.next_best_action || "Not specified"}
                 </p>
               </div>
