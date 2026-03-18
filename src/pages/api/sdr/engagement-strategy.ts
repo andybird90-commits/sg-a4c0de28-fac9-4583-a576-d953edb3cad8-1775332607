@@ -67,6 +67,7 @@ interface EngagementStrategy extends TextualStrategyFields {
   named_contact_found: boolean;
   warm_route_potential_score: number;
   credibility_threshold_score: number;
+  direct_cold_call_recommended: boolean;
   channel_scores: ChannelScores;
 }
 
@@ -924,6 +925,8 @@ async function getTextualFields(
       warmRoutePotentialScore: number;
       credibilityThresholdScore: number;
       namedContactRequired: boolean;
+      enterpriseIndicators: EnterpriseIndicators;
+      directColdCallRecommended: boolean;
     };
     skeleton: EngagementStrategy;
   }
@@ -950,9 +953,14 @@ async function getTextualFields(
     "- If no named contact is found and gatekeeper risk is high, do not recommend a generic cold call.",
     "- Do not generate scripts that would obviously fail at reception or switchboard.",
     "- Prefer realistic access strategy over simplistic contact preference.",
-    "- Return strict JSON only.",
-    "- No markdown.",
-    "- No prose outside JSON.",
+    "",
+    "ENTERPRISE OVERRIDE RULES",
+    "- If enriched_company_data.account_tier === \"enterprise_complex\" or enriched_company_data.access_meta.gatekeeper_risk_score >= 70 or enriched_company_data.enterprise_indicators.indicator_count >= 2, treat the account as a major enterprise / PLC / defence / regulated organisation.",
+    "- For these accounts:",
+    "  - Tone must be credibility-first, insight-led, non-salesy, and clearly relevant to the sector.",
+    "  - Treat direct_cold_call_recommended as effectively false; do not script generic cold calls via switchboard as the main route.",
+    "  - Switchboard may only be referenced as a routing tactic to locate or confirm a named stakeholder, never as the primary sales channel.",
+    "  - Focus messaging on gaining credible access to strategic roles (e.g. head of engineering, innovation lead, technical director, group finance/tax, R&D programme lead, divisional FD, finance business partner), not on pushing a product.",
     "",
     "VALID VALUES",
     "",
@@ -1039,6 +1047,7 @@ async function getTextualFields(
     '  "named_contact_found": false,',
     '  "warm_route_potential_score": 0,',
     '  "credibility_threshold_score": 0,',
+    '  "direct_cold_call_recommended": false,',
     '  "channel_scores": {',
     '    "email": 0,',
     '    "call": 0,',
@@ -1080,6 +1089,8 @@ async function getTextualFields(
             payload.enriched.credibilityThresholdScore,
           named_contact_required: payload.enriched.namedContactRequired,
         },
+        enterprise_indicators: payload.enriched.enterpriseIndicators,
+        direct_cold_call_recommended: payload.enriched.directColdCallRecommended,
         channel_scores: payload.enriched.channelScores,
         recommended_access_strategy: payload.enriched.recommendedAccessStrategy,
         recommended_first_channel: payload.enriched.recommendedFirstChannel,
@@ -1182,7 +1193,6 @@ function applyEnterpriseFallback(params: {
     hasDirectPhoneSignal,
   } = params;
 
-  // Enterprise override: treat as enterprise if tier says so OR strong indicators exist
   const strongEnterpriseSignals = enterpriseIndicators.indicator_count >= 2;
   const isEnterpriseTier =
     strategy.account_tier === "enterprise_complex" || strongEnterpriseSignals;
@@ -1193,10 +1203,8 @@ function applyEnterpriseFallback(params: {
 
   const updated: EngagementStrategy = { ...strategy };
 
-  // Force enterprise tier for strong brands
   updated.account_tier = "enterprise_complex";
 
-  // Persona guardrails: disallow SME / local-business personas when enterprise signals are strong
   if (
     enterpriseIndicators.indicator_count >= 3 &&
     (updated.account_persona === "owner_led_practical_sme" ||
@@ -1209,7 +1217,6 @@ function applyEnterpriseFallback(params: {
     }
   }
 
-  // Score floors for enterprise accounts
   updated.gatekeeper_risk_score = Math.max(
     clampScore(updated.gatekeeper_risk_score),
     80
@@ -1227,14 +1234,15 @@ function applyEnterpriseFallback(params: {
   );
 
   const hasNamedContact = updated.named_contact_found === true;
-
-  // Named contact is required for enterprise unless we clearly have direct access
   const hasDirectAccess = hasNamedContact && hasDirectPhoneSignal;
+
   updated.named_contact_required = !hasDirectAccess;
+
+  // Enterprise override: direct cold calling is not recommended by default
+  updated.direct_cold_call_recommended = false;
 
   const noDirectAccess = !hasDirectAccess;
 
-  // Suppress direct_call for enterprise when there is no direct access
   if (noDirectAccess && updated.recommended_access_strategy === "direct_call") {
     updated.recommended_first_channel = "research";
     updated.recommended_access_strategy = "named_contact_research_first";
@@ -1244,7 +1252,6 @@ function applyEnterpriseFallback(params: {
         : "linkedin";
   }
 
-  // Stakeholder hypothesis is mandatory for enterprise accounts
   if (!updated.stakeholder_hypothesis || updated.stakeholder_hypothesis === "") {
     if (isDefenceOrAerospaceOrRegulated || isTechnicalSector) {
       updated.stakeholder_hypothesis =
@@ -1255,7 +1262,6 @@ function applyEnterpriseFallback(params: {
     }
   }
 
-  // Next best action: research + mapping then insight-led email for enterprise by default
   if (!updated.next_best_action || updated.next_best_action === "") {
     updated.next_best_action = "map_stakeholders_then_send_insight_led_email";
   }
@@ -1487,6 +1493,13 @@ export default async function handler(
 
     const openaiApiKey = process.env.OPENAI_API_KEY;
 
+    const directColdCallRecommendedBase =
+      accountTier === "direct_access" &&
+      hasDirectPhoneSignal &&
+      !hasLinkedinNamedContact &&
+      enterpriseIndicators.indicator_count < 2 &&
+      !enterpriseIndicators.major_brand_match;
+
     let skeleton: EngagementStrategy = {
       recommended_access_strategy: accessStrategy,
       recommended_first_channel: primary,
@@ -1500,6 +1513,7 @@ export default async function handler(
       named_contact_found: hasLinkedinNamedContact,
       warm_route_potential_score: accessMeta.warmRoutePotentialScore,
       credibility_threshold_score: accessMeta.credibilityThresholdScore,
+      direct_cold_call_recommended: directColdCallRecommendedBase,
       channel_scores: channelScores,
       reason_codes: [],
       evidence_summary: [],
@@ -1545,6 +1559,8 @@ export default async function handler(
           warmRoutePotentialScore: accessMeta.warmRoutePotentialScore,
           credibilityThresholdScore: accessMeta.credibilityThresholdScore,
           namedContactRequired: accessMeta.namedContactRequired,
+          enterpriseIndicators,
+          directColdCallRecommended: directColdCallRecommendedBase,
         },
         skeleton,
       });
