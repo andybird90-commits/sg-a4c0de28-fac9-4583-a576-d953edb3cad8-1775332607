@@ -3813,6 +3813,35 @@ export type Database = {
           company_number: string | null
           created_at: string
           created_by: string
+          engagement_account_persona: string | null
+          engagement_ai_generation_status: string | null
+          engagement_call_score: number | null
+          engagement_commercial_value_score: number | null
+          engagement_confidence: string | null
+          engagement_decision_maker_access_score: number | null
+          engagement_digital_maturity_score: number | null
+          engagement_education_need_score: number | null
+          engagement_email_score: number | null
+          engagement_evidence_summary: string[] | null
+          engagement_face_to_face_score: number | null
+          engagement_fallback_touch: string | null
+          engagement_generated_at: string | null
+          engagement_generated_from_version: string | null
+          engagement_last_tested_channel: string | null
+          engagement_last_tested_outcome: string | null
+          engagement_local_visit_score: number | null
+          engagement_next_best_action: string | null
+          engagement_observed_preference_notes: string | null
+          engagement_observed_real_preference: string | null
+          engagement_reason_codes: string[] | null
+          engagement_recommended_first_touch: string | null
+          engagement_relationship_score: number | null
+          engagement_strategy_json: Json | null
+          engagement_suggested_call_opener: string | null
+          engagement_suggested_meeting_angle: string | null
+          engagement_suggested_opener: string | null
+          engagement_suggested_subject_line: string | null
+          engagement_urgency_trigger_score: number | null
           enrichment_error: string | null
           estimated_claim_band: string | null
           id: string
@@ -3833,6 +3862,35 @@ export type Database = {
           company_number?: string | null
           created_at?: string
           created_by: string
+          engagement_account_persona?: string | null
+          engagement_ai_generation_status?: string | null
+          engagement_call_score?: number | null
+          engagement_commercial_value_score?: number | null
+          engagement_confidence?: string | null
+          engagement_decision_maker_access_score?: number | null
+          engagement_digital_maturity_score?: number | null
+          engagement_education_need_score?: number | null
+          engagement_email_score?: number | null
+          engagement_evidence_summary?: string[] | null
+          engagement_face_to_face_score?: number | null
+          engagement_fallback_touch?: string | null
+          engagement_generated_at?: string | null
+          engagement_generated_from_version?: string | null
+          engagement_last_tested_channel?: string | null
+          engagement_last_tested_outcome?: string | null
+          engagement_local_visit_score?: number | null
+          engagement_next_best_action?: string | null
+          engagement_observed_preference_notes?: string | null
+          engagement_observed_real_preference?: string | null
+          engagement_reason_codes?: string[] | null
+          engagement_recommended_first_touch?: string | null
+          engagement_relationship_score?: number | null
+          engagement_strategy_json?: Json | null
+          engagement_suggested_call_opener?: string | null
+          engagement_suggested_meeting_angle?: string | null
+          engagement_suggested_opener?: string | null
+          engagement_suggested_subject_line?: string | null
+          engagement_urgency_trigger_score?: number | null
           enrichment_error?: string | null
           estimated_claim_band?: string | null
           id?: string
@@ -3853,6 +3911,35 @@ export type Database = {
           company_number?: string | null
           created_at?: string
           created_by?: string
+          engagement_account_persona?: string | null
+          engagement_ai_generation_status?: string | null
+          engagement_call_score?: number | null
+          engagement_commercial_value_score?: number | null
+          engagement_confidence?: string | null
+          engagement_decision_maker_access_score?: number | null
+          engagement_digital_maturity_score?: number | null
+          engagement_education_need_score?: number | null
+          engagement_email_score?: number | null
+          engagement_evidence_summary?: string[] | null
+          engagement_face_to_face_score?: number | null
+          engagement_fallback_touch?: string | null
+          engagement_generated_at?: string | null
+          engagement_generated_from_version?: string | null
+          engagement_last_tested_channel?: string | null
+          engagement_last_tested_outcome?: string | null
+          engagement_local_visit_score?: number | null
+          engagement_next_best_action?: string | null
+          engagement_observed_preference_notes?: string | null
+          engagement_observed_real_preference?: string | null
+          engagement_reason_codes?: string[] | null
+          engagement_recommended_first_touch?: string | null
+          engagement_relationship_score?: number | null
+          engagement_strategy_json?: Json | null
+          engagement_suggested_call_opener?: string | null
+          engagement_suggested_meeting_angle?: string | null
+          engagement_suggested_opener?: string | null
+          engagement_suggested_subject_line?: string | null
+          engagement_urgency_trigger_score?: number | null
           enrichment_error?: string | null
           estimated_claim_band?: string | null
           id?: string

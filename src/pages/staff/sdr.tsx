@@ -16,6 +16,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Loader2, Upload, PhoneCall, RefreshCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { AiEngagementStrategyPanel } from "@/components/sdr/AiEngagementStrategyPanel";
 
 type SdrProspect = Tables<"sdr_prospects">;
 
@@ -51,6 +52,7 @@ export default function StaffSDRPage(): JSX.Element {
   const [minScoreFilter, setMinScoreFilter] = useState<string>("");
   const [enrichedPage, setEnrichedPage] = useState(1);
   const [enrichedTotal, setEnrichedTotal] = useState<number | null>(null);
+  const [engagementGeneratingId, setEngagementGeneratingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || appLoading) {
@@ -569,6 +571,37 @@ export default function StaffSDRPage(): JSX.Element {
     })
     .slice(0, 10);
 
+  const handleProspectUpdated = (updated: SdrProspect): void => {
+    setProspects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    setSelectedProspect((prev) => (prev && prev.id === updated.id ? updated : prev));
+  };
+
+  const handleGenerateEngagementStrategy = async (prospectId: string): Promise<void> => {
+    try {
+      setEngagementGeneratingId(prospectId);
+      const response = await fetch("/api/sdr/engagement-strategy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prospectId }),
+      });
+      if (!response.ok) {
+        return;
+      }
+      const payload = (await response.json()) as { prospect?: SdrProspect };
+      if (payload.prospect) {
+        handleProspectUpdated(payload.prospect);
+      }
+    } catch {
+    } finally {
+      setEngagementGeneratingId(null);
+    }
+  };
+
+  const isGeneratingEngagement =
+    engagementGeneratingId !== null && selectedProspect && selectedProspect.id === engagementGeneratingId;
+
   return (
     <StaffLayout title="SDR" fullWidth>
       <div className="mx-auto flex w-full max-w-none flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
@@ -826,6 +859,24 @@ export default function StaffSDRPage(): JSX.Element {
                               <span className="text-xs text-slate-500">
                                 Not scored
                               </span>
+                            )}
+                            {prospect.engagement_recommended_first_touch && (
+                              <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
+                                <span className="rounded-full border border-slate-200 px-2 py-0.5">
+                                  {(prospect.engagement_recommended_first_touch as string) === "email"
+                                    ? "Email first"
+                                    : (prospect.engagement_recommended_first_touch as string) === "call"
+                                    ? "Call first"
+                                    : "Face to face"}
+                                </span>
+                                {prospect.engagement_confidence && (
+                                  <span className="rounded-full border border-slate-200 px-2 py-0.5">
+                                    {(prospect.engagement_confidence as string)
+                                      .replace("_", " ")
+                                      .replace(/\b\w/g, (c) => c.toUpperCase())}
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </TableCell>
                           <TableCell>
@@ -1099,6 +1150,13 @@ export default function StaffSDRPage(): JSX.Element {
                         </p>
                       )}
                     </div>
+
+                    <AiEngagementStrategyPanel
+                      prospect={selectedProspect}
+                      onProspectUpdated={handleProspectUpdated}
+                      onGenerateStrategy={handleGenerateEngagementStrategy}
+                      generating={isGeneratingEngagement}
+                    />
                   </>
                 )}
               </div>
