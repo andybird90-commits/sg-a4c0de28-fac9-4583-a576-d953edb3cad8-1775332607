@@ -44,6 +44,9 @@ export default function StaffSDRPage(): JSX.Element {
   const [bulkEnriching, setBulkEnriching] = useState(false);
   const [bulkEnrichedCount, setBulkEnrichedCount] = useState(0);
   const [bulkEnrichTotal, setBulkEnrichTotal] = useState(0);
+  const [bulkReEnriching, setBulkReEnriching] = useState(false);
+  const [bulkReEnrichedCount, setBulkReEnrichedCount] = useState(0);
+  const [bulkReEnrichTotal, setBulkReEnrichTotal] = useState(0);
   const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
   const [minScoreFilter, setMinScoreFilter] = useState<string>("");
   const [enrichedPage, setEnrichedPage] = useState(1);
@@ -366,6 +369,46 @@ export default function StaffSDRPage(): JSX.Element {
     void processNext(0);
   };
 
+  const handleBulkReEnrich = (): void => {
+    if (bulkReEnriching) {
+      return;
+    }
+
+    const queue = sortedEnrichedProspects;
+
+    if (queue.length === 0) {
+      return;
+    }
+
+    setBulkReEnriching(true);
+    setBulkReEnrichedCount(0);
+    setBulkReEnrichTotal(queue.length);
+
+    const processNext = async (index: number): Promise<void> => {
+      if (index >= queue.length) {
+        setBulkReEnriching(false);
+        setBulkReEnrichTotal(0);
+        return;
+      }
+
+      const prospect = queue[index];
+
+      await handleEnrich(prospect);
+      setBulkReEnrichedCount(index + 1);
+
+      if (index < queue.length - 1) {
+        setTimeout(() => {
+          void processNext(index + 1);
+        }, 5000);
+      } else {
+        setBulkReEnriching(false);
+        setBulkReEnrichTotal(0);
+      }
+    };
+
+    void processNext(0);
+  };
+
   const handleMarkOutcome = async (
     prospect: SdrProspect,
     status: "not_interested" | "contacted"
@@ -663,46 +706,75 @@ export default function StaffSDRPage(): JSX.Element {
                 Enriched dossiers
               </CardTitle>
               {enrichedTotal !== null && enrichedTotal > 0 && (
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <span>
-                    Page {enrichedPage} of{" "}
-                    {Math.max(
-                      1,
-                      Math.ceil(enrichedTotal / ENRICHED_PAGE_SIZE)
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkReEnrich}
+                    disabled={
+                      bulkReEnriching ||
+                      sortedEnrichedProspects.length === 0 ||
+                      loadingProspects
+                    }
+                  >
+                    {bulkReEnriching ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {bulkReEnrichTotal > 0
+                          ? `Re-enriching ${bulkReEnrichedCount}/${bulkReEnrichTotal}`
+                          : "Re-enriching"}
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCcw className="mr-2 h-4 w-4" />
+                        {sortedEnrichedProspects.length > 0
+                          ? `Re-enrich page (${sortedEnrichedProspects.length})`
+                          : "Re-enrich page"}
+                      </>
                     )}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7"
-                      disabled={enrichedPage === 1 || loadingProspects}
-                      onClick={() =>
-                        setEnrichedPage((page) => Math.max(1, page - 1))
-                      }
-                      aria-label="Previous enriched page"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7"
-                      disabled={
-                        loadingProspects ||
-                        (enrichedTotal !== null &&
-                          enrichedPage >=
-                            Math.ceil(enrichedTotal / ENRICHED_PAGE_SIZE))
-                      }
-                      onClick={() =>
-                        setEnrichedPage((page) => page + 1)
-                      }
-                      aria-label="Next enriched page"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+                  </Button>
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <span>
+                      Page {enrichedPage} of{" "}
+                      {Math.max(
+                        1,
+                        Math.ceil(enrichedTotal / ENRICHED_PAGE_SIZE)
+                      )}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        disabled={enrichedPage === 1 || loadingProspects}
+                        onClick={() =>
+                          setEnrichedPage((page) => Math.max(1, page - 1))
+                        }
+                        aria-label="Previous enriched page"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        disabled={
+                          loadingProspects ||
+                          (enrichedTotal !== null &&
+                            enrichedPage >=
+                              Math.ceil(enrichedTotal / ENRICHED_PAGE_SIZE))
+                        }
+                        onClick={() =>
+                          setEnrichedPage((page) => page + 1)
+                        }
+                        aria-label="Next enriched page"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
