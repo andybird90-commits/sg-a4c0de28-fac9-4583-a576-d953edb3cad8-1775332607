@@ -15,7 +15,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { Loader2, Upload, PhoneCall, RefreshCcw } from "lucide-react";
+import { Loader2, Upload, PhoneCall, RefreshCcw, ChevronLeft, ChevronRight } from "lucide-react";
 
 type SdrProspect = Tables<"sdr_prospects">;
 
@@ -24,6 +24,8 @@ interface BdmUser {
   full_name: string | null;
   email: string | null;
 }
+
+const ENRICHED_PAGE_SIZE = 100;
 
 export default function StaffSDRPage(): JSX.Element {
   const { user, loading: appLoading } = useApp();
@@ -44,6 +46,8 @@ export default function StaffSDRPage(): JSX.Element {
   const [bulkEnrichTotal, setBulkEnrichTotal] = useState(0);
   const [sortDirection, setSortDirection] = useState<"desc" | "asc">("desc");
   const [minScoreFilter, setMinScoreFilter] = useState<string>("");
+  const [enrichedPage, setEnrichedPage] = useState(1);
+  const [enrichedTotal, setEnrichedTotal] = useState<number | null>(null);
 
   useEffect(() => {
     if (!user || appLoading) {
@@ -51,7 +55,7 @@ export default function StaffSDRPage(): JSX.Element {
     }
     void loadProspects();
     void loadBdmUsers();
-  }, [user, appLoading]);
+  }, [user, appLoading, enrichedPage]);
 
   const getProspectStatus = (prospect: SdrProspect): string => {
     const raw = (prospect.status as string | null) ?? "new";
@@ -90,18 +94,29 @@ export default function StaffSDRPage(): JSX.Element {
     try {
       setLoadingProspects(true);
 
-      const { data: enrichedData, error: enrichedError } = await supabase
+      const from = (enrichedPage - 1) * ENRICHED_PAGE_SIZE;
+      const to = from + ENRICHED_PAGE_SIZE - 1;
+
+      const {
+        data: enrichedData,
+        error: enrichedError,
+        count: enrichedCount,
+      } = await supabase
         .from("sdr_prospects")
-        .select("*")
+        .select("*", { count: "exact" })
         .or(
           "status.eq.enriched,ai_dossier_json.not.is.null,last_enriched_at.not.is.null,rd_viability_score.not.is.null"
         )
         .order("rd_viability_score", { ascending: false })
         .order("created_at", { ascending: false })
-        .limit(1000);
+        .range(from, to);
 
       if (enrichedError) {
         console.error("Error loading enriched SDR prospects:", enrichedError);
+      }
+
+      if (typeof enrichedCount === "number") {
+        setEnrichedTotal(enrichedCount);
       }
 
       const { data: newData, error: newError } = await supabase
@@ -643,10 +658,54 @@ export default function StaffSDRPage(): JSX.Element {
 
           {/* Middle column: enriched dossiers */}
           <Card className="flex w-full max-w-full flex-col overflow-hidden lg:h-[700px]">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-base font-semibold text-slate-900">
                 Enriched dossiers
               </CardTitle>
+              {enrichedTotal !== null && enrichedTotal > 0 && (
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <span>
+                    Page {enrichedPage} of{" "}
+                    {Math.max(
+                      1,
+                      Math.ceil(enrichedTotal / ENRICHED_PAGE_SIZE)
+                    )}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      disabled={enrichedPage === 1 || loadingProspects}
+                      onClick={() =>
+                        setEnrichedPage((page) => Math.max(1, page - 1))
+                      }
+                      aria-label="Previous enriched page"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      disabled={
+                        loadingProspects ||
+                        (enrichedTotal !== null &&
+                          enrichedPage >=
+                            Math.ceil(enrichedTotal / ENRICHED_PAGE_SIZE))
+                      }
+                      onClick={() =>
+                        setEnrichedPage((page) => page + 1)
+                      }
+                      aria-label="Next enriched page"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto">
               {sortedEnrichedProspects.length === 0 ? (
