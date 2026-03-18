@@ -503,6 +503,40 @@ export default function StaffSDRPage(): JSX.Element {
     );
   };
 
+  type EngagementChannel = "email" | "call" | "face_to_face" | "linkedin" | "research";
+
+  const formatQueueChannelLabel = (
+    value: string | null | undefined
+  ): string => {
+    if (!value) return "";
+    const v = value as EngagementChannel;
+    if (v === "email") return "Email first";
+    if (v === "call") return "Call first";
+    if (v === "face_to_face") return "Face to face";
+    if (v === "linkedin") return "LinkedIn first";
+    if (v === "research") return "Research / mapping first";
+    return value;
+  };
+
+  const formatQueueAccessStrategyLabel = (
+    value: string | null | undefined
+  ): string => {
+    if (!value) return "";
+    const map: Record<string, string> = {
+      direct_call: "Direct call",
+      insight_led_email: "Insight-led email",
+      named_contact_research_first: "Named contact research first",
+      linkedin_plus_email: "LinkedIn plus email",
+      referral_or_warm_intro: "Referral or warm introduction",
+      divisional_entry_point: "Divisional entry point",
+      event_or_network_route: "Event or network-based route",
+      local_meeting_pursuit: "Local meeting pursuit",
+      direct_email_to_decision_maker: "Direct email to decision maker",
+      nurture_before_outreach: "Nurture before outreach",
+    };
+    return map[value] || value;
+  };
+
   const getDossier = (prospect: SdrProspect | null): any | null => {
     if (!prospect || !prospect.ai_dossier_json) return null;
     return prospect.ai_dossier_json as any;
@@ -1168,24 +1202,25 @@ export default function StaffSDRPage(): JSX.Element {
           <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-base font-semibold text-slate-900">
-                Next 10 calls
+                Next 10 contacts
               </CardTitle>
               <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-                Highest-scoring enriched prospects without a booked BDM call. As
-                you mark calls done, new ones automatically appear so you always
-                have the next 10 ready.
+                Highest-scoring enriched prospects without a booked BDM call. Use
+                the recommended contact strategy (email, LinkedIn, research or
+                call) rather than defaulting to phone. As you mark contacts done,
+                new ones automatically appear so you always have the next 10 ready.
               </p>
             </div>
             <p className="text-xs text-slate-500">
               {callQueue.length} of {sortedEnrichedProspects.length} prospects
-              in call queue
+              in contact queue
             </p>
           </CardHeader>
           <CardContent>
             {callQueue.length === 0 ? (
               <p className="text-sm text-slate-500">
-                There are no enriched prospects waiting for a call. Enrich more
-                prospects or update outcomes to see new calls here.
+                There are no enriched prospects waiting for outreach. Enrich more
+                prospects or update outcomes to see new contacts here.
               </p>
             ) : (
               <div className="space-y-3">
@@ -1193,6 +1228,26 @@ export default function StaffSDRPage(): JSX.Element {
                   const prospectDossier = getDossier(prospect);
                   const score =
                     (prospect.rd_viability_score as number | null) ?? null;
+
+                  const strategy = (prospect.engagement_strategy_json as any) ?? null;
+                  const firstChannel =
+                    (strategy?.recommended_first_channel as string | null) ??
+                    ((prospect.engagement_recommended_first_touch as string | null) ??
+                      null);
+                  const accessStrategy =
+                    (strategy?.recommended_access_strategy as string | null) ??
+                    null;
+                  const humanPreference =
+                    (prospect.engagement_observed_real_preference as string | null) ??
+                    null;
+                  const namedContactRequired =
+                    strategy && typeof strategy.named_contact_required === "boolean"
+                      ? (strategy.named_contact_required as boolean)
+                      : false;
+                  const namedContactFound =
+                    strategy && typeof strategy.named_contact_found === "boolean"
+                      ? (strategy.named_contact_found as boolean)
+                      : false;
 
                   return (
                     <div
@@ -1203,7 +1258,7 @@ export default function StaffSDRPage(): JSX.Element {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold text-slate-500">
-                              Call #{index + 1}
+                              Contact #{index + 1}
                             </span>
                             {score != null && renderScoreBadge(score)}
                           </div>
@@ -1215,6 +1270,29 @@ export default function StaffSDRPage(): JSX.Element {
                               Company no: {prospect.company_number}
                             </p>
                           ) : null}
+                          <div className="mt-1 flex flex-wrap items-center gap-1">
+                            {firstChannel && (
+                              <Badge variant="outline" className="text-[11px]">
+                                AI: {formatQueueChannelLabel(firstChannel)}
+                              </Badge>
+                            )}
+                            {accessStrategy && (
+                              <Badge variant="outline" className="text-[11px]">
+                                {formatQueueAccessStrategyLabel(accessStrategy)}
+                              </Badge>
+                            )}
+                            {humanPreference && (
+                              <Badge variant="secondary" className="text-[11px]">
+                                Human: {formatQueueChannelLabel(humanPreference)}
+                              </Badge>
+                            )}
+                            {namedContactRequired && (
+                              <Badge variant="outline" className="text-[10px]">
+                                Named contact required
+                                {namedContactFound ? " · Found" : ""}
+                              </Badge>
+                            )}
+                          </div>
                           <p className="mt-1 text-xs text-slate-500">
                             Status:{" "}
                             <span className="font-medium">
@@ -1283,7 +1361,7 @@ export default function StaffSDRPage(): JSX.Element {
                             void handleMarkOutcome(prospect, "contacted")
                           }
                         >
-                          Mark call done
+                          Mark contact done
                         </Button>
                       </div>
                     </div>
