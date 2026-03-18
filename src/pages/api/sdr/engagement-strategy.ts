@@ -272,7 +272,9 @@ function computeEngagementPreference(input: {
   } = input;
 
   const enterpriseScaleScore =
-    accountTier === "enterprise_complex" || enterpriseIndicators.indicator_count >= 2
+    accountTier === "enterprise_complex" ||
+    enterpriseIndicators.major_brand_match ||
+    enterpriseIndicators.indicator_count >= 2
       ? 90
       : accountTier === "mid_market_structured"
       ? 65
@@ -319,13 +321,16 @@ function computeEngagementPreference(input: {
       : "Low";
 
   const isEnterpriseAccessMode =
-    (enterpriseScaleScore >= 75 && gatekeeperRiskScore >= 70) ||
+    enterpriseIndicators.major_brand_match ||
+    enterpriseIndicators.indicator_count >= 2 ||
     isDefenceOrAerospaceOrRegulated ||
-    enterpriseIndicators.indicator_count >= 2;
+    (enterpriseScaleScore >= 75 && gatekeeperRiskScore >= 70);
 
   if (isEnterpriseAccessMode) {
     const businessUnitTargetingRequired =
-      enterpriseScaleScore >= 75 || enterpriseIndicators.indicator_count >= 2;
+      enterpriseScaleScore >= 75 ||
+      enterpriseIndicators.major_brand_match ||
+      enterpriseIndicators.indicator_count >= 2;
 
     let recommendationStatus: EngagementPreference["recommendationStatus"];
     if (evidenceStrength < 0.35) {
@@ -668,7 +673,8 @@ function applyEnterpriseFallback(params: {
     hasDirectPhoneSignal,
   } = params;
 
-  const strongEnterpriseSignals = enterpriseIndicators.indicator_count >= 2;
+  const strongEnterpriseSignals =
+    enterpriseIndicators.major_brand_match || enterpriseIndicators.indicator_count >= 2;
   const isEnterpriseTier =
     strategy.account_tier === "enterprise_complex" || strongEnterpriseSignals;
 
@@ -689,7 +695,11 @@ function applyEnterpriseFallback(params: {
     (updated.account_persona === "owner_led_practical_sme" ||
       updated.account_persona === "relationship_led_local_business")
   ) {
-    if (isDefenceOrAerospaceOrRegulated || isTechnicalSector) {
+    if (
+      enterpriseIndicators.defence_or_aerospace ||
+      enterpriseIndicators.regulated_infrastructure_or_utility ||
+      isTechnicalSector
+    ) {
       updated.account_persona = "technical_engineering_led_business";
     } else {
       updated.account_persona = "formal_mid_market_business";
