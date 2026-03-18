@@ -70,11 +70,132 @@ interface EngagementStrategy extends TextualStrategyFields {
   channel_scores: ChannelScores;
 }
 
+interface EnterpriseIndicators {
+  major_brand_match: boolean;
+  plc_like_name: boolean;
+  defence_or_aerospace: boolean;
+  regulated_infrastructure_or_utility: boolean;
+  corporate_site_signals: boolean;
+  multinational_signals: boolean;
+  indicator_count: number;
+}
+
 function clampScore(value: number): number {
   if (Number.isNaN(value)) return 0;
   if (value < 0) return 0;
   if (value > 100) return 100;
   return Math.round(value);
+}
+
+function detectEnterpriseIndicators(input: {
+  companyName: string;
+  sicCodes: string[] | null;
+  webContext: string;
+  hasLinkedinCompanyPage: boolean;
+  isClearlyCorporate: boolean;
+  hasCorporateSiteSignals: boolean;
+  hasMultinationalSignals: boolean;
+}): EnterpriseIndicators {
+  const nameLower = input.companyName.toLowerCase();
+
+  const MAJOR_BRAND_KEYWORDS: string[] = [
+    "airbus",
+    "airbus defence and space",
+    "bae systems",
+    "rolls-royce",
+    "siemens",
+    "jacobs",
+    "atkins",
+    "atkinsréalis",
+    "arup",
+    "mace",
+    "kier",
+    "skanska",
+    "ng bailey",
+    "national grid",
+    "bt group",
+    "vodafone",
+    "network rail",
+  ];
+
+  const majorBrandMatch = MAJOR_BRAND_KEYWORDS.some((keyword) =>
+    nameLower.includes(keyword)
+  );
+
+  const plcLikeName =
+    nameLower.includes(" plc") ||
+    nameLower.includes(" holdings") ||
+    nameLower.includes(" group") ||
+    nameLower.includes(" limited company") ||
+    nameLower.includes(" public limited");
+
+  const sic = input.sicCodes ?? [];
+  const hasDefenceOrAerospaceSic = sic.some((code) =>
+    ["30", "33"].some((prefix) => code.startsWith(prefix))
+  );
+
+  const hasEnergyOrUtilitySic = sic.some((code) =>
+    ["35", "36", "37", "42"].some((prefix) => code.startsWith(prefix))
+  );
+
+  const contextLower = input.webContext.toLowerCase();
+
+  const defenceOrAerospace =
+    hasDefenceOrAerospaceSic ||
+    contextLower.includes("defence") ||
+    contextLower.includes("defense") ||
+    contextLower.includes("aerospace") ||
+    contextLower.includes("ministry of defence") ||
+    contextLower.includes("mod");
+
+  const regulatedInfraOrUtility =
+    hasEnergyOrUtilitySic ||
+    contextLower.includes("nuclear") ||
+    contextLower.includes("utility") ||
+    contextLower.includes("utilities") ||
+    contextLower.includes("infrastructure") ||
+    contextLower.includes("rail") ||
+    contextLower.includes("railway") ||
+    contextLower.includes("airport") ||
+    contextLower.includes("airline") ||
+    contextLower.includes("highways") ||
+    contextLower.includes("water");
+
+  const corporateSiteSignals =
+    input.hasCorporateSiteSignals ||
+    contextLower.includes("investors") ||
+    contextLower.includes("annual report") ||
+    contextLower.includes("governance") ||
+    contextLower.includes("global presence") ||
+    contextLower.includes("our locations") ||
+    contextLower.includes("supplier portal") ||
+    contextLower.includes("procurement");
+
+  const multinationalSignals =
+    input.hasMultinationalSignals ||
+    contextLower.includes("global") ||
+    contextLower.includes("worldwide") ||
+    contextLower.includes("international") ||
+    contextLower.includes("multinational");
+
+  let indicatorCount = 0;
+  if (majorBrandMatch) indicatorCount += 1;
+  if (plcLikeName || input.isClearlyCorporate || input.hasLinkedinCompanyPage)
+    indicatorCount += 1;
+  if (defenceOrAerospace) indicatorCount += 1;
+  if (regulatedInfraOrUtility) indicatorCount += 1;
+  if (corporateSiteSignals) indicatorCount += 1;
+  if (multinationalSignals) indicatorCount += 1;
+
+  return {
+    major_brand_match: majorBrandMatch,
+    plc_like_name: plcLikeName,
+    defence_or_aerospace: defenceOrAerospace,
+    regulated_infrastructure_or_utility: regulatedInfraOrUtility,
+    corporate_site_signals: corporateSiteSignals,
+    multinational_signals: multinationalSignals,
+    indicator_count: indicatorCount,
+  };
 }
 
 function derivePersona(input: {
@@ -261,6 +382,8 @@ function computeAccessMeta(input: {
   isLocalRelationshipBusiness: boolean;
   hasLinkedinPresence: boolean;
   hasLinkedinCompanyPage: boolean;
+  isClearlyEnterpriseBrand: boolean;
+  isDefenceOrAerospaceOrRegulated: boolean;
 }): {
   gatekeeperRiskScore: number;
   organisationalComplexityScore: number;
@@ -303,13 +426,27 @@ function computeAccessMeta(input: {
     warmRoute += 15;
   }
 
+  if (input.isClearlyEnterpriseBrand || input.isDefenceOrAerospaceOrRegulated) {
+    gatekeeper += 20;
+    complexity += 20;
+    credibility += 20;
+  }
+
   warmRoute = clampScore(warmRoute);
   gatekeeper = clampScore(gatekeeper);
   complexity = clampScore(complexity);
   credibility = clampScore(credibility);
 
+  if (input.accountTier === "enterprise_complex") {
+    gatekeeper = Math.max(gatekeeper, 80);
+    complexity = Math.max(complexity, 85);
+    credibility = Math.max(credibility, 75);
+  }
+
   const namedContactRequired =
-    input.accountTier !== "direct_access" && gatekeeper >= 50;
+    input.accountTier === "enterprise_complex" ||
+    input.isClearlyEnterpriseBrand ||
+    input.isDefenceOrAerospaceOrRegulated;
 
   return {
     gatekeeperRiskScore: gatekeeper,
@@ -331,6 +468,9 @@ function computeChannelScores(
     hasLinkedinCompanyPage: boolean;
     accountTier: AccountTier;
     namedContactFound: boolean;
+    isClearlyEnterpriseBrand: boolean;
+    isDefenceOrAerospaceOrRegulated: boolean;
+    gatekeeperRiskScore: number;
   }
 ): ChannelScores {
   let email = 50;
@@ -406,6 +546,14 @@ function computeChannelScores(
   if (!signals.namedContactFound) {
     research += 15;
   }
+  if (
+    signals.isClearlyEnterpriseBrand ||
+    signals.isDefenceOrAerospaceOrRegulated ||
+    signals.gatekeeperRiskScore >= 70
+  ) {
+    research += 20;
+    call -= 15;
+  }
 
   return {
     email: clampScore(email),
@@ -420,7 +568,9 @@ function pickChannels(
   scores: ChannelScores,
   accountTier: AccountTier,
   namedContactFound: boolean,
-  gatekeeperRiskScore: number
+  gatekeeperRiskScore: number,
+  hasDirectPhoneSignal: boolean,
+  isClearlyEnterpriseBrand: boolean
 ): { primary: Channel; secondary: Channel; accessStrategy: AccessStrategy } {
   const entries: { key: Channel; value: number }[] = [
     { key: "email", value: scores.email },
@@ -437,16 +587,19 @@ function pickChannels(
 
   let accessStrategy: AccessStrategy = "direct_call";
 
-  if (
-    accountTier === "enterprise_complex" &&
-    !namedContactFound &&
-    gatekeeperRiskScore >= 60
-  ) {
+  const isEnterprise =
+    accountTier === "enterprise_complex" || isClearlyEnterpriseBrand;
+
+  if (isEnterprise && !namedContactFound && !hasDirectPhoneSignal) {
     primary = "research";
     secondary = scores.linkedin >= scores.email ? "linkedin" : "email";
     accessStrategy = "named_contact_research_first";
-  } else if (accountTier === "enterprise_complex") {
-    if (scores.linkedin >= scores.email) {
+  } else if (isEnterprise) {
+    if (scores.research >= scores.call && scores.research >= scores.email) {
+      primary = "research";
+      secondary = scores.linkedin >= scores.email ? "linkedin" : "email";
+      accessStrategy = "named_contact_research_first";
+    } else if (scores.linkedin >= scores.email) {
       primary = "linkedin";
       secondary = scores.email >= scores.call ? "email" : "call";
       accessStrategy = "linkedin_plus_email";
@@ -455,6 +608,15 @@ function pickChannels(
       secondary = scores.linkedin >= scores.call ? "linkedin" : "call";
       accessStrategy = "insight_led_email";
     }
+
+    if (
+      primary === "call" &&
+      (!namedContactFound || !hasDirectPhoneSignal || gatekeeperRiskScore >= 70)
+    ) {
+      primary = "research";
+      secondary = scores.linkedin >= scores.email ? "linkedin" : "email";
+      accessStrategy = "named_contact_research_first";
+    }
   } else if (accountTier === "mid_market_structured") {
     if (primary === "call" && gatekeeperRiskScore >= 50) {
       primary = "email";
@@ -462,23 +624,24 @@ function pickChannels(
       accessStrategy = "insight_led_email";
     } else if (primary === "email") {
       accessStrategy = "direct_email_to_decision_maker";
-    } else if (primary === "call") {
-      accessStrategy = "direct_call";
     } else if (primary === "face_to_face") {
       accessStrategy = "local_meeting_pursuit";
     } else if (primary === "linkedin") {
       accessStrategy = "linkedin_plus_email";
+    } else if (primary === "research") {
+      accessStrategy = "named_contact_research_first";
     } else {
       accessStrategy = "nurture_before_outreach";
     }
   } else {
-    // direct_access
     if (primary === "call") {
       accessStrategy = "direct_call";
     } else if (primary === "face_to_face") {
       accessStrategy = "local_meeting_pursuit";
     } else if (primary === "email") {
       accessStrategy = "direct_email_to_decision_maker";
+    } else if (primary === "linkedin") {
+      accessStrategy = "linkedin_plus_email";
     } else {
       accessStrategy = "nurture_before_outreach";
     }
@@ -545,6 +708,8 @@ async function getWebSignals(
   hasLinkedinPresence: boolean;
   hasLinkedinCompanyPage: boolean;
   hasLinkedinNamedContact: boolean;
+  hasCorporateSiteSignals: boolean;
+  hasMultinationalSignals: boolean;
   linkedinSignalSummary: string;
   rawContext: string;
 }> {
@@ -561,6 +726,8 @@ async function getWebSignals(
       hasLinkedinPresence: false,
       hasLinkedinCompanyPage: false,
       hasLinkedinNamedContact: false,
+      hasCorporateSiteSignals: false,
+      hasMultinationalSignals: false,
       linkedinSignalSummary: "",
       rawContext: "",
     };
@@ -595,6 +762,8 @@ async function getWebSignals(
         hasLinkedinPresence: false,
         hasLinkedinCompanyPage: false,
         hasLinkedinNamedContact: false,
+        hasCorporateSiteSignals: false,
+        hasMultinationalSignals: false,
         linkedinSignalSummary: "",
         rawContext: "",
       };
@@ -616,6 +785,8 @@ async function getWebSignals(
     let hasLinkedinPresence = false;
     let hasLinkedinCompanyPage = false;
     let hasLinkedinNamedContact = false;
+    let hasCorporateSiteSignals = false;
+    let hasMultinationalSignals = false;
 
     for (const r of results) {
       const title: string = r.title || "";
@@ -665,6 +836,27 @@ async function getWebSignals(
         isLocalRelationshipBusiness = true;
       }
 
+      if (
+        lower.includes("investors") ||
+        lower.includes("annual report") ||
+        lower.includes("governance") ||
+        lower.includes("global presence") ||
+        lower.includes("our locations") ||
+        lower.includes("supplier portal") ||
+        lower.includes("procurement")
+      ) {
+        hasCorporateSiteSignals = true;
+      }
+
+      if (
+        lower.includes("global") ||
+        lower.includes("worldwide") ||
+        lower.includes("international") ||
+        lower.includes("multinational")
+      ) {
+        hasMultinationalSignals = true;
+      }
+
       if (lower.includes("linkedin") || url.toLowerCase().includes("linkedin.com")) {
         hasLinkedinPresence = true;
         const lowerUrl = url.toLowerCase();
@@ -693,6 +885,8 @@ async function getWebSignals(
       hasLinkedinPresence,
       hasLinkedinCompanyPage,
       hasLinkedinNamedContact,
+      hasCorporateSiteSignals,
+      hasMultinationalSignals,
       linkedinSignalSummary,
       rawContext,
     };
@@ -706,6 +900,8 @@ async function getWebSignals(
       hasLinkedinPresence: false,
       hasLinkedinCompanyPage: false,
       hasLinkedinNamedContact: false,
+      hasCorporateSiteSignals: false,
+      hasMultinationalSignals: false,
       linkedinSignalSummary: "",
       rawContext: "",
     };
@@ -821,7 +1017,7 @@ async function getTextualFields(
     "",
     "You are given two objects:",
     "- enriched_company_data: the evidence and context.",
-    "- proposed_strategy: a pre-computed skeleton strategy containing recommended_access_strategy, channels, scores, tiers and booleans.",
+    "- proposed_strategy: a pre-computed skeleton strategy containing recommended_access_strategy, channels, scores, tiers and booleans. You MUST treat this as ground truth for non-text fields.",
     "",
     "You MUST:",
     "- Preserve all non-text fields from proposed_strategy exactly as provided (scores, booleans, persona, tier, channels).",
@@ -883,6 +1079,20 @@ async function getTextualFields(
           has_linkedin_company_page: payload.enriched.hasLinkedinCompanyPage,
           has_linkedin_named_contact: payload.enriched.hasLinkedinNamedContact,
         },
+        access_meta: {
+          gatekeeper_risk_score: payload.enriched.gatekeeperRiskScore,
+          organisational_complexity_score:
+            payload.enriched.organisationalComplexityScore,
+          warm_route_potential_score: payload.enriched.warmRoutePotentialScore,
+          credibility_threshold_score:
+            payload.enriched.credibilityThresholdScore,
+          named_contact_required: payload.enriched.namedContactRequired,
+        },
+        channel_scores: payload.enriched.channelScores,
+        recommended_access_strategy: payload.enriched.recommendedAccessStrategy,
+        recommended_first_channel: payload.enriched.recommendedFirstChannel,
+        fallback_channel: payload.enriched.fallbackChannel,
+        confidence: payload.enriched.confidence,
       },
       proposed_strategy: payload.skeleton,
     }),
@@ -965,6 +1175,100 @@ async function getTextualFields(
   }
 }
 
+function applyEnterpriseFallback(params: {
+  strategy: EngagementStrategy;
+  enterpriseIndicators: EnterpriseIndicators;
+  isTechnicalSector: boolean;
+  isDefenceOrAerospaceOrRegulated: boolean;
+  hasDirectPhoneSignal: boolean;
+}): EngagementStrategy {
+  const { strategy, enterpriseIndicators, isTechnicalSector, isDefenceOrAerospaceOrRegulated, hasDirectPhoneSignal } =
+    params;
+
+  const isEnterpriseTier =
+    strategy.account_tier === "enterprise_complex" ||
+    enterpriseIndicators.indicator_count >= 2;
+
+  if (!isEnterpriseTier) {
+    return strategy;
+  }
+
+  const updated: EngagementStrategy = { ...strategy };
+
+  updated.account_tier = "enterprise_complex";
+
+  if (
+    enterpriseIndicators.indicator_count >= 3 &&
+    (updated.account_persona === "owner_led_practical_sme" ||
+      updated.account_persona === "relationship_led_local_business")
+  ) {
+    if (isDefenceOrAerospaceOrRegulated || isTechnicalSector) {
+      updated.account_persona = "technical_engineering_led_business";
+    } else {
+      updated.account_persona = "formal_mid_market_business";
+    }
+  }
+
+  updated.gatekeeper_risk_score = Math.max(
+    clampScore(updated.gatekeeper_risk_score),
+    80
+  );
+  updated.organisational_complexity_score = Math.max(
+    clampScore(updated.organisational_complexity_score),
+    85
+  );
+  updated.credibility_threshold_score = Math.max(
+    clampScore(updated.credibility_threshold_score),
+    75
+  );
+
+  updated.warm_route_potential_score = clampScore(
+    updated.warm_route_potential_score
+  );
+
+  const hasNamedContact = updated.named_contact_found === true;
+
+  updated.named_contact_required =
+    true && !(hasNamedContact && hasDirectPhoneSignal);
+
+  if (
+    (!hasNamedContact || !hasDirectPhoneSignal) &&
+    (updated.recommended_first_channel === "call" ||
+      updated.recommended_access_strategy === "direct_call")
+  ) {
+    updated.recommended_first_channel = "research";
+    updated.recommended_access_strategy = "named_contact_research_first";
+    updated.fallback_channel =
+      updated.channel_scores.email >= updated.channel_scores.linkedin
+        ? "email"
+        : "linkedin";
+  }
+
+  if (!updated.stakeholder_hypothesis || updated.stakeholder_hypothesis === "") {
+    if (isDefenceOrAerospaceOrRegulated || isTechnicalSector) {
+      updated.stakeholder_hypothesis =
+        "Divisional finance, tax, engineering programme, innovation or technical leadership (e.g. engineering director, head of tax, R&D programme manager).";
+    } else {
+      updated.stakeholder_hypothesis =
+        "Head of tax, head of engineering, innovation lead or divisional finance leadership (e.g. divisional FD or finance business partner).";
+    }
+  }
+
+  if (!updated.next_best_action || updated.next_best_action === "") {
+    updated.next_best_action = "map_stakeholders_then_send_insight_led_email";
+  }
+
+  if (
+    updated.recommended_first_channel === "call" &&
+    (!hasNamedContact || !hasDirectPhoneSignal)
+  ) {
+    updated.recommended_first_channel = "research";
+    updated.recommended_access_strategy = "named_contact_research_first";
+  }
+
+  return updated;
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -1045,6 +1349,8 @@ export default async function handler(
       hasLinkedinPresence,
       hasLinkedinCompanyPage,
       hasLinkedinNamedContact,
+      hasCorporateSiteSignals,
+      hasMultinationalSignals,
       linkedinSignalSummary,
       rawContext,
     } = webSignals;
@@ -1062,7 +1368,17 @@ export default async function handler(
         (code) => code.startsWith("62") || code.startsWith("72")
       );
 
-    const persona = derivePersona({
+    const enterpriseIndicators = detectEnterpriseIndicators({
+      companyName,
+      sicCodes,
+      webContext: rawContext,
+      hasLinkedinCompanyPage,
+      isClearlyCorporate,
+      hasCorporateSiteSignals,
+      hasMultinationalSignals,
+    });
+
+    let persona = derivePersona({
       companyAgeYears,
       numberOfDirectors,
       sicCodes,
@@ -1085,7 +1401,7 @@ export default async function handler(
       filingConfidenceScore,
     });
 
-    const accountTier = computeAccountTier({
+    let accountTier = computeAccountTier({
       persona,
       isClearlyCorporate,
       numberOfDirectors,
@@ -1093,6 +1409,30 @@ export default async function handler(
       isTechnicalSector,
       hasLinkedinCompanyPage,
     });
+
+    if (enterpriseIndicators.indicator_count >= 2) {
+      accountTier = "enterprise_complex";
+    }
+
+    if (
+      enterpriseIndicators.indicator_count >= 3 &&
+      (persona === "owner_led_practical_sme" ||
+        persona === "relationship_led_local_business")
+    ) {
+      if (
+        enterpriseIndicators.defence_or_aerospace ||
+        enterpriseIndicators.regulated_infrastructure_or_utility ||
+        isTechnicalSector
+      ) {
+        persona = "technical_engineering_led_business";
+      } else {
+        persona = "formal_mid_market_business";
+      }
+    }
+
+    const isDefenceOrAerospaceOrRegulated =
+      enterpriseIndicators.defence_or_aerospace ||
+      enterpriseIndicators.regulated_infrastructure_or_utility;
 
     const accessMeta = computeAccessMeta({
       accountTier,
@@ -1102,6 +1442,10 @@ export default async function handler(
         Boolean(chAddressLocality) || isLocalRelationshipBusiness,
       hasLinkedinPresence,
       hasLinkedinCompanyPage,
+      isClearlyEnterpriseBrand:
+        enterpriseIndicators.indicator_count >= 2 ||
+        enterpriseIndicators.major_brand_match,
+      isDefenceOrAerospaceOrRegulated,
     });
 
     const channelScores = computeChannelScores(persona, supportingScores, {
@@ -1113,13 +1457,21 @@ export default async function handler(
       hasLinkedinCompanyPage,
       accountTier,
       namedContactFound: hasLinkedinNamedContact,
+      isClearlyEnterpriseBrand:
+        enterpriseIndicators.indicator_count >= 2 ||
+        enterpriseIndicators.major_brand_match,
+      isDefenceOrAerospaceOrRegulated,
+      gatekeeperRiskScore: accessMeta.gatekeeperRiskScore,
     });
 
     const { primary, secondary, accessStrategy } = pickChannels(
       channelScores,
       accountTier,
       hasLinkedinNamedContact,
-      accessMeta.gatekeeperRiskScore
+      accessMeta.gatekeeperRiskScore,
+      hasDirectPhoneSignal,
+      enterpriseIndicators.indicator_count >= 2 ||
+        enterpriseIndicators.major_brand_match
     );
 
     const evidenceSignals: boolean[] = [];
@@ -1141,7 +1493,7 @@ export default async function handler(
 
     const openaiApiKey = process.env.OPENAI_API_KEY;
 
-    const skeleton: EngagementStrategy = {
+    let skeleton: EngagementStrategy = {
       recommended_access_strategy: accessStrategy,
       recommended_first_channel: primary,
       fallback_channel: secondary,
@@ -1204,7 +1556,7 @@ export default async function handler(
       });
     }
 
-    const strategy: EngagementStrategy = {
+    skeleton = {
       ...skeleton,
       reason_codes: textual.reason_codes,
       evidence_summary: textual.evidence_summary,
@@ -1215,6 +1567,14 @@ export default async function handler(
       suggested_call_purpose: textual.suggested_call_purpose,
       next_best_action: textual.next_best_action,
     };
+
+    const strategy = applyEnterpriseFallback({
+      strategy: skeleton,
+      enterpriseIndicators,
+      isTechnicalSector,
+      isDefenceOrAerospaceOrRegulated,
+      hasDirectPhoneSignal,
+    });
 
     const nowIso = new Date().toISOString();
 
@@ -1248,7 +1608,7 @@ export default async function handler(
         engagement_suggested_meeting_angle: strategy.stakeholder_hypothesis,
         engagement_next_best_action: strategy.next_best_action,
         engagement_generated_at: nowIso,
-        engagement_generated_from_version: "v2-access-strategy",
+        engagement_generated_from_version: "v2-access-strategy-enterprise-guardrails",
         engagement_ai_generation_status: "success",
         updated_at: nowIso,
       })
