@@ -590,6 +590,7 @@ function pickChannels(
   const isEnterprise =
     accountTier === "enterprise_complex" || isClearlyEnterpriseBrand;
 
+  // Enterprise branch: research / LinkedIn / email – never generic call-first
   if (isEnterprise && !namedContactFound && !hasDirectPhoneSignal) {
     primary = "research";
     secondary = scores.linkedin >= scores.email ? "linkedin" : "email";
@@ -607,15 +608,6 @@ function pickChannels(
       primary = "email";
       secondary = scores.linkedin >= scores.call ? "linkedin" : "call";
       accessStrategy = "insight_led_email";
-    }
-
-    if (
-      primary === "call" &&
-      (!namedContactFound || !hasDirectPhoneSignal || gatekeeperRiskScore >= 70)
-    ) {
-      primary = "research";
-      secondary = scores.linkedin >= scores.email ? "linkedin" : "email";
-      accessStrategy = "named_contact_research_first";
     }
   } else if (accountTier === "mid_market_structured") {
     if (primary === "call" && gatekeeperRiskScore >= 50) {
@@ -1190,9 +1182,10 @@ function applyEnterpriseFallback(params: {
     hasDirectPhoneSignal,
   } = params;
 
+  // Enterprise override: treat as enterprise if tier says so OR strong indicators exist
+  const strongEnterpriseSignals = enterpriseIndicators.indicator_count >= 2;
   const isEnterpriseTier =
-    strategy.account_tier === "enterprise_complex" ||
-    enterpriseIndicators.indicator_count >= 2;
+    strategy.account_tier === "enterprise_complex" || strongEnterpriseSignals;
 
   if (!isEnterpriseTier) {
     return strategy;
@@ -1200,8 +1193,10 @@ function applyEnterpriseFallback(params: {
 
   const updated: EngagementStrategy = { ...strategy };
 
+  // Force enterprise tier for strong brands
   updated.account_tier = "enterprise_complex";
 
+  // Persona guardrails: disallow SME / local-business personas when enterprise signals are strong
   if (
     enterpriseIndicators.indicator_count >= 3 &&
     (updated.account_persona === "owner_led_practical_sme" ||
@@ -1214,6 +1209,7 @@ function applyEnterpriseFallback(params: {
     }
   }
 
+  // Score floors for enterprise accounts
   updated.gatekeeper_risk_score = Math.max(
     clampScore(updated.gatekeeper_risk_score),
     80
@@ -1226,18 +1222,19 @@ function applyEnterpriseFallback(params: {
     clampScore(updated.credibility_threshold_score),
     75
   );
-
   updated.warm_route_potential_score = clampScore(
     updated.warm_route_potential_score
   );
 
   const hasNamedContact = updated.named_contact_found === true;
 
-  updated.named_contact_required =
-    true && !(hasNamedContact && hasDirectPhoneSignal);
+  // Named contact is required for enterprise unless we clearly have direct access
+  const hasDirectAccess = hasNamedContact && hasDirectPhoneSignal;
+  updated.named_contact_required = !hasDirectAccess;
 
-  const noDirectAccess = !hasNamedContact || !hasDirectPhoneSignal;
+  const noDirectAccess = !hasDirectAccess;
 
+  // Suppress direct_call for enterprise when there is no direct access
   if (noDirectAccess && updated.recommended_access_strategy === "direct_call") {
     updated.recommended_first_channel = "research";
     updated.recommended_access_strategy = "named_contact_research_first";
@@ -1247,6 +1244,7 @@ function applyEnterpriseFallback(params: {
         : "linkedin";
   }
 
+  // Stakeholder hypothesis is mandatory for enterprise accounts
   if (!updated.stakeholder_hypothesis || updated.stakeholder_hypothesis === "") {
     if (isDefenceOrAerospaceOrRegulated || isTechnicalSector) {
       updated.stakeholder_hypothesis =
@@ -1257,6 +1255,7 @@ function applyEnterpriseFallback(params: {
     }
   }
 
+  // Next best action: research + mapping then insight-led email for enterprise by default
   if (!updated.next_best_action || updated.next_best_action === "") {
     updated.next_best_action = "map_stakeholders_then_send_insight_led_email";
   }
