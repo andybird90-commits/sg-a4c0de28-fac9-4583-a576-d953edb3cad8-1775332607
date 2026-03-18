@@ -1182,8 +1182,13 @@ function applyEnterpriseFallback(params: {
   isDefenceOrAerospaceOrRegulated: boolean;
   hasDirectPhoneSignal: boolean;
 }): EngagementStrategy {
-  const { strategy, enterpriseIndicators, isTechnicalSector, isDefenceOrAerospaceOrRegulated, hasDirectPhoneSignal } =
-    params;
+  const {
+    strategy,
+    enterpriseIndicators,
+    isTechnicalSector,
+    isDefenceOrAerospaceOrRegulated,
+    hasDirectPhoneSignal,
+  } = params;
 
   const isEnterpriseTier =
     strategy.account_tier === "enterprise_complex" ||
@@ -1231,10 +1236,12 @@ function applyEnterpriseFallback(params: {
   updated.named_contact_required =
     true && !(hasNamedContact && hasDirectPhoneSignal);
 
+  const noDirectAccess = !hasNamedContact || !hasDirectPhoneSignal;
+
   if (
-    (!hasNamedContact || !hasDirectPhoneSignal) &&
-    (updated.recommended_first_channel === "call" ||
-      updated.recommended_access_strategy === "direct_call")
+    noDirectAccess &&
+    (updated.recommended_access_strategy === "direct_call" ||
+      updated.recommended_first_channel === "call")
   ) {
     updated.recommended_first_channel = "research";
     updated.recommended_access_strategy = "named_contact_research_first";
@@ -1256,14 +1263,6 @@ function applyEnterpriseFallback(params: {
 
   if (!updated.next_best_action || updated.next_best_action === "") {
     updated.next_best_action = "map_stakeholders_then_send_insight_led_email";
-  }
-
-  if (
-    updated.recommended_first_channel === "call" &&
-    (!hasNamedContact || !hasDirectPhoneSignal)
-  ) {
-    updated.recommended_first_channel = "research";
-    updated.recommended_access_strategy = "named_contact_research_first";
   }
 
   return updated;
