@@ -1,60 +1,54 @@
-import React, { useMemo, useState } from "react";
-import type { Tables } from "@/integrations/supabase/types";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import React, { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
-type SdrProspect = Tables<"sdr_prospects">;
+type SdrProspect = Database["public"]["Tables"]["sdr_prospects"]["Row"];
 
 type Channel = "email" | "call" | "face_to_face" | "linkedin" | "research";
-type ConfidenceLevel = "high" | "medium" | "low";
-type AccountPersona =
-  | "owner_led_practical_sme"
-  | "operationally_stretched_growth_company"
-  | "formal_mid_market_business"
-  | "technical_engineering_led_business"
-  | "procurement_or_compliance_led_organisation"
-  | "relationship_led_local_business";
 
-type AccountTier = "direct_access" | "mid_market_structured" | "enterprise_complex";
-
-type AccessStrategy =
-  | "direct_call"
-  | "insight_led_email"
-  | "named_contact_research_first"
-  | "linkedin_plus_email"
-  | "referral_or_warm_intro"
-  | "divisional_entry_point"
-  | "event_or_network_route"
-  | "local_meeting_pursuit"
-  | "direct_email_to_decision_maker"
-  | "nurture_before_outreach";
-
-interface ChannelScores {
-  email: number;
-  call: number;
-  face_to_face: number;
-  linkedin: number;
-  research: number;
+interface EngagementPreference {
+  primaryRoute: string;
+  secondaryRoute: string | null;
+  recommendedPersona: string;
+  tone: string;
+  gatekeeperRisk: "Low" | "Medium" | "High";
+  directColdCallRecommended: boolean;
+  confidence: number;
+  rationale: string[];
+  suggestedSequence: string[];
+  whatNotToDo: string[];
 }
 
 interface EngagementStrategyJson {
-  recommended_access_strategy: AccessStrategy;
+  recommended_access_strategy: string;
   recommended_first_channel: Channel;
   fallback_channel: Channel;
-  confidence: ConfidenceLevel;
-  account_persona: AccountPersona;
-  account_tier: AccountTier;
+  confidence: string | null;
+  account_persona: string | null;
+  account_tier: string | null;
   gatekeeper_risk_score: number;
   organisational_complexity_score: number;
   named_contact_required: boolean;
   named_contact_found: boolean;
   warm_route_potential_score: number;
   credibility_threshold_score: number;
-  channel_scores: ChannelScores;
+  direct_cold_call_recommended: boolean;
+  channel_scores: {
+    email: number;
+    call: number;
+    face_to_face: number;
+    linkedin: number;
+    research: number;
+  };
   reason_codes: string[];
   evidence_summary: string[];
   route_rationale: string;
@@ -63,6 +57,7 @@ interface EngagementStrategyJson {
   suggested_first_email: string;
   suggested_call_purpose: string;
   next_best_action: string;
+  engagement_preference?: EngagementPreference;
 }
 
 interface AiEngagementStrategyPanelProps {
@@ -70,75 +65,6 @@ interface AiEngagementStrategyPanelProps {
   onProspectUpdated: (prospect: SdrProspect) => void;
   onGenerateStrategy: (prospectId: string) => Promise<void>;
   generating: boolean;
-}
-
-function formatChannelLabel(value: Channel): string {
-  if (value === "face_to_face") return "Face to face";
-  if (value === "email") return "Email";
-  if (value === "call") return "Call";
-  if (value === "linkedin") return "LinkedIn";
-  if (value === "research") return "Research / stakeholder mapping";
-  return value;
-}
-
-function formatConfidence(value: ConfidenceLevel | null): string {
-  if (!value) return "";
-  if (value === "high") return "High confidence";
-  if (value === "medium") return "Medium confidence";
-  return "Low confidence";
-}
-
-function formatPersona(value: AccountPersona | null): string {
-  if (!value) return "";
-  const map: Record<AccountPersona, string> = {
-    owner_led_practical_sme: "Owner-led practical SME",
-    operationally_stretched_growth_company: "Operationally stretched growth company",
-    formal_mid_market_business: "Formal mid-market business",
-    technical_engineering_led_business: "Technical engineering-led business",
-    procurement_or_compliance_led_organisation: "Procurement / compliance-led organisation",
-    relationship_led_local_business: "Relationship-led local business",
-  };
-  return map[value] || value;
-}
-
-function formatAccountTier(value: AccountTier | null): string {
-  if (!value) return "";
-  if (value === "direct_access") return "Direct access";
-  if (value === "mid_market_structured") return "Mid-market / structured";
-  return "Enterprise / complex";
-}
-
-function formatAccessStrategy(value: AccessStrategy | null): string {
-  if (!value) return "";
-  const map: Record<AccessStrategy, string> = {
-    direct_call: "Direct call",
-    insight_led_email: "Insight-led email",
-    named_contact_research_first: "Named contact research first",
-    linkedin_plus_email: "LinkedIn plus email",
-    referral_or_warm_intro: "Referral or warm introduction",
-    divisional_entry_point: "Divisional entry point",
-    event_or_network_route: "Event or network-based route",
-    local_meeting_pursuit: "Local meeting pursuit",
-    direct_email_to_decision_maker: "Direct email to decision maker",
-    nurture_before_outreach: "Nurture before outreach",
-  };
-  return map[value] || value;
-}
-
-function formatRisk(score: number | null): string {
-  if (score == null || Number.isNaN(score)) return "Not scored";
-  const value = clamp(score);
-  let label = "Medium";
-  if (value < 40) label = "Low";
-  else if (value >= 70) label = "High";
-  return `${label} (${value}/100)`;
-}
-
-function clamp(value: number): number {
-  if (Number.isNaN(value)) return 0;
-  if (value < 0) return 0;
-  if (value > 100) return 100;
-  return Math.round(value);
 }
 
 export function AiEngagementStrategyPanel(
@@ -160,7 +86,7 @@ export function AiEngagementStrategyPanel(
     return value as EngagementStrategyJson;
   }, [prospect]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!prospect) {
       setOverrideValue("");
       setOverrideNotes("");
@@ -172,7 +98,7 @@ export function AiEngagementStrategyPanel(
     setOverrideNotes(
       (prospect.engagement_observed_preference_notes as string | null) ?? ""
     );
-  }, [prospect?.id]);
+  }, [prospect?.id, prospect]);
 
   if (!prospect) {
     return null;
@@ -216,277 +142,267 @@ export function AiEngagementStrategyPanel(
   };
 
   const personaValue =
-    (prospect.engagement_account_persona as AccountPersona | null) ??
+    (prospect.engagement_account_persona as string | null) ??
     (strategy?.account_persona ?? null);
   const confidenceValue =
-    (prospect.engagement_confidence as ConfidenceLevel | null) ??
+    (prospect.engagement_confidence as string | null) ??
     (strategy?.confidence ?? null);
 
   const accountTierValue = strategy?.account_tier ?? null;
   const accessStrategyValue = strategy?.recommended_access_strategy ?? null;
 
+  const engagementPreference = strategy?.engagement_preference as
+    | EngagementPreference
+    | undefined;
+
   return (
-    <Card className="mt-6 border-slate-200">
-      <CardHeader className="flex flex-col gap-2 border-b border-slate-100 pb-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-sm font-semibold text-slate-900">
-            AI Engagement Strategy
-          </CardTitle>
-          <div className="flex flex-wrap items-center gap-2">
-            {livePreference && (
-              <Badge variant="default" className="text-xs">
-                {observedLabel}: {formatChannelLabel(livePreference)}
-              </Badge>
-            )}
-            {accessStrategyValue && (
-              <Badge variant="secondary" className="text-xs">
-                {formatAccessStrategy(accessStrategyValue)}
-              </Badge>
-            )}
-            {accountTierValue && (
-              <Badge variant="outline" className="text-xs">
-                {formatAccountTier(accountTierValue)}
-              </Badge>
-            )}
-            {personaValue && (
-              <Badge variant="outline" className="text-xs">
-                {formatPersona(personaValue)}
-              </Badge>
-            )}
-            {confidenceValue && (
-              <Badge variant="secondary" className="text-xs">
-                {formatConfidence(confidenceValue)}
-              </Badge>
-            )}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleGenerateClick}
-              disabled={generating}
-            >
-              {generating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating
-                </>
-              ) : strategy ? (
-                "Refresh strategy"
-              ) : (
-                "Generate strategy"
-              )}
-            </Button>
-          </div>
-        </div>
-        <p className="text-xs text-slate-500">
-          This AI access strategy focuses on the most credible route into the
-          account based on public signals. It is not a confirmed client
-          preference and should be combined with SDR judgement and human
-          feedback.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-5 pt-4">
-        {strategy ? (
-          <>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Recommended access strategy
-                </p>
-                <p className="text-sm font-medium text-slate-900">
-                  {formatAccessStrategy(strategy.recommended_access_strategy)}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  First channel
-                </p>
-                <p className="text-sm font-medium text-slate-900">
-                  {formatChannelLabel(strategy.recommended_first_channel)}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Fallback channel
-                </p>
-                <p className="text-sm font-medium text-slate-900">
-                  {formatChannelLabel(strategy.fallback_channel)}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Gatekeeper risk
-                </p>
-                <p className="text-sm text-slate-800">
-                  {formatRisk(strategy.gatekeeper_risk_score)}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Organisational complexity
-                </p>
-                <p className="text-sm text-slate-800">
-                  {formatRisk(strategy.organisational_complexity_score)}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Named contact
-                </p>
-                <p className="text-sm text-slate-800">
-                  Required: {strategy.named_contact_required ? "Yes" : "No"} ·
-                  Found: {strategy.named_contact_found ? "Yes" : "No"}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Why this route
-              </p>
-              {strategy.route_rationale ? (
-                <p className="whitespace-pre-line text-sm text-slate-700">
-                  {strategy.route_rationale}
-                </p>
-              ) : null}
-              {strategy.evidence_summary && strategy.evidence_summary.length > 0 ? (
-                <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
-                  {strategy.evidence_summary.slice(0, 5).map((item, idx) => (
-                    <li key={idx}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs text-slate-500">
-                  No detailed evidence summary available for this prospect yet.
-                </p>
-              )}
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Stakeholder hypothesis
-                </p>
-                <p className="whitespace-pre-line text-sm text-slate-700">
-                  {strategy.stakeholder_hypothesis ||
-                    "No stakeholder hypothesis generated yet."}
-                </p>
-                <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Suggested first email
-                </p>
-                <p className="whitespace-pre-line text-sm text-slate-700">
-                  {strategy.suggested_first_email ||
-                    "No first email suggestion generated yet."}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Suggested subject line
-                </p>
-                <p className="text-sm text-slate-700 break-words">
-                  {strategy.suggested_subject_line ||
-                    "No subject line generated yet."}
-                </p>
-                <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Suggested call purpose
-                </p>
-                <p className="whitespace-pre-line text-sm text-slate-700">
-                  {strategy.suggested_call_purpose ||
-                    "No call purpose generated yet."}
-                </p>
-                <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Next best action
-                </p>
-                <p className="whitespace-pre-line break-words text-sm text-slate-800">
-                  {strategy.next_best_action || "Not specified"}
-                </p>
-              </div>
-            </div>
-          </>
-        ) : (
-          <p className="text-xs text-slate-500">
-            No AI engagement strategy has been generated yet for this prospect.
-          </p>
-        )}
-
-        <div className="space-y-3 border-t border-slate-100 pt-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Human confirmed preference
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-base">Channel preference</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              How this prospect appears to respond in practice.
             </p>
-            {strategy && (
-              <p className="text-[11px] text-slate-500">
-                AI suggested{" "}
-                {formatChannelLabel(strategy.recommended_first_channel)} first
-                via {formatAccessStrategy(strategy.recommended_access_strategy)}{" "}
-                route.
-              </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleGenerateClick}
+            disabled={generating || !prospect.id}
+            className="inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {generating ? "Refreshing…" : "Refresh AI strategy"}
+          </button>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <div className="flex flex-wrap items-center gap-3">
+            <div>
+              <div className="text-xs uppercase text-muted-foreground">
+                Live working preference
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{livePreference ?? "Unknown"}</Badge>
+                <span className="text-xs text-muted-foreground">
+                  {observedLabel}
+                </span>
+              </div>
+            </div>
+
+            {personaValue && (
+              <div>
+                <div className="text-xs uppercase text-muted-foreground">
+                  Account persona
+                </div>
+                <div className="text-xs">{personaValue}</div>
+              </div>
+            )}
+
+            {accountTierValue && (
+              <div>
+                <div className="text-xs uppercase text-muted-foreground">
+                  Account tier
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  {accountTierValue.replace(/_/g, " ")}
+                </Badge>
+              </div>
+            )}
+
+            {confidenceValue && (
+              <div>
+                <div className="text-xs uppercase text-muted-foreground">
+                  AI confidence
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {confidenceValue}
+                </Badge>
+              </div>
             )}
           </div>
-          <div className="grid gap-3 md:grid-cols-[160px_minmax(0,1fr)]">
-            <div className="space-y-1">
-              <label className="block text-xs font-medium text-slate-600">
-                Observed real preference
-              </label>
-              <select
-                className="block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+
+          <Separator />
+
+          <div className="space-y-2">
+            <div className="text-xs uppercase text-muted-foreground">
+              Observed working preference
+            </div>
+            <div className="flex flex-col gap-2">
+              <input
+                className="w-full rounded-md border px-2 py-1 text-xs"
+                placeholder="e.g. Email after LinkedIn touch, or MD prefers direct call"
                 value={overrideValue}
                 onChange={(e) => setOverrideValue(e.target.value)}
-              >
-                <option value="">Not set</option>
-                <option value="email">Email first</option>
-                <option value="call">Call first</option>
-                <option value="face_to_face">Face to face</option>
-                <option value="linkedin">LinkedIn first</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="block text-xs font-medium text-slate-600">
-                Preference notes
-              </label>
-              <Textarea
+              />
+              <textarea
+                className="min-h-[60px] w-full rounded-md border px-2 py-1 text-xs"
+                placeholder="Notes on how this prospect actually engages in practice"
                 value={overrideNotes}
                 onChange={(e) => setOverrideNotes(e.target.value)}
-                className="min-h-[60px] text-sm"
-                placeholder="E.g. client consistently replies to email but rarely answers calls."
               />
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleSaveOverride}
+                  disabled={savingOverride}
+                  className="inline-flex items-center rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {savingOverride ? "Saving…" : "Save observed preference"}
+                </button>
+              </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleSaveOverride}
-              disabled={savingOverride}
-            >
-              {savingOverride ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving
-                </>
-              ) : (
-                "Save human preference"
-              )}
-            </Button>
-            {prospect.engagement_last_tested_channel && (
-              <p className="text-[11px] text-slate-500">
-                Last tested channel:{" "}
-                {formatChannelLabel(
-                  prospect.engagement_last_tested_channel as Channel
-                )}
-                {prospect.engagement_last_tested_outcome
-                  ? ` · Outcome: ${String(
-                      prospect.engagement_last_tested_outcome
-                    )}`
-                  : ""}
+
+          {accessStrategyValue && (
+            <>
+              <Separator />
+              <div className="space-y-1">
+                <div className="text-xs uppercase text-muted-foreground">
+                  AI recommended access strategy
+                </div>
+                <div className="text-xs">
+                  {accessStrategyValue.replace(/_/g, " ")}
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Engagement Strategy</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          {!engagementPreference ? (
+            <div className="space-y-2">
+              <p className="text-muted-foreground">
+                No engagement preference has been generated yet for this
+                prospect.
               </p>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+              <p className="text-muted-foreground">
+                Refresh the AI strategy to infer a primary route, tone, and
+                sequence based on the latest enrichment. For major enterprises,
+                this will default to a research-led, account-based approach
+                rather than generic cold calling.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-3">
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">
+                    Primary route
+                  </div>
+                  <div className="font-medium">
+                    {engagementPreference.primaryRoute}
+                  </div>
+                </div>
+                {engagementPreference.secondaryRoute && (
+                  <div>
+                    <div className="text-xs uppercase text-muted-foreground">
+                      Secondary route
+                    </div>
+                    <div>{engagementPreference.secondaryRoute}</div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">
+                    Gatekeeper risk
+                  </div>
+                  <Badge
+                    variant={
+                      engagementPreference.gatekeeperRisk === "High"
+                        ? "destructive"
+                        : engagementPreference.gatekeeperRisk === "Medium"
+                        ? "secondary"
+                        : "outline"
+                    }
+                  >
+                    {engagementPreference.gatekeeperRisk}
+                  </Badge>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-muted-foreground">
+                    Confidence
+                  </div>
+                  <div>
+                    {(engagementPreference.confidence * 100).toFixed(0)}%
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <div className="text-xs uppercase text-muted-foreground">
+                  Suggested target persona
+                </div>
+                <div>{engagementPreference.recommendedPersona}</div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-xs uppercase text-muted-foreground">
+                  Recommended tone
+                </div>
+                <div>{engagementPreference.tone}</div>
+              </div>
+
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="why">
+                  <AccordionTrigger className="text-sm">
+                    Why this approach?
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="list-disc space-y-1 pl-5">
+                      {engagementPreference.rationale.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="sequence">
+                  <AccordionTrigger className="text-sm">
+                    Suggested first-touch sequence
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <ol className="list-decimal space-y-1 pl-5">
+                      {engagementPreference.suggestedSequence.map(
+                        (step, index) => (
+                          <li key={index}>{step}</li>
+                        )
+                      )}
+                    </ol>
+                  </AccordionContent>
+                </AccordionItem>
+                {engagementPreference.whatNotToDo.length > 0 && (
+                  <AccordionItem value="what-not-to-do">
+                    <AccordionTrigger className="text-sm">
+                      What not to do
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <ul className="list-disc space-y-1 pl-5">
+                        {engagementPreference.whatNotToDo.map(
+                          (warning, index) => (
+                            <li key={index}>{warning}</li>
+                          )
+                        )}
+                      </ul>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+              </Accordion>
+
+              {!engagementPreference.directColdCallRecommended && (
+                <p className="text-xs text-muted-foreground">
+                  Direct cold calling is not recommended as a first touch for
+                  this profile; treat phone as a follow-on or routing tool once
+                  a named stakeholder has been identified.
+                </p>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

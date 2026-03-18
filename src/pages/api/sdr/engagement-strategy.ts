@@ -81,6 +81,19 @@ interface EnterpriseIndicators {
   indicator_count: number;
 }
 
+interface EngagementPreference {
+  primaryRoute: string;
+  secondaryRoute: string | null;
+  recommendedPersona: string;
+  tone: string;
+  gatekeeperRisk: "Low" | "Medium" | "High";
+  directColdCallRecommended: boolean;
+  confidence: number;
+  rationale: string[];
+  suggestedSequence: string[];
+  whatNotToDo: string[];
+}
+
 function clampScore(value: number): number {
   if (Number.isNaN(value)) return 0;
   if (value < 0) return 0;
@@ -199,983 +212,370 @@ function detectEnterpriseIndicators(input: {
   };
 }
 
-function derivePersona(input: {
-  companyAgeYears: number | null;
-  numberOfDirectors: number | null;
-  sicCodes: string[] | null;
-  hasWebsite: boolean;
-  isClearlyCorporate: boolean;
+function computeEngagementPreference(input: {
+  strategy: EngagementStrategy;
+  persona: AccountPersona;
+  accountTier: AccountTier;
+  enterpriseIndicators: EnterpriseIndicators;
+  accessMeta: {
+    gatekeeperRiskScore: number;
+    organisationalComplexityScore: number;
+    warmRoutePotentialScore: number;
+    credibilityThresholdScore: number;
+    namedContactRequired: boolean;
+  };
+  supportingScores: SupportingScores;
   isTechnicalSector: boolean;
+  isDefenceOrAerospaceOrRegulated: boolean;
+  hasWebsite: boolean;
+  hasContactSignal: boolean;
+  hasDirectPhoneSignal: boolean;
+  hasLinkedinPresence: boolean;
+  hasLinkedinNamedContact: boolean;
   isLocalRelationshipBusiness: boolean;
-}): AccountPersona {
+  evidenceStrength: number;
+}): EngagementPreference {
   const {
-    companyAgeYears,
-    numberOfDirectors,
-    sicCodes,
-    hasWebsite,
-    isClearlyCorporate,
+    strategy,
+    persona,
+    accountTier,
+    enterpriseIndicators,
+    accessMeta,
+    supportingScores,
     isTechnicalSector,
+    isDefenceOrAerospaceOrRegulated,
+    hasWebsite,
+    hasContactSignal,
+    hasDirectPhoneSignal,
+    hasLinkedinPresence,
+    hasLinkedinNamedContact,
     isLocalRelationshipBusiness,
+    evidenceStrength,
   } = input;
 
-  const directors = numberOfDirectors ?? 0;
-  const age = companyAgeYears ?? 0;
-  const sic = sicCodes ?? [];
+  const enterpriseScaleScore =
+    accountTier === "enterprise_complex" || enterpriseIndicators.indicator_count >= 2
+      ? 90
+      : accountTier === "mid_market_structured"
+      ? 65
+      : 30;
 
-  const hasManyDirectors = directors >= 4;
-  const isYoungGrowth = age > 0 && age <= 10;
+  const gatekeeperRiskScore = clampScore(accessMeta.gatekeeperRiskScore);
 
-  const hasConstructionLikeSic = sic.some(
-    (code) => code.startsWith("41") || code.startsWith("42") || code.startsWith("43")
-  );
-  const hasManufacturingSic = sic.some(
-    (code) =>
-      code.startsWith("25") ||
-      code.startsWith("26") ||
-      code.startsWith("27") ||
-      code.startsWith("28") ||
-      code.startsWith("29") ||
-      code.startsWith("30")
-  );
+  const ownerManagedScore =
+    persona === "owner_led_practical_sme"
+      ? 85
+      : persona === "relationship_led_local_business"
+      ? 75
+      : 20;
 
-  if (isTechnicalSector || hasManufacturingSic) {
-    return "technical_engineering_led_business";
-  }
+  const directAccessScore =
+    (hasLinkedinNamedContact ? 30 : 0) +
+    (hasDirectPhoneSignal ? 35 : 0) +
+    (hasContactSignal ? 10 : 0);
 
-  if (isLocalRelationshipBusiness || hasConstructionLikeSic) {
-    return "relationship_led_local_business";
-  }
+  const relationshipLedScore = supportingScores.relationship_score;
 
-  if (!hasManyDirectors && directors <= 2 && !isClearlyCorporate) {
-    return "owner_led_practical_sme";
-  }
+  const procurementBarrierScore =
+    (enterpriseIndicators.defence_or_aerospace ||
+    enterpriseIndicators.regulated_infrastructure_or_utility
+      ? 40
+      : 0) +
+    (enterpriseIndicators.corporate_site_signals ? 20 : 0);
 
-  if (isYoungGrowth && hasWebsite && !isClearlyCorporate) {
-    return "operationally_stretched_growth_company";
-  }
+  const technicalRelevanceScore = isTechnicalSector
+    ? 60
+    : supportingScores.education_need_score;
 
-  if (isClearlyCorporate || hasManyDirectors) {
-    return "formal_mid_market_business";
-  }
+  const likelyEmailReceptivenessScore =
+    supportingScores.digital_maturity_score +
+    (hasWebsite ? 10 : 0) +
+    (hasLinkedinPresence ? 10 : 0);
 
-  return "formal_mid_market_business";
-}
+  const likelyPhoneReceptivenessScore =
+    (hasDirectPhoneSignal ? 40 : 0) +
+    (ownerManagedScore > 70 ? 20 : 0) -
+    (enterpriseScaleScore > 70 ? 20 : 0) -
+    (gatekeeperRiskScore > 70 ? 30 : 0);
 
-function computeSupportingScores(input: {
-  hasWebsite: boolean;
-  hasContactSignal: boolean;
-  hasDirectPhoneSignal: boolean;
-  hasLinkedinPresence: boolean;
-  hasLinkedinCompanyPage: boolean;
-  companyAgeYears: number | null;
-  numberOfDirectors: number | null;
-  isTechnicalSector: boolean;
-  isLocalRelationshipBusiness: boolean;
-  filingConfidenceScore: number | null;
-}): SupportingScores {
-  let digital = 30;
-  let relationship = 30;
-  let localVisit = 20;
-  let decisionAccess = 40;
-  let educationNeed = 40;
-  let commercialValue = 40;
-  let urgency = 30;
+  const isEnterpriseLike =
+    enterpriseScaleScore >= 75 ||
+    procurementBarrierScore >= 40 ||
+    accountTier === "enterprise_complex";
 
-  if (input.hasWebsite) {
-    digital += 25;
-  }
-  if (input.hasContactSignal) {
-    digital += 10;
-  }
+  const isHighlyGatekept =
+    gatekeeperRiskScore >= 70 ||
+    clampScore(accessMeta.credibilityThresholdScore) >= 70;
 
-  if (input.hasLinkedinPresence) {
-    digital += 15;
-    relationship += 5;
-  }
+  const hasStrongDirectAccess = directAccessScore >= 55 && !isHighlyGatekept;
 
-  if (input.hasLinkedinCompanyPage) {
-    digital += 10;
-  }
+  const dataWeak = evidenceStrength < 0.35;
 
-  if (input.isTechnicalSector) {
-    educationNeed += 15;
-    commercialValue += 10;
-  }
+  const gatekeeperRiskBand: EngagementPreference["gatekeeperRisk"] =
+    gatekeeperRiskScore >= 70
+      ? "High"
+      : gatekeeperRiskScore >= 40
+      ? "Medium"
+      : "Low";
 
-  const directors = input.numberOfDirectors ?? 0;
-  if (directors <= 2) {
-    decisionAccess += 25;
-    relationship += 10;
-  } else if (directors >= 5) {
-    decisionAccess -= 10;
-  }
+  let primaryRoute = "Email first";
+  let secondaryRoute: string | null = null;
+  let recommendedPersona =
+    "Finance, tax, engineering, or innovation leadership";
+  const tone =
+    "Credibility-first, low-pressure, insight-led and relevant to the prospect's context";
+  let directColdCallRecommended = false;
+  const rationale: string[] = [];
+  const suggestedSequence: string[] = [];
+  const whatNotToDo: string[] = [];
 
-  const age = input.companyAgeYears ?? 0;
-  if (age >= 5 && age <= 20) {
-    commercialValue += 15;
-  }
+  if (dataWeak) {
+    primaryRoute = "Email first";
+    secondaryRoute = hasLinkedinPresence ? "LinkedIn-assisted outreach" : null;
+    directColdCallRecommended = false;
 
-  if (input.isLocalRelationshipBusiness) {
-    relationship += 20;
-    localVisit += 30;
-  }
-
-  if (input.hasDirectPhoneSignal) {
-    decisionAccess += 15;
-    relationship += 10;
-  }
-
-  if (typeof input.filingConfidenceScore === "number") {
-    const filing = clampScore(input.filingConfidenceScore);
-    if (filing >= 70) {
-      urgency += 15;
-    } else if (filing <= 40) {
-      urgency -= 10;
-    }
-  }
-
-  return {
-    digital_maturity_score: clampScore(digital),
-    relationship_score: clampScore(relationship),
-    local_visit_score: clampScore(localVisit),
-    decision_maker_access_score: clampScore(decisionAccess),
-    education_need_score: clampScore(educationNeed),
-    commercial_value_score: clampScore(commercialValue),
-    urgency_trigger_score: clampScore(urgency),
-  };
-}
-
-function computeAccountTier(input: {
-  persona: AccountPersona;
-  isClearlyCorporate: boolean;
-  numberOfDirectors: number | null;
-  companyAgeYears: number | null;
-  isTechnicalSector: boolean;
-  hasLinkedinCompanyPage: boolean;
-}): AccountTier {
-  const directors = input.numberOfDirectors ?? 0;
-  const age = input.companyAgeYears ?? 0;
-
-  if (
-    input.isClearlyCorporate ||
-    directors >= 6 ||
-    (directors >= 4 && age >= 8) ||
-    (input.isTechnicalSector && input.hasLinkedinCompanyPage)
-  ) {
-    return "enterprise_complex";
-  }
-
-  if (
-    directors >= 3 ||
-    input.persona === "formal_mid_market_business" ||
-    input.persona === "procurement_or_compliance_led_organisation"
-  ) {
-    return "mid_market_structured";
-  }
-
-  return "direct_access";
-}
-
-function computeAccessMeta(input: {
-  accountTier: AccountTier;
-  hasDirectPhoneSignal: boolean;
-  hasContactSignal: boolean;
-  isLocalRelationshipBusiness: boolean;
-  hasLinkedinPresence: boolean;
-  hasLinkedinCompanyPage: boolean;
-  isClearlyEnterpriseBrand: boolean;
-  isDefenceOrAerospaceOrRegulated: boolean;
-}): {
-  gatekeeperRiskScore: number;
-  organisationalComplexityScore: number;
-  warmRoutePotentialScore: number;
-  credibilityThresholdScore: number;
-  namedContactRequired: boolean;
-} {
-  let gatekeeper = 30;
-  let complexity = 30;
-  let warmRoute = 20;
-  let credibility = 40;
-
-  if (input.accountTier === "enterprise_complex") {
-    gatekeeper += 45;
-    complexity += 50;
-    credibility += 30;
-  } else if (input.accountTier === "mid_market_structured") {
-    gatekeeper += 25;
-    complexity += 25;
-    credibility += 15;
-  } else {
-    gatekeeper -= 10;
-    complexity -= 10;
-  }
-
-  if (input.hasDirectPhoneSignal) {
-    gatekeeper -= 15;
-  }
-  if (input.hasContactSignal) {
-    gatekeeper -= 10;
-  }
-
-  if (input.isLocalRelationshipBusiness) {
-    warmRoute += 25;
-  }
-  if (input.hasLinkedinPresence) {
-    warmRoute += 20;
-  }
-  if (input.hasLinkedinCompanyPage) {
-    warmRoute += 15;
-  }
-
-  if (input.isClearlyEnterpriseBrand || input.isDefenceOrAerospaceOrRegulated) {
-    gatekeeper += 20;
-    complexity += 20;
-    credibility += 20;
-  }
-
-  warmRoute = clampScore(warmRoute);
-  gatekeeper = clampScore(gatekeeper);
-  complexity = clampScore(complexity);
-  credibility = clampScore(credibility);
-
-  if (input.accountTier === "enterprise_complex") {
-    gatekeeper = Math.max(gatekeeper, 80);
-    complexity = Math.max(complexity, 85);
-    credibility = Math.max(credibility, 75);
-  }
-
-  const namedContactRequired =
-    input.accountTier === "enterprise_complex" ||
-    input.isClearlyEnterpriseBrand ||
-    input.isDefenceOrAerospaceOrRegulated;
-
-  return {
-    gatekeeperRiskScore: gatekeeper,
-    organisationalComplexityScore: complexity,
-    warmRoutePotentialScore: warmRoute,
-    credibilityThresholdScore: credibility,
-    namedContactRequired,
-  };
-}
-
-function computeChannelScores(
-  persona: AccountPersona,
-  supporting: SupportingScores,
-  signals: {
-    hasDirectPhoneSignal: boolean;
-    hasWebsite: boolean;
-    isLocalRelationshipBusiness: boolean;
-    hasLinkedinPresence: boolean;
-    hasLinkedinCompanyPage: boolean;
-    accountTier: AccountTier;
-    namedContactFound: boolean;
-    isClearlyEnterpriseBrand: boolean;
-    isDefenceOrAerospaceOrRegulated: boolean;
-    gatekeeperRiskScore: number;
-  }
-): ChannelScores {
-  let email = 50;
-  let call = 50;
-  let face = 40;
-
-  if (
-    persona === "formal_mid_market_business" ||
-    persona === "procurement_or_compliance_led_organisation"
-  ) {
-    email += 20;
-    call -= 5;
-  }
-
-  if (
-    persona === "owner_led_practical_sme" ||
-    persona === "relationship_led_local_business"
-  ) {
-    call += 15;
-  }
-
-  if (persona === "technical_engineering_led_business") {
-    email += 10;
-    call += 10;
-  }
-
-  if (persona === "operationally_stretched_growth_company") {
-    call += 10;
-    email += 5;
-  }
-
-  if (signals.hasDirectPhoneSignal) {
-    call += 15;
-  }
-
-  if (signals.hasWebsite) {
-    email += 10;
-  }
-
-  if (signals.isLocalRelationshipBusiness) {
-    face += 20;
-    call += 10;
-  }
-
-  email += (supporting.digital_maturity_score - 50) * 0.4;
-  call +=
-    (supporting.decision_maker_access_score - 50) * 0.4 +
-    (supporting.relationship_score - 50) * 0.2;
-  face +=
-    (supporting.local_visit_score - 50) * 0.6 +
-    (supporting.commercial_value_score - 50) * 0.2;
-
-  let linkedin = 40;
-  if (signals.hasLinkedinPresence) {
-    linkedin += 20;
-  }
-  if (signals.hasLinkedinCompanyPage) {
-    linkedin += 20;
-  }
-  if (signals.accountTier !== "direct_access") {
-    linkedin += 10;
-  }
-  if (signals.namedContactFound) {
-    linkedin += 15;
-  }
-
-  let research = 20;
-  if (signals.accountTier === "enterprise_complex") {
-    research += 50;
-  } else if (signals.accountTier === "mid_market_structured") {
-    research += 30;
-  }
-  if (!signals.namedContactFound) {
-    research += 15;
-  }
-  if (
-    signals.isClearlyEnterpriseBrand ||
-    signals.isDefenceOrAerospaceOrRegulated ||
-    signals.gatekeeperRiskScore >= 70
-  ) {
-    research += 20;
-    call -= 15;
-  }
-
-  return {
-    email: clampScore(email),
-    call: clampScore(call),
-    face_to_face: clampScore(face),
-    linkedin: clampScore(linkedin),
-    research: clampScore(research),
-  };
-}
-
-function pickChannels(
-  scores: ChannelScores,
-  accountTier: AccountTier,
-  namedContactFound: boolean,
-  gatekeeperRiskScore: number,
-  hasDirectPhoneSignal: boolean,
-  isClearlyEnterpriseBrand: boolean
-): { primary: Channel; secondary: Channel; accessStrategy: AccessStrategy } {
-  const entries: { key: Channel; value: number }[] = [
-    { key: "email", value: scores.email },
-    { key: "call", value: scores.call },
-    { key: "face_to_face", value: scores.face_to_face },
-    { key: "linkedin", value: scores.linkedin },
-    { key: "research", value: scores.research },
-  ];
-
-  entries.sort((a, b) => b.value - a.value);
-
-  let primary: Channel = entries[0].key;
-  let secondary: Channel = entries[1].key;
-
-  let accessStrategy: AccessStrategy = "direct_call";
-
-  const isEnterprise =
-    accountTier === "enterprise_complex" || isClearlyEnterpriseBrand;
-
-  // Enterprise branch: research / LinkedIn / email – never generic call-first
-  if (isEnterprise && !namedContactFound && !hasDirectPhoneSignal) {
-    primary = "research";
-    secondary = scores.linkedin >= scores.email ? "linkedin" : "email";
-    accessStrategy = "named_contact_research_first";
-  } else if (isEnterprise) {
-    if (scores.research >= scores.call && scores.research >= scores.email) {
-      primary = "research";
-      secondary = scores.linkedin >= scores.email ? "linkedin" : "email";
-      accessStrategy = "named_contact_research_first";
-    } else if (scores.linkedin >= scores.email) {
-      primary = "linkedin";
-      secondary = scores.email >= scores.call ? "email" : "call";
-      accessStrategy = "linkedin_plus_email";
-    } else {
-      primary = "email";
-      secondary = scores.linkedin >= scores.call ? "linkedin" : "call";
-      accessStrategy = "insight_led_email";
-    }
-  } else if (accountTier === "mid_market_structured") {
-    if (primary === "call" && gatekeeperRiskScore >= 50) {
-      primary = "email";
-      secondary = "call";
-      accessStrategy = "insight_led_email";
-    } else if (primary === "email") {
-      accessStrategy = "direct_email_to_decision_maker";
-    } else if (primary === "face_to_face") {
-      accessStrategy = "local_meeting_pursuit";
-    } else if (primary === "linkedin") {
-      accessStrategy = "linkedin_plus_email";
-    } else if (primary === "research") {
-      accessStrategy = "named_contact_research_first";
-    } else {
-      accessStrategy = "nurture_before_outreach";
-    }
-  } else {
-    if (primary === "call") {
-      accessStrategy = "direct_call";
-    } else if (primary === "face_to_face") {
-      accessStrategy = "local_meeting_pursuit";
-    } else if (primary === "email") {
-      accessStrategy = "direct_email_to_decision_maker";
-    } else if (primary === "linkedin") {
-      accessStrategy = "linkedin_plus_email";
-    } else {
-      accessStrategy = "nurture_before_outreach";
-    }
-  }
-
-  return { primary, secondary, accessStrategy };
-}
-
-function computeConfidence(evidenceStrength: number): ConfidenceLevel {
-  if (evidenceStrength >= 0.7) return "high";
-  if (evidenceStrength >= 0.4) return "medium";
-  return "low";
-}
-
-async function getCompaniesHouseSnapshot(
-  req: NextApiRequest,
-  companyNumber: string | null
-): Promise<{ snapshot: any | null; filingConfidenceScore: number | null }> {
-  if (!companyNumber) {
-    return { snapshot: null, filingConfidenceScore: null };
-  }
-
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || `http://${req.headers.host as string}`;
-
-  try {
-    const res = await fetch(
-      `${baseUrl}/api/companies-house/lookup?number=${encodeURIComponent(
-        companyNumber
-      )}&includeHistory=true`
+    rationale.push(
+      "Available signals are limited, so a cautious, research-led approach is safer than a bold channel assumption.",
+      "Email allows you to test relevance and interest without overstepping with a hard call.",
+      "LinkedIn can be used to validate stakeholders and add light-touch familiarity if profiles exist."
     );
 
-    if (!res.ok) {
-      return { snapshot: null, filingConfidenceScore: null };
-    }
-
-    const data = await res.json();
-
-    const filingConfidenceScore =
-      typeof data?.filing_history?.confidence_score === "number"
-        ? data.filing_history.confidence_score
-        : typeof data?.filing_history?.average_filing_lag_days === "number"
-        ? 100 -
-          Math.min(
-            100,
-            Math.max(0, data.filing_history.average_filing_lag_days as number)
-          )
-        : null;
-
-    return { snapshot: data, filingConfidenceScore };
-  } catch {
-    return { snapshot: null, filingConfidenceScore: null };
-  }
-}
-
-async function getWebSignals(
-  companyName: string
-): Promise<{
-  hasWebsite: boolean;
-  hasContactSignal: boolean;
-  hasDirectPhoneSignal: boolean;
-  isClearlyCorporate: boolean;
-  isLocalRelationshipBusiness: boolean;
-  hasLinkedinPresence: boolean;
-  hasLinkedinCompanyPage: boolean;
-  hasLinkedinNamedContact: boolean;
-  hasCorporateSiteSignals: boolean;
-  hasMultinationalSignals: boolean;
-  linkedinSignalSummary: string;
-  rawContext: string;
-}> {
-  const braveApiKey =
-    process.env.BRAVE_SEARCH_API_KEY || process.env.BRAVE_SEARCH_API;
-
-  if (!braveApiKey) {
-    return {
-      hasWebsite: false,
-      hasContactSignal: false,
-      hasDirectPhoneSignal: false,
-      isClearlyCorporate: false,
-      isLocalRelationshipBusiness: false,
-      hasLinkedinPresence: false,
-      hasLinkedinCompanyPage: false,
-      hasLinkedinNamedContact: false,
-      hasCorporateSiteSignals: false,
-      hasMultinationalSignals: false,
-      linkedinSignalSummary: "",
-      rawContext: "",
-    };
-  }
-
-  try {
-    const queryParts = [
-      `"${companyName}"`,
-      "UK company contact details R&D tax innovation LinkedIn",
-    ];
-    const query = queryParts.join(" ");
-
-    const braveRes = await fetch(
-      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(
-        query
-      )}&count=5`,
-      {
-        headers: {
-          Accept: "application/json",
-          "X-Subscription-Token": braveApiKey as string,
-        },
-      }
+    suggestedSequence.push(
+      "Research and identify likely stakeholders in finance, tax, engineering, or innovation.",
+      "Send a concise, authority-led email that anchors on relevance to their sector and R&D profile.",
+      "Lightly follow up via email or LinkedIn rather than phone until a named contact engages."
     );
 
-    if (!braveRes.ok) {
-      return {
-        hasWebsite: false,
-        hasContactSignal: false,
-        hasDirectPhoneSignal: false,
-        isClearlyCorporate: false,
-        isLocalRelationshipBusiness: false,
-        hasLinkedinPresence: false,
-        hasLinkedinCompanyPage: false,
-        hasLinkedinNamedContact: false,
-        hasCorporateSiteSignals: false,
-        hasMultinationalSignals: false,
-        linkedinSignalSummary: "",
-        rawContext: "",
-      };
+    whatNotToDo.push(
+      "Do not bombard with calls without email context.",
+      "Do not oversell the complexity or size of the opportunity on first touch.",
+      "Do not assume the first person who replies is the decision maker."
+    );
+
+    return {
+      primaryRoute,
+      secondaryRoute,
+      recommendedPersona,
+      tone,
+      gatekeeperRisk: gatekeeperRiskBand,
+      directColdCallRecommended,
+      confidence: evidenceStrength,
+      rationale,
+      suggestedSequence,
+      whatNotToDo,
+    };
+  }
+
+  if (isEnterpriseLike || isHighlyGatekept) {
+    primaryRoute = "Multi-touch account-based sequence";
+    secondaryRoute = hasLinkedinPresence
+      ? "LinkedIn-assisted outreach"
+      : "Direct named email outreach";
+    directColdCallRecommended = false;
+
+    if (isDefenceOrAerospaceOrRegulated || isTechnicalSector) {
+      recommendedPersona =
+        "Head of Engineering, Technical Director, R&D Programme Lead, or Group Tax/Finance stakeholder";
+    } else {
+      recommendedPersona =
+        "Group Finance or Tax lead, Finance Business Partner, Divisional FD, or Innovation Lead";
     }
 
-    const braveData = (await braveRes.json()) as any;
-    const results = Array.isArray(braveData?.web?.results)
-      ? (braveData.web.results as any[])
-      : [];
+    rationale.push(
+      "Signals indicate an enterprise or heavily structured organisation with likely gatekeepers and layered decision-making.",
+      "Generic switchboard cold calls are likely to be screened out and will not reach the right stakeholder.",
+      "An account-based sequence focused on named senior roles is more credible and better aligned with corporate buying behaviour."
+    );
 
-    const contextLines: string[] = [];
-    const linkedinLines: string[] = [];
+    suggestedSequence.push(
+      "Map stakeholders in engineering, innovation, finance, and tax to identify named senior contacts.",
+      "Send a concise, insight-led email to a chosen stakeholder that anchors on sector-specific R&D value.",
+      "Use LinkedIn or internal networks to validate and warm the relationship where possible.",
+      "If using the switchboard, do so only to route to a named person, not to deliver the core pitch.",
+      "Follow with a second touch that carries proof, relevance, or a short case example for similar organisations."
+    );
 
-    let hasWebsite = false;
-    let hasContactSignal = false;
-    let hasDirectPhoneSignal = false;
-    let isClearlyCorporate = false;
-    let isLocalRelationshipBusiness = false;
-    let hasLinkedinPresence = false;
-    let hasLinkedinCompanyPage = false;
-    let hasLinkedinNamedContact = false;
-    let hasCorporateSiteSignals = false;
-    let hasMultinationalSignals = false;
+    whatNotToDo.push(
+      "Do not call the main switchboard and pitch blindly.",
+      "Do not ask generic questions like 'Can I speak to the person responsible for R&D tax?'",
+      "Do not open with a hard sell or imply the conversation is purely about tax savings.",
+      "Do not assume the first person who answers is the decision maker."
+    );
 
-    for (const r of results) {
-      const title: string = r.title || "";
-      const description: string = r.description || "";
-      const url: string = r.url || "";
+    return {
+      primaryRoute,
+      secondaryRoute,
+      recommendedPersona,
+      tone,
+      gatekeeperRisk: gatekeeperRiskBand,
+      directColdCallRecommended,
+      confidence: evidenceStrength,
+      rationale,
+      suggestedSequence,
+      whatNotToDo,
+    };
+  }
 
-      const line = `Title: ${title}\nDescription: ${description}\nURL: ${url}`;
-      contextLines.push(line);
+  const isRelationshipLed =
+    relationshipLedScore >= 65 || isLocalRelationshipBusiness;
 
-      const lower = `${title} ${description} ${url}`.toLowerCase();
+  if (ownerManagedScore >= 70) {
+    if (hasStrongDirectAccess && likelyPhoneReceptivenessScore > 30) {
+      primaryRoute = "Email first";
+      secondaryRoute = "Switchboard only as routing step";
+      directColdCallRecommended = true;
 
-      if (url.includes("http")) {
-        hasWebsite = true;
-      }
+      recommendedPersona =
+        "Owner, Managing Director, or a senior operational/finance decision maker";
 
-      if (
-        lower.includes("contact") ||
-        lower.includes("enquire") ||
-        lower.includes("get in touch")
-      ) {
-        hasContactSignal = true;
-      }
+      rationale.push(
+        "Signals point to an owner-managed or local relationship-led organisation with relatively low formal gatekeeping.",
+        "A direct but respectful email to the MD/owner, followed by a considered call, is likely to be acceptable.",
+        "Phone can work here, but only after you have anchored relevance and avoided a generic sales pitch."
+      );
 
-      if (
-        lower.includes("tel:") ||
-        lower.includes("phone") ||
-        lower.includes("call us")
-      ) {
-        hasDirectPhoneSignal = true;
-      }
+      suggestedSequence.push(
+        "Send a concise, practical email to the MD/owner focusing on R&D relevance and outcomes.",
+        "If no response, follow up with a short, respectful call to the same person or direct line.",
+        "Use the call to confirm fit and interest, not to deliver a full technical explanation.",
+        "Agree a short follow-up meeting or call if there is clear interest."
+      );
 
-      if (
-        lower.includes("plc") ||
-        lower.includes("group") ||
-        lower.includes("holdings") ||
-        lower.includes("corporate")
-      ) {
-        isClearlyCorporate = true;
-      }
+      whatNotToDo.push(
+        "Do not bombard with calls without email context.",
+        "Do not oversell the complexity or size of the opportunity on first touch.",
+        "Do not assume departmental inboxes or web contact forms will be effective entry points."
+      );
+    } else {
+      primaryRoute = "Email first";
+      secondaryRoute = isRelationshipLed
+        ? "Face-to-face / meeting request"
+        : "LinkedIn-assisted outreach";
+      directColdCallRecommended = false;
 
-      if (
-        lower.includes("local") ||
-        lower.includes("regional") ||
-        lower.includes("family run") ||
-        lower.includes("community")
-      ) {
-        isLocalRelationshipBusiness = true;
-      }
+      recommendedPersona =
+        "Owner, Managing Director, or senior operational/finance decision maker";
 
-      if (
-        lower.includes("investors") ||
-        lower.includes("annual report") ||
-        lower.includes("governance") ||
-        lower.includes("global presence") ||
-        lower.includes("our locations") ||
-        lower.includes("supplier portal") ||
-        lower.includes("procurement")
-      ) {
-        hasCorporateSiteSignals = true;
-      }
+      rationale.push(
+        "Owner-managed signals are present, but direct access or phone receptiveness is not strong enough to justify a cold call first.",
+        "A well-structured email allows the owner to absorb the proposition on their terms.",
+        "If relationship signals are strong, moving towards a meeting request after email makes sense."
+      );
 
-      if (
-        lower.includes("global") ||
-        lower.includes("worldwide") ||
-        lower.includes("international") ||
-        lower.includes("multinational")
-      ) {
-        hasMultinationalSignals = true;
-      }
+      suggestedSequence.push(
+        "Send a clear, practical email to the MD/owner focusing on R&D relevance and time-efficiency.",
+        "If there is positive engagement, suggest a short exploratory meeting or call.",
+        "Optionally use LinkedIn or a mutual contact to warm up the outreach."
+      );
 
-      if (lower.includes("linkedin") || url.toLowerCase().includes("linkedin.com")) {
-        hasLinkedinPresence = true;
-        const lowerUrl = url.toLowerCase();
-        if (lowerUrl.includes("linkedin.com/company/")) {
-          hasLinkedinCompanyPage = true;
-        }
-        if (
-          lowerUrl.includes("linkedin.com/in/") ||
-          lowerUrl.includes("linkedin.com/pub/")
-        ) {
-          hasLinkedinNamedContact = true;
-        }
-        linkedinLines.push(line);
-      }
+      whatNotToDo.push(
+        "Do not rely on generic web forms as the main route into the organisation.",
+        "Do not treat the first response as the final decision; expect some internal routing.",
+        "Do not open with aggressive or volume-driven sales language."
+      );
     }
 
-    const linkedinSignalSummary = linkedinLines.join("\n\n");
-    const rawContext = contextLines.join("\n\n");
-
     return {
-      hasWebsite,
-      hasContactSignal,
-      hasDirectPhoneSignal,
-      isClearlyCorporate,
-      isLocalRelationshipBusiness,
-      hasLinkedinPresence,
-      hasLinkedinCompanyPage,
-      hasLinkedinNamedContact,
-      hasCorporateSiteSignals,
-      hasMultinationalSignals,
-      linkedinSignalSummary,
-      rawContext,
-    };
-  } catch {
-    return {
-      hasWebsite: false,
-      hasContactSignal: false,
-      hasDirectPhoneSignal: false,
-      isClearlyCorporate: false,
-      isLocalRelationshipBusiness: false,
-      hasLinkedinPresence: false,
-      hasLinkedinCompanyPage: false,
-      hasLinkedinNamedContact: false,
-      hasCorporateSiteSignals: false,
-      hasMultinationalSignals: false,
-      linkedinSignalSummary: "",
-      rawContext: "",
+      primaryRoute,
+      secondaryRoute,
+      recommendedPersona,
+      tone,
+      gatekeeperRisk: gatekeeperRiskBand,
+      directColdCallRecommended,
+      confidence: evidenceStrength,
+      rationale,
+      suggestedSequence,
+      whatNotToDo,
     };
   }
-}
 
-async function getTextualFields(
-  openaiApiKey: string,
-  payload: {
-    enriched: {
-      companyName: string;
-      companyNumber: string | null;
-      chSnapshot: any | null;
-      webContext: string;
-      persona: AccountPersona;
-      accountTier: AccountTier;
-      supportingScores: SupportingScores;
-      channelScores: ChannelScores;
-      recommendedAccessStrategy: AccessStrategy;
-      recommendedFirstChannel: Channel;
-      fallbackChannel: Channel;
-      confidence: ConfidenceLevel;
-      hasLinkedinPresence: boolean;
-      hasLinkedinCompanyPage: boolean;
-      hasLinkedinNamedContact: boolean;
-      gatekeeperRiskScore: number;
-      organisationalComplexityScore: number;
-      warmRoutePotentialScore: number;
-      credibilityThresholdScore: number;
-      namedContactRequired: boolean;
-      enterpriseIndicators: EnterpriseIndicators;
-      directColdCallRecommended: boolean;
-    };
-    skeleton: EngagementStrategy;
-  }
-): Promise<TextualStrategyFields> {
-  const systemMessage =
-    "You are generating a realistic B2B account access strategy for an R&D tax consultancy SDR workflow. Your job is not just to pick email vs call; it is to recommend the most credible and realistic route into the account, based on evidence of organisational complexity, gatekeepers, named contacts, digital presence and sector. Use only the supplied evidence. Do not invent facts. Return strict JSON only.";
+  const isMidMarket =
+    accountTier === "mid_market_structured" ||
+    (enterpriseScaleScore >= 50 && enterpriseScaleScore < 75);
 
-  const specMessage = [
-    "Your job IS to determine the most credible and realistic route into an account based on:",
-    "- organisational complexity",
-    "- likely gatekeeper barriers",
-    "- named contact availability",
-    "- digital presence",
-    "- sector style",
-    "- commercial credibility needed",
-    "- likely friction of generic outreach",
-    "",
-    "IMPORTANT RULES",
-    "- Do not invent facts.",
-    "- Use only supplied evidence.",
-    "- Do not assume that a company being relationship-led means a generic cold call will work.",
-    "- Distinguish between relationship value and accessibility.",
-    "- Large, structured, defence, government-adjacent, infrastructure, utility, aerospace, or major corporate accounts often require a named-contact or divisional strategy first.",
-    "- If no named contact is found and gatekeeper risk is high, do not recommend a generic cold call.",
-    "- Do not generate scripts that would obviously fail at reception or switchboard.",
-    "- Prefer realistic access strategy over simplistic contact preference.",
-    "",
-    "ENTERPRISE OVERRIDE RULES",
-    "- If enriched_company_data.account_tier === \"enterprise_complex\" or enriched_company_data.access_meta.gatekeeper_risk_score >= 70 or enriched_company_data.enterprise_indicators.indicator_count >= 2, treat the account as a major enterprise / PLC / defence / regulated organisation.",
-    "- For these accounts:",
-    "  - Tone must be credibility-first, insight-led, non-salesy, and clearly relevant to the sector.",
-    "  - Treat direct_cold_call_recommended as effectively false; do not script generic cold calls via switchboard as the main route.",
-    "  - Switchboard may only be referenced as a routing tactic to locate or confirm a named stakeholder, never as the primary sales channel.",
-    "  - Focus messaging on gaining credible access to strategic roles (e.g. head of engineering, innovation lead, technical director, group finance/tax, R&D programme lead, divisional FD, finance business partner), not on pushing a product.",
-    "",
-    "VALID VALUES",
-    "",
-    "recommended_access_strategy:",
-    "- direct_call",
-    "- insight_led_email",
-    "- named_contact_research_first",
-    "- linkedin_plus_email",
-    "- referral_or_warm_intro",
-    "- divisional_entry_point",
-    "- event_or_network_route",
-    "- local_meeting_pursuit",
-    "- direct_email_to_decision_maker",
-    "- nurture_before_outreach",
-    "",
-    "recommended_first_channel:",
-    "- email",
-    "- call",
-    "- face_to_face",
-    "- linkedin",
-    "- research",
-    "",
-    "fallback_channel:",
-    "- email",
-    "- call",
-    "- face_to_face",
-    "- linkedin",
-    "- research",
-    "",
-    "confidence:",
-    "- high",
-    "- medium",
-    "- low",
-    "",
-    "account_tier:",
-    "- direct_access",
-    "- mid_market_structured",
-    "- enterprise_complex",
-    "",
-    "account_persona:",
-    "- owner_led_practical_sme",
-    "- operationally_stretched_growth_company",
-    "- formal_mid_market_business",
-    "- technical_engineering_led_business",
-    "- procurement_or_compliance_led_organisation",
-    "- relationship_led_local_business",
-    "",
-    "SCORING RULES",
-    "- All scores must be integers from 0 to 100.",
-    "- reason_codes must be short snake_case labels.",
-    "- evidence_summary must contain 3 to 5 concise evidence-based statements.",
-    "- suggested messaging must be commercially credible.",
-    "- For enterprise_complex accounts with no named contact, next_best_action should usually begin with research or stakeholder mapping, not generic calling.",
-    "",
-    "You are given two objects:",
-    "- enriched_company_data: the evidence and context.",
-    "- proposed_strategy: a pre-computed skeleton strategy containing recommended_access_strategy, channels, scores, tiers and booleans. You MUST treat this as ground truth for non-text fields.",
-    "",
-    "You MUST:",
-    "- Preserve all non-text fields from proposed_strategy exactly as provided (scores, booleans, persona, tier, channels).",
-    "- Only refine the following text fields:",
-    "  - reason_codes",
-    "  - evidence_summary",
-    "  - route_rationale",
-    "  - stakeholder_hypothesis",
-    "  - suggested_subject_line",
-    "  - suggested_first_email",
-    "  - suggested_call_purpose",
-    "  - next_best_action",
-    "",
-    "Do not change numeric values, account_tier, account_persona, recommended_access_strategy, recommended_first_channel, fallback_channel or channel_scores.",
-    "",
-    "Return exactly this JSON shape (all fields present):",
-    "{",
-    '  "recommended_access_strategy": "",',
-    '  "recommended_first_channel": "",',
-    '  "fallback_channel": "",',
-    '  "confidence": "",',
-    '  "account_tier": "",',
-    '  "account_persona": "",',
-    '  "gatekeeper_risk_score": 0,',
-    '  "organisational_complexity_score": 0,',
-    '  "named_contact_required": false,',
-    '  "named_contact_found": false,',
-    '  "warm_route_potential_score": 0,',
-    '  "credibility_threshold_score": 0,',
-    '  "direct_cold_call_recommended": false,',
-    '  "channel_scores": {',
-    '    "email": 0,',
-    '    "call": 0,',
-    '    "face_to_face": 0,',
-    '    "linkedin": 0,',
-    '    "research": 0',
-    "  },",
-    '  "reason_codes": [],',
-    '  "evidence_summary": [],',
-    '  "route_rationale": "",',
-    '  "stakeholder_hypothesis": "",',
-    '  "suggested_subject_line": "",',
-    '  "suggested_first_email": "",',
-    '  "suggested_call_purpose": "",',
-    '  "next_best_action": ""',
-    "}",
-    "",
-    "INPUT DATA",
-    JSON.stringify({
-      enriched_company_data: {
-        company_name: payload.enriched.companyName,
-        company_number: payload.enriched.companyNumber,
-        companies_house_snapshot: payload.enriched.chSnapshot,
-        web_search_context: payload.enriched.webContext,
-        persona: payload.enriched.persona,
-        account_tier: payload.enriched.accountTier,
-        supporting_scores: payload.enriched.supportingScores,
-        web_linkedin_signals: {
-          has_linkedin_presence: payload.enriched.hasLinkedinPresence,
-          has_linkedin_company_page: payload.enriched.hasLinkedinCompanyPage,
-          has_linkedin_named_contact: payload.enriched.hasLinkedinNamedContact,
-        },
-        access_meta: {
-          gatekeeper_risk_score: payload.enriched.gatekeeperRiskScore,
-          organisational_complexity_score:
-            payload.enriched.organisationalComplexityScore,
-          warm_route_potential_score: payload.enriched.warmRoutePotentialScore,
-          credibility_threshold_score:
-            payload.enriched.credibilityThresholdScore,
-          named_contact_required: payload.enriched.namedContactRequired,
-        },
-        enterprise_indicators: payload.enriched.enterpriseIndicators,
-        direct_cold_call_recommended: payload.enriched.directColdCallRecommended,
-        channel_scores: payload.enriched.channelScores,
-        recommended_access_strategy: payload.enriched.recommendedAccessStrategy,
-        recommended_first_channel: payload.enriched.recommendedFirstChannel,
-        fallback_channel: payload.enriched.fallbackChannel,
-        confidence: payload.enriched.confidence,
-      },
-      proposed_strategy: payload.skeleton,
-    }),
-  ].join("\n");
+  if (isMidMarket) {
+    primaryRoute = hasLinkedinNamedContact
+      ? "Direct named email outreach"
+      : "Email first";
+    secondaryRoute = hasLinkedinPresence
+      ? "LinkedIn-assisted outreach"
+      : "Warm intro / referral route";
+    directColdCallRecommended = false;
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemMessage },
-        { role: "user", content: specMessage },
-      ],
-      temperature: 0.4,
-      max_tokens: 900,
-    }),
-  });
+    recommendedPersona =
+      "Finance, tax, engineering, or innovation stakeholder best aligned to R&D activity";
 
-  const data = (await response.json()) as any;
-  const rawContent: string = data?.choices?.[0]?.message?.content || "{}";
+    rationale.push(
+      "Signals do not strongly favour phone or events, so email and light-touch LinkedIn are the safest initial channels.",
+      "Using named contacts where possible is more effective than generic or form-based approaches."
+    );
 
-  try {
-    const clean = rawContent
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
+    suggestedSequence.push(
+      "Research and identify a likely stakeholder in finance, tax, engineering, or innovation.",
+      "Send a concise, relevant email that frames R&D tax as an enabler rather than a compliance burden.",
+      "Use LinkedIn or mutual contacts to add light familiarity if profiles are available.",
+      "Follow up once or twice with additional relevance or proof points, rather than escalating to repeated calls."
+    );
 
-    const parsed = JSON.parse(clean) as Partial<
-      EngagementStrategy & {
-        reason_codes: unknown;
-        evidence_summary: unknown;
-      }
-    >;
-
-    const reasonCodes = Array.isArray(parsed.reason_codes)
-      ? parsed.reason_codes.map((x) => String(x)).slice(0, 12)
-      : [];
-
-    const evidenceSummary = Array.isArray(parsed.evidence_summary)
-      ? parsed.evidence_summary.map((x) => String(x)).slice(0, 8)
-      : [];
+    whatNotToDo.push(
+      "Do not rely on generic web forms as the main route into the organisation.",
+      "Do not treat the first response as the final decision; expect some internal routing.",
+      "Do not open with aggressive or volume-driven sales language."
+    );
 
     return {
-      reason_codes: reasonCodes,
-      evidence_summary: evidenceSummary,
-      route_rationale: parsed.route_rationale
-        ? String(parsed.route_rationale)
-        : "",
-      stakeholder_hypothesis: parsed.stakeholder_hypothesis
-        ? String(parsed.stakeholder_hypothesis)
-        : "",
-      suggested_subject_line: parsed.suggested_subject_line
-        ? String(parsed.suggested_subject_line)
-        : "",
-      suggested_first_email: parsed.suggested_first_email
-        ? String(parsed.suggested_first_email)
-        : "",
-      suggested_call_purpose: parsed.suggested_call_purpose
-        ? String(parsed.suggested_call_purpose)
-        : "",
-      next_best_action: parsed.next_best_action
-        ? String(parsed.next_best_action)
-        : "",
-    };
-  } catch {
-    return {
-      reason_codes: [],
-      evidence_summary: [],
-      route_rationale: "",
-      stakeholder_hypothesis: "",
-      suggested_subject_line: "",
-      suggested_first_email: "",
-      suggested_call_purpose: "",
-      next_best_action: "",
+      primaryRoute,
+      secondaryRoute,
+      recommendedPersona,
+      tone,
+      gatekeeperRisk: gatekeeperRiskBand,
+      directColdCallRecommended,
+      confidence: evidenceStrength,
+      rationale,
+      suggestedSequence,
+      whatNotToDo,
     };
   }
+
+  primaryRoute = "Email first";
+  secondaryRoute = hasLinkedinPresence
+    ? "LinkedIn-assisted outreach"
+    : "Warm intro / referral route";
+  directColdCallRecommended = false;
+
+  recommendedPersona =
+    "Finance, tax, engineering, or innovation stakeholder best aligned to R&D activity";
+
+  rationale.push(
+    "Signals do not strongly favour phone or events, so email and light-touch LinkedIn are the safest initial channels.",
+    "Using named contacts where possible is more effective than generic or form-based approaches."
+  );
+
+  suggestedSequence.push(
+    "Research and identify a likely stakeholder in finance, tax, engineering, or innovation.",
+    "Send a concise, relevant email that frames R&D tax as an enabler rather than a compliance burden.",
+    "Use LinkedIn or mutual contacts to add light familiarity if profiles are available.",
+    "Follow up once or twice with additional relevance or proof points, rather than escalating to repeated calls."
+  );
+
+  whatNotToDo.push(
+    "Do not rely on generic web forms as the main route into the organisation.",
+    "Do not treat the first response as the final decision; expect some internal routing.",
+    "Do not open with aggressive or volume-driven sales language."
+  );
+
+  return {
+    primaryRoute,
+    secondaryRoute,
+    recommendedPersona,
+    tone,
+    gatekeeperRisk: gatekeeperRiskBand,
+    directColdCallRecommended,
+    confidence: evidenceStrength,
+    rationale,
+    suggestedSequence,
+    whatNotToDo,
+  };
 }
 
 function applyEnterpriseFallback(params: {
@@ -1238,7 +638,6 @@ function applyEnterpriseFallback(params: {
 
   updated.named_contact_required = !hasDirectAccess;
 
-  // Enterprise override: direct cold calling is not recommended by default
   updated.direct_cold_call_recommended = false;
 
   const noDirectAccess = !hasDirectAccess;
@@ -1561,6 +960,7 @@ export default async function handler(
           namedContactRequired: accessMeta.namedContactRequired,
           enterpriseIndicators,
           directColdCallRecommended: directColdCallRecommendedBase,
+          linkedinSignalSummary,
         },
         skeleton,
       });
@@ -1578,13 +978,37 @@ export default async function handler(
       next_best_action: textual.next_best_action,
     };
 
-    const strategy = applyEnterpriseFallback({
+    const strategyWithEnterprise = applyEnterpriseFallback({
       strategy: skeleton,
       enterpriseIndicators,
       isTechnicalSector,
       isDefenceOrAerospaceOrRegulated,
       hasDirectPhoneSignal,
     });
+
+    const engagementPreference = computeEngagementPreference({
+      strategy: strategyWithEnterprise,
+      persona,
+      accountTier,
+      enterpriseIndicators,
+      accessMeta,
+      supportingScores,
+      isTechnicalSector,
+      isDefenceOrAerospaceOrRegulated,
+      hasWebsite: hasWebsite || Boolean(prospectRecord.website),
+      hasContactSignal,
+      hasDirectPhoneSignal,
+      hasLinkedinPresence,
+      hasLinkedinNamedContact,
+      isLocalRelationshipBusiness:
+        Boolean(chAddressLocality) || isLocalRelationshipBusiness,
+      evidenceStrength,
+    });
+
+    const strategy = {
+      ...strategyWithEnterprise,
+      engagement_preference: engagementPreference,
+    };
 
     const nowIso = new Date().toISOString();
 
@@ -1618,7 +1042,8 @@ export default async function handler(
         engagement_suggested_meeting_angle: strategy.stakeholder_hypothesis,
         engagement_next_best_action: strategy.next_best_action,
         engagement_generated_at: nowIso,
-        engagement_generated_from_version: "v2-access-strategy-enterprise-guardrails",
+        engagement_generated_from_version:
+          "v2-access-strategy-enterprise-guardrails-engagement-pref",
         engagement_ai_generation_status: "success",
         updated_at: nowIso,
       })
@@ -1639,4 +1064,674 @@ export default async function handler(
       .status(500)
       .json({ message: "Failed to generate engagement strategy" });
   }
+}
+
+// Helper functions
+
+async function getCompaniesHouseSnapshot(
+  _req: NextApiRequest,
+  companyNumber: string | null
+): Promise<{ snapshot: any | null; filingConfidenceScore: number }> {
+  if (!companyNumber) {
+    return { snapshot: null, filingConfidenceScore: 0 };
+  }
+
+  const apiKey = process.env.COMPANIES_HOUSE_API_KEY;
+  if (!apiKey) {
+    return { snapshot: null, filingConfidenceScore: 0 };
+  }
+
+  const auth = Buffer.from(`${apiKey}:`).toString("base64");
+
+  try {
+    const companyResponse = await fetch(
+      `https://api.company-information.service.gov.uk/company/${companyNumber}`,
+      {
+        headers: {
+          Authorization: `Basic ${auth}`,
+        },
+      }
+    );
+
+    if (!companyResponse.ok) {
+      return { snapshot: null, filingConfidenceScore: 0 };
+    }
+
+    const companyData: any = await companyResponse.json();
+
+    const dateOfCreation = companyData.date_of_creation
+      ? new Date(companyData.date_of_creation)
+      : null;
+    const companyAgeYears =
+      dateOfCreation != null
+        ? Math.floor(
+            (Date.now() - dateOfCreation.getTime()) /
+              (1000 * 60 * 60 * 24 * 365.25)
+          )
+        : null;
+
+    let activeDirectorCount: number | null = null;
+
+    try {
+      const officersResponse = await fetch(
+        `https://api.company-information.service.gov.uk/company/${companyNumber}/officers`,
+        {
+          headers: {
+            Authorization: `Basic ${auth}`,
+          },
+        }
+      );
+
+      if (officersResponse.ok) {
+        const officersData: any = await officersResponse.json();
+        const activeOfficers = (officersData.items || []).filter(
+          (officer: any) => !officer.resigned_on
+        );
+        activeDirectorCount = activeOfficers.length;
+      }
+    } catch {
+      activeDirectorCount = null;
+    }
+
+    const snapshot = {
+      sic_codes: companyData.sic_codes || [],
+      company_age_years: companyAgeYears,
+      officers: {
+        active_count: activeDirectorCount,
+      },
+      registered_address: {
+        locality:
+          companyData.registered_office_address?.locality || null,
+      },
+    };
+
+    let filingConfidenceScore = 0;
+    if (companyAgeYears != null) filingConfidenceScore += 0.3;
+    if ((snapshot.sic_codes as string[]).length > 0) filingConfidenceScore += 0.3;
+    if (activeDirectorCount != null && activeDirectorCount > 0) {
+      filingConfidenceScore += 0.4;
+    }
+    if (filingConfidenceScore > 1) filingConfidenceScore = 1;
+
+    return { snapshot, filingConfidenceScore };
+  } catch {
+    return { snapshot: null, filingConfidenceScore: 0 };
+  }
+}
+
+async function getWebSignals(
+  _companyName: string
+): Promise<{
+  hasWebsite: boolean;
+  hasContactSignal: boolean;
+  hasDirectPhoneSignal: boolean;
+  isClearlyCorporate: boolean;
+  isLocalRelationshipBusiness: boolean;
+  hasLinkedinPresence: boolean;
+  hasLinkedinCompanyPage: boolean;
+  hasLinkedinNamedContact: boolean;
+  hasCorporateSiteSignals: boolean;
+  hasMultinationalSignals: boolean;
+  linkedinSignalSummary: string;
+  rawContext: string;
+}> {
+  return {
+    hasWebsite: false,
+    hasContactSignal: false,
+    hasDirectPhoneSignal: false,
+    isClearlyCorporate: false,
+    isLocalRelationshipBusiness: false,
+    hasLinkedinPresence: false,
+    hasLinkedinCompanyPage: false,
+    hasLinkedinNamedContact: false,
+    hasCorporateSiteSignals: false,
+    hasMultinationalSignals: false,
+    linkedinSignalSummary: "",
+    rawContext: "",
+  };
+}
+
+function derivePersona(input: {
+  companyAgeYears: number | null;
+  numberOfDirectors: number | null;
+  sicCodes: string[] | null;
+  hasWebsite: boolean;
+  isClearlyCorporate: boolean;
+  isTechnicalSector: boolean;
+  isLocalRelationshipBusiness: boolean;
+}): AccountPersona {
+  const {
+    companyAgeYears,
+    numberOfDirectors,
+    sicCodes,
+    hasWebsite,
+    isClearlyCorporate,
+    isTechnicalSector,
+    isLocalRelationshipBusiness,
+  } = input;
+
+  const directors = numberOfDirectors ?? 0;
+  const age = companyAgeYears ?? 0;
+  const hasMultipleSic = (sicCodes ?? []).length > 1;
+
+  if (
+    isLocalRelationshipBusiness &&
+    directors <= 3 &&
+    !isClearlyCorporate &&
+    age < 30
+  ) {
+    return "relationship_led_local_business";
+  }
+
+  if (
+    !isClearlyCorporate &&
+    directors <= 3 &&
+    age < 25 &&
+    !hasMultipleSic
+  ) {
+    return "owner_led_practical_sme";
+  }
+
+  if (isTechnicalSector) {
+    return "technical_engineering_led_business";
+  }
+
+  if (isClearlyCorporate || directors >= 5 || hasMultipleSic || hasWebsite) {
+    return "formal_mid_market_business";
+  }
+
+  return "formal_mid_market_business";
+}
+
+function computeSupportingScores(input: {
+  hasWebsite: boolean;
+  hasContactSignal: boolean;
+  hasDirectPhoneSignal: boolean;
+  hasLinkedinPresence: boolean;
+  hasLinkedinCompanyPage: boolean;
+  companyAgeYears: number | null;
+  numberOfDirectors: number | null;
+  isTechnicalSector: boolean;
+  isLocalRelationshipBusiness: boolean;
+  filingConfidenceScore: number;
+}): SupportingScores {
+  const {
+    hasWebsite,
+    hasContactSignal,
+    hasDirectPhoneSignal,
+    hasLinkedinPresence,
+    hasLinkedinCompanyPage,
+    companyAgeYears,
+    numberOfDirectors,
+    isTechnicalSector,
+    isLocalRelationshipBusiness,
+    filingConfidenceScore,
+  } = input;
+
+  let digitalMaturity = 20;
+  if (hasWebsite) digitalMaturity += 30;
+  if (hasLinkedinPresence) digitalMaturity += 20;
+  if (hasLinkedinCompanyPage) digitalMaturity += 20;
+  if (digitalMaturity > 100) digitalMaturity = 100;
+
+  let relationshipScore = 40;
+  if (isLocalRelationshipBusiness) relationshipScore += 25;
+  if (numberOfDirectors != null && numberOfDirectors <= 3) {
+    relationshipScore += 10;
+  }
+  if (relationshipScore > 100) relationshipScore = 100;
+
+  let localVisitScore = isLocalRelationshipBusiness ? 70 : 20;
+  if (!hasWebsite && isLocalRelationshipBusiness) {
+    localVisitScore += 10;
+  }
+  if (localVisitScore > 100) localVisitScore = 100;
+
+  let decisionMakerAccess = 30;
+  if (hasDirectPhoneSignal) decisionMakerAccess += 30;
+  if (hasContactSignal) decisionMakerAccess += 20;
+  if (
+    numberOfDirectors != null &&
+    numberOfDirectors <= 3 &&
+    !hasLinkedinCompanyPage
+  ) {
+    decisionMakerAccess += 20;
+  }
+  if (decisionMakerAccess > 100) decisionMakerAccess = 100;
+
+  let educationNeed = isTechnicalSector ? 40 : 60;
+  if (companyAgeYears != null && companyAgeYears < 5) {
+    educationNeed += 10;
+  }
+  if (educationNeed > 100) educationNeed = 100;
+
+  let commercialValue = 40;
+  if (companyAgeYears != null && companyAgeYears >= 5) {
+    commercialValue += 20;
+  }
+  if (isTechnicalSector) commercialValue += 20;
+  if (numberOfDirectors != null && numberOfDirectors >= 5) {
+    commercialValue += 10;
+  }
+  if (commercialValue > 100) commercialValue = 100;
+
+  let urgency = 20;
+  if (filingConfidenceScore > 0.5) urgency += 20;
+  if (companyAgeYears != null && companyAgeYears < 10) {
+    urgency += 10;
+  }
+  if (urgency > 100) urgency = 100;
+
+  return {
+    digital_maturity_score: clampScore(digitalMaturity),
+    relationship_score: clampScore(relationshipScore),
+    local_visit_score: clampScore(localVisitScore),
+    decision_maker_access_score: clampScore(decisionMakerAccess),
+    education_need_score: clampScore(educationNeed),
+    commercial_value_score: clampScore(commercialValue),
+    urgency_trigger_score: clampScore(urgency),
+  };
+}
+
+function computeAccountTier(input: {
+  persona: AccountPersona;
+  isClearlyCorporate: boolean;
+  numberOfDirectors: number | null;
+  companyAgeYears: number | null;
+  isTechnicalSector: boolean;
+  hasLinkedinCompanyPage: boolean;
+}: AccountTier {
+  const {
+    persona,
+    isClearlyCorporate,
+    numberOfDirectors,
+    companyAgeYears,
+    isTechnicalSector,
+    hasLinkedinCompanyPage,
+  } = input;
+
+  const directors = numberOfDirectors ?? 0;
+  const age = companyAgeYears ?? 0;
+
+  if (
+    isClearlyCorporate &&
+    (directors >= 20 || age >= 20 || hasLinkedinCompanyPage)
+  ) {
+    return "enterprise_complex";
+  }
+
+  if (
+    isClearlyCorporate ||
+    directors >= 10 ||
+    (age >= 10 && (isTechnicalSector || hasLinkedinCompanyPage))
+  ) {
+    return "mid_market_structured";
+  }
+
+  if (
+    persona === "owner_led_practical_sme" ||
+    persona === "relationship_led_local_business"
+  ) {
+    return "direct_access";
+  }
+
+  return "mid_market_structured";
+}
+
+function computeAccessMeta(input: {
+  accountTier: AccountTier;
+  hasDirectPhoneSignal: boolean;
+  hasContactSignal: boolean;
+  isLocalRelationshipBusiness: boolean;
+  hasLinkedinPresence: boolean;
+  hasLinkedinCompanyPage: boolean;
+  isClearlyEnterpriseBrand: boolean;
+  isDefenceOrAerospaceOrRegulated: boolean;
+}): {
+  gatekeeperRiskScore: number;
+  organisationalComplexityScore: number;
+  warmRoutePotentialScore: number;
+  credibilityThresholdScore: number;
+  namedContactRequired: boolean;
+} {
+  const {
+    accountTier,
+    hasDirectPhoneSignal,
+    hasContactSignal,
+    isLocalRelationshipBusiness,
+    hasLinkedinPresence,
+    hasLinkedinCompanyPage,
+    isClearlyEnterpriseBrand,
+    isDefenceOrAerospaceOrRegulated,
+  } = input;
+
+  let gatekeeper = 20;
+  let complexity = 20;
+  let credibility = 30;
+
+  if (accountTier === "enterprise_complex" || isClearlyEnterpriseBrand) {
+    gatekeeper = 80;
+    complexity = 85;
+    credibility = 75;
+  } else if (accountTier === "mid_market_structured") {
+    gatekeeper = 55;
+    complexity = 60;
+    credibility = 55;
+  }
+
+  if (isDefenceOrAerospaceOrRegulated) {
+    gatekeeper += 10;
+    complexity += 10;
+    credibility += 10;
+  }
+
+  if (gatekeeper > 100) gatekeeper = 100;
+  if (complexity > 100) complexity = 100;
+  if (credibility > 100) credibility = 100;
+
+  let warmRoute = 30;
+  if (isLocalRelationshipBusiness) warmRoute += 25;
+  if (hasLinkedinPresence || hasLinkedinCompanyPage) {
+    warmRoute += 20;
+  }
+  if (warmRoute > 100) warmRoute = 100;
+
+  const namedContactRequired =
+    accountTier !== "direct_access" ||
+    isClearlyEnterpriseBrand ||
+    gatekeeper >= 60;
+
+  return {
+    gatekeeperRiskScore: clampScore(gatekeeper),
+    organisationalComplexityScore: clampScore(complexity),
+    warmRoutePotentialScore: clampScore(warmRoute),
+    credibilityThresholdScore: clampScore(credibility),
+    namedContactRequired,
+  };
+}
+
+function computeChannelScores(
+  persona: AccountPersona,
+  supportingScores: SupportingScores,
+  ctx: {
+    hasDirectPhoneSignal: boolean;
+    hasWebsite: boolean;
+    isLocalRelationshipBusiness: boolean;
+    hasLinkedinPresence: boolean;
+    hasLinkedinCompanyPage: boolean;
+    accountTier: AccountTier;
+    namedContactFound: boolean;
+    isClearlyEnterpriseBrand: boolean;
+    isDefenceOrAerospaceOrRegulated: boolean;
+    gatekeeperRiskScore: number;
+  }
+): ChannelScores {
+  const {
+    hasDirectPhoneSignal,
+    hasWebsite,
+    isLocalRelationshipBusiness,
+    hasLinkedinPresence,
+    hasLinkedinCompanyPage,
+    accountTier,
+    namedContactFound,
+    isClearlyEnterpriseBrand,
+    isDefenceOrAerospaceOrRegulated,
+    gatekeeperRiskScore,
+  } = ctx;
+
+  let email = 50 + supportingScores.digital_maturity_score / 2;
+  let linkedin = hasLinkedinPresence ? 50 : 30;
+  if (hasLinkedinCompanyPage) linkedin += 10;
+
+  let research = 40;
+  if (accountTier !== "direct_access" || isClearlyEnterpriseBrand) {
+    research += 30;
+  }
+  if (isDefenceOrAerospaceOrRegulated) {
+    research += 20;
+  }
+
+  let call = 20;
+  if (
+    accountTier === "direct_access" &&
+    hasDirectPhoneSignal &&
+    gatekeeperRiskScore < 50 &&
+    !isClearlyEnterpriseBrand
+  ) {
+    call = 60 + supportingScores.relationship_score / 3;
+  }
+
+  let faceToFace = 20;
+  if (isLocalRelationshipBusiness) {
+    faceToFace = 50 + supportingScores.relationship_score / 4;
+  }
+
+  if (namedContactFound && hasLinkedinPresence) {
+    linkedin += 10;
+    email += 10;
+  }
+
+  return {
+    email: clampScore(email),
+    call: clampScore(call),
+    face_to_face: clampScore(faceToFace),
+    linkedin: clampScore(linkedin),
+    research: clampScore(research),
+  };
+}
+
+function pickChannels(
+  scores: ChannelScores,
+  accountTier: AccountTier,
+  namedContactFound: boolean,
+  gatekeeperRiskScore: number,
+  hasDirectPhoneSignal: boolean,
+  isClearlyEnterpriseBrand: boolean
+): { primary: Channel; secondary: Channel; accessStrategy: AccessStrategy } {
+  const enterpriseLike =
+    accountTier === "enterprise_complex" || isClearlyEnterpriseBrand;
+  const highlyGatekept = gatekeeperRiskScore >= 70;
+
+  if (enterpriseLike || highlyGatekept) {
+    const primary: Channel = "research";
+    const secondary: Channel =
+      scores.email >= scores.linkedin ? "email" : "linkedin";
+    const accessStrategy: AccessStrategy = namedContactFound
+      ? "linkedin_plus_email"
+      : "named_contact_research_first";
+    return { primary, secondary, accessStrategy };
+  }
+
+  if (accountTier === "mid_market_structured") {
+    if (namedContactFound) {
+      const primary: Channel =
+        scores.email >= scores.linkedin ? "email" : "linkedin";
+      const secondary: Channel =
+        primary === "email" ? "linkedin" : "email";
+      const accessStrategy: AccessStrategy = "direct_email_to_decision_maker";
+      return { primary, secondary, accessStrategy };
+    }
+
+    const primary: Channel = "email";
+    const secondary: Channel = hasDirectPhoneSignal ? "call" : "linkedin";
+    const accessStrategy: AccessStrategy = "insight_led_email";
+    return { primary, secondary, accessStrategy };
+  }
+
+  if (accountTier === "direct_access") {
+    if (
+      hasDirectPhoneSignal &&
+      gatekeeperRiskScore < 50 &&
+      scores.call >= scores.email
+    ) {
+      const primary: Channel = "call";
+      const secondary: Channel = "email";
+      const accessStrategy: AccessStrategy = "direct_call";
+      return { primary, secondary, accessStrategy };
+    }
+
+    const primary: Channel = "email";
+    const secondary: Channel = hasDirectPhoneSignal ? "call" : "linkedin";
+    const accessStrategy: AccessStrategy = "insight_led_email";
+    return { primary, secondary, accessStrategy };
+  }
+
+  const primary: Channel = "email";
+  const secondary: Channel = "linkedin";
+  const accessStrategy: AccessStrategy = "nurture_before_outreach";
+  return { primary, secondary, accessStrategy };
+}
+
+function computeConfidence(evidenceStrength: number): ConfidenceLevel {
+  if (evidenceStrength >= 0.75) return "high";
+  if (evidenceStrength >= 0.5) return "medium";
+  return "low";
+}
+
+async function getTextualFields(
+  _openaiApiKey: string,
+  params: {
+    enriched: {
+      companyName: string;
+      companyNumber: string | null;
+      chSnapshot: any;
+      webContext: string;
+      persona: AccountPersona;
+      accountTier: AccountTier;
+      supportingScores: SupportingScores;
+      channelScores: ChannelScores;
+      recommendedAccessStrategy: AccessStrategy;
+      recommendedFirstChannel: Channel;
+      fallbackChannel: Channel;
+      confidence: ConfidenceLevel;
+      hasLinkedinPresence: boolean;
+      hasLinkedinCompanyPage: boolean;
+      hasLinkedinNamedContact: boolean;
+      gatekeeperRiskScore: number;
+      organisationalComplexityScore: number;
+      warmRoutePotentialScore: number;
+      credibilityThresholdScore: number;
+      namedContactRequired: boolean;
+      enterpriseIndicators: EnterpriseIndicators;
+      directColdCallRecommended: boolean;
+      linkedinSignalSummary: string;
+    };
+    skeleton: EngagementStrategy;
+  }
+): Promise<TextualStrategyFields> {
+  const { enriched, skeleton } = params;
+  const {
+    companyName,
+    companyNumber,
+    persona,
+    accountTier,
+    supportingScores,
+    channelScores,
+    recommendedAccessStrategy,
+    recommendedFirstChannel,
+    fallbackChannel,
+    confidence,
+    hasLinkedinPresence,
+    hasLinkedinCompanyPage,
+    hasLinkedinNamedContact,
+    gatekeeperRiskScore,
+    organisationalComplexityScore,
+    credibilityThresholdScore,
+    enterpriseIndicators,
+    directColdCallRecommended,
+  } = enriched;
+
+  const reasonCodes: string[] = [];
+  const evidenceSummary: string[] = [];
+
+  if (enterpriseIndicators.indicator_count >= 2) {
+    reasonCodes.push("enterprise_scale");
+  }
+  if (enterpriseIndicators.defence_or_aerospace) {
+    reasonCodes.push("defence_or_aerospace");
+  }
+  if (enterpriseIndicators.regulated_infrastructure_or_utility) {
+    reasonCodes.push("regulated_infrastructure_or_utility");
+  }
+  if (hasLinkedinPresence || hasLinkedinCompanyPage) {
+    reasonCodes.push("digital_presence");
+  }
+  if (directColdCallRecommended) {
+    reasonCodes.push("direct_access_call_possible");
+  }
+
+  evidenceSummary.push(
+    `Persona: ${persona.replace(/_/g, " ")}, tier: ${accountTier.replace(
+      /_/g,
+      " "
+    )}.`
+  );
+  evidenceSummary.push(
+    `Email score: ${channelScores.email}, call score: ${channelScores.call}, LinkedIn score: ${channelScores.linkedin}, research score: ${channelScores.research}.`
+  );
+  evidenceSummary.push(
+    `Gatekeeper risk: ${gatekeeperRiskScore}, organisational complexity: ${organisationalComplexityScore}, credibility threshold: ${credibilityThresholdScore}.`
+  );
+
+  const isEnterpriseLike =
+    accountTier === "enterprise_complex" ||
+    enterpriseIndicators.indicator_count >= 2;
+
+  let routeRationale =
+    "This route balances credibility, relevance, and practical access to the right stakeholder.";
+  if (isEnterpriseLike) {
+    routeRationale =
+      "This route treats the organisation as a complex, gatekept enterprise and focuses on named stakeholders rather than generic switchboard outreach.";
+  }
+
+  let stakeholderHypothesis = skeleton.stakeholder_hypothesis;
+  if (!stakeholderHypothesis || stakeholderHypothesis.trim() === "") {
+    if (isEnterpriseLike) {
+      stakeholderHypothesis =
+        "Divisional finance, tax, engineering programme, innovation or technical leadership (e.g. engineering director, head of tax, R&D programme manager, divisional FD).";
+    } else {
+      stakeholderHypothesis =
+        "Owner, managing director, or a senior finance/operations/technical decision maker.";
+    }
+  }
+
+  let suggestedSubjectLine =
+    skeleton.suggested_subject_line ||
+    "Exploring R&D and innovation opportunities in your organisation";
+  if (isEnterpriseLike) {
+    suggestedSubjectLine = `R&D, innovation and value for ${companyName}`;
+  }
+
+  let suggestedFirstEmail = skeleton.suggested_first_email;
+  if (!suggestedFirstEmail || suggestedFirstEmail.trim() === "") {
+    suggestedFirstEmail =
+      "Hi,\n\nWe work with organisations in your sector to make sure their R&D and innovation activity is properly recognised and supported. Based on public information, it looks like there may be relevant programmes or engineering work within your group.\n\nIf appropriate, I would welcome a short conversation with the right person in finance, tax, engineering or innovation to sense-check fit and see whether a more detailed discussion would be worthwhile.\n\nBest regards,\n";
+  }
+
+  let suggestedCallPurpose = skeleton.suggested_call_purpose;
+  if (!suggestedCallPurpose || suggestedCallPurpose.trim() === "") {
+    suggestedCallPurpose = isEnterpriseLike
+      ? "Confirm who owns R&D / innovation / tax within the relevant division and agree a short, focused call to explore fit."
+      : "Confirm fit, answer initial questions, and agree a short follow-up conversation if there is interest.";
+  }
+
+  let nextBestAction = skeleton.next_best_action;
+  if (!nextBestAction || nextBestAction.trim() === "") {
+    if (isEnterpriseLike) {
+      nextBestAction = "map_stakeholders_then_send_insight_led_email";
+    } else {
+      nextBestAction = "send_practical_email_then_follow_up_call_if_warm";
+    }
+  }
+
+  return {
+    reason_codes: reasonCodes,
+    evidence_summary: evidenceSummary,
+    route_rationale: routeRationale,
+    stakeholder_hypothesis: stakeholderHypothesis,
+    suggested_subject_line: suggestedSubjectLine,
+    suggested_first_email: suggestedFirstEmail,
+    suggested_call_purpose: suggestedCallPurpose,
+    next_best_action: nextBestAction,
+  };
 }
