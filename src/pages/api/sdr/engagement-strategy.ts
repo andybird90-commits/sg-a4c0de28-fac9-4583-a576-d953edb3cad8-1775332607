@@ -1238,11 +1238,7 @@ function applyEnterpriseFallback(params: {
 
   const noDirectAccess = !hasNamedContact || !hasDirectPhoneSignal;
 
-  if (
-    noDirectAccess &&
-    (updated.recommended_access_strategy === "direct_call" ||
-      updated.recommended_first_channel === "call")
-  ) {
+  if (noDirectAccess && updated.recommended_access_strategy === "direct_call") {
     updated.recommended_first_channel = "research";
     updated.recommended_access_strategy = "named_contact_research_first";
     updated.fallback_channel =
