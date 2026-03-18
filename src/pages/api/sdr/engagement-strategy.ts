@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { supabaseServer } from "@/integrations/supabase/serverClient";
+import type { Json } from "@/integrations/supabase/types";
 
 type Channel = "email" | "call" | "face_to_face";
 type ConfidenceLevel = "high" | "medium" | "low";
@@ -454,8 +455,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (prospectError || !prospect) {
       return res.status(404).json({ message: "Prospect not found" });
     }
-    const companyName: string = prospect.company_name as string;
-    const companyNumber: string | null = (prospect.company_number as string | null) ?? null;
+
+    const prospectRecord = prospect as any;
+
+    const companyName: string = prospectRecord.company_name as string;
+    const companyNumber: string | null = (prospectRecord.company_number as string | null) ?? null;
     const { snapshot: chSnapshot, filingConfidenceScore } = await getCompaniesHouseSnapshot(req, companyNumber);
     const sicCodes: string[] | null = Array.isArray(chSnapshot?.sic_codes) ? (chSnapshot.sic_codes as string[]) : null;
     const companyAgeYears: number | null =
@@ -475,13 +479,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       companyAgeYears,
       numberOfDirectors,
       sicCodes,
-      hasWebsite: hasWebsite || Boolean(prospect.website),
+      hasWebsite: hasWebsite || Boolean(prospectRecord.website),
       isClearlyCorporate,
       isTechnicalSector,
       isLocalRelationshipBusiness,
     });
     const supportingScores = computeSupportingScores({
-      hasWebsite: hasWebsite || Boolean(prospect.website),
+      hasWebsite: hasWebsite || Boolean(prospectRecord.website),
       hasContactSignal,
       hasDirectPhoneSignal,
       companyAgeYears,
@@ -492,7 +496,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
     const channelScores = computeChannelScores(persona, supportingScores, {
       hasDirectPhoneSignal,
-      hasWebsite: hasWebsite || Boolean(prospect.website),
+      hasWebsite: hasWebsite || Boolean(prospectRecord.website),
       isLocalRelationshipBusiness: Boolean(chAddressLocality) || isLocalRelationshipBusiness,
     });
     const { primary, secondary } = pickChannels(channelScores);
@@ -500,7 +504,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (companyAgeYears !== null) evidenceSignals.push(true);
     if (numberOfDirectors !== null) evidenceSignals.push(true);
     if ((sicCodes ?? []).length > 0) evidenceSignals.push(true);
-    if (hasWebsite || Boolean(prospect.website)) evidenceSignals.push(true);
+    if (hasWebsite || Boolean(prospectRecord.website)) evidenceSignals.push(true);
     if (hasContactSignal) evidenceSignals.push(true);
     if (hasDirectPhoneSignal) evidenceSignals.push(true);
     if (typeof filingConfidenceScore === "number") evidenceSignals.push(true);
@@ -549,7 +553,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { data: updated, error: updateError } = await supabaseServer
       .from("sdr_prospects")
       .update({
-        engagement_strategy_json: strategy,
+        engagement_strategy_json: strategy as unknown as Json,
         engagement_recommended_first_touch: strategy.recommended_first_touch,
         engagement_fallback_touch: strategy.fallback_touch,
         engagement_confidence: strategy.confidence,

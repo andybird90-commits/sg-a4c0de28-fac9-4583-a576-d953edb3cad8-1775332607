@@ -89,7 +89,13 @@ export function AiEngagementStrategyPanel(props: AiEngagementStrategyPanelProps)
 
   const strategy = useMemo<EngagementStrategyJson | null>(() => {
     if (!prospect || !prospect.engagement_strategy_json) return null;
-    return prospect.engagement_strategy_json as EngagementStrategyJson;
+
+    const value = prospect.engagement_strategy_json as unknown;
+    if (!value || typeof value !== "object") {
+      return null;
+    }
+
+    return value as EngagementStrategyJson;
   }, [prospect]);
 
   React.useEffect(() => {
