@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { supabaseServer } from "@/integrations/supabase/serverClient";
-import type { Json } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/types";
 
 type Channel = "email" | "call" | "face_to_face";
 type ConfidenceLevel = "high" | "medium" | "low";
@@ -11,6 +11,8 @@ type AccountPersona =
   | "technical_engineering_led_business"
   | "procurement_or_compliance_led_organisation"
   | "relationship_led_local_business";
+
+type StrategyJson = Database["public"]["Tables"]["sdr_prospects"]["Row"]["engagement_strategy_json"];
 
 interface ChannelScores {
   email: number;
@@ -553,7 +555,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { data: updated, error: updateError } = await supabaseServer
       .from("sdr_prospects")
       .update({
-        engagement_strategy_json: strategy as unknown as Json,
+        engagement_strategy_json: strategy as unknown as StrategyJson,
         engagement_recommended_first_touch: strategy.recommended_first_touch,
         engagement_fallback_touch: strategy.fallback_touch,
         engagement_confidence: strategy.confidence,
