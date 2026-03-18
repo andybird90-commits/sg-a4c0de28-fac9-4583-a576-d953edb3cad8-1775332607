@@ -3801,6 +3801,47 @@ export type Database = {
           },
         ]
       }
+      sdr_engagement_strategy_runs: {
+        Row: {
+          created_at: string
+          evidence_pack: Json
+          id: string
+          prospect_id: string
+          run_mode: string
+          source_status: Json
+          strategy_output: Json | null
+          warnings: string[]
+        }
+        Insert: {
+          created_at?: string
+          evidence_pack: Json
+          id?: string
+          prospect_id: string
+          run_mode: string
+          source_status?: Json
+          strategy_output?: Json | null
+          warnings?: string[]
+        }
+        Update: {
+          created_at?: string
+          evidence_pack?: Json
+          id?: string
+          prospect_id?: string
+          run_mode?: string
+          source_status?: Json
+          strategy_output?: Json | null
+          warnings?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sdr_engagement_strategy_runs_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "sdr_prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sdr_prospects: {
         Row: {
           ai_dossier_json: Json | null

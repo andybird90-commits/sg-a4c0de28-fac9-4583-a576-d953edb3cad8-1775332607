@@ -40,6 +40,71 @@ function normaliseChannelForDb(
   return null;
 }
 
+interface SupportingScores {
+  digital_maturity_score: number;
+  relationship_score: number;
+  local_visit_score: number;
+  decision_maker_access_score: number;
+  education_need_score: number;
+  commercial_value_score: number;
+  urgency_trigger_score: number;
+}
+
+interface ChannelScores {
+  email: number;
+  call: number;
+  face_to_face: number;
+  linkedin: number;
+  research: number;
+}
+
+interface TextualStrategyFields {
+  reason_codes: string[];
+  evidence_summary: string[];
+  route_rationale: string;
+  stakeholder_hypothesis: string;
+  suggested_subject_line: string;
+  suggested_first_email: string;
+  suggested_call_purpose: string;
+  next_best_action: string;
+}
+
+interface EngagementStrategy {
+  recommended_access_strategy: AccessStrategy;
+  recommended_first_channel: Channel;
+  fallback_channel: Channel;
+  confidence: ConfidenceLevel;
+
+  account_persona: AccountPersona;
+  account_tier: AccountTier;
+
+  gatekeeper_risk_score: number;
+  organisational_complexity_score: number;
+  warm_route_potential_score: number;
+  credibility_threshold_score: number;
+
+  named_contact_required: boolean;
+  named_contact_found: boolean;
+
+  direct_cold_call_recommended: boolean;
+
+  channel_scores: ChannelScores;
+
+  reason_codes: string[];
+  evidence_summary: string[];
+
+  route_rationale: string;
+  stakeholder_hypothesis: string;
+
+  suggested_subject_line: string;
+  suggested_first_email: string;
+  suggested_call_purpose: string;
+
+  next_best_action: string;
+
+  engagement_preference?: EngagementPreference;
+}
+
 interface EngagementPreference {
   mode: "standard" | "enterprise";
   primaryRoute?: string;
