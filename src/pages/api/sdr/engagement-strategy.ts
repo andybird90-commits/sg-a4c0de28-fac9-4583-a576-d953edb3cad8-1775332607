@@ -609,7 +609,7 @@ export default async function handler(
   res: NextApiResponse
 ): Promise<void> {
   if (req.method !== "POST") {
-    req.res?.setHeader("Allow", "POST");
+    res.setHeader("Allow", "POST");
     res.status(405).json({ message: "Method not allowed" });
     return;
   }
