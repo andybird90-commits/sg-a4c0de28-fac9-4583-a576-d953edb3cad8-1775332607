@@ -89,19 +89,48 @@ export default function StaffSDRPage(): JSX.Element {
     if (!user) return;
     try {
       setLoadingProspects(true);
-      const { data, error } = await supabase
+
+      const { data: enrichedData, error: enrichedError } = await supabase
         .from("sdr_prospects")
         .select("*")
+        .or(
+          "status.eq.enriched,ai_dossier_json.not.is.null,last_enriched_at.not.is.null,rd_viability_score.not.is.null"
+        )
         .order("rd_viability_score", { ascending: false })
         .order("created_at", { ascending: false })
-        .range(0, 4999);
+        .limit(1000);
 
-      if (error) {
-        console.error("Error loading SDR prospects:", error);
-        return;
+      if (enrichedError) {
+        console.error("Error loading enriched SDR prospects:", enrichedError);
       }
 
-      const list: SdrProspect[] = (data as SdrProspect[]) || [];
+      const { data: newData, error: newError } = await supabase
+        .from("sdr_prospects")
+        .select("*")
+        .eq("status", "new")
+        .order("created_at", { ascending: false })
+        .limit(1000);
+
+      if (newError) {
+        console.error("Error loading new SDR prospects:", newError);
+      }
+
+      const enrichedList: SdrProspect[] =
+        (enrichedData as SdrProspect[]) || [];
+      const newList: SdrProspect[] = (newData as SdrProspect[]) || [];
+
+      const map = new Map<string, SdrProspect>();
+      for (const p of enrichedList) {
+        map.set(p.id as string, p);
+      }
+      for (const p of newList) {
+        const id = p.id as string;
+        if (!map.has(id)) {
+          map.set(id, p);
+        }
+      }
+
+      const list = Array.from(map.values());
 
       const withDossierCount = list.filter((p) => hasDossierFlag(p)).length;
       const nonNewStatusCount = list.filter(
@@ -122,8 +151,10 @@ export default function StaffSDRPage(): JSX.Element {
           ((p.rd_viability_score as number | null | undefined) ?? null) !== null
       ).length;
 
-      console.log("SDR prospects loaded", {
+      console.log("SDR prospects loaded (merged)", {
         total: list.length,
+        enrichedCount: enrichedList.length,
+        newCount: newList.length,
         withDossierCount,
         nonNewStatusCount,
         withStatusEnriched,
@@ -159,8 +190,14 @@ export default function StaffSDRPage(): JSX.Element {
       );
 
       setProspects(list);
+
       if (!selectedProspect && list.length > 0) {
         setSelectedProspect(list[0]);
+      } else if (
+        selectedProspect &&
+        !list.some((p) => p.id === selectedProspect.id)
+      ) {
+        setSelectedProspect(list[0] ?? null);
       }
     } finally {
       setLoadingProspects(false);
