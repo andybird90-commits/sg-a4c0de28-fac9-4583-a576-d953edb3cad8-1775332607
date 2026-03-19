@@ -25,6 +25,13 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface OrganisationListItem {
+  id: string;
+  name: string;
+  organisation_code: string;
+  sidekick_enabled: boolean;
+}
+
 interface Profile {
   id: string;
   email: string;
@@ -32,9 +39,11 @@ interface Profile {
   role: string | null;
   internal_role: string | null;
   organisation: {
+    id: string;
     name: string;
     organisation_code: string;
   } | null;
+  organisation_role: string | null;
 }
 
 export default function AdminUsers() {
@@ -50,14 +59,19 @@ export default function AdminUsers() {
   const [saving, setSaving] = useState(false);
   const [expandedOrgs, setExpandedOrgs] = useState<Set<string>>(new Set());
 
+  const [organisations, setOrganisations] = useState<OrganisationListItem[]>([]);
+  const [selectedOrganisationId, setSelectedOrganisationId] = useState<string>("none");
+  const [selectedOrganisationRole, setSelectedOrganisationRole] = useState<string>("client");
+  const [replaceExistingMemberships, setReplaceExistingMemberships] = useState<boolean>(false);
+
   // Group users by organization
   const groupedUsers = useMemo(() => {
     const groups: Record<string, Profile[]> = {
-      'No Organization': []
+      "No Organization": [],
     };
 
-    users.forEach(user => {
-      const orgName = user.organisation?.name || 'No Organization';
+    users.forEach((user) => {
+      const orgName = user.organisation?.name || "No Organization";
       if (!groups[orgName]) {
         groups[orgName] = [];
       }
@@ -68,7 +82,7 @@ export default function AdminUsers() {
   }, [users]);
 
   const toggleOrg = (orgName: string) => {
-    setExpandedOrgs(prev => {
+    setExpandedOrgs((prev) => {
       const next = new Set(prev);
       if (next.has(orgName)) {
         next.delete(orgName);
@@ -82,6 +96,11 @@ export default function AdminUsers() {
   useEffect(() => {
     checkAuth();
   }, []);
+
+  const getAccessToken = async (): Promise<string | null> => {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token ?? null;
+  };
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -107,7 +126,30 @@ export default function AdminUsers() {
     }
 
     setCurrentUser(profile);
-    loadUsers();
+    await Promise.all([loadUsers(), loadOrganisations()]);
+  };
+
+  const loadOrganisations = async () => {
+    try {
+      const token = await getAccessToken();
+      if (!token) return;
+
+      const res = await fetch("/api/organisations/list", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) return;
+
+      const data = (await res.json()) as { ok: boolean; organisations?: OrganisationListItem[] };
+      if (data.ok && Array.isArray(data.organisations)) {
+        setOrganisations(data.organisations);
+      }
+    } catch {
+      // Ignore; user list still usable
+    }
   };
 
   const loadUsers = async () => {
@@ -127,7 +169,9 @@ export default function AdminUsers() {
         .from("organisation_users")
         .select(`
           user_id,
+          role,
           organisations (
+            id,
             name,
             organisation_code
           )
@@ -150,6 +194,7 @@ export default function AdminUsers() {
           return {
             ...profile,
             organisation: primaryMembership?.organisations || null,
+            organisation_role: (primaryMembership?.role as string | null) ?? null,
           };
         }) || [];
 
@@ -170,7 +215,44 @@ export default function AdminUsers() {
     setEditingUser(user);
     setSelectedRole(user.role || "");
     setSelectedInternalRole(user.internal_role || "");
+
+    setSelectedOrganisationId(user.organisation?.id ?? "none");
+    setSelectedOrganisationRole(user.organisation_role ?? "client");
+    setReplaceExistingMemberships(false);
+
     setShowEditModal(true);
+  };
+
+  const assignOrganisation = async (targetUserId: string): Promise<void> => {
+    if (selectedOrganisationId === "none") return;
+
+    const token = await getAccessToken();
+    if (!token) throw new Error("Not authenticated");
+
+    const response = await fetch("/api/organisations/join", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        orgId: selectedOrganisationId,
+        userId: targetUserId,
+        role: selectedOrganisationRole || "client",
+        replaceExisting: replaceExistingMemberships,
+      }),
+    });
+
+    if (!response.ok) {
+      let message = "Failed to assign organisation";
+      try {
+        const data = (await response.json()) as { error?: string };
+        if (data?.error) message = data.error;
+      } catch {
+        // ignore
+      }
+      throw new Error(message);
+    }
   };
 
   const handleSaveUser = async () => {
@@ -188,13 +270,19 @@ export default function AdminUsers() {
 
       if (error) throw error;
 
+      if (selectedOrganisationId !== (editingUser.organisation?.id ?? "none")) {
+        await assignOrganisation(editingUser.id);
+      } else if (selectedOrganisationId !== "none" && replaceExistingMemberships) {
+        await assignOrganisation(editingUser.id);
+      }
+
       toast({
         title: "Success",
-        description: "User roles updated successfully.",
+        description: "User updated successfully.",
       });
 
       setShowEditModal(false);
-      loadUsers();
+      await loadUsers();
     } catch (error: any) {
       console.error("Error updating user:", error);
       toast({
@@ -234,7 +322,7 @@ export default function AdminUsers() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">User Management</h1>
             <p className="text-muted-foreground">
-              Manage user roles and permissions
+              Manage user roles, permissions, and organisation access
             </p>
           </div>
 
@@ -266,8 +354,8 @@ export default function AdminUsers() {
                   {Object.entries(groupedUsers)
                     .sort(([a], [b]) => {
                       // Sort: organizations alphabetically, "No Organization" last
-                      if (a === 'No Organization') return 1;
-                      if (b === 'No Organization') return -1;
+                      if (a === "No Organization") return 1;
+                      if (b === "No Organization") return -1;
                       return a.localeCompare(b);
                     })
                     .map(([orgName, orgUsers]) => {
@@ -280,19 +368,20 @@ export default function AdminUsers() {
                           <button
                             onClick={() => toggleOrg(orgName)}
                             className="w-full flex items-center justify-between p-4 bg-muted/50 hover:bg-muted transition-colors"
+                            type="button"
                           >
                             <div className="flex items-center gap-3">
                               <Building2 className="h-5 w-5 text-muted-foreground" />
                               <div className="text-left">
                                 <h3 className="font-semibold">{orgName}</h3>
                                 <p className="text-sm text-muted-foreground">
-                                  {userCount} {userCount === 1 ? 'user' : 'users'}
+                                  {userCount} {userCount === 1 ? "user" : "users"}
                                 </p>
                               </div>
                             </div>
                             <ChevronDown
                               className={`h-5 w-5 text-muted-foreground transition-transform ${
-                                isExpanded ? 'transform rotate-180' : ''
+                                isExpanded ? "transform rotate-180" : ""
                               }`}
                             />
                           </button>
@@ -312,7 +401,7 @@ export default function AdminUsers() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <div className="font-medium truncate">
-                                        {user.full_name || 'No name'}
+                                        {user.full_name || "No name"}
                                       </div>
                                       <div className="text-sm text-muted-foreground flex items-center gap-2">
                                         <Mail className="h-3 w-3" />
@@ -356,13 +445,65 @@ export default function AdminUsers() {
         <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit User Roles</DialogTitle>
+              <DialogTitle>Edit User</DialogTitle>
               <DialogDescription>
-                Assign roles to {editingUser?.full_name || editingUser?.email}
+                Update roles and organisation access for {editingUser?.full_name || editingUser?.email}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
+
+            <div className="space-y-5 py-2">
+              <div className="space-y-2">
+                <Label>Organisation</Label>
+                <Select value={selectedOrganisationId} onValueChange={setSelectedOrganisationId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select organisation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No organisation</SelectItem>
+                    {organisations.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name} ({org.organisation_code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {selectedOrganisationId !== "none" && (
+                  <div className="grid gap-3 rounded-md border bg-muted/30 p-3">
+                    <div className="space-y-2">
+                      <Label>Organisation role</Label>
+                      <Select value={selectedOrganisationRole} onValueChange={setSelectedOrganisationRole}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select organisation role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["client", "member", "viewer", "admin"].map((r) => (
+                            <SelectItem key={r} value={r}>
+                              {r.charAt(0).toUpperCase() + r.slice(1)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={replaceExistingMemberships}
+                        onChange={(e) => setReplaceExistingMemberships(e.target.checked)}
+                      />
+                      Replace existing organisation memberships
+                    </label>
+
+                    <p className="text-xs text-muted-foreground">
+                      Use this when moving a user out of the wrong organisation. For a user in “No Organization” you can leave it off.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="internal-role">Internal Role</Label>
                 <Select
                   value={editingUser?.internal_role || "none"}
@@ -378,13 +519,11 @@ export default function AdminUsers() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No Internal Role</SelectItem>
-                    {["admin", "director", "technical", "bdm", "finance"]
-                      .filter(Boolean)
-                      .map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {role.charAt(0).toUpperCase() + role.slice(1)}
-                        </SelectItem>
-                      ))}
+                    {["admin", "director", "technical", "bdm", "finance"].map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -392,7 +531,7 @@ export default function AdminUsers() {
                 </p>
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="role">Client Role</Label>
                 <Select
                   value={editingUser?.role || "none"}
@@ -408,13 +547,11 @@ export default function AdminUsers() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No Client Role</SelectItem>
-                    {["admin", "member", "viewer"]
-                      .filter(Boolean)
-                      .map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {role.charAt(0).toUpperCase() + role.slice(1)}
-                        </SelectItem>
-                      ))}
+                    {["admin", "member", "viewer"].map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -432,6 +569,7 @@ export default function AdminUsers() {
                 </ul>
               </div>
             </div>
+
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"

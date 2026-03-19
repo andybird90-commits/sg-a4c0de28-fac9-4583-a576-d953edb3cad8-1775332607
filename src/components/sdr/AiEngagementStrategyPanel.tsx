@@ -66,12 +66,22 @@ interface EngagementStrategyJson {
   suggested_call_purpose: string;
   next_best_action: string;
   engagement_preference?: EngagementPreference;
+  refresh_timestamp?: string;
+  source_status?: {
+    companiesHouse?: { ok: boolean; error?: string };
+    braveWeb?: { ok: boolean; error?: string };
+    internal?: { ok: boolean; error?: string };
+    openai?: { ok: boolean; error?: string };
+  };
+  warnings?: string[];
+  assumptions?: string[];
+  missing_information?: string[];
 }
 
 interface AiEngagementStrategyPanelProps {
   prospect: SdrProspect | null;
   onProspectUpdated: (prospect: SdrProspect) => void;
-  onGenerateStrategy: (prospectId: string) => Promise<void>;
+  onGenerateStrategy: (prospectId: string, mode: "refresh" | "full_live") => Promise<void>;
   generating: boolean;
 }
 
@@ -161,9 +171,9 @@ export function AiEngagementStrategyPanel(
     }
   };
 
-  const handleGenerateClick = async (): Promise<void> => {
+  const handleGenerateClick = async (mode: "refresh" | "full_live"): Promise<void> => {
     if (!prospect || generating) return;
-    await onGenerateStrategy(prospect.id as string);
+    await onGenerateStrategy(prospect.id as string, mode);
   };
 
   const personaValue =
@@ -180,6 +190,23 @@ export function AiEngagementStrategyPanel(
     | EngagementPreference
     | undefined;
 
+  const sourceStatus = strategy?.source_status ?? null;
+  const warnings = Array.isArray(strategy?.warnings) ? strategy?.warnings : [];
+  const lastRefreshed =
+    strategy?.refresh_timestamp ??
+    ((prospect.engagement_generated_at as string | null) ?? null);
+
+  const sourceBadge = (label: string, ok?: boolean, error?: string): JSX.Element => {
+    const variant = ok === false ? "destructive" : ok === true ? "secondary" : "outline";
+    const text =
+      ok === false ? `${label}: failed` : ok === true ? `${label}: ok` : `${label}: unknown`;
+    return (
+      <Badge variant={variant} title={ok === false && error ? error : undefined}>
+        {text}
+      </Badge>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -189,17 +216,54 @@ export function AiEngagementStrategyPanel(
             <p className="text-xs text-muted-foreground">
               How this prospect appears to respond in practice.
             </p>
+            {lastRefreshed && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Last refreshed: {new Date(lastRefreshed).toLocaleString()}
+              </p>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={handleGenerateClick}
-            disabled={generating || !prospect.id}
-            className="inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {generating ? "Refreshing…" : "Refresh AI strategy"}
-          </button>
+          <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={() => void handleGenerateClick("refresh")}
+              disabled={generating || !prospect.id}
+              className="inline-flex items-center rounded-md border px-3 py-1 text-xs font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+              title="Re-run OpenAI using recent evidence if available (cost-controlled)."
+            >
+              {generating ? "Refreshing…" : "Refresh strategy"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleGenerateClick("full_live")}
+              disabled={generating || !prospect.id}
+              className="inline-flex items-center rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Forces live Companies House + live web evidence + OpenAI."
+            >
+              {generating ? "Refreshing…" : "Full live re-run"}
+            </button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
+          {sourceStatus && (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              {sourceBadge("Companies House", sourceStatus.companiesHouse?.ok, sourceStatus.companiesHouse?.error)}
+              {sourceBadge("Web", sourceStatus.braveWeb?.ok, sourceStatus.braveWeb?.error)}
+              {sourceBadge("Internal", sourceStatus.internal?.ok, sourceStatus.internal?.error)}
+              {sourceBadge("OpenAI", sourceStatus.openai?.ok, sourceStatus.openai?.error)}
+            </div>
+          )}
+
+          {warnings.length > 0 && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              <div className="font-semibold">Warnings</div>
+              <ul className="mt-1 list-disc space-y-1 pl-5">
+                {warnings.map((w, idx) => (
+                  <li key={idx}>{w}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-6">
             <div>
               <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -276,75 +340,19 @@ export function AiEngagementStrategyPanel(
                 prospect.
               </p>
               <p className="text-muted-foreground">
-                Refresh the AI strategy to infer a route into the account based
-                on the latest enrichment. For major enterprises this focuses on
-                access strategy and stakeholder mapping, not just channel
-                choice.
+                Use “Full live re-run” to recompute strategy using live Companies House + web evidence plus internal context.
               </p>
             </div>
           ) : engagementPreference.mode === "enterprise" ? (
             <>
-              <div className="flex flex-wrap items-center gap-4">
-                <div>
-                  <div className="text-xs uppercase text-muted-foreground">
-                    Primary access model
-                  </div>
-                  <div className="font-medium">
-                    {engagementPreference.primaryAccessModel ??
-                      "Stakeholder-mapped account-based outreach"}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs uppercase text-muted-foreground">
-                    Gatekeeper risk
-                  </div>
-                  <Badge
-                    variant={
-                      engagementPreference.gatekeeperRisk === "High"
-                        ? "destructive"
-                        : engagementPreference.gatekeeperRisk === "Medium"
-                        ? "secondary"
-                        : "outline"
-                    }
-                  >
-                    {engagementPreference.gatekeeperRisk}
-                  </Badge>
-                </div>
-                {engagementPreference.recommendationStatus && (
-                  <div>
-                    <div className="text-xs uppercase text-muted-foreground">
-                      Recommendation status
-                    </div>
-                    <div>{engagementPreference.recommendationStatus}</div>
-                  </div>
-                )}
-                <div>
-                  <div className="text-xs uppercase text-muted-foreground">
-                    Confidence
-                  </div>
-                  <div>
-                    {(engagementPreference.confidence * 100).toFixed(0)}%
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
               <div className="space-y-2">
                 <div className="text-xs uppercase text-muted-foreground">
-                  Suggested target persona
+                  Primary access model
                 </div>
-                <div>{engagementPreference.recommendedPersona}</div>
+                <div className="font-medium">
+                  {engagementPreference.primaryAccessModel ?? "Stakeholder-mapped account-based outreach"}
+                </div>
               </div>
-
-              {engagementPreference.likelyStakeholderClass && (
-                <div className="space-y-2">
-                  <div className="text-xs uppercase text-muted-foreground">
-                    Likely stakeholder class
-                  </div>
-                  <div>{engagementPreference.likelyStakeholderClass}</div>
-                </div>
-              )}
 
               {engagementPreference.deliveryChannelGuidance && (
                 <div className="space-y-2">
@@ -356,40 +364,47 @@ export function AiEngagementStrategyPanel(
               )}
 
               <div className="grid gap-4 md:grid-cols-3">
+                {engagementPreference.recommendationStatus && (
+                  <div>
+                    <div className="text-xs uppercase text-muted-foreground">
+                      Recommendation status
+                    </div>
+                    <div>{engagementPreference.recommendationStatus}</div>
+                  </div>
+                )}
                 <div>
                   <div className="text-xs uppercase text-muted-foreground">
                     Business unit targeting required
                   </div>
-                  <div>
-                    {engagementPreference.businessUnitTargetingRequired
-                      ? "Yes"
-                      : "No"}
-                  </div>
+                  <div>{engagementPreference.businessUnitTargetingRequired ? "Yes" : "No"}</div>
                 </div>
                 <div>
                   <div className="text-xs uppercase text-muted-foreground">
                     Named contact required
                   </div>
-                  <div>
-                    {engagementPreference.namedContactRequired ? "Yes" : "No"}
-                  </div>
+                  <div>{engagementPreference.namedContactRequired ? "Yes" : "No"}</div>
                 </div>
-                {engagementPreference.phoneUseRule && (
-                  <div>
-                    <div className="text-xs uppercase text-muted-foreground">
-                      Phone use rule
-                    </div>
-                    <div>{engagementPreference.phoneUseRule}</div>
-                  </div>
-                )}
               </div>
 
-              <div className="space-y-2">
-                <div className="text-xs uppercase text-muted-foreground">
-                  Recommended tone
+              {engagementPreference.phoneUseRule && (
+                <div className="space-y-2">
+                  <div className="text-xs uppercase text-muted-foreground">
+                    Phone use rule
+                  </div>
+                  <div>{engagementPreference.phoneUseRule}</div>
                 </div>
-                <div>{engagementPreference.tone}</div>
-              </div>
+              )}
+
+              {engagementPreference.likelyStakeholderClass && (
+                <div className="space-y-2">
+                  <div className="text-xs uppercase text-muted-foreground">
+                    Likely stakeholder class
+                  </div>
+                  <div>{engagementPreference.likelyStakeholderClass}</div>
+                </div>
+              )}
+
+              <Separator />
 
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="why">
@@ -483,20 +498,6 @@ export function AiEngagementStrategyPanel(
 
               <Separator />
 
-              <div className="space-y-2">
-                <div className="text-xs uppercase text-muted-foreground">
-                  Suggested target persona
-                </div>
-                <div>{engagementPreference.recommendedPersona}</div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-xs uppercase text-muted-foreground">
-                  Recommended tone
-                </div>
-                <div>{engagementPreference.tone}</div>
-              </div>
-
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="why">
                   <AccordionTrigger className="text-sm">
@@ -524,22 +525,6 @@ export function AiEngagementStrategyPanel(
                     </ol>
                   </AccordionContent>
                 </AccordionItem>
-                {engagementPreference.whatNotToDo.length > 0 && (
-                  <AccordionItem value="what-not-to-do">
-                    <AccordionTrigger className="text-sm">
-                      What not to do
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <ul className="list-disc space-y-1 pl-5">
-                        {engagementPreference.whatNotToDo.map(
-                          (warning, index) => (
-                            <li key={index}>{warning}</li>
-                          )
-                        )}
-                      </ul>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
               </Accordion>
 
               {!engagementPreference.directColdCallRecommended && (
@@ -549,6 +534,48 @@ export function AiEngagementStrategyPanel(
                   a named stakeholder has been identified.
                 </p>
               )}
+            </>
+          )}
+
+          {Array.isArray(strategy?.evidence_summary) && strategy.evidence_summary.length > 0 && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <div className="text-xs uppercase text-muted-foreground">Evidence summary</div>
+                <ul className="list-disc space-y-1 pl-5 text-sm">
+                  {strategy.evidence_summary.map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+
+          {Array.isArray(strategy?.assumptions) && strategy.assumptions.length > 0 && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <div className="text-xs uppercase text-muted-foreground">Assumptions</div>
+                <ul className="list-disc space-y-1 pl-5 text-sm">
+                  {strategy.assumptions.map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          )}
+
+          {Array.isArray(strategy?.missing_information) && strategy.missing_information.length > 0 && (
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <div className="text-xs uppercase text-muted-foreground">Missing information</div>
+                <ul className="list-disc space-y-1 pl-5 text-sm">
+                  {strategy.missing_information.map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  ))}
+                </ul>
+              </div>
             </>
           )}
         </CardContent>

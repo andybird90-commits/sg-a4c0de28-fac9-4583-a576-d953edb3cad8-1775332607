@@ -190,7 +190,7 @@ export async function runCompaniesHouseEnrichment(companyNumber: string | null):
   if (!companyNumber) return { ok: false, error: "No company number available" };
 
   const profile = await fetchCompaniesHouseJson(companyNumber, "");
-  if (!profile.ok) return { ok: false, error: profile.error };
+  if (profile.ok === false) return { ok: false, error: profile.error };
 
   const officers = await fetchCompaniesHouseJson(companyNumber, "/officers");
   const filingHistory = await fetchCompaniesHouseJson(companyNumber, "/filing-history");
@@ -391,13 +391,17 @@ export async function runOpenAiEngagementStrategy(evidencePack: StrategyEvidence
   const parsed = safeJsonParse(raw);
 
   let candidate: unknown = null;
-  if (parsed.ok) {
+  if (parsed.ok === true) {
     candidate = parsed.value;
   } else {
     const extracted = extractJsonObject(raw);
-    if (!extracted) return { ok: false, error: `OpenAI output was not valid JSON (${parsed.error})`, raw };
+    if (!extracted) {
+      return { ok: false, error: `OpenAI output was not valid JSON (${parsed.error})`, raw };
+    }
     const parsed2 = safeJsonParse(extracted);
-    if (!parsed2.ok) return { ok: false, error: `OpenAI output was not valid JSON (${parsed2.error})`, raw };
+    if (parsed2.ok === false) {
+      return { ok: false, error: `OpenAI output was not valid JSON (${parsed2.error})`, raw };
+    }
     candidate = parsed2.value;
   }
 
@@ -467,9 +471,14 @@ export async function buildEvidencePack(params: {
     openai: { ok: false },
   };
 
-  if (!params.reuseEvidence?.companiesHouse || params.mode === "full_live") {
+  const canReuseCompaniesHouse =
+    params.mode === "refresh" && (params.reuseEvidence?.companiesHouse ?? null) != null;
+  const canReuseWebEvidence =
+    params.mode === "refresh" && (params.reuseEvidence?.webEvidence ?? null) != null;
+
+  if (!canReuseCompaniesHouse || params.mode === "full_live") {
     const ch = await runCompaniesHouseEnrichment(companyNumber);
-    if (ch.ok) {
+    if (ch.ok === true) {
       companiesHouse = ch.value;
       sourceStatus.companiesHouse = { ok: true };
     } else {
@@ -480,9 +489,9 @@ export async function buildEvidencePack(params: {
     sourceStatus.companiesHouse = { ok: true };
   }
 
-  if (!params.reuseEvidence?.webEvidence || params.mode === "full_live") {
+  if (!canReuseWebEvidence || params.mode === "full_live") {
     const brave = await runBraveEnrichment({ companyName, website, companyNumber });
-    if (brave.ok) {
+    if (brave.ok === true) {
       webEvidence = brave.value;
       sourceStatus.braveWeb = { ok: true };
     } else {
