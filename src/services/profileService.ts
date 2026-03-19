@@ -49,7 +49,7 @@ export const profileService = {
       // Fetch profile data
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, email, full_name, internal_role")
+        .select("id, email, full_name, internal_role, role")
         .eq("id", user.id)
         .single();
 
@@ -92,6 +92,7 @@ export const profileService = {
         id: profile.id,
         email: profile.email || "",
         full_name: profile.full_name,
+        role: (profile as any).role ?? null,
         internal_role: profile.internal_role as any,
         organisation_code: organisationCode,
         organisation_name: organisationName
@@ -110,7 +111,7 @@ export const profileService = {
       // Fetch profile data
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("id, email, full_name, internal_role")
+        .select("id, email, full_name, internal_role, role")
         .eq("id", userId)
         .single();
 
@@ -149,6 +150,7 @@ export const profileService = {
         id: profile.id,
         email: profile.email || "",
         full_name: profile.full_name,
+        role: (profile as any).role ?? null,
         internal_role: profile.internal_role as any,
         organisation_code: organisationCode,
         organisation_name: organisationName

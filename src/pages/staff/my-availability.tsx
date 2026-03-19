@@ -54,19 +54,23 @@ export default function MyAvailability() {
       .single();
 
     if (!profile?.internal_role) {
-      router.push("/home");
+      toast({
+        title: "Access denied",
+        description: "Only staff can access this page.",
+        variant: "destructive",
+      });
+      router.push("/staff");
       return;
     }
 
-    // Check if user has feasibility role
-    const canManageAvailability =
-      profile.role === "feasibility" ||
-      profile.role === "admin" ||
-      profile.role === "hybrid" ||
+    const isTechOrAdmin =
       profile.internal_role === "technical" ||
-      profile.internal_role === "admin";
+      profile.internal_role === "admin" ||
+      profile.role === "feasibility" ||
+      profile.role === "hybrid" ||
+      profile.role === "admin";
 
-    if (!canManageAvailability) {
+    if (!isTechOrAdmin) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to manage availability.",

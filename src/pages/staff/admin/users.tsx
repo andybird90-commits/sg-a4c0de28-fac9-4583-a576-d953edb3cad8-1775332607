@@ -54,8 +54,8 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<string>("");
-  const [selectedInternalRole, setSelectedInternalRole] = useState<string>("");
+  const [selectedRole, setSelectedRole] = useState<string>("none");
+  const [selectedInternalRole, setSelectedInternalRole] = useState<string>("none");
   const [saving, setSaving] = useState(false);
   const [expandedOrgs, setExpandedOrgs] = useState<Set<string>>(new Set());
 
@@ -213,8 +213,8 @@ export default function AdminUsers() {
 
   const handleEditUser = (user: Profile) => {
     setEditingUser(user);
-    setSelectedRole(user.role || "");
-    setSelectedInternalRole(user.internal_role || "");
+    setSelectedRole(user.role || "none");
+    setSelectedInternalRole(user.internal_role || "none");
 
     setSelectedOrganisationId(user.organisation?.id ?? "none");
     setSelectedOrganisationRole(user.organisation_role ?? "client");
@@ -260,15 +260,26 @@ export default function AdminUsers() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          role: selectedRole || null,
-          internal_role: selectedInternalRole || null,
-        })
-        .eq("id", editingUser.id);
+      const token = await getAccessToken();
+      if (!token) throw new Error("Not authenticated");
 
-      if (error) throw error;
+      const res = await fetch("/api/admin/users/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: editingUser.id,
+          internal_role: selectedInternalRole === "none" ? null : selectedInternalRole,
+          role: selectedRole === "none" ? null : selectedRole,
+        }),
+      });
+
+      const payload = (await res.json()) as any;
+      if (!res.ok || payload?.ok === false) {
+        throw new Error(payload?.message || "Failed to update user.");
+      }
 
       if (selectedOrganisationId !== (editingUser.organisation?.id ?? "none")) {
         await assignOrganisation(editingUser.id);
@@ -477,7 +488,7 @@ export default function AdminUsers() {
                           <SelectValue placeholder="Select organisation role" />
                         </SelectTrigger>
                         <SelectContent>
-                          {["client", "member", "viewer", "admin"].map((r) => (
+                          {["client", "employee", "admin"].map((r) => (
                             <SelectItem key={r} value={r}>
                               {r.charAt(0).toUpperCase() + r.slice(1)}
                             </SelectItem>
@@ -506,20 +517,15 @@ export default function AdminUsers() {
               <div className="space-y-2">
                 <Label htmlFor="internal-role">Internal Role</Label>
                 <Select
-                  value={editingUser?.internal_role || "none"}
-                  onValueChange={(value) =>
-                    setEditingUser({
-                      ...editingUser!,
-                      internal_role: value === "none" ? null : value,
-                    })
-                  }
+                  value={selectedInternalRole}
+                  onValueChange={setSelectedInternalRole}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select internal role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No Internal Role</SelectItem>
-                    {["admin", "director", "technical", "bdm", "finance"].map((role) => (
+                    {["admin", "director", "technical", "bd", "commercial", "ops"].map((role) => (
                       <SelectItem key={role} value={role}>
                         {role.charAt(0).toUpperCase() + role.slice(1)}
                       </SelectItem>
@@ -534,20 +540,15 @@ export default function AdminUsers() {
               <div className="space-y-2">
                 <Label htmlFor="role">Client Role</Label>
                 <Select
-                  value={editingUser?.role || "none"}
-                  onValueChange={(value) =>
-                    setEditingUser({
-                      ...editingUser!,
-                      role: value === "none" ? null : value,
-                    })
-                  }
+                  value={selectedRole}
+                  onValueChange={setSelectedRole}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select client role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No Client Role</SelectItem>
-                    {["admin", "member", "viewer"].map((role) => (
+                    {["bdm", "feasibility", "admin", "finance", "hybrid"].map((role) => (
                       <SelectItem key={role} value={role}>
                         {role.charAt(0).toUpperCase() + role.slice(1)}
                       </SelectItem>

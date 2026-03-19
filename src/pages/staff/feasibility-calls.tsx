@@ -40,9 +40,12 @@ export default function FeasibilityCallsPage() {
       return;
     }
 
-    const isFeasibilityUser = profile.internal_role === "feasibility" || 
-                              profile.internal_role === "admin" || 
-                              profile.internal_role === "hybrid";
+    const isFeasibilityUser =
+      profile.role === "feasibility" ||
+      profile.role === "hybrid" ||
+      profile.role === "admin" ||
+      profile.internal_role === "admin" ||
+      profile.internal_role === "technical";
     
     if (!isFeasibilityUser) {
       toast({
