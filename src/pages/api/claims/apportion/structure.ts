@@ -287,6 +287,31 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
     return true;
   }
 
+  function normalizeMergedAgedPayablesLine(line: string): string {
+    let next = (line || "").replace(/\s+/g, " ").trim();
+    if (!next) return next;
+
+    const lower = next.toLowerCase();
+    const hasAmount = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/.test(next);
+
+    if (hasAmount) {
+      const hasHeaderTokens =
+        lower.includes("contact current") ||
+        lower.includes("ageing by due date") ||
+        looksLikeMonthHeader(next);
+
+      if (hasHeaderTokens && lower.includes("aged payables")) {
+        const idx = lower.lastIndexOf("aged payables");
+        if (idx >= 0) {
+          next = next.slice(idx + "aged payables".length).trim();
+        }
+      }
+    }
+
+    next = next.replace(/^\s*(?:aged\s*)?(?:payables|ayables)\s+/i, "");
+    return next;
+  }
+
   const allTextLower = pages.map((p) => p.text || "").join("\n").toLowerCase();
   const shouldTreatAsAgedPayables = looksLikeAgedPayablesDoc(allTextLower);
 
@@ -300,22 +325,28 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
     let pendingPrefix: string | null = null;
 
     for (const line of lines) {
-      const lower = line.toLowerCase();
+      const workingLine = shouldTreatAsAgedPayables ? normalizeMergedAgedPayablesLine(line) : line;
+      if (!workingLine) {
+        pendingPrefix = null;
+        continue;
+      }
+
+      const lower = workingLine.toLowerCase();
       if (
         lower.startsWith("as at ") ||
         lower.includes("page ") ||
-        looksLikeTotalOrSummaryLine(line) ||
-        looksLikeMonthHeader(line)
+        looksLikeTotalOrSummaryLine(workingLine) ||
+        looksLikeMonthHeader(workingLine)
       ) {
         pendingPrefix = null;
         continue;
       }
 
       amountRegex.lastIndex = 0;
-      const matches = Array.from(line.matchAll(amountRegex));
+      const matches = Array.from(workingLine.matchAll(amountRegex));
       if (matches.length === 0) {
-        if (shouldTreatAsAgedPayables && looksLikeNamePrefixOnly(line)) {
-          const cleaned = cleanContactName(line);
+        if (shouldTreatAsAgedPayables && looksLikeNamePrefixOnly(workingLine)) {
+          const cleaned = cleanContactName(workingLine);
           pendingPrefix = cleaned && hasRealNameWords(cleaned) ? cleaned : null;
         }
         continue;
@@ -328,7 +359,7 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
 
       if (firstIdx <= 0) continue;
 
-      const namePartRaw = line.slice(0, firstIdx).trim();
+      const namePartRaw = workingLine.slice(0, firstIdx).trim();
       const contactName = cleanContactName(namePartRaw);
       let finalName = contactName;
       if ((!finalName || finalName.length < 3 || !hasRealNameWords(finalName)) && pendingPrefix) {
@@ -360,7 +391,7 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
         rawName: finalName,
         normalisedName: finalName,
         category: "supplier",
-        referenceText: line,
+        referenceText: workingLine,
         debitTotal: total,
         creditTotal: null,
         netTotal: total,
@@ -370,7 +401,7 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
         confidence: 0.75,
         include: true,
         notes: "Heuristic table parse (Aged Payables Summary). Please review headings vs totals.",
-        rawExtraction: { page: p.pageNumber, line, monthHits: 0, matchedAmounts: matches.map((m) => m[0]) }
+        rawExtraction: { page: p.pageNumber, line: workingLine, monthHits: 0, matchedAmounts: matches.map((m) => m[0]) }
       });
     }
   }
