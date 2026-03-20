@@ -733,6 +733,149 @@ export type Database = {
           },
         ]
       }
+      claim_apportionment_cost_links: {
+        Row: {
+          apportionment_id: string
+          claim_cost_id: string | null
+          id: string
+          push_snapshot: Json | null
+          pushed_at: string
+          pushed_by: string | null
+        }
+        Insert: {
+          apportionment_id: string
+          claim_cost_id?: string | null
+          id?: string
+          push_snapshot?: Json | null
+          pushed_at?: string
+          pushed_by?: string | null
+        }
+        Update: {
+          apportionment_id?: string
+          claim_cost_id?: string | null
+          id?: string
+          push_snapshot?: Json | null
+          pushed_at?: string
+          pushed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_apportionment_cost_links_apportionment_id_fkey"
+            columns: ["apportionment_id"]
+            isOneToOne: true
+            referencedRelation: "claim_apportionments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_apportionment_cost_links_claim_cost_id_fkey"
+            columns: ["claim_cost_id"]
+            isOneToOne: false
+            referencedRelation: "claim_costs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_apportionment_cost_links_pushed_by_fkey"
+            columns: ["pushed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claim_apportionment_lines: {
+        Row: {
+          category: string
+          claim_id: string
+          confidence: number | null
+          created_at: string
+          credit_total: number | null
+          debit_total: number | null
+          gross_total: number | null
+          id: string
+          include: boolean
+          line_index: number
+          net_total: number | null
+          normalised_name: string | null
+          notes: string | null
+          org_id: string
+          raw_extraction: Json | null
+          raw_name: string | null
+          reference_text: string | null
+          source_file_id: string | null
+          source_page: number | null
+          updated_at: string
+          vat_total: number | null
+        }
+        Insert: {
+          category?: string
+          claim_id: string
+          confidence?: number | null
+          created_at?: string
+          credit_total?: number | null
+          debit_total?: number | null
+          gross_total?: number | null
+          id?: string
+          include?: boolean
+          line_index?: number
+          net_total?: number | null
+          normalised_name?: string | null
+          notes?: string | null
+          org_id: string
+          raw_extraction?: Json | null
+          raw_name?: string | null
+          reference_text?: string | null
+          source_file_id?: string | null
+          source_page?: number | null
+          updated_at?: string
+          vat_total?: number | null
+        }
+        Update: {
+          category?: string
+          claim_id?: string
+          confidence?: number | null
+          created_at?: string
+          credit_total?: number | null
+          debit_total?: number | null
+          gross_total?: number | null
+          id?: string
+          include?: boolean
+          line_index?: number
+          net_total?: number | null
+          normalised_name?: string | null
+          notes?: string | null
+          org_id?: string
+          raw_extraction?: Json | null
+          raw_name?: string | null
+          reference_text?: string | null
+          source_file_id?: string | null
+          source_page?: number | null
+          updated_at?: string
+          vat_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_apportionment_lines_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_apportionment_lines_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_apportionment_lines_source_file_id_fkey"
+            columns: ["source_file_id"]
+            isOneToOne: false
+            referencedRelation: "claim_apportionment_source_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       claim_apportionment_source_files: {
         Row: {
           claim_evidence_id: string | null
@@ -789,6 +932,95 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      claim_apportionments: {
+        Row: {
+          category: string
+          claim_id: string
+          claimable_amount: number
+          claimable_percent: number
+          created_at: string
+          heading: string
+          id: string
+          item_name: string
+          justification: string | null
+          org_id: string
+          rd_activity_note: string | null
+          reviewer_note: string | null
+          source_file_id: string | null
+          source_line_id: string | null
+          status: string
+          total_source_cost: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          claim_id: string
+          claimable_amount?: number
+          claimable_percent?: number
+          created_at?: string
+          heading?: string
+          id?: string
+          item_name?: string
+          justification?: string | null
+          org_id: string
+          rd_activity_note?: string | null
+          reviewer_note?: string | null
+          source_file_id?: string | null
+          source_line_id?: string | null
+          status?: string
+          total_source_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          claim_id?: string
+          claimable_amount?: number
+          claimable_percent?: number
+          created_at?: string
+          heading?: string
+          id?: string
+          item_name?: string
+          justification?: string | null
+          org_id?: string
+          rd_activity_note?: string | null
+          reviewer_note?: string | null
+          source_file_id?: string | null
+          source_line_id?: string | null
+          status?: string
+          total_source_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_apportionments_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_apportionments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_apportionments_source_file_id_fkey"
+            columns: ["source_file_id"]
+            isOneToOne: false
+            referencedRelation: "claim_apportionment_source_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_apportionments_source_line_id_fkey"
+            columns: ["source_line_id"]
+            isOneToOne: false
+            referencedRelation: "claim_apportionment_lines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       claim_completion_status: {
         Row: {

@@ -89,6 +89,7 @@ import {
 } from "@/services/bulkProjectService";
 import { CompletionStatusTab } from "@/components/claims/CompletionStatusTab";
 import { internalCommentService, type InternalCommentWithAuthor } from "@/services/internalCommentService";
+import { ClaimApportionTab } from "@/components/claims/apportion/ClaimApportionTab";
 // evidenceService is not used here; Sidekick evidence powers the client evidence panel
 
 const formatCurrency = (amount: number) => {
@@ -2692,36 +2693,51 @@ export default function ClaimDetailPage() {
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {bulkProjectsForClaim.map((bp) => (
-                      <div key={bp.id} className="rounded-lg border p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <h3 className="font-semibold">{bp.name}</h3>
-                            {bp.description && (
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {bp.description}
-                              </p>
-                            )}
-                            {bp.sector && (
-                              <Badge variant="secondary" className="mt-2">
-                                {bp.sector}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
+                    {bulkProjectsForClaim.map((bp) => {
+                      const uploads = bp.bulk_project_uploads ?? [];
 
-                        <div className="mt-4 grid gap-4 md:grid-cols-2">
-                          <div>
-                            <p className="text-xs font-medium text-muted-foreground mb-1">
-                              Evidence packs
-                            </p>
-                            {bp.bulk_project_uploads && bp.bulk_project_uploads.filter(
-                              (u) => u.upload_type === "evidence"
-                            ).length ? (
-                              <ul className="space-y-1 text-xs">
-                                {bp.bulk_project_uploads
-                                  ?.filter((u) => u.upload_type === "evidence")
-                                  .map((u) => (
+                      const isEvidenceUpload = (value: string | null | undefined) => {
+                        const v = (value ?? "").toLowerCase();
+                        return v === "evidence" || v.includes("evidence");
+                      };
+
+                      const isFinancialUpload = (value: string | null | undefined) => {
+                        const v = (value ?? "").toLowerCase();
+                        return v === "financial" || v.includes("financial");
+                      };
+
+                      const evidenceUploads = uploads.filter((u) => isEvidenceUpload(u.upload_type));
+                      const financialUploads = uploads.filter((u) => isFinancialUpload(u.upload_type));
+                      const otherUploads = uploads.filter(
+                        (u) => !isEvidenceUpload(u.upload_type) && !isFinancialUpload(u.upload_type)
+                      );
+
+                      return (
+                        <div key={bp.id} className="rounded-lg border p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <h3 className="font-semibold">{bp.name}</h3>
+                              {bp.description && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {bp.description}
+                                </p>
+                              )}
+                              {bp.sector && (
+                                <Badge variant="secondary" className="mt-2">
+                                  {bp.sector}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 grid gap-4 md:grid-cols-2">
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground mb-1">
+                                Evidence packs
+                              </p>
+                              {evidenceUploads.length ? (
+                                <ul className="space-y-1 text-xs">
+                                  {evidenceUploads.map((u) => (
                                     <li
                                       key={u.id}
                                       className="flex items-center justify-between gap-2"
@@ -2732,7 +2748,7 @@ export default function ClaimDetailPage() {
                                         </span>
                                         <span className="text-[11px] text-muted-foreground">
                                           {(
-                                            u.file_size_bytes /
+                                            (u.file_size_bytes || 0) /
                                             1024 /
                                             1024
                                           ).toFixed(1)}{" "}
@@ -2751,27 +2767,21 @@ export default function ClaimDetailPage() {
                                       </Button>
                                     </li>
                                   ))}
-                              </ul>
-                            ) : (
-                              <p className="text-xs text-muted-foreground">
-                                No evidence packs uploaded for this bulk
-                                project.
+                                </ul>
+                              ) : (
+                                <p className="text-xs text-muted-foreground">
+                                  No evidence packs uploaded for this bulk
+                                  project.
+                                </p>
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground mb-1">
+                                Financial packs
                               </p>
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-muted-foreground mb-1">
-                              Financial packs
-                            </p>
-                            {bp.bulk_project_uploads && bp.bulk_project_uploads.filter(
-                              (u) => u.upload_type === "financial"
-                            ).length ? (
-                              <ul className="space-y-1 text-xs">
-                                {bp.bulk_project_uploads
-                                  ?.filter(
-                                    (u) => u.upload_type === "financial"
-                                  )
-                                  .map((u) => (
+                              {financialUploads.length ? (
+                                <ul className="space-y-1 text-xs">
+                                  {financialUploads.map((u) => (
                                     <li
                                       key={u.id}
                                       className="flex items-center justify-between gap-2"
@@ -2782,7 +2792,7 @@ export default function ClaimDetailPage() {
                                         </span>
                                         <span className="text-[11px] text-muted-foreground">
                                           {(
-                                            u.file_size_bytes /
+                                            (u.file_size_bytes || 0) /
                                             1024 /
                                             1024
                                           ).toFixed(1)}{" "}
@@ -2801,17 +2811,61 @@ export default function ClaimDetailPage() {
                                       </Button>
                                     </li>
                                   ))}
-                              </ul>
-                            ) : (
-                              <p className="text-xs text-muted-foreground">
-                                No financial packs uploaded for this bulk
-                                project.
-                              </p>
-                            )}
+                                </ul>
+                              ) : (
+                                <p className="text-xs text-muted-foreground">
+                                  No financial packs uploaded for this bulk
+                                  project.
+                                </p>
+                              )}
+                            </div>
                           </div>
+
+                          {otherUploads.length > 0 && (
+                            <div className="mt-4">
+                              <p className="text-xs font-medium text-muted-foreground mb-1">
+                                Other uploads
+                              </p>
+                              <ul className="space-y-1 text-xs">
+                                {otherUploads.map((u) => (
+                                  <li
+                                    key={u.id}
+                                    className="flex items-center justify-between gap-2"
+                                  >
+                                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                                      <span className="truncate">
+                                        {u.file_name}
+                                      </span>
+                                      <Badge variant="outline" className="text-[10px]">
+                                        {u.upload_type || "unknown"}
+                                      </Badge>
+                                      <span className="text-[11px] text-muted-foreground">
+                                        {(
+                                          (u.file_size_bytes || 0) /
+                                          1024 /
+                                          1024
+                                        ).toFixed(1)}{" "}
+                                        MB
+                                      </span>
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        void handleDownloadBulkUpload(u);
+                                      }}
+                                    >
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -3445,20 +3499,15 @@ export default function ClaimDetailPage() {
 
           {/* APPORTION – placeholder for future apportionment tools */}
           <TabsContent value="apportion" className="mt-6 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Apportionment</CardTitle>
-                <CardDescription>
-                  Tools for apportioning costs and effort will be added here in
-                  a later iteration.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  No apportionment tools are configured yet.
-                </p>
-              </CardContent>
-            </Card>
+            <ClaimApportionTab
+              claimId={claim.id}
+              orgId={claim.org_id}
+              onCostsPushed={async () => {
+                if (id && typeof id === "string") {
+                  await loadClaim(id);
+                }
+              }}
+            />
           </TabsContent>
 
           {/* EVIDENCE – document list and upload */}
