@@ -164,9 +164,9 @@ async function extractImageOcr(blob: Blob): Promise<Array<{ pageNumber: number; 
 }
 
 function trimPagesForApi(pages: Array<{ pageNumber: number; text: string }>, opts?: { maxPages?: number; maxCharsPerPage?: number; maxTotalChars?: number }) {
-  const maxPages = opts?.maxPages ?? 40;
-  const maxCharsPerPage = opts?.maxCharsPerPage ?? 5000;
-  const maxTotalChars = opts?.maxTotalChars ?? 120000;
+  const maxPages = opts?.maxPages ?? 15;
+  const maxCharsPerPage = opts?.maxCharsPerPage ?? 2500;
+  const maxTotalChars = opts?.maxTotalChars ?? 45000;
 
   const sorted = [...pages].sort((a, b) => a.pageNumber - b.pageNumber);
   const limitedPages = sorted.slice(0, maxPages);

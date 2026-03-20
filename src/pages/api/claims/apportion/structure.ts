@@ -149,6 +149,42 @@ function normalizeOpenAIError(err: unknown): { message: string; hint?: string } 
   return { message: msg };
 }
 
+function buildAmountSnippetsFromPages(
+  pages: Array<{ pageNumber: number; text: string }>,
+  opts?: { maxSnippets?: number; windowChars?: number }
+): string[] {
+  const maxSnippets = opts?.maxSnippets ?? 240;
+  const windowChars = opts?.windowChars ?? 64;
+
+  const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
+
+  const snippets: string[] = [];
+  const seen = new Set<string>();
+
+  for (const p of pages) {
+    const raw = (p.text || "").replace(/\s+/g, " ").trim();
+    if (!raw) continue;
+
+    amountRegex.lastIndex = 0;
+    let match: RegExpExecArray | null = null;
+
+    while ((match = amountRegex.exec(raw)) !== null) {
+      const start = Math.max(0, match.index - windowChars);
+      const end = Math.min(raw.length, match.index + match[0].length + windowChars);
+      const snippet = raw.slice(start, end).replace(/\s+/g, " ").trim();
+
+      const key = `p${p.pageNumber}:${snippet.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      snippets.push(`Page ${p.pageNumber}: ${snippet}`);
+      if (snippets.length >= maxSnippets) return snippets;
+    }
+  }
+
+  return snippets;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "GET") {
     return res.status(200).json({ ok: true, message: "Apportion structure endpoint ready" });
@@ -199,6 +235,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .map((p) => `--- Page ${p.pageNumber} ---\n${p.text}`)
       .join("\n\n");
 
+    const maxCombinedChars = 35000;
+    const combinedTextForPrompt =
+      combinedText.length > maxCombinedChars ? combinedText.slice(0, maxCombinedChars) : combinedText;
+
+    const snippets = buildAmountSnippetsFromPages(pages, { maxSnippets: 240, windowChars: 72 });
+    const promptBody =
+      snippets.length > 0
+        ? `Amount-centric snippets (faster to parse than full OCR text):\n${snippets.map((s) => `- ${s}`).join("\n")}`
+        : `Extracted text by page:\n${combinedTextForPrompt}`;
+
     const system = `You are a careful extraction engine. Your job is to convert text extracted from a financial/staff cost document into structured line items.
 
 Hard rules:
@@ -207,7 +253,7 @@ Hard rules:
 - If a row is ambiguous, set category="unknown", include=true, add notes, and lower confidence.
 - Preserve rawName exactly as seen when possible. Provide normalisedName (trimmed, simplified) when possible.
 - Do NOT wrap your output in markdown or code fences. No \`\`\` blocks.
-- Return at most 200 lines. If there are more, merge similar items or omit the least important and mention it in notes.
+- Return at most 90 lines.
 
 Return STRICT JSON only with:
 {
@@ -229,15 +275,16 @@ Return STRICT JSON only with:
       "notes": string|null,
       "rawExtraction": object
     }
-  ]
+  ],
+  "notes": string
 }`;
 
     const user = `Document:
 - filename: ${filename}
 - fileType: ${fileType}
+- note: input may be trimmed and/or converted into snippets around amounts to avoid timeouts
 
-Extracted text by page:
-${combinedText}
+${promptBody}
 
 Task:
 1) Identify distinct cost lines.
@@ -247,24 +294,38 @@ Task:
 
     let completionContent = "";
     try {
-      const completion = await openai.chat.completions.create({
+      const completionPromise = openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: system },
           { role: "user", content: user }
         ],
         temperature: 0.2,
-        max_tokens: 2500,
+        max_tokens: 900,
         response_format: { type: "json_object" } as any
       });
-      completionContent = completion.choices[0]?.message?.content ?? "";
+
+      const timeoutMs = 15000;
+      const completion = await Promise.race([
+        completionPromise,
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("OpenAI request timed out")), timeoutMs);
+        })
+      ]);
+
+      completionContent = (completion as any).choices[0]?.message?.content ?? "";
     } catch (err: unknown) {
       const normalized = normalizeOpenAIError(err);
       console.error("[apportion.structure] OpenAI error", err);
-      return res.status(502).json({
+      const isTimeout = String((err as any)?.message || "").toLowerCase().includes("timed out");
+      return res.status(isTimeout ? 504 : 502).json({
         ok: false,
         error: normalized.message,
-        hint: normalized.hint
+        hint:
+          normalized.hint ??
+          (isTimeout
+            ? "The parser took too long. Try re-parsing (it may succeed on a subsequent attempt), or upload a smaller/split PDF."
+            : undefined)
       });
     }
 
