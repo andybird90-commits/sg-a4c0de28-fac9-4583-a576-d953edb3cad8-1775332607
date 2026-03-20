@@ -163,6 +163,37 @@ async function extractImageOcr(blob: Blob): Promise<Array<{ pageNumber: number; 
   return [{ pageNumber: 1, text }];
 }
 
+function trimPagesForApi(pages: Array<{ pageNumber: number; text: string }>, opts?: { maxPages?: number; maxCharsPerPage?: number; maxTotalChars?: number }) {
+  const maxPages = opts?.maxPages ?? 40;
+  const maxCharsPerPage = opts?.maxCharsPerPage ?? 5000;
+  const maxTotalChars = opts?.maxTotalChars ?? 120000;
+
+  const sorted = [...pages].sort((a, b) => a.pageNumber - b.pageNumber);
+  const limitedPages = sorted.slice(0, maxPages);
+
+  let total = 0;
+  let trimmed = false;
+
+  const out = limitedPages.map((p) => {
+    const raw = p.text || "";
+    const perPage = raw.length > maxCharsPerPage ? raw.slice(0, maxCharsPerPage) : raw;
+    if (perPage.length !== raw.length) trimmed = true;
+
+    const remaining = Math.max(0, maxTotalChars - total);
+    const finalText = perPage.length > remaining ? perPage.slice(0, remaining) : perPage;
+
+    if (finalText.length !== perPage.length) trimmed = true;
+
+    total += finalText.length;
+
+    return { pageNumber: p.pageNumber, text: finalText };
+  });
+
+  if (sorted.length > maxPages) trimmed = true;
+
+  return { pages: out.filter((p) => p.text.length > 0), trimmed, totalChars: total, originalPages: sorted.length };
+}
+
 const LineEditSchema = z.object({
   raw_name: z.string().nullable(),
   category: z.enum(["supplier", "subcontractor", "staff", "unknown"]),
@@ -381,8 +412,18 @@ export function ClaimApportionTab(props: {
         pages = [{ pageNumber: 1, text: "" }];
       }
 
-      const { data: session } = await supabase.auth.getSession();
-      const token = session.session?.access_token;
+      const { pages: trimmedPages, trimmed, totalChars, originalPages } = trimPagesForApi(pages);
+
+      if (trimmed) {
+        toast({
+          title: "Large document trimmed for parsing",
+          description: `To avoid timeouts, only part of the extracted text was sent (pages: ${Math.min(originalPages, 40)}/${originalPages}, chars: ${totalChars.toLocaleString()}). If results look incomplete, upload a smaller PDF or split it.`,
+          variant: "default"
+        });
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
 
       if (!token) {
         throw new Error("Not authenticated");
@@ -397,29 +438,31 @@ export function ClaimApportionTab(props: {
         body: JSON.stringify({
           claimId: props.claimId,
           sourceFileId: source.id,
-          pages,
-          filename: source.file_name,
-          fileType: source.file_type
+          pages: trimmedPages.length ? trimmedPages : [{ pageNumber: 1, text: "" }],
+          filename: source.file_name ?? "file",
+          fileType: source.file_type ?? fileType
         })
       });
 
+      const rawBody = await structRes.text();
+
       let structJson: any = null;
       let structTextPreview = "";
+
       try {
-        structJson = await structRes.json();
+        structJson = rawBody ? JSON.parse(rawBody) : null;
       } catch {
-        try {
-          const text = await structRes.text();
-          structTextPreview = text.slice(0, 500);
-        } catch {
-          structTextPreview = "";
-        }
+        structTextPreview = (rawBody || "").slice(0, 500);
       }
 
       if (!structRes.ok || structJson?.ok !== true) {
         const apiError = structJson?.error || structJson?.message || `Parse failed (HTTP ${structRes.status})`;
         const hint = structJson?.hint ? `\n${structJson.hint}` : "";
-        const preview = structTextPreview ? `\nResponse preview: ${structTextPreview}` : "";
+        const preview = structTextPreview
+          ? `\nResponse preview: ${structTextPreview}`
+          : rawBody
+            ? `\nResponse preview: ${rawBody.slice(0, 500)}`
+            : "";
         throw new Error(`${apiError}${hint}${preview}`.trim());
       }
 

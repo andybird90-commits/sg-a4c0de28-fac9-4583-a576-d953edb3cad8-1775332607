@@ -4,6 +4,14 @@ import type { Database } from "@/integrations/supabase/types";
 import OpenAI from "openai";
 import { z } from "zod";
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "10mb"
+    }
+  }
+};
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -86,6 +94,35 @@ function safeJsonParse(raw: string): unknown {
   } catch {
     return null;
   }
+}
+
+function normalizeOpenAIError(err: unknown): { message: string; hint?: string } {
+  const anyErr = err as any;
+  const msg = String(anyErr?.message || anyErr?.error?.message || "OpenAI request failed");
+  const lower = msg.toLowerCase();
+
+  if (lower.includes("context length") || lower.includes("maximum context") || lower.includes("too large")) {
+    return {
+      message: "Document is too large to parse in one go",
+      hint: "Try a smaller PDF, or re-parse after trimming pages/text (the UI now auto-trims very large documents)."
+    };
+  }
+
+  if (lower.includes("rate limit") || lower.includes("429")) {
+    return {
+      message: "OpenAI rate limit reached",
+      hint: "Wait a moment and try again."
+    };
+  }
+
+  if (lower.includes("api key") || lower.includes("unauthorized") || lower.includes("401")) {
+    return {
+      message: "OpenAI authentication failed",
+      hint: "Check OPENAI_API_KEY in environment variables."
+    };
+  }
+
+  return { message: msg };
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -182,31 +219,43 @@ Task:
 3) Include sourcePage and a confidence score (0..1).
 4) Set rawExtraction to contain the exact snippets you used, e.g. { "snippets": ["..."] }.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user }
-      ],
-      temperature: 0.2,
-      max_tokens: 2000
-    });
+    let completionContent = "";
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user }
+        ],
+        temperature: 0.2,
+        max_tokens: 2000
+      });
+      completionContent = completion.choices[0]?.message?.content ?? "";
+    } catch (err: unknown) {
+      const normalized = normalizeOpenAIError(err);
+      console.error("[apportion.structure] OpenAI error", err);
+      return res.status(502).json({
+        ok: false,
+        error: normalized.message,
+        hint: normalized.hint
+      });
+    }
 
-    const content = completion.choices[0]?.message?.content ?? "";
-    const json = safeJsonParse(content);
+    const json = safeJsonParse(completionContent);
 
     const validated = ResponseSchema.safeParse(json);
     if (!validated.success) {
       console.error("[apportion.structure] Invalid AI JSON", {
         sourceFileId,
         claimId,
-        contentPreview: content.slice(0, 400),
+        contentPreview: completionContent.slice(0, 400),
         error: validated.error.flatten()
       });
       return res.status(422).json({
+        ok: false,
         error: "Parser returned invalid structure",
         hint: "Try re-parse or upload a clearer scan",
-        contentPreview: content.slice(0, 400)
+        contentPreview: completionContent.slice(0, 400)
       });
     }
 
@@ -219,6 +268,7 @@ Task:
   } catch (error: any) {
     console.error("[apportion.structure] Unexpected error", error);
     return res.status(500).json({
+      ok: false,
       error: "Failed to structure extracted content",
       details: error?.message ?? "Unknown error"
     });
