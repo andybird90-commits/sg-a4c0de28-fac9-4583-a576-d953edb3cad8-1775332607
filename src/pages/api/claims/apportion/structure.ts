@@ -4,12 +4,16 @@ import type { Database } from "@/integrations/supabase/types";
 import OpenAI from "openai";
 import { z } from "zod";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+function getOpenAIClient() {
+  if (!OPENAI_API_KEY) {
+    return null;
+  }
+  return new OpenAI({ apiKey: OPENAI_API_KEY });
+}
 
 function getServerSupabaseClient(req: NextApiRequest) {
   const authHeader = req.headers.authorization;
@@ -94,6 +98,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      return res.status(500).json({
+        error: "OPENAI_API_KEY is not configured",
+        hint: "Set OPENAI_API_KEY in your environment variables (.env.local in Softgen settings) and restart the server."
+      });
+    }
+
     const { client: supabase, hasAuth } = getServerSupabaseClient(req);
     if (!hasAuth) {
       return res.status(401).json({ error: "Unauthorized" });
