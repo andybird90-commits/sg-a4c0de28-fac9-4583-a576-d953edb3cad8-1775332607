@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Eye, FileText, RefreshCw, Trash2, Upload } from "lucide-react";
+import { Download, Eye, FileText, RefreshCw, Trash2 } from "lucide-react";
 
 type SourceFileRow = {
   id: string;
@@ -29,7 +29,7 @@ type SourceFileRow = {
 
 type ApportionLineRow = {
   id: string;
-  source_file_id: string | null;
+  source_id: string | null;
   line_index: number | null;
   raw_name: string | null;
   normalised_name: string | null;
@@ -51,7 +51,7 @@ type ApportionmentRow = {
   claim_id: string;
   org_id: string;
   source_line_id: string | null;
-  source_file_id: string | null;
+  source_id: string | null;
   item_name: string | null;
   heading: string | null;
   category: string | null;
@@ -108,7 +108,9 @@ async function extractPdfTextAndMaybeOcr(blob: Blob): Promise<Array<{ pageNumber
   for (let i = 1; i <= doc.numPages; i += 1) {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
-    const strings = (content.items || []).map((it: any) => (typeof it?.str === "string" ? it.str : "")).filter(Boolean);
+    const strings = (content.items || [])
+      .map((it: any) => (typeof it?.str === "string" ? it.str : ""))
+      .filter(Boolean);
     const text = strings.join(" ").replace(/\s+/g, " ").trim();
     totalChars += text.length;
     pages.push({ pageNumber: i, text });
@@ -186,7 +188,7 @@ export function ClaimApportionTab(props: {
   const [mounted, setMounted] = useState(false);
 
   const [sourceFiles, setSourceFiles] = useState<SourceFileRow[]>([]);
-  const [selectedSourceFileId, setSelectedSourceFileId] = useState<string>("");
+  const [selectedSourceId, setSelectedSourceId] = useState<string>("");
   const [lines, setLines] = useState<ApportionLineRow[]>([]);
   const [apportionments, setApportionments] = useState<ApportionmentRow[]>([]);
 
@@ -203,15 +205,18 @@ export function ClaimApportionTab(props: {
   }, []);
 
   const refreshSources = async () => {
-    const rows = (await claimApportionmentService.listSourceFiles(props.claimId)) as any[];
-    setSourceFiles(rows as SourceFileRow[]);
-    if (!selectedSourceFileId && rows.length > 0) {
-      setSelectedSourceFileId(rows[0].id);
+    const rows = (await claimApportionmentService.listSourcesForClaim(props.claimId)) as any[];
+    const nextRows = rows as SourceFileRow[];
+    setSourceFiles(nextRows);
+
+    const stillExists = selectedSourceId ? nextRows.some((r) => r.id === selectedSourceId) : false;
+    if (!stillExists && nextRows.length > 0) {
+      setSelectedSourceId(nextRows[0].id);
     }
   };
 
-  const refreshLines = async (sourceFileId: string) => {
-    const rows = (await claimApportionmentService.listLinesForSource(sourceFileId)) as any[];
+  const refreshLines = async (sourceId: string) => {
+    const rows = (await claimApportionmentService.listLinesForSource(sourceId)) as any[];
     setLines(rows as ApportionLineRow[]);
   };
 
@@ -227,23 +232,21 @@ export function ClaimApportionTab(props: {
   }, [props.claimId]);
 
   useEffect(() => {
-    if (!selectedSourceFileId) return;
-    void refreshLines(selectedSourceFileId);
+    if (!selectedSourceId) return;
+    void refreshLines(selectedSourceId);
      
-  }, [selectedSourceFileId]);
+  }, [selectedSourceId]);
 
-  const selectedSource = useMemo(() => sourceFiles.find((s) => s.id === selectedSourceFileId) ?? null, [sourceFiles, selectedSourceFileId]);
+  const selectedSource = useMemo(
+    () => sourceFiles.find((s) => s.id === selectedSourceId) ?? null,
+    [sourceFiles, selectedSourceId]
+  );
 
   const filteredLines = useMemo(() => {
     const q = filterText.trim().toLowerCase();
     if (!q) return lines;
     return lines.filter((l) => {
-      const hay = [
-        l.raw_name ?? "",
-        l.normalised_name ?? "",
-        l.reference_text ?? "",
-        l.notes ?? ""
-      ]
+      const hay = [l.raw_name ?? "", l.normalised_name ?? "", l.reference_text ?? "", l.notes ?? ""]
         .join(" ")
         .toLowerCase();
       return hay.includes(q);
@@ -295,15 +298,21 @@ export function ClaimApportionTab(props: {
         file_path: path,
         file_name: file.name,
         file_type: fileType,
+        file_size_bytes: file.size,
+        uploaded_by: sessionData.session.user.id,
         uploaded_at: new Date().toISOString(),
         parse_status: "uploaded",
         confidence: null
       };
 
-      await claimApportionmentService.createSourceFile(payload);
+      const created = await claimApportionmentService.createSource(payload);
 
-      toast({ title: "Uploaded", description: "Source file uploaded. Click Parse to extract lines." });
+      toast({ title: "Uploaded", description: "File uploaded. Click Parse to extract lines." });
+
       await refreshSources();
+      if (created?.id) {
+        setSelectedSourceId(created.id);
+      }
     } catch (error: any) {
       console.error("[ClaimApportionTab] upload error", error);
       toast({ title: "Upload failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
@@ -328,9 +337,9 @@ export function ClaimApportionTab(props: {
       if (source.bucket_name && source.file_path) {
         await supabase.storage.from(source.bucket_name).remove([source.file_path]);
       }
-      await claimApportionmentService.deleteSourceFile(source.id);
-      if (selectedSourceFileId === source.id) {
-        setSelectedSourceFileId("");
+      await claimApportionmentService.deleteSource(source.id);
+      if (selectedSourceId === source.id) {
+        setSelectedSourceId("");
         setLines([]);
       }
       await refreshSources();
@@ -346,7 +355,7 @@ export function ClaimApportionTab(props: {
 
     setParsing(source.id);
     try {
-      await claimApportionmentService.updateSourceFile(source.id, { parse_status: "parsing" } as any);
+      await claimApportionmentService.updateSource(source.id, { parse_status: "parsing" } as any);
       await refreshSources();
 
       const { data: signed, error: signedError } = await supabase.storage.from(source.bucket_name).createSignedUrl(source.file_path, 120);
@@ -420,7 +429,7 @@ export function ClaimApportionTab(props: {
       await claimApportionmentService.upsertParsedLines({
         claimId: props.claimId,
         orgId: props.orgId,
-        sourceFileId: source.id,
+        sourceId: source.id,
         lines: parsedLines
       });
 
@@ -429,14 +438,14 @@ export function ClaimApportionTab(props: {
           ? parsedLines.reduce((s, l) => s + (l.confidence ?? 0.5), 0) / parsedLines.length
           : null;
 
-      await claimApportionmentService.updateSourceFile(source.id, {
+      await claimApportionmentService.updateSource(source.id, {
         parse_status: "parsed",
         confidence: avgConfidenceRaw !== null ? clamp(avgConfidenceRaw, 0, 1) : null
       } as any);
 
       toast({ title: "Parsed", description: "Extracted lines are ready for review and editing." });
       await refreshSources();
-      if (selectedSourceFileId === source.id) {
+      if (selectedSourceId === source.id) {
         await refreshLines(source.id);
       }
     } catch (error: any) {
@@ -448,7 +457,7 @@ export function ClaimApportionTab(props: {
       });
 
       try {
-        await claimApportionmentService.updateSourceFile(source.id, { parse_status: "error" } as any);
+        await claimApportionmentService.updateSource(source.id, { parse_status: "error" } as any);
         await refreshSources();
       } catch {
         // ignore
@@ -476,7 +485,7 @@ export function ClaimApportionTab(props: {
       claim_id: props.claimId,
       org_id: props.orgId,
       source_line_id: line.id,
-      source_file_id: line.source_file_id,
+      source_id: line.source_id,
       item_name: itemName,
       heading: "other",
       category: (line.category as any) || "unknown",
@@ -563,10 +572,8 @@ export function ClaimApportionTab(props: {
         const costType = (row.heading || "other") as any;
         const amount = clamp(safeNumber(row.claimable_amount) ?? 0, 0, safeNumber(row.total_source_cost) ?? 0);
 
-        const sourceFile = sourceFiles.find((s) => s.id === row.source_file_id);
-        const sourceRefParts = [
-          sourceFile?.file_name ? `Source: ${sourceFile.file_name}` : null
-        ].filter(Boolean);
+        const sourceFile = sourceFiles.find((s) => s.id === row.source_id);
+        const sourceRefParts = [sourceFile?.file_name ? `Source: ${sourceFile.file_name}` : null].filter(Boolean);
 
         const descriptionParts = [
           row.item_name ? `Item: ${row.item_name}` : null,
@@ -645,7 +652,7 @@ export function ClaimApportionTab(props: {
   };
 
   const handleMergeDuplicates = async () => {
-    if (!selectedSourceFileId) return;
+    if (!selectedSourceId) return;
 
     const byKey = new Map<string, ApportionLineRow[]>();
     lines.forEach((l) => {
@@ -683,12 +690,15 @@ export function ClaimApportionTab(props: {
         });
 
         for (const other of rest) {
-          await saveLineEdit(other, { include: false, notes: [other.notes, "Merged into primary"].filter(Boolean).join(" • ") });
+          await saveLineEdit(other, {
+            include: false,
+            notes: [other.notes, "Merged into primary"].filter(Boolean).join(" • ")
+          });
         }
       }
 
       toast({ title: "Merged", description: "Duplicate names merged into primary rows (others excluded)." });
-      await refreshLines(selectedSourceFileId);
+      await refreshLines(selectedSourceId);
     } catch (error: any) {
       console.error("[ClaimApportionTab] merge error", error);
       toast({ title: "Merge failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
@@ -712,9 +722,7 @@ export function ClaimApportionTab(props: {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Source Files</CardTitle>
-            <CardDescription>
-              Upload cost documents (PDFs, scanned PDFs, images/photos). Parse them into editable lines.
-            </CardDescription>
+            <CardDescription>Upload cost documents (PDFs, scanned PDFs, images/photos). Parse them into editable lines.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -732,18 +740,29 @@ export function ClaimApportionTab(props: {
                   }}
                 />
               </div>
-              <Button type="button" variant="outline" disabled={uploading} onClick={() => void refreshSources()}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={!selectedSource || parsing === selectedSource.id}
+                  onClick={() => {
+                    if (selectedSource) void handleParse(selectedSource);
+                  }}
+                >
+                  {parsing === selectedSource?.id ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                  Parse selected
+                </Button>
+                <Button type="button" variant="outline" disabled={uploading} onClick={() => void refreshSources()}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh
+                </Button>
+              </div>
             </div>
 
             {sourceFiles.length === 0 ? (
-              <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
-                No source files yet. Upload a PDF or image to begin.
-              </div>
+              <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">No source files yet. Upload a PDF or image to begin.</div>
             ) : (
-              <div className="overflow-hidden rounded-md border">
+              <div className="overflow-x-auto rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -759,18 +778,12 @@ export function ClaimApportionTab(props: {
                     {sourceFiles.map((s) => (
                       <TableRow
                         key={s.id}
-                        className={s.id === selectedSourceFileId ? "bg-muted/40" : undefined}
-                        onClick={() => setSelectedSourceFileId(s.id)}
+                        className={s.id === selectedSourceId ? "bg-muted/40" : undefined}
+                        onClick={() => setSelectedSourceId(s.id)}
                       >
-                        <TableCell className="max-w-[220px] truncate font-medium">
-                          {s.file_name || "Untitled"}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {(s.file_type || "").includes("pdf") ? "PDF" : (s.file_type || "file")}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {s.uploaded_at ? new Date(s.uploaded_at).toLocaleDateString("en-GB") : "—"}
-                        </TableCell>
+                        <TableCell className="max-w-[220px] truncate font-medium">{s.file_name || "Untitled"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{(s.file_type || "").includes("pdf") ? "PDF" : s.file_type || "file"}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{s.uploaded_at ? new Date(s.uploaded_at).toLocaleDateString("en-GB") : "—"}</TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="text-xs">
                             {s.parse_status || "unknown"}
@@ -871,9 +884,7 @@ export function ClaimApportionTab(props: {
       <Card>
         <CardHeader>
           <CardTitle>Extracted Lines (editable)</CardTitle>
-          <CardDescription>
-            Review and correct extracted rows before they affect any claim costs.
-          </CardDescription>
+          <CardDescription>Review and correct extracted rows before they affect any claim costs.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
@@ -882,15 +893,15 @@ export function ClaimApportionTab(props: {
               <Input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="Search name, reference or notes..." />
             </div>
             <div className="flex gap-2">
-              <Button type="button" variant="outline" disabled={!selectedSourceFileId} onClick={() => void handleMergeDuplicates()}>
+              <Button type="button" variant="outline" disabled={!selectedSourceId} onClick={() => void handleMergeDuplicates()}>
                 Merge duplicate names
               </Button>
               <Button
                 type="button"
                 variant="outline"
-                disabled={!selectedSourceFileId}
+                disabled={!selectedSourceId}
                 onClick={() => {
-                  if (selectedSourceFileId) void refreshLines(selectedSourceFileId);
+                  if (selectedSourceId) void refreshLines(selectedSourceId);
                 }}
               >
                 Refresh lines
@@ -901,9 +912,7 @@ export function ClaimApportionTab(props: {
           {!selectedSource ? (
             <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">Select a source file to view extracted lines.</div>
           ) : filteredLines.length === 0 ? (
-            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
-              No extracted lines yet. Click Parse on a source file.
-            </div>
+            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">No extracted lines yet. Click Parse on a source file.</div>
           ) : (
             <div className="overflow-x-auto rounded-md border">
               <Table>
@@ -935,7 +944,7 @@ export function ClaimApportionTab(props: {
                             const include = e.target.checked;
                             try {
                               await saveLineEdit(l, { include } as any);
-                              if (selectedSourceFileId) await refreshLines(selectedSourceFileId);
+                              if (selectedSourceId) await refreshLines(selectedSourceId);
                             } catch (error: any) {
                               toast({ title: "Update failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
                             }
@@ -979,7 +988,7 @@ export function ClaimApportionTab(props: {
                           onValueChange={async (value) => {
                             try {
                               await saveLineEdit(l, { category: value as any });
-                              if (selectedSourceFileId) await refreshLines(selectedSourceFileId);
+                              if (selectedSourceId) await refreshLines(selectedSourceId);
                             } catch (error: any) {
                               toast({ title: "Update failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
                             }
@@ -1061,9 +1070,7 @@ export function ClaimApportionTab(props: {
       <Card>
         <CardHeader>
           <CardTitle>Apportionment Working Table</CardTitle>
-          <CardDescription>
-            Set claimable % and rationale. Only approved items can be pushed to Costs.
-          </CardDescription>
+          <CardDescription>Set claimable % and rationale. Only approved items can be pushed to Costs.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -1077,9 +1084,7 @@ export function ClaimApportionTab(props: {
           </div>
 
           {apportionments.length === 0 ? (
-            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
-              No working rows yet. Add from extracted lines above.
-            </div>
+            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">No working rows yet. Add from extracted lines above.</div>
           ) : (
             <div className="overflow-x-auto rounded-md border">
               <Table>
@@ -1152,11 +1157,9 @@ export function ClaimApportionTab(props: {
                             value={Math.round(pct * 100)}
                             onChange={(e) => {
                               const next = clamp(Number(e.target.value || 0), 0, 100);
-                              setApportionments((prev) =>
-                                prev.map((x) => (x.id === a.id ? { ...x, claimable_percent: next / 100 } : x))
-                              );
+                              setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, claimable_percent: next / 100 } : x)));
                             }}
-                            onBlur={() => void updateWorkingRow(a, { claimable_percent: (safeNumber(a.claimable_percent) ?? 0) } as any)}
+                            onBlur={() => void updateWorkingRow(a, { claimable_percent: safeNumber(a.claimable_percent) ?? 0 } as any)}
                           />
                         </TableCell>
                         <TableCell className="min-w-[160px] text-right">
@@ -1168,11 +1171,9 @@ export function ClaimApportionTab(props: {
                             value={amt}
                             onChange={(e) => {
                               const next = safeNumber(e.target.value) ?? 0;
-                              setApportionments((prev) =>
-                                prev.map((x) => (x.id === a.id ? { ...x, claimable_amount: next } : x))
-                              );
+                              setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, claimable_amount: next } : x)));
                             }}
-                            onBlur={() => void updateWorkingRow(a, { claimable_amount: (safeNumber(a.claimable_amount) ?? 0) } as any)}
+                            onBlur={() => void updateWorkingRow(a, { claimable_amount: safeNumber(a.claimable_amount) ?? 0 } as any)}
                           />
                         </TableCell>
                         <TableCell className="min-w-[260px]">
@@ -1236,8 +1237,7 @@ export function ClaimApportionTab(props: {
           <DialogHeader>
             <DialogTitle>Push approved items to Costs</DialogTitle>
             <DialogDescription>
-              This will create cost entries for approved rows (or update existing pushed costs if you choose).
-              It will not overwrite user-entered costs without your confirmation here.
+              This will create cost entries for approved rows (or update existing pushed costs if you choose). It will not overwrite user-entered costs without your confirmation here.
             </DialogDescription>
           </DialogHeader>
 
@@ -1246,9 +1246,7 @@ export function ClaimApportionTab(props: {
               <p>
                 Approved rows: <span className="font-semibold">{approvedToPush.length}</span>
               </p>
-              <p className="text-xs text-muted-foreground">
-                You can run this multiple times. Each apportionment row keeps an audit link to the cost item that was created.
-              </p>
+              <p className="text-xs text-muted-foreground">You can run this multiple times. Each apportionment row keeps an audit link to the cost item that was created.</p>
             </div>
 
             <div>

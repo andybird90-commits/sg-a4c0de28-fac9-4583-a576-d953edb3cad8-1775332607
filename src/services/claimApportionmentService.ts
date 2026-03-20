@@ -1,11 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type SourceFile = Database["public"]["Tables"]["claim_apportionment_source_files"]["Row"];
-type SourceFileInsert = Database["public"]["Tables"]["claim_apportionment_source_files"]["Insert"];
-type ApportionLine = Database["public"]["Tables"]["claim_apportionment_lines"]["Row"];
-type ApportionLineInsert = Database["public"]["Tables"]["claim_apportionment_lines"]["Insert"];
-type Apportionment = Database["public"]["Tables"]["claim_apportionments"]["Row"];
+type SourceRow = Database["public"]["Tables"]["claim_apportionment_sources"]["Row"];
+type SourceInsert = Database["public"]["Tables"]["claim_apportionment_sources"]["Insert"];
+type SourceUpdate = Database["public"]["Tables"]["claim_apportionment_sources"]["Update"];
+
+type LineRow = Database["public"]["Tables"]["claim_apportionment_lines"]["Row"];
+type LineInsert = Database["public"]["Tables"]["claim_apportionment_lines"]["Insert"];
+
+type ApportionmentRow = Database["public"]["Tables"]["claim_apportionments"]["Row"];
 type ApportionmentInsert = Database["public"]["Tables"]["claim_apportionments"]["Insert"];
 type ApportionmentUpdate = Database["public"]["Tables"]["claim_apportionments"]["Update"];
 
@@ -35,9 +38,9 @@ function nowIso(): string {
 }
 
 export const claimApportionmentService = {
-  async listSourceFiles(claimId: string): Promise<SourceFile[]> {
+  async listSourcesForClaim(claimId: string): Promise<SourceRow[]> {
     const { data, error } = await supabase
-      .from("claim_apportionment_source_files")
+      .from("claim_apportionment_sources")
       .select("*")
       .eq("claim_id", claimId)
       .order("uploaded_at", { ascending: false });
@@ -46,10 +49,17 @@ export const claimApportionmentService = {
     return data ?? [];
   },
 
-  async createSourceFile(input: SourceFileInsert): Promise<SourceFile> {
+  async createSource(payload: any) {
+    const { data, error } = await supabase.from("claim_apportionment_sources").insert(payload).select("*").single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateSource(sourceId: string, patch: SourceUpdate): Promise<SourceRow> {
     const { data, error } = await supabase
-      .from("claim_apportionment_source_files")
-      .insert(input)
+      .from("claim_apportionment_sources")
+      .update({ ...patch, updated_at: nowIso() })
+      .eq("id", sourceId)
       .select("*")
       .single();
 
@@ -57,29 +67,20 @@ export const claimApportionmentService = {
     return data;
   },
 
-  async updateSourceFile(sourceFileId: string, patch: Partial<SourceFile>): Promise<void> {
+  async deleteSource(sourceId: string): Promise<void> {
     const { error } = await supabase
-      .from("claim_apportionment_source_files")
-      .update({ ...patch })
-      .eq("id", sourceFileId);
-
-    if (error) throw error;
-  },
-
-  async deleteSourceFile(sourceFileId: string): Promise<void> {
-    const { error } = await supabase
-      .from("claim_apportionment_source_files")
+      .from("claim_apportionment_sources")
       .delete()
-      .eq("id", sourceFileId);
+      .eq("id", sourceId);
 
     if (error) throw error;
   },
 
-  async listLinesForSource(sourceFileId: string): Promise<ApportionLine[]> {
+  async listLinesForSource(sourceId: string): Promise<LineRow[]> {
     const { data, error } = await supabase
       .from("claim_apportionment_lines")
       .select("*")
-      .eq("source_file_id", sourceFileId)
+      .eq("source_id", sourceId)
       .order("line_index", { ascending: true });
 
     if (error) throw error;
@@ -89,13 +90,13 @@ export const claimApportionmentService = {
   async upsertParsedLines(params: {
     claimId: string;
     orgId: string;
-    sourceFileId: string;
+    sourceId: string;
     lines: ParsedLineInput[];
   }): Promise<void> {
-    const payload: ApportionLineInsert[] = params.lines.map((l) => ({
+    const payload: LineInsert[] = params.lines.map((l) => ({
       claim_id: params.claimId,
       org_id: params.orgId,
-      source_file_id: params.sourceFileId,
+      source_id: params.sourceId,
       line_index: l.lineIndex,
       raw_name: l.rawName,
       normalised_name: l.normalisedName,
@@ -116,12 +117,12 @@ export const claimApportionmentService = {
 
     const { error } = await supabase
       .from("claim_apportionment_lines")
-      .upsert(payload, { onConflict: "source_file_id,line_index" });
+      .upsert(payload, { onConflict: "source_id,line_index" });
 
     if (error) throw error;
   },
 
-  async listApportionmentsForClaim(claimId: string): Promise<Apportionment[]> {
+  async listApportionmentsForClaim(claimId: string): Promise<ApportionmentRow[]> {
     const { data, error } = await supabase
       .from("claim_apportionments")
       .select("*")
@@ -132,7 +133,7 @@ export const claimApportionmentService = {
     return data ?? [];
   },
 
-  async upsertApportionment(input: ApportionmentInsert): Promise<Apportionment> {
+  async upsertApportionment(input: ApportionmentInsert): Promise<ApportionmentRow> {
     const { data, error } = await supabase
       .from("claim_apportionments")
       .upsert({ ...input, updated_at: nowIso() })
@@ -143,7 +144,7 @@ export const claimApportionmentService = {
     return data;
   },
 
-  async updateApportionment(id: string, patch: ApportionmentUpdate): Promise<Apportionment> {
+  async updateApportionment(id: string, patch: ApportionmentUpdate): Promise<ApportionmentRow> {
     const { data, error } = await supabase
       .from("claim_apportionments")
       .update({ ...patch, updated_at: nowIso() })

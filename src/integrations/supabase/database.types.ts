@@ -802,6 +802,7 @@ export type Database = {
           raw_name: string | null
           reference_text: string | null
           source_file_id: string | null
+          source_id: string | null
           source_page: number | null
           updated_at: string
           vat_total: number | null
@@ -825,6 +826,7 @@ export type Database = {
           raw_name?: string | null
           reference_text?: string | null
           source_file_id?: string | null
+          source_id?: string | null
           source_page?: number | null
           updated_at?: string
           vat_total?: number | null
@@ -848,6 +850,7 @@ export type Database = {
           raw_name?: string | null
           reference_text?: string | null
           source_file_id?: string | null
+          source_id?: string | null
           source_page?: number | null
           updated_at?: string
           vat_total?: number | null
@@ -872,6 +875,13 @@ export type Database = {
             columns: ["source_file_id"]
             isOneToOne: false
             referencedRelation: "claim_apportionment_source_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_apportionment_lines_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "claim_apportionment_sources"
             referencedColumns: ["id"]
           },
         ]
@@ -933,6 +943,79 @@ export type Database = {
         }
         Relationships: []
       }
+      claim_apportionment_sources: {
+        Row: {
+          bucket_name: string
+          claim_id: string
+          confidence: number | null
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size_bytes: number | null
+          file_type: string | null
+          id: string
+          org_id: string
+          parse_status: string
+          updated_at: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          bucket_name: string
+          claim_id: string
+          confidence?: number | null
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size_bytes?: number | null
+          file_type?: string | null
+          id?: string
+          org_id: string
+          parse_status?: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          bucket_name?: string
+          claim_id?: string
+          confidence?: number | null
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size_bytes?: number | null
+          file_type?: string | null
+          id?: string
+          org_id?: string
+          parse_status?: string
+          updated_at?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_apportionment_sources_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_apportionment_sources_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_apportionment_sources_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       claim_apportionments: {
         Row: {
           category: string
@@ -948,6 +1031,7 @@ export type Database = {
           rd_activity_note: string | null
           reviewer_note: string | null
           source_file_id: string | null
+          source_id: string | null
           source_line_id: string | null
           status: string
           total_source_cost: number
@@ -967,6 +1051,7 @@ export type Database = {
           rd_activity_note?: string | null
           reviewer_note?: string | null
           source_file_id?: string | null
+          source_id?: string | null
           source_line_id?: string | null
           status?: string
           total_source_cost?: number
@@ -986,6 +1071,7 @@ export type Database = {
           rd_activity_note?: string | null
           reviewer_note?: string | null
           source_file_id?: string | null
+          source_id?: string | null
           source_line_id?: string | null
           status?: string
           total_source_cost?: number
@@ -1011,6 +1097,13 @@ export type Database = {
             columns: ["source_file_id"]
             isOneToOne: false
             referencedRelation: "claim_apportionment_source_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_apportionments_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "claim_apportionment_sources"
             referencedColumns: ["id"]
           },
           {
