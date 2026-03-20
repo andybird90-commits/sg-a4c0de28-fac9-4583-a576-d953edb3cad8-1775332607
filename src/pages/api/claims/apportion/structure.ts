@@ -88,6 +88,9 @@ const ResponseSchema = z.object({
   notes: z.string().optional()
 });
 
+type ParsedLine = z.infer<typeof ParsedLineSchema>;
+type Page = z.infer<typeof PageSchema>;
+
 function safeJsonParse(raw: string): unknown {
   try {
     return JSON.parse(raw);
@@ -150,7 +153,7 @@ function normalizeOpenAIError(err: unknown): { message: string; hint?: string } 
 }
 
 function buildAmountSnippetsFromPages(
-  pages: Array<{ pageNumber: number; text: string }>,
+  pages: Page[],
   opts?: { maxSnippets?: number; windowChars?: number }
 ): string[] {
   const maxSnippets = opts?.maxSnippets ?? 240;
@@ -185,6 +188,131 @@ function buildAmountSnippetsFromPages(
   return snippets;
 }
 
+function parseMoneyAmount(raw: string): number | null {
+  const cleaned = raw.replace(/[^0-9.,]/g, "").replace(/,/g, "");
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : null;
+}
+
+function cleanContactName(raw: string): string {
+  const withoutTrailingDashes = raw.replace(/\s*[-–—]+\s*$/g, "").trim();
+  const withoutDotFillers = withoutTrailingDashes.replace(/[.]{2,}/g, " ").replace(/\s+/g, " ").trim();
+  return withoutDotFillers;
+}
+
+function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
+  const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
+  const out: ParsedLine[] = [];
+
+  for (const p of pages) {
+    const rawText = (p.text || "").replace(/\r/g, "\n");
+    const lines = rawText
+      .split("\n")
+      .map((l) => l.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+
+    for (const line of lines) {
+      const lower = line.toLowerCase();
+      if (
+        lower.startsWith("aged payables summary") ||
+        lower.startsWith("contact current") ||
+        lower.startsWith("as at ") ||
+        lower.includes("page ") ||
+        lower === "aged payables" ||
+        lower.startsWith("total aged payables") ||
+        lower === "total" ||
+        lower.startsWith("percentage of total")
+      ) {
+        continue;
+      }
+
+      amountRegex.lastIndex = 0;
+      const matches = Array.from(line.matchAll(amountRegex));
+      if (matches.length === 0) continue;
+
+      const first = matches[0];
+      const last = matches[matches.length - 1];
+      const firstIdx = typeof first.index === "number" ? first.index : -1;
+      const lastAmountRaw = last?.[0] ?? "";
+
+      if (firstIdx <= 0) continue;
+
+      const namePartRaw = line.slice(0, firstIdx).trim();
+      const contactName = cleanContactName(namePartRaw);
+      if (!contactName || contactName.length < 3) continue;
+
+      if (/^[\d£.,\-\s]+$/.test(contactName)) continue;
+
+      const total = parseMoneyAmount(lastAmountRaw);
+      if (total === null) continue;
+
+      out.push({
+        lineIndex: out.length,
+        rawName: contactName,
+        normalisedName: contactName,
+        category: "supplier",
+        referenceText: line,
+        debitTotal: total,
+        creditTotal: null,
+        netTotal: total,
+        vatTotal: null,
+        grossTotal: null,
+        sourcePage: p.pageNumber,
+        confidence: 0.75,
+        include: true,
+        notes: "Heuristic table parse (Aged Payables Summary). Please review headings vs totals.",
+        rawExtraction: { page: p.pageNumber, line }
+      });
+    }
+  }
+
+  return out;
+}
+
+function heuristicLinesFromPages(pages: Page[]): ParsedLine[] {
+  const agedPayables = parseAgedPayablesRowsFromPages(pages);
+  if (agedPayables.length > 0) {
+    return agedPayables.slice(0, 120);
+  }
+
+  const snippets = buildAmountSnippetsFromPages(pages, { maxSnippets: 120, windowChars: 80 });
+  const lines: ParsedLine[] = [];
+
+  for (let i = 0; i < snippets.length; i += 1) {
+    const s = snippets[i];
+    const match = s.match(/(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/);
+    const amount = match ? parseMoneyAmount(match[0]) : null;
+
+    const pageMatch = s.match(/^Page\s+(\d+):\s*/i);
+    const pageNumber = pageMatch?.[1] ? Number(pageMatch[1]) : null;
+
+    const withoutPrefix = s.replace(/^Page\s+\d+:\s*/i, "");
+    const beforeAmount =
+      match && match.index !== undefined ? withoutPrefix.slice(0, match.index).trim() : withoutPrefix.trim();
+    const rawName = beforeAmount ? beforeAmount.slice(-80).trim() : null;
+
+    lines.push({
+      lineIndex: i,
+      rawName: rawName || null,
+      normalisedName: rawName ? rawName.replace(/\s+/g, " ").trim() : null,
+      category: "unknown",
+      referenceText: withoutPrefix.slice(0, 220),
+      debitTotal: amount,
+      creditTotal: null,
+      netTotal: null,
+      vatTotal: null,
+      grossTotal: null,
+      sourcePage: pageNumber && Number.isFinite(pageNumber) ? pageNumber : null,
+      confidence: 0.2,
+      include: true,
+      notes: "Heuristic fallback (OpenAI parse timed out). Please review.",
+      rawExtraction: { snippet: s }
+    });
+  }
+
+  return lines.slice(0, 90);
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "GET") {
     return res.status(200).json({ ok: true, message: "Apportion structure endpoint ready" });
@@ -198,6 +326,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const openai = getOpenAIClient();
     if (!openai) {
       return res.status(500).json({
+        ok: false,
         error: "OPENAI_API_KEY is not configured",
         hint: "Set OPENAI_API_KEY in your environment variables (.env.local in Softgen settings) and restart the server."
       });
@@ -205,12 +334,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { client: supabase, hasAuth } = getServerSupabaseClient(req);
     if (!hasAuth) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
     }
 
     const parsedReq = RequestSchema.safeParse(req.body);
     if (!parsedReq.success) {
-      return res.status(400).json({ error: "Invalid request", details: parsedReq.error.flatten() });
+      return res.status(400).json({ ok: false, error: "Invalid request", details: parsedReq.error.flatten() });
     }
 
     const { claimId, sourceFileId, pages, filename, fileType } = parsedReq.data;
@@ -223,23 +352,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (claimError) {
       console.error("[apportion.structure] claim lookup error", claimError);
-      return res.status(500).json({ error: "Failed to load claim" });
+      return res.status(500).json({ ok: false, error: "Failed to load claim" });
     }
 
     if (!claim) {
-      return res.status(404).json({ error: "Claim not found" });
+      return res.status(404).json({ ok: false, error: "Claim not found" });
     }
+
+    const snippets = buildAmountSnippetsFromPages(pages, { maxSnippets: 240, windowChars: 72 });
+    const fallbackLines = heuristicLinesFromPages(pages);
 
     const combinedText = pages
       .sort((a, b) => a.pageNumber - b.pageNumber)
       .map((p) => `--- Page ${p.pageNumber} ---\n${p.text}`)
       .join("\n\n");
 
-    const maxCombinedChars = 35000;
+    const maxCombinedChars = 20000;
     const combinedTextForPrompt =
       combinedText.length > maxCombinedChars ? combinedText.slice(0, maxCombinedChars) : combinedText;
 
-    const snippets = buildAmountSnippetsFromPages(pages, { maxSnippets: 240, windowChars: 72 });
     const promptBody =
       snippets.length > 0
         ? `Amount-centric snippets (faster to parse than full OCR text):\n${snippets.map((s) => `- ${s}`).join("\n")}`
@@ -253,7 +384,7 @@ Hard rules:
 - If a row is ambiguous, set category="unknown", include=true, add notes, and lower confidence.
 - Preserve rawName exactly as seen when possible. Provide normalisedName (trimmed, simplified) when possible.
 - Do NOT wrap your output in markdown or code fences. No \`\`\` blocks.
-- Return at most 90 lines.
+- Return at most 60 lines.
 
 Return STRICT JSON only with:
 {
@@ -301,11 +432,11 @@ Task:
           { role: "user", content: user }
         ],
         temperature: 0.2,
-        max_tokens: 900,
+        max_tokens: 700,
         response_format: { type: "json_object" } as any
       });
 
-      const timeoutMs = 15000;
+      const timeoutMs = 8000;
       const completion = await Promise.race([
         completionPromise,
         new Promise<never>((_, reject) => {
@@ -317,6 +448,20 @@ Task:
     } catch (err: unknown) {
       const normalized = normalizeOpenAIError(err);
       console.error("[apportion.structure] OpenAI error", err);
+
+      if (fallbackLines.length > 0) {
+        return res.status(200).json({
+          ok: true,
+          degraded: true,
+          claimId,
+          sourceFileId,
+          result: {
+            lines: fallbackLines,
+            notes: `Heuristic fallback used: ${normalized.message}`
+          }
+        });
+      }
+
       const isTimeout = String((err as any)?.message || "").toLowerCase().includes("timed out");
       return res.status(isTimeout ? 504 : 502).json({
         ok: false,
@@ -339,6 +484,20 @@ Task:
         contentPreview: completionContent.slice(0, 400),
         error: validated.error.flatten()
       });
+
+      if (fallbackLines.length > 0) {
+        return res.status(200).json({
+          ok: true,
+          degraded: true,
+          claimId,
+          sourceFileId,
+          result: {
+            lines: fallbackLines,
+            notes: "Heuristic fallback used: model returned invalid JSON"
+          }
+        });
+      }
+
       return res.status(422).json({
         ok: false,
         error: "Parser returned invalid structure",
@@ -349,6 +508,7 @@ Task:
 
     return res.status(200).json({
       ok: true,
+      degraded: false,
       claimId,
       sourceFileId,
       result: validated.data

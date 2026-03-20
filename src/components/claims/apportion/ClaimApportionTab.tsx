@@ -469,6 +469,15 @@ export function ClaimApportionTab(props: {
         throw new Error(`${apiError}${hint}${preview}`.trim());
       }
 
+      if (structJson?.degraded === true) {
+        toast({
+          title: "Parsed (quick fallback)",
+          description:
+            "A fast fallback parser was used due to a timeout. The extracted lines may be incomplete — review them carefully, and you can re-parse later for a higher-quality extraction.",
+          variant: "default"
+        });
+      }
+
       const structured = structJson.result;
 
       const parsedLines: ParsedLineInput[] = (structured?.lines || []).map((l: any) => ({
