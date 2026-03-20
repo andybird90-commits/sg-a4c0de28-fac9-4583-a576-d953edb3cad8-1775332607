@@ -931,6 +931,15 @@ export function ClaimApportionTab(props: {
                   {parsing === selectedSource?.id ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
                   Parse selected
                 </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!selectedSourceId || clearingLines}
+                  onClick={() => setShowClearLinesDialog(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Clear lines
+                </Button>
                 <Button type="button" variant="outline" disabled={uploading} onClick={() => void refreshSources()}>
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Refresh
