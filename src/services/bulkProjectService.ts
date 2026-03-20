@@ -70,7 +70,7 @@ export const bulkProjectService = {
   async getProjectsForOrganisation(orgId: string): Promise<BulkProjectWithUploads[]> {
     const { data, error } = await (supabase as any)
       .from("bulk_projects")
-      .select("*, bulk_project_uploads(*)")
+      .select("*")
       .eq("org_id", orgId)
       .order("created_at", { ascending: false });
 
@@ -79,13 +79,29 @@ export const bulkProjectService = {
       throw error;
     }
 
-    return (data as BulkProjectWithUploads[]) || [];
+    const rows = (data as BulkProject[]) || [];
+    const enriched = await Promise.all(
+      rows.map(async (row) => {
+        try {
+          const uploads = await bulkProjectService.getUploadsForProject(row.id);
+          return { ...row, bulk_project_uploads: uploads } as BulkProjectWithUploads;
+        } catch (uploadError) {
+          console.error(
+            "[bulkProjectService.getProjectsForOrganisation] Error loading uploads:",
+            { bulkProjectId: row.id, uploadError }
+          );
+          return { ...row, bulk_project_uploads: [] } as BulkProjectWithUploads;
+        }
+      })
+    );
+
+    return enriched;
   },
 
   async getProjectById(id: string): Promise<BulkProjectWithUploads | null> {
     const { data, error } = await (supabase as any)
       .from("bulk_projects")
-      .select("*, bulk_project_uploads(*)")
+      .select("*")
       .eq("id", id)
       .maybeSingle();
 
@@ -94,7 +110,19 @@ export const bulkProjectService = {
       throw error;
     }
 
-    return (data as BulkProjectWithUploads) || null;
+    const row = (data as BulkProject) || null;
+    if (!row) return null;
+
+    try {
+      const uploads = await bulkProjectService.getUploadsForProject(row.id);
+      return { ...row, bulk_project_uploads: uploads } as BulkProjectWithUploads;
+    } catch (uploadError) {
+      console.error(
+        "[bulkProjectService.getProjectById] Error loading uploads:",
+        { bulkProjectId: row.id, uploadError }
+      );
+      return { ...row, bulk_project_uploads: [] } as BulkProjectWithUploads;
+    }
   },
 
   async getUploadsForProject(bulkProjectId: string): Promise<BulkProjectUpload[]> {
