@@ -195,7 +195,8 @@ function parseMoneyAmount(raw: string): number | null {
 }
 
 function cleanContactName(raw: string): string {
-  const withoutTrailingDashes = raw.replace(/\s*[-–—]+\s*$/g, "").trim();
+  const withoutLeadingDashes = raw.replace(/^\s*[-–—]+\s*/g, "").trim();
+  const withoutTrailingDashes = withoutLeadingDashes.replace(/\s*[-–—]+\s*$/g, "").trim();
   const withoutDotFillers = withoutTrailingDashes.replace(/[.]{2,}/g, " ").replace(/\s+/g, " ").trim();
   return withoutDotFillers;
 }
@@ -203,6 +204,91 @@ function cleanContactName(raw: string): string {
 function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
   const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
   const out: ParsedLine[] = [];
+  const monthTokenRegex =
+    /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/gi;
+  const monthTokenStrict = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/i;
+  const yearToken = /\b20\d{2}\b/;
+
+  const seen = new Set<string>();
+
+  function looksLikeAgedPayablesDoc(allTextLower: string): boolean {
+    if (!allTextLower.includes("aged payables")) return false;
+    if (!allTextLower.includes("summary")) return false;
+    return (
+      allTextLower.includes("ageing by due date") ||
+      allTextLower.includes("percentage of total") ||
+      allTextLower.includes("total aged payables") ||
+      allTextLower.includes("contact current")
+    );
+  }
+
+  function looksLikeMonthHeader(line: string): boolean {
+    const lower = line.toLowerCase();
+    monthTokenRegex.lastIndex = 0;
+    const monthHits = Array.from(lower.matchAll(monthTokenRegex)).length;
+    if (monthHits < 2) return false;
+
+    if (
+      lower.includes("contact") ||
+      lower.includes("current") ||
+      lower.includes("older") ||
+      lower.includes("total") ||
+      yearToken.test(lower)
+    ) {
+      return true;
+    }
+
+    const stripped = lower
+      .replace(monthTokenRegex, " ")
+      .replace(yearToken, " ")
+      .replace(/[^a-z]/g, "")
+      .trim();
+    return stripped.length === 0;
+  }
+
+  function looksLikeTotalOrSummaryLine(line: string): boolean {
+    const lower = line.toLowerCase();
+    return (
+      lower.startsWith("total aged payables") ||
+      lower === "total" ||
+      lower.startsWith("total ") ||
+      lower.startsWith("percentage of total") ||
+      lower.startsWith("aged payables summary") ||
+      lower.startsWith("ageing by due date") ||
+      lower === "aged payables"
+    );
+  }
+
+  function hasRealNameWords(name: string): boolean {
+    const lower = name.toLowerCase().replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
+    if (!lower) return false;
+    const words = lower.split(" ").filter(Boolean);
+    const nonMonthWords = words.filter((w) => !monthTokenStrict.test(w));
+    const lettersOnly = lower.replace(/[^a-z]/g, "");
+    if (lettersOnly.length < 3) return false;
+    if (nonMonthWords.length === 0) return false;
+    return true;
+  }
+
+  function stripNonNameChars(raw: string): string {
+    return raw.replace(/[0-9£.,\s]/g, "").replace(/[-–—]/g, "").trim();
+  }
+
+  function looksLikeNamePrefixOnly(line: string): boolean {
+    const lower = line.toLowerCase();
+    if (!line) return false;
+    if (looksLikeTotalOrSummaryLine(line) || looksLikeMonthHeader(line)) return false;
+    if (lower.includes("page ") || lower.startsWith("as at ")) return false;
+    amountRegex.lastIndex = 0;
+    if (amountRegex.test(line)) return false;
+    const lettersOnly = stripNonNameChars(line);
+    if (lettersOnly.length < 4) return false;
+    if (!/[a-z]/i.test(line)) return false;
+    return true;
+  }
+
+  const allTextLower = pages.map((p) => p.text || "").join("\n").toLowerCase();
+  const shouldTreatAsAgedPayables = looksLikeAgedPayablesDoc(allTextLower);
 
   for (const p of pages) {
     const rawText = (p.text || "").replace(/\r/g, "\n");
@@ -211,24 +297,29 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
       .map((l) => l.replace(/\s+/g, " ").trim())
       .filter(Boolean);
 
+    let pendingPrefix: string | null = null;
+
     for (const line of lines) {
       const lower = line.toLowerCase();
       if (
-        lower.startsWith("aged payables summary") ||
-        lower.startsWith("contact current") ||
         lower.startsWith("as at ") ||
         lower.includes("page ") ||
-        lower === "aged payables" ||
-        lower.startsWith("total aged payables") ||
-        lower === "total" ||
-        lower.startsWith("percentage of total")
+        looksLikeTotalOrSummaryLine(line) ||
+        looksLikeMonthHeader(line)
       ) {
+        pendingPrefix = null;
         continue;
       }
 
       amountRegex.lastIndex = 0;
       const matches = Array.from(line.matchAll(amountRegex));
-      if (matches.length === 0) continue;
+      if (matches.length === 0) {
+        if (shouldTreatAsAgedPayables && looksLikeNamePrefixOnly(line)) {
+          const cleaned = cleanContactName(line);
+          pendingPrefix = cleaned && hasRealNameWords(cleaned) ? cleaned : null;
+        }
+        continue;
+      }
 
       const first = matches[0];
       const last = matches[matches.length - 1];
@@ -239,17 +330,35 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
 
       const namePartRaw = line.slice(0, firstIdx).trim();
       const contactName = cleanContactName(namePartRaw);
-      if (!contactName || contactName.length < 3) continue;
+      let finalName = contactName;
+      if ((!finalName || finalName.length < 3 || !hasRealNameWords(finalName)) && pendingPrefix) {
+        finalName = pendingPrefix;
+      } else if (pendingPrefix) {
+        const startsLower = /^[a-z]/.test(finalName);
+        const short = finalName.length < 12;
+        if (startsLower || short) {
+          finalName = `${pendingPrefix} ${finalName}`.replace(/\s+/g, " ").trim();
+        }
+      }
+      pendingPrefix = null;
 
-      if (/^[\d£.,\-\s]+$/.test(contactName)) continue;
+      if (!finalName || finalName.length < 3) continue;
+
+      if (/^[\d£.,\-\s]+$/.test(finalName)) continue;
+      if (finalName.replace(/[^A-Za-z]/g, "").length < 2) continue;
+      if (!hasRealNameWords(finalName)) continue;
 
       const total = parseMoneyAmount(lastAmountRaw);
       if (total === null) continue;
 
+      const dedupeKey = `${finalName.toLowerCase()}|${total.toFixed(2)}`;
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+
       out.push({
         lineIndex: out.length,
-        rawName: contactName,
-        normalisedName: contactName,
+        rawName: finalName,
+        normalisedName: finalName,
         category: "supplier",
         referenceText: line,
         debitTotal: total,
@@ -261,7 +370,7 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
         confidence: 0.75,
         include: true,
         notes: "Heuristic table parse (Aged Payables Summary). Please review headings vs totals.",
-        rawExtraction: { page: p.pageNumber, line }
+        rawExtraction: { page: p.pageNumber, line, monthHits: 0, matchedAmounts: matches.map((m) => m[0]) }
       });
     }
   }
@@ -343,6 +452,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const { claimId, sourceFileId, pages, filename, fileType } = parsedReq.data;
+
+    const allLower = pages.map((p) => p.text || "").join("\n").toLowerCase();
+    if (allLower.includes("aged payables") && allLower.includes("summary")) {
+      const tableLines = parseAgedPayablesRowsFromPages(pages);
+      if (tableLines.length > 0) {
+        return res.status(200).json({
+          ok: true,
+          degraded: true,
+          claimId,
+          sourceFileId,
+          result: {
+            lines: tableLines.slice(0, 500),
+            notes: "Detected an Aged Payables Summary table. Parsed using the table extractor (heading + last-column total). Please review and correct any mis-OCR'd supplier names."
+          }
+        });
+      }
+    }
 
     const { data: claim, error: claimError } = await supabase
       .from("claims")
