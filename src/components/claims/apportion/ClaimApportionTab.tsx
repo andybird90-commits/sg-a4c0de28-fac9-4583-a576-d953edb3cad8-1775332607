@@ -392,10 +392,10 @@ export function ClaimApportionTab(props: {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          claimId,
+          claimId: props.claimId,
           sourceFileId: source.id,
           pages,
           filename: source.file_name,
