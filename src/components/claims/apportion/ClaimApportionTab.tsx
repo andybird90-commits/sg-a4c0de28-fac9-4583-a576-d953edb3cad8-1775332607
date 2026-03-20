@@ -392,23 +392,43 @@ export function ClaimApportionTab(props: {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          claimId: props.claimId,
+          claimId,
           sourceFileId: source.id,
           pages,
-          filename: source.file_name || "file",
-          fileType
+          filename: source.file_name,
+          fileType: source.file_type
         })
       });
 
-      const structJson = await structRes.json();
-      if (!structRes.ok || structJson?.ok !== true) {
-        throw new Error(structJson?.error || "Parse failed");
+      let structJson: any = null;
+      let structTextPreview = "";
+      try {
+        structJson = await structRes.json();
+      } catch {
+        try {
+          const text = await structRes.text();
+          structTextPreview = text.slice(0, 500);
+        } catch {
+          structTextPreview = "";
+        }
       }
 
-      const parsedLines: ParsedLineInput[] = (structJson?.result?.lines || []).map((l: any) => ({
+      if (!structRes.ok || structJson?.ok !== true) {
+        const apiError =
+          structJson?.error ||
+          structJson?.message ||
+          `Parse failed (HTTP ${structRes.status})`;
+        const hint = structJson?.hint ? `\n${structJson.hint}` : "";
+        const preview = structTextPreview ? `\nResponse preview: ${structTextPreview}` : "";
+        throw new Error(`${apiError}${hint}${preview}`.trim());
+      }
+
+      const structured = structJson.result;
+
+      const parsedLines: ParsedLineInput[] = (structured?.lines || []).map((l: any) => ({
         lineIndex: Number(l.lineIndex ?? 0),
         rawName: typeof l.rawName === "string" ? l.rawName : null,
         normalisedName: typeof l.normalisedName === "string" ? l.normalisedName : null,
