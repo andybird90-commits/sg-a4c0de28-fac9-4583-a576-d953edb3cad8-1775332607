@@ -1279,7 +1279,7 @@ export function ClaimApportionTab(props: {
               <Label>Search / filter</Label>
               <Input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="Search name, reference or notes..." />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <label className="flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm">
                 <input
                   type="checkbox"
@@ -1309,6 +1309,16 @@ export function ClaimApportionTab(props: {
               <Button
                 type="button"
                 variant="outline"
+                onClick={() => {
+                  if (typeof document === "undefined") return;
+                  document.getElementById("apportion-working-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                Jump to working table
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
                 disabled={!selectedSourceId}
                 onClick={() => {
                   if (selectedSourceId) void refreshLines(selectedSourceId);
@@ -1325,6 +1335,11 @@ export function ClaimApportionTab(props: {
                 Clear extracted lines
               </Button>
             </div>
+          </div>
+
+          <div className="text-xs text-muted-foreground">
+            To approve/push: add items to the <span className="font-medium text-foreground">Apportionment Working Table</span>, set{" "}
+            <span className="font-medium text-foreground">Status = Approved</span>, then push approved items to Costs.
           </div>
 
           {!selectedSource ? (
@@ -1485,7 +1500,7 @@ export function ClaimApportionTab(props: {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="apportion-working-table">
         <CardHeader>
           <CardTitle>Apportionment Working Table</CardTitle>
           <CardDescription>Set claimable % and rationale. Only approved items can be pushed to Costs.</CardDescription>
@@ -1504,6 +1519,11 @@ export function ClaimApportionTab(props: {
               <Download className="mr-2 h-4 w-4" />
               Push approved items to Costs tab
             </Button>
+          </div>
+
+          <div className="text-xs text-muted-foreground">
+            To approve/push: add items to the <span className="font-medium text-foreground">Apportionment Working Table</span>, set{" "}
+            <span className="font-medium text-foreground">Status = Approved</span>, then push approved items to Costs.
           </div>
 
           {approvedToPush.length === 0 ? (
