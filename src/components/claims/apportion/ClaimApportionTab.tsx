@@ -715,7 +715,9 @@ export function ClaimApportionTab(props: {
     await refreshApportionments();
   };
 
-  const approvedToPush = useMemo(() => apportionments.filter((a) => a.status === "approved"), [apportionments]);
+  const approvedToPush = useMemo(() => {
+    return apportionments.filter((a) => String(a.status || "").trim().toLowerCase() === "approved");
+  }, [apportionments]);
 
   const handlePushApproved = async () => {
     setPushInProgress(true);
@@ -726,6 +728,36 @@ export function ClaimApportionTab(props: {
 
       if (approvedToPush.length === 0) {
         toast({ title: "Nothing to push", description: "Approve at least one row first." });
+        return;
+      }
+
+      if (!userId) {
+        toast({
+          title: "Not authenticated",
+          description: "Please log in and try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data: profileRow, error: profileError } = await supabase
+        .from("profiles")
+        .select("internal_role")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("[ClaimApportionTab] profile lookup error", profileError);
+      }
+
+      const internalRole = (profileRow as any)?.internal_role ?? null;
+      if (!internalRole) {
+        toast({
+          title: "Cannot push to Costs",
+          description:
+            "Your account does not have staff permissions to create/update claim costs. Ask an RD staff user to push approved items, or log in with a staff account.",
+          variant: "destructive"
+        });
         return;
       }
 
@@ -824,7 +856,15 @@ export function ClaimApportionTab(props: {
       }
     } catch (error: any) {
       console.error("[ClaimApportionTab] push error", error);
-      toast({ title: "Push failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
+      const msg = String(error?.message ?? "");
+      const isPermission = /permission denied|not authorized|rls/i.test(msg);
+      toast({
+        title: "Push failed",
+        description: isPermission
+          ? "Permission denied creating/updating claim costs. This usually means you’re not logged in as an internal staff user."
+          : msg || "Unexpected error",
+        variant: "destructive"
+      });
     } finally {
       setPushInProgress(false);
     }
