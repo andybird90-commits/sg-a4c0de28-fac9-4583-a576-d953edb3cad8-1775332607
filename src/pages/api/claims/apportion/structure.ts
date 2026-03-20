@@ -409,6 +409,123 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
   return out;
 }
 
+function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
+  const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
+  const monthTokenRegex = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/gi;
+
+  const out: ParsedLine[] = [];
+  const seen = new Set<string>();
+
+  const skipLine = (line: string): boolean => {
+    const lower = line.toLowerCase();
+
+    if (!lower) return true;
+
+    if (
+      lower.startsWith("aged payables summary") ||
+      lower === "aged payables summary" ||
+      lower.startsWith("as at ") ||
+      lower.startsWith("ageing by due date") ||
+      lower.startsWith("contact ") ||
+      lower.includes("page ") ||
+      lower.startsWith("total aged payables") ||
+      lower === "total" ||
+      lower.startsWith("total ") ||
+      lower.startsWith("percentage of total")
+    ) {
+      return true;
+    }
+
+    monthTokenRegex.lastIndex = 0;
+    const monthHits = Array.from(lower.matchAll(monthTokenRegex)).length;
+    if (monthHits >= 2 && (lower.includes("current") || lower.includes("older") || lower.includes("total"))) {
+      return true;
+    }
+
+    const letters = lower.replace(/[^a-z]/g, "");
+    const digits = lower.replace(/[^0-9]/g, "");
+    if (letters.length === 0 && digits.length > 0) return true;
+
+    const onlyPunctOrDashes = /^[\s\-–—.]+$/.test(line.trim());
+    if (onlyPunctOrDashes) return true;
+
+    return false;
+  };
+
+  const hasRealName = (name: string): boolean => {
+    const lower = name.toLowerCase().replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
+    if (!lower) return false;
+
+    const words = lower.split(" ").filter(Boolean);
+    if (words.length === 0) return false;
+
+    monthTokenRegex.lastIndex = 0;
+    const nonMonth = words.filter((w) => !monthTokenRegex.test(w));
+    const lettersOnly = lower.replace(/[^a-z]/g, "");
+    if (lettersOnly.length < 3) return false;
+    if (nonMonth.length === 0) return false;
+
+    return true;
+  };
+
+  for (const p of pages) {
+    const rawText = (p.text || "").replace(/\r/g, "\n");
+
+    const lines = rawText
+      .split("\n")
+      .map((l) => l.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+
+    for (const line of lines) {
+      if (skipLine(line)) continue;
+
+      amountRegex.lastIndex = 0;
+      const matches = Array.from(line.matchAll(amountRegex));
+      if (matches.length < 1) continue;
+
+      const first = matches[0];
+      const last = matches[matches.length - 1];
+      const firstIdx = typeof first.index === "number" ? first.index : -1;
+      if (firstIdx <= 0) continue;
+
+      const namePartRaw = line.slice(0, firstIdx).trim();
+      const contactName = cleanContactName(namePartRaw).replace(/\s*[-–—]+\s*$/g, "").trim();
+      if (!contactName) continue;
+
+      if (!/[a-z]/i.test(contactName)) continue;
+      if (!hasRealName(contactName)) continue;
+
+      const totalRaw = last?.[0] ?? "";
+      const total = parseMoneyAmount(totalRaw);
+      if (total === null) continue;
+
+      const dedupeKey = `${contactName.toLowerCase()}|${total.toFixed(2)}`;
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+
+      out.push({
+        lineIndex: out.length,
+        rawName: contactName,
+        normalisedName: contactName.replace(/\s+/g, " ").trim(),
+        category: "supplier",
+        referenceText: line,
+        debitTotal: total,
+        creditTotal: null,
+        netTotal: total,
+        vatTotal: null,
+        grossTotal: null,
+        sourcePage: p.pageNumber,
+        confidence: 0.9,
+        include: true,
+        notes: "Aged Payables Summary table parse (contact + total column).",
+        rawExtraction: { page: p.pageNumber, line, amounts: matches.map((m) => m[0]) }
+      });
+    }
+  }
+
+  return out;
+}
+
 function heuristicLinesFromPages(pages: Page[]): ParsedLine[] {
   const agedPayables = parseAgedPayablesRowsFromPages(pages);
   if (agedPayables.length > 0) {
@@ -486,7 +603,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const allLower = pages.map((p) => p.text || "").join("\n").toLowerCase();
     if (allLower.includes("aged payables") && allLower.includes("summary")) {
-      const tableLines = parseAgedPayablesRowsFromPages(pages);
+      const tableLines = parseAgedPayablesSummaryTable(pages);
       if (tableLines.length > 0) {
         return res.status(200).json({
           ok: true,
@@ -494,8 +611,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           claimId,
           sourceFileId,
           result: {
-            lines: tableLines.slice(0, 500),
-            notes: "Detected an Aged Payables Summary table. Parsed using the table extractor (heading + last-column total). Please review and correct any mis-OCR'd supplier names."
+            lines: tableLines.slice(0, 1200),
+            notes: "Detected an Aged Payables Summary table. Parsed using table extractor (contact + total column)."
           }
         });
       }
