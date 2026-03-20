@@ -248,6 +248,8 @@ export function ClaimApportionTab(props: {
   const { toast } = useToast();
 
   const [mounted, setMounted] = useState(false);
+  const [checkedInternalRole, setCheckedInternalRole] = useState(false);
+  const [currentInternalRole, setCurrentInternalRole] = useState<string | null>(null);
 
   const [sourceFiles, setSourceFiles] = useState<SourceFileRow[]>([]);
   const [selectedSourceId, setSelectedSourceId] = useState<string>("");
@@ -264,9 +266,55 @@ export function ClaimApportionTab(props: {
   const [pushMode, setPushMode] = useState<"create-only" | "update-existing">("create-only");
   const [showClearLinesDialog, setShowClearLinesDialog] = useState(false);
   const [clearingLines, setClearingLines] = useState(false);
+  const [addingIncludedToWorking, setAddingIncludedToWorking] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const user = auth.user ?? null;
+
+        if (!user) {
+          if (!cancelled) {
+            setCurrentInternalRole(null);
+            setCheckedInternalRole(true);
+          }
+          return;
+        }
+
+        const { data: profileRow, error: profileError } = await supabase
+          .from("profiles")
+          .select("internal_role")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (profileError) {
+          console.error("[ClaimApportionTab] internal_role lookup error", profileError);
+        }
+
+        if (!cancelled) {
+          setCurrentInternalRole((profileRow as any)?.internal_role ?? null);
+          setCheckedInternalRole(true);
+        }
+      } catch (error) {
+        console.error("[ClaimApportionTab] internal_role lookup unexpected error", error);
+        if (!cancelled) {
+          setCurrentInternalRole(null);
+          setCheckedInternalRole(true);
+        }
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const refreshSources = async () => {
@@ -677,6 +725,60 @@ export function ClaimApportionTab(props: {
     await refreshApportionments();
   };
 
+  const handleAddIncludedToWorking = async () => {
+    if (!selectedSourceId) return;
+    setAddingIncludedToWorking(true);
+    try {
+      const existingLineIds = new Set(
+        apportionments.map((a) => a.source_line_id).filter((v): v is string => typeof v === "string" && v.length > 0)
+      );
+
+      const toAdd = lines.filter((l) => l.source_id === selectedSourceId && l.include !== false && !!l.id && !existingLineIds.has(l.id));
+
+      if (toAdd.length === 0) {
+        toast({
+          title: "Nothing to add",
+          description: "All included lines are already in the working table (or there are no included lines)."
+        });
+        return;
+      }
+
+      for (const line of toAdd) {
+        const total = safeNumber(line.net_total) ?? safeNumber(line.gross_total) ?? safeNumber(line.debit_total) ?? 0;
+        const itemName = (line.normalised_name || line.raw_name || "").toString();
+
+        await claimApportionmentService.upsertApportionment({
+          claim_id: props.claimId,
+          org_id: props.orgId,
+          source_line_id: line.id,
+          source_id: line.source_id,
+          item_name: itemName,
+          heading: "other",
+          category: (line.category as any) || "unknown",
+          total_source_cost: total,
+          claimable_percent: 0,
+          claimable_amount: 0,
+          status: "draft"
+        } as any);
+      }
+
+      toast({
+        title: "Added to working table",
+        description: `Added ${toAdd.length} line${toAdd.length === 1 ? "" : "s"} as draft working rows. You can now set Status = Approved there.`
+      });
+      await refreshApportionments();
+    } catch (error: any) {
+      console.error("[ClaimApportionTab] add included to working failed", error);
+      toast({
+        title: "Add failed",
+        description: error?.message ?? "Unexpected error",
+        variant: "destructive"
+      });
+    } finally {
+      setAddingIncludedToWorking(false);
+    }
+  };
+
   const updateWorkingRow = async (row: ApportionmentRow, patch: Partial<ApportionmentRow>) => {
     const total = safeNumber(patch.total_source_cost ?? row.total_source_cost) ?? 0;
     const existingPct = safeNumber(patch.claimable_percent ?? row.claimable_percent) ?? 0;
@@ -715,6 +817,31 @@ export function ClaimApportionTab(props: {
     await refreshApportionments();
   };
 
+  const safeUpdateWorkingRow = async (row: ApportionmentRow, patch: Partial<ApportionmentRow>) => {
+    try {
+      await updateWorkingRow(row, patch);
+    } catch (error: any) {
+      console.error("[ClaimApportionTab] update working row failed", { error, rowId: row.id, patch });
+      const msg = String(error?.message ?? "Failed to save changes");
+      const code = typeof error?.code === "string" ? error.code : "";
+      const details = typeof error?.details === "string" ? error.details : "";
+      const hint = typeof error?.hint === "string" ? error.hint : "";
+
+      const diagnosticParts = [
+        code ? `Code: ${code}` : null,
+        details ? `Details: ${details}` : null,
+        hint ? `Hint: ${hint}` : null
+      ].filter(Boolean);
+
+      toast({
+        title: "Save failed",
+        description: `${msg}${diagnosticParts.length ? `\n${diagnosticParts.join("\n")}` : ""}`,
+        variant: "destructive"
+      });
+      await refreshApportionments();
+    }
+  };
+
   const approvedToPush = useMemo(() => {
     return apportionments.filter((a) => String(a.status || "").trim().toLowerCase() === "approved");
   }, [apportionments]);
@@ -727,7 +854,10 @@ export function ClaimApportionTab(props: {
       const userId = auth.user?.id ?? null;
 
       if (approvedToPush.length === 0) {
-        toast({ title: "Nothing to push", description: "Approve at least one row first." });
+        toast({
+          title: "Nothing to push",
+          description: "Set one or more working rows to Status = Approved, then try again."
+        });
         return;
       }
 
@@ -735,6 +865,16 @@ export function ClaimApportionTab(props: {
         toast({
           title: "Not authenticated",
           description: "Please log in and try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (checkedInternalRole && !currentInternalRole) {
+        toast({
+          title: "Cannot push to Costs",
+          description:
+            "Pushing creates rows in the Costs table (claim_costs), which is restricted to internal staff accounts. Your profile is not marked as internal staff (profiles.internal_role is empty). Ask an admin to update your user, or log in with a staff account.",
           variant: "destructive"
         });
         return;
@@ -810,7 +950,10 @@ export function ClaimApportionTab(props: {
             } as any)
             .eq("id", link.claim_cost_id);
 
-          if (error) throw error;
+          if (error) {
+            console.error("[ClaimApportionTab] claim_costs update error", { error, claimCostId: link.claim_cost_id, rowId: row.id });
+            throw error;
+          }
 
           await claimApportionmentService.linkPushedCost({
             apportionmentId: row.id,
@@ -833,7 +976,10 @@ export function ClaimApportionTab(props: {
             .select("id")
             .single();
 
-          if (error) throw error;
+          if (error) {
+            console.error("[ClaimApportionTab] claim_costs insert error", { error, rowId: row.id, costType, amount });
+            throw error;
+          }
 
           await claimApportionmentService.linkPushedCost({
             apportionmentId: row.id,
@@ -856,13 +1002,25 @@ export function ClaimApportionTab(props: {
       }
     } catch (error: any) {
       console.error("[ClaimApportionTab] push error", error);
+
       const msg = String(error?.message ?? "");
-      const isPermission = /permission denied|not authorized|rls/i.test(msg);
+      const code = typeof error?.code === "string" ? error.code : "";
+      const details = typeof error?.details === "string" ? error.details : "";
+      const hint = typeof error?.hint === "string" ? error.hint : "";
+
+      const isPermission = /permission denied|not authorized|rls/i.test([msg, code, details].join(" "));
+
+      const diagnosticParts = [
+        code ? `Code: ${code}` : null,
+        details ? `Details: ${details}` : null,
+        hint ? `Hint: ${hint}` : null
+      ].filter(Boolean);
+
       toast({
         title: "Push failed",
         description: isPermission
-          ? "Permission denied creating/updating claim costs. This usually means you’re not logged in as an internal staff user."
-          : msg || "Unexpected error",
+          ? `Permission denied creating/updating claim costs. Make sure you’re logged in as an internal staff user.${diagnosticParts.length ? `\n${diagnosticParts.join("\n")}` : ""}`
+          : `${msg || "Unexpected error"}${diagnosticParts.length ? `\n${diagnosticParts.join("\n")}` : ""}`,
         variant: "destructive"
       });
     } finally {
@@ -1096,9 +1254,10 @@ export function ClaimApportionTab(props: {
               <p className="text-xs text-muted-foreground">Total approved for claim</p>
               <p className="text-lg font-semibold">{formatMoney(summary.totalApproved)}</p>
             </div>
-            <div className="rounded-md border bg-background/40 p-3">
+            <div className="rounded-md border bg-background/40 p-3 sm:col-span-2">
               <p className="text-xs text-muted-foreground">Rows needing review</p>
               <p className="text-lg font-semibold">{summary.needingReview}</p>
+              <p className="text-[11px] text-muted-foreground">Confidence &lt; 60%.</p>
             </div>
             <div className="rounded-md border bg-background/40 p-3 sm:col-span-2">
               <p className="text-xs text-muted-foreground">Low-confidence lines (included)</p>
@@ -1131,6 +1290,21 @@ export function ClaimApportionTab(props: {
               </label>
               <Button type="button" variant="outline" disabled={!selectedSourceId} onClick={() => void handleMergeDuplicates()}>
                 Merge duplicate names
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!selectedSourceId || addingIncludedToWorking}
+                onClick={() => void handleAddIncludedToWorking()}
+              >
+                {addingIncludedToWorking ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  "Add included to working table"
+                )}
               </Button>
               <Button
                 type="button"
@@ -1174,7 +1348,7 @@ export function ClaimApportionTab(props: {
                     <TableHead>Page</TableHead>
                     <TableHead>Confidence</TableHead>
                     <TableHead>Notes</TableHead>
-                    <TableHead className="text-right">Working</TableHead>
+                    <TableHead className="text-right sticky right-0 bg-background">Working</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1290,7 +1464,7 @@ export function ClaimApportionTab(props: {
                           }}
                         />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right sticky right-0 bg-background">
                         <Button
                           type="button"
                           size="sm"
@@ -1321,14 +1495,32 @@ export function ClaimApportionTab(props: {
             <div className="text-sm text-muted-foreground">
               Approved rows: <span className="font-semibold text-foreground">{approvedToPush.length}</span>
             </div>
-            <Button type="button" variant="secondary" onClick={() => setShowPushDialog(true)} disabled={approvedToPush.length === 0}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowPushDialog(true)}
+              disabled={approvedToPush.length === 0 || (checkedInternalRole && !currentInternalRole)}
+            >
               <Download className="mr-2 h-4 w-4" />
               Push approved items to Costs tab
             </Button>
           </div>
 
+          {approvedToPush.length === 0 ? (
+            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
+              To enable push: set at least one working row’s <span className="font-medium text-foreground">Status</span> to{" "}
+              <span className="font-medium text-foreground">Approved</span>.
+            </div>
+          ) : checkedInternalRole && !currentInternalRole ? (
+            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
+              Pushing to Costs is restricted to internal staff accounts. Your user isn’t marked as internal staff (profiles.internal_role is empty).
+            </div>
+          ) : null}
+
           {apportionments.length === 0 ? (
-            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">No working rows yet. Add from extracted lines above.</div>
+            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
+              No working rows yet. To approve/push, first add items from Extracted Lines (use the per-row “Add” button, or “Add included to working table”), then set Status = Approved in the working table.
+            </div>
           ) : (
             <div className="overflow-x-auto rounded-md border">
               <Table>
@@ -1361,11 +1553,11 @@ export function ClaimApportionTab(props: {
                               const v = e.target.value;
                               setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, item_name: v } : x)));
                             }}
-                            onBlur={() => void updateWorkingRow(a, { item_name: a.item_name ?? "" } as any)}
+                            onBlur={() => void safeUpdateWorkingRow(a, { item_name: a.item_name ?? "" } as any)}
                           />
                         </TableCell>
                         <TableCell className="min-w-[160px]">
-                          <Select value={a.heading ?? "other"} onValueChange={(v) => void updateWorkingRow(a, { heading: v } as any)}>
+                          <Select value={a.heading ?? "other"} onValueChange={(v) => void safeUpdateWorkingRow(a, { heading: v } as any)}>
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
@@ -1379,7 +1571,13 @@ export function ClaimApportionTab(props: {
                           </Select>
                         </TableCell>
                         <TableCell className="min-w-[160px]">
-                          <Select value={(a.category as any) ?? "unknown"} onValueChange={(v) => void updateWorkingRow(a, { category: v } as any)}>
+                          <Select
+                            value={(a.category as any) ?? "unknown"}
+                            onValueChange={(v) => {
+                              setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, category: v as any } : x)));
+                              void safeUpdateWorkingRow(a, { category: v } as any);
+                            }}
+                          >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
@@ -1403,7 +1601,7 @@ export function ClaimApportionTab(props: {
                               const next = clamp(Number(e.target.value || 0), 0, 100);
                               setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, claimable_percent: next / 100 } : x)));
                             }}
-                            onBlur={() => void updateWorkingRow(a, { claimable_percent: safeNumber(a.claimable_percent) ?? 0 } as any)}
+                            onBlur={() => void safeUpdateWorkingRow(a, { claimable_percent: safeNumber(a.claimable_percent) ?? 0 } as any)}
                           />
                         </TableCell>
                         <TableCell className="min-w-[160px] text-right">
@@ -1417,7 +1615,7 @@ export function ClaimApportionTab(props: {
                               const next = safeNumber(e.target.value) ?? 0;
                               setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, claimable_amount: next } : x)));
                             }}
-                            onBlur={() => void updateWorkingRow(a, { claimable_amount: safeNumber(a.claimable_amount) ?? 0 } as any)}
+                            onBlur={() => void safeUpdateWorkingRow(a, { claimable_amount: safeNumber(a.claimable_amount) ?? 0 } as any)}
                           />
                         </TableCell>
                         <TableCell className="min-w-[260px]">
@@ -1428,7 +1626,7 @@ export function ClaimApportionTab(props: {
                               const v = e.target.value;
                               setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, justification: v } : x)));
                             }}
-                            onBlur={() => void updateWorkingRow(a, { justification: a.justification ?? "" } as any)}
+                            onBlur={() => void safeUpdateWorkingRow(a, { justification: a.justification ?? "" } as any)}
                           />
                         </TableCell>
                         <TableCell className="min-w-[260px]">
@@ -1439,7 +1637,7 @@ export function ClaimApportionTab(props: {
                               const v = e.target.value;
                               setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, rd_activity_note: v } : x)));
                             }}
-                            onBlur={() => void updateWorkingRow(a, { rd_activity_note: a.rd_activity_note ?? "" } as any)}
+                            onBlur={() => void safeUpdateWorkingRow(a, { rd_activity_note: a.rd_activity_note ?? "" } as any)}
                           />
                         </TableCell>
                         <TableCell className="min-w-[260px]">
@@ -1450,11 +1648,17 @@ export function ClaimApportionTab(props: {
                               const v = e.target.value;
                               setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, reviewer_note: v } : x)));
                             }}
-                            onBlur={() => void updateWorkingRow(a, { reviewer_note: a.reviewer_note ?? "" } as any)}
+                            onBlur={() => void safeUpdateWorkingRow(a, { reviewer_note: a.reviewer_note ?? "" } as any)}
                           />
                         </TableCell>
                         <TableCell className="min-w-[160px]">
-                          <Select value={(a.status as any) ?? "draft"} onValueChange={(v) => void updateWorkingRow(a, { status: v } as any)}>
+                          <Select
+                            value={(a.status as any) ?? "draft"}
+                            onValueChange={(v) => {
+                              setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, status: v as any } : x)));
+                              void safeUpdateWorkingRow(a, { status: v } as any);
+                            }}
+                          >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
@@ -1493,6 +1697,15 @@ export function ClaimApportionTab(props: {
               <p className="text-xs text-muted-foreground">You can run this multiple times. Each apportionment row keeps an audit link to the cost item that was created.</p>
             </div>
 
+            {checkedInternalRole && !currentInternalRole ? (
+              <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">Blocked</p>
+                <p className="mt-1">
+                  Your account isn’t marked as internal staff (profiles.internal_role is empty), so Supabase will block writing to claim_costs.
+                </p>
+              </div>
+            ) : null}
+
             <div>
               <Label>Mode</Label>
               <Select value={pushMode} onValueChange={(v) => setPushMode(v as any)}>
@@ -1511,7 +1724,12 @@ export function ClaimApportionTab(props: {
             <Button type="button" variant="outline" onClick={() => setShowPushDialog(false)} disabled={pushInProgress}>
               Cancel
             </Button>
-            <Button type="button" variant="secondary" onClick={() => void handlePushApproved()} disabled={pushInProgress}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => void handlePushApproved()}
+              disabled={pushInProgress || (checkedInternalRole && !currentInternalRole) || approvedToPush.length === 0}
+            >
               {pushInProgress ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
