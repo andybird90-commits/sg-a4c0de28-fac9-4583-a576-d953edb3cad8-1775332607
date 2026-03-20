@@ -231,6 +231,8 @@ export function ClaimApportionTab(props: {
   const [showPushDialog, setShowPushDialog] = useState(false);
   const [pushInProgress, setPushInProgress] = useState(false);
   const [pushMode, setPushMode] = useState<"create-only" | "update-existing">("create-only");
+  const [showClearLinesDialog, setShowClearLinesDialog] = useState(false);
+  const [clearingLines, setClearingLines] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -550,6 +552,66 @@ export function ClaimApportionTab(props: {
       }
     } finally {
       setParsing(null);
+    }
+  };
+
+  const handleClearExtractedLines = async () => {
+    if (!selectedSourceId) return;
+    setClearingLines(true);
+
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) {
+        toast({
+          title: "Not authenticated",
+          description: "Please log in and try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const clearedNote = `Cleared before re-parse on ${new Date().toISOString()}`;
+
+      const { error: clearError } = await supabase
+        .from("claim_apportionment_lines")
+        .update({
+          include: false,
+          notes: clearedNote,
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq("claim_id", props.claimId)
+        .eq("source_id", selectedSourceId);
+
+      if (clearError) throw clearError;
+
+      const { error: sourceError } = await supabase
+        .from("claim_apportionment_sources")
+        .update({
+          parse_status: "uploaded",
+          confidence: null,
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq("id", selectedSourceId);
+
+      if (sourceError) throw sourceError;
+
+      toast({
+        title: "Cleared extracted lines",
+        description: "You can now click Parse selected to re-parse this file."
+      });
+
+      setShowClearLinesDialog(false);
+      await refreshSources();
+      await refreshLines(selectedSourceId);
+    } catch (error: any) {
+      console.error("[ClaimApportionTab] clear extracted lines error", error);
+      toast({
+        title: "Clear failed",
+        description: error?.message ?? "Unexpected error",
+        variant: "destructive"
+      });
+    } finally {
+      setClearingLines(false);
     }
   };
 
@@ -1000,6 +1062,14 @@ export function ClaimApportionTab(props: {
               >
                 Refresh lines
               </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!selectedSourceId || clearingLines}
+                onClick={() => setShowClearLinesDialog(true)}
+              >
+                Clear extracted lines
+              </Button>
             </div>
           </div>
 
@@ -1371,6 +1441,45 @@ export function ClaimApportionTab(props: {
                 <>
                   <Download className="mr-2 h-4 w-4" />
                   Confirm push to Costs
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showClearLinesDialog} onOpenChange={setShowClearLinesDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clear extracted lines?</DialogTitle>
+            <DialogDescription>
+              This will exclude all extracted lines for the selected source file so you can re-parse from a clean slate. It will not delete the source file.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-md border bg-background/40 p-3 text-sm">
+            <p className="font-medium">What happens:</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
+              <li>All extracted lines for this file are marked as excluded</li>
+              <li>The source status resets to “uploaded”</li>
+              <li>You can click “Parse selected” again to regenerate rows</li>
+            </ul>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowClearLinesDialog(false)} disabled={clearingLines}>
+              Cancel
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => void handleClearExtractedLines()} disabled={clearingLines || !selectedSourceId}>
+              {clearingLines ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Clearing...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Clear lines
                 </>
               )}
             </Button>
