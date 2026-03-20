@@ -108,10 +108,41 @@ async function extractPdfTextAndMaybeOcr(blob: Blob): Promise<Array<{ pageNumber
   for (let i = 1; i <= doc.numPages; i += 1) {
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
-    const strings = (content.items || [])
-      .map((it: any) => (typeof it?.str === "string" ? it.str : ""))
+
+    const items = Array.isArray(content.items) ? (content.items as any[]) : [];
+
+    const byLine = new Map<number, Array<{ x: number; str: string }>>();
+
+    for (const it of items) {
+      const str = typeof it?.str === "string" ? it.str : "";
+      if (!str.trim()) continue;
+
+      const transform = Array.isArray(it?.transform) ? (it.transform as number[]) : null;
+      const x = transform?.[4] ?? 0;
+      const y = transform?.[5] ?? 0;
+
+      const key = Math.round(y / 2) * 2;
+
+      const bucket = byLine.get(key) ?? [];
+      bucket.push({ x, str });
+      byLine.set(key, bucket);
+    }
+
+    const sortedLines = Array.from(byLine.entries())
+      .sort((a, b) => b[0] - a[0])
+      .map(([, parts]) => {
+        const line = parts
+          .sort((a, b) => a.x - b.x)
+          .map((p) => p.str)
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
+        return line;
+      })
       .filter(Boolean);
-    const text = strings.join(" ").replace(/\s+/g, " ").trim();
+
+    const text = sortedLines.join("\n").trim();
+
     totalChars += text.length;
     pages.push({ pageNumber: i, text });
   }
