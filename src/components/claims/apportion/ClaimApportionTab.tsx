@@ -417,10 +417,7 @@ export function ClaimApportionTab(props: {
       }
 
       if (!structRes.ok || structJson?.ok !== true) {
-        const apiError =
-          structJson?.error ||
-          structJson?.message ||
-          `Parse failed (HTTP ${structRes.status})`;
+        const apiError = structJson?.error || structJson?.message || `Parse failed (HTTP ${structRes.status})`;
         const hint = structJson?.hint ? `\n${structJson.hint}` : "";
         const preview = structTextPreview ? `\nResponse preview: ${structTextPreview}` : "";
         throw new Error(`${apiError}${hint}${preview}`.trim());
