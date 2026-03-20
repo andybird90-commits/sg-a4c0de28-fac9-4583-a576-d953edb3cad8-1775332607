@@ -227,6 +227,7 @@ export function ClaimApportionTab(props: {
   const [parsing, setParsing] = useState<string | null>(null);
 
   const [filterText, setFilterText] = useState("");
+  const [showExcluded, setShowExcluded] = useState(false);
   const [showPushDialog, setShowPushDialog] = useState(false);
   const [pushInProgress, setPushInProgress] = useState(false);
   const [pushMode, setPushMode] = useState<"create-only" | "update-existing">("create-only");
@@ -275,14 +276,15 @@ export function ClaimApportionTab(props: {
 
   const filteredLines = useMemo(() => {
     const q = filterText.trim().toLowerCase();
-    if (!q) return lines;
-    return lines.filter((l) => {
+    const base = showExcluded ? lines : lines.filter((l) => l.include !== false);
+    if (!q) return base;
+    return base.filter((l) => {
       const hay = [l.raw_name ?? "", l.normalised_name ?? "", l.reference_text ?? "", l.notes ?? ""]
         .join(" ")
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [filterText, lines]);
+  }, [filterText, lines, showExcluded]);
 
   const summary = useMemo(() => {
     const included = lines.filter((l) => l.include !== false);
@@ -480,8 +482,8 @@ export function ClaimApportionTab(props: {
 
       const structured = structJson.result;
 
-      const parsedLines: ParsedLineInput[] = (structured?.lines || []).map((l: any) => ({
-        lineIndex: Number(l.lineIndex ?? 0),
+      const parsedLines: ParsedLineInput[] = (structured?.lines || []).map((l: any, idx: number) => ({
+        lineIndex: idx,
         rawName: typeof l.rawName === "string" ? l.rawName : null,
         normalisedName: typeof l.normalisedName === "string" ? l.normalisedName : null,
         category: l.category ?? "unknown",
@@ -504,6 +506,18 @@ export function ClaimApportionTab(props: {
         sourceId: source.id,
         lines: parsedLines
       });
+
+      const supersededNote = `Superseded by re-parse on ${new Date().toISOString()}`;
+      await supabase
+        .from("claim_apportionment_lines")
+        .update({
+          include: false,
+          notes: supersededNote,
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq("claim_id", props.claimId)
+        .eq("source_id", source.id)
+        .gte("line_index", parsedLines.length);
 
       const avgConfidenceRaw =
         parsedLines.length > 0
@@ -965,6 +979,14 @@ export function ClaimApportionTab(props: {
               <Input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="Search name, reference or notes..." />
             </div>
             <div className="flex gap-2">
+              <label className="flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={showExcluded}
+                  onChange={(e) => setShowExcluded(e.target.checked)}
+                />
+                Show excluded
+              </label>
               <Button type="button" variant="outline" disabled={!selectedSourceId} onClick={() => void handleMergeDuplicates()}>
                 Merge duplicate names
               </Button>
