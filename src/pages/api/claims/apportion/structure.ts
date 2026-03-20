@@ -96,6 +96,30 @@ function safeJsonParse(raw: string): unknown {
   }
 }
 
+function stripMarkdownCodeFence(raw: string): string {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenced?.[1]) return fenced[1].trim();
+  return raw.trim();
+}
+
+function extractLikelyJsonObject(raw: string): string {
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start >= 0 && end >= 0 && end > start) {
+    return raw.slice(start, end + 1);
+  }
+  return raw;
+}
+
+function safeJsonParseFromModelOutput(raw: string): unknown {
+  const cleaned = extractLikelyJsonObject(stripMarkdownCodeFence(raw || ""));
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    return null;
+  }
+}
+
 function normalizeOpenAIError(err: unknown): { message: string; hint?: string } {
   const anyErr = err as any;
   const msg = String(anyErr?.message || anyErr?.error?.message || "OpenAI request failed");
@@ -131,7 +155,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
   try {
@@ -182,6 +206,8 @@ Hard rules:
 - Do not infer VAT/gross if not explicit.
 - If a row is ambiguous, set category="unknown", include=true, add notes, and lower confidence.
 - Preserve rawName exactly as seen when possible. Provide normalisedName (trimmed, simplified) when possible.
+- Do NOT wrap your output in markdown or code fences. No \`\`\` blocks.
+- Return at most 200 lines. If there are more, merge similar items or omit the least important and mention it in notes.
 
 Return STRICT JSON only with:
 {
@@ -228,7 +254,8 @@ Task:
           { role: "user", content: user }
         ],
         temperature: 0.2,
-        max_tokens: 2000
+        max_tokens: 2500,
+        response_format: { type: "json_object" } as any
       });
       completionContent = completion.choices[0]?.message?.content ?? "";
     } catch (err: unknown) {
@@ -241,7 +268,7 @@ Task:
       });
     }
 
-    const json = safeJsonParse(completionContent);
+    const json = safeJsonParseFromModelOutput(completionContent);
 
     const validated = ResponseSchema.safeParse(json);
     if (!validated.success) {
@@ -254,7 +281,7 @@ Task:
       return res.status(422).json({
         ok: false,
         error: "Parser returned invalid structure",
-        hint: "Try re-parse or upload a clearer scan",
+        hint: "The parser output was incomplete/invalid (often due to very long documents). Try re-parsing, upload a smaller PDF, or split the document into sections.",
         contentPreview: completionContent.slice(0, 400)
       });
     }
@@ -270,6 +297,7 @@ Task:
     return res.status(500).json({
       ok: false,
       error: "Failed to structure extracted content",
+      hint: "Check server logs for the underlying error (e.g. OpenAI failure, request too large, or auth).",
       details: error?.message ?? "Unknown error"
     });
   }

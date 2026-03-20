@@ -458,11 +458,14 @@ export function ClaimApportionTab(props: {
       if (!structRes.ok || structJson?.ok !== true) {
         const apiError = structJson?.error || structJson?.message || `Parse failed (HTTP ${structRes.status})`;
         const hint = structJson?.hint ? `\n${structJson.hint}` : "";
-        const preview = structTextPreview
-          ? `\nResponse preview: ${structTextPreview}`
-          : rawBody
-            ? `\nResponse preview: ${rawBody.slice(0, 500)}`
-            : "";
+
+        const contentType = structRes.headers.get("content-type") || "unknown";
+        const previewBody =
+          structTextPreview ||
+          (rawBody ? rawBody.slice(0, 500) : "[empty response body]");
+
+        const preview = `\nResponse: HTTP ${structRes.status} (${contentType})\nResponse preview: ${previewBody}`;
+
         throw new Error(`${apiError}${hint}${preview}`.trim());
       }
 
