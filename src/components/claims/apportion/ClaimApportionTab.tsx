@@ -1280,17 +1280,6 @@ export function ClaimApportionTab(props: {
               <Input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="Search name, reference or notes..." />
             </div>
             <div className="flex flex-wrap gap-2">
-              <label className="flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={showExcluded}
-                  onChange={(e) => setShowExcluded(e.target.checked)}
-                />
-                Show excluded
-              </label>
-              <Button type="button" variant="outline" disabled={!selectedSourceId} onClick={() => void handleMergeDuplicates()}>
-                Merge duplicate names
-              </Button>
               <Button
                 type="button"
                 variant="secondary"
@@ -1315,6 +1304,17 @@ export function ClaimApportionTab(props: {
                 }}
               >
                 Jump to working table
+              </Button>
+              <label className="flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={showExcluded}
+                  onChange={(e) => setShowExcluded(e.target.checked)}
+                />
+                Show excluded
+              </label>
+              <Button type="button" variant="outline" disabled={!selectedSourceId} onClick={() => void handleMergeDuplicates()}>
+                Merge duplicate names
               </Button>
               <Button
                 type="button"
@@ -1342,6 +1342,42 @@ export function ClaimApportionTab(props: {
             <span className="font-medium text-foreground">Status = Approved</span>, then push approved items to Costs.
           </div>
 
+          {selectedSource && filteredLines.length > 0 && apportionments.length === 0 ? (
+            <div className="rounded-md border bg-background/40 p-3 text-sm">
+              <p className="font-medium text-foreground">No working rows yet</p>
+              <p className="mt-1 text-muted-foreground">
+                Extracted lines can’t be approved directly. First add the relevant lines into the working table, then set Status = Approved there.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={!selectedSourceId || addingIncludedToWorking}
+                  onClick={() => void handleAddIncludedToWorking()}
+                >
+                  {addingIncludedToWorking ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    "Add included to working table"
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (typeof document === "undefined") return;
+                    document.getElementById("apportion-working-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                >
+                  Jump to working table
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
           {!selectedSource ? (
             <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">Select a source file to view extracted lines.</div>
           ) : filteredLines.length === 0 ? (
@@ -1352,6 +1388,7 @@ export function ClaimApportionTab(props: {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Include</TableHead>
+                    <TableHead>Working</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Reference</TableHead>
@@ -1363,7 +1400,6 @@ export function ClaimApportionTab(props: {
                     <TableHead>Page</TableHead>
                     <TableHead>Confidence</TableHead>
                     <TableHead>Notes</TableHead>
-                    <TableHead className="text-right sticky right-0 bg-background">Working</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1383,6 +1419,23 @@ export function ClaimApportionTab(props: {
                             }
                           }}
                         />
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            void ensureWorkingRowForLine(l);
+                            if (typeof document !== "undefined") {
+                              setTimeout(() => {
+                                document.getElementById("apportion-working-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                              }, 150);
+                            }
+                          }}
+                        >
+                          Add
+                        </Button>
                       </TableCell>
                       <TableCell className="min-w-[220px]">
                         <Input
@@ -1478,18 +1531,6 @@ export function ClaimApportionTab(props: {
                             }
                           }}
                         />
-                      </TableCell>
-                      <TableCell className="text-right sticky right-0 bg-background">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            void ensureWorkingRowForLine(l);
-                          }}
-                        >
-                          Add
-                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
