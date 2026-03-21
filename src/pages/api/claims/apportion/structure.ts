@@ -397,6 +397,15 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
 
       const total = parseMoneyAmount(lastAmountRaw);
       if (total === null) continue;
+      if (matches.length >= 2) {
+        const prevMax = matches
+          .slice(0, -1)
+          .reduce((acc, m) => {
+            const n = parseMoneyAmount(m[0]);
+            return typeof n === "number" && Number.isFinite(n) ? Math.max(acc, n) : acc;
+          }, 0);
+        if (total + 0.01 < prevMax) continue;
+      }
 
       const dedupeKey = `${finalName.toLowerCase()}|${total.toFixed(2)}`;
       if (seen.has(dedupeKey)) continue;
@@ -581,6 +590,15 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
       const totalRaw = last?.[0] ?? "";
       const total = parseMoneyAmount(totalRaw);
       if (total === null) continue;
+      if (matches.length >= 2) {
+        const prevMax = matches
+          .slice(0, -1)
+          .reduce((acc, m) => {
+            const n = parseMoneyAmount(m[0]);
+            return typeof n === "number" && Number.isFinite(n) ? Math.max(acc, n) : acc;
+          }, 0);
+        if (total + 0.01 < prevMax) continue;
+      }
 
       const dedupeKey = `${contactName.toLowerCase()}|${total.toFixed(2)}`;
       if (seen.has(dedupeKey)) continue;
@@ -637,8 +655,7 @@ function mergeAgedPayablesLines(a: ParsedLine[], b: ParsedLine[]): ParsedLine[] 
     const name = (l.normalisedName || l.rawName || "").toLowerCase().trim();
     const amt = l.netTotal ?? l.debitTotal ?? null;
     const amtKey = typeof amt === "number" && Number.isFinite(amt) ? amt.toFixed(2) : "null";
-    const pageKey = l.sourcePage ? `p${l.sourcePage}` : "p?";
-    return `${name}|${amtKey}|${pageKey}`;
+    return `${name}|${amtKey}`;
   };
 
   const take = (l: ParsedLine) => {
