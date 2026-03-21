@@ -192,5 +192,44 @@ export const claimApportionmentService = {
 
     if (error) throw error;
     return data ?? null;
+  },
+
+  async clearWorkingApportionmentsForSource(params: {
+    claimId: string;
+    sourceId: string;
+    keepApproved?: boolean;
+  }): Promise<number> {
+    const keepApproved = params.keepApproved !== false;
+
+    const { data: rows, error: listError } = await supabase
+      .from("claim_apportionments")
+      .select("id, status")
+      .eq("claim_id", params.claimId)
+      .eq("source_id", params.sourceId);
+
+    if (listError) throw listError;
+
+    const idsToDelete = (rows ?? [])
+      .filter((r) => (keepApproved ? r.status !== "approved" : true))
+      .map((r) => r.id)
+      .filter((id): id is string => typeof id === "string" && id.length > 0);
+
+    if (idsToDelete.length === 0) return 0;
+
+    const { error: linkDeleteError } = await supabase
+      .from("claim_apportionment_cost_links")
+      .delete()
+      .in("apportionment_id", idsToDelete);
+
+    if (linkDeleteError) throw linkDeleteError;
+
+    const { error: deleteError } = await supabase
+      .from("claim_apportionments")
+      .delete()
+      .in("id", idsToDelete);
+
+    if (deleteError) throw deleteError;
+
+    return idsToDelete.length;
   }
 };

@@ -271,6 +271,7 @@ export function ClaimApportionTab(props: {
   const [showClearLinesDialog, setShowClearLinesDialog] = useState(false);
   const [clearingLines, setClearingLines] = useState(false);
   const [addingIncludedToWorking, setAddingIncludedToWorking] = useState(false);
+  const [clearAlsoWorking, setClearAlsoWorking] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -691,14 +692,26 @@ export function ClaimApportionTab(props: {
 
       if (sourceError) throw sourceError;
 
+      let clearedWorkingRows = 0;
+      if (clearAlsoWorking) {
+        clearedWorkingRows = await claimApportionmentService.clearWorkingApportionmentsForSource({
+          claimId: props.claimId,
+          sourceId: selectedSourceId,
+          keepApproved: true
+        });
+      }
+
       toast({
         title: "Cleared extracted lines",
-        description: "You can now click Parse selected to re-parse this file."
+        description: clearAlsoWorking
+          ? `Extracted lines cleared. Removed ${clearedWorkingRows} working row${clearedWorkingRows === 1 ? "" : "s"} for this file (approved rows kept). You can now click Parse selected to re-parse this file.`
+          : "You can now click Parse selected to re-parse this file."
       });
 
       setShowClearLinesDialog(false);
       await refreshSources();
       await refreshLines(selectedSourceId);
+      await refreshApportionments();
     } catch (error: any) {
       console.error("[ClaimApportionTab] clear extracted lines error", error);
       toast({
@@ -1857,6 +1870,21 @@ export function ClaimApportionTab(props: {
               <li>You can click “Parse selected” again to regenerate rows</li>
             </ul>
           </div>
+
+          <label className="flex items-start gap-3 rounded-md border bg-background/40 p-3 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={clearAlsoWorking}
+              onChange={(e) => setClearAlsoWorking(e.target.checked)}
+            />
+            <div>
+              <p className="font-medium text-foreground">Also clear working table rows for this file</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                This removes Draft/Reviewed/Excluded working rows that were created from this source file. Approved rows are kept (to avoid disrupting already-pushed items).
+              </p>
+            </div>
+          </label>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setShowClearLinesDialog(false)} disabled={clearingLines}>
