@@ -676,6 +676,42 @@ function mergeAgedPayablesLines(a: ParsedLine[], b: ParsedLine[]): ParsedLine[] 
   return Array.from(bestByKey.values()).sort((x, y) => (x.sourcePage ?? 0) - (y.sourcePage ?? 0));
 }
 
+function consolidateAgedPayablesByName(lines: ParsedLine[]): ParsedLine[] {
+  const byName = new Map<string, ParsedLine>();
+
+  const amountFor = (l: ParsedLine): number => {
+    const n = l.netTotal ?? l.debitTotal ?? null;
+    return typeof n === "number" && Number.isFinite(n) ? n : -Infinity;
+  };
+
+  for (const l of lines) {
+    const key = (l.normalisedName || l.rawName || "").toLowerCase().replace(/\s+/g, " ").trim();
+    if (!key) continue;
+
+    const prev = byName.get(key);
+    if (!prev) {
+      byName.set(key, l);
+      continue;
+    }
+
+    const prevAmt = amountFor(prev);
+    const nextAmt = amountFor(l);
+
+    if (nextAmt > prevAmt + 0.000001) {
+      byName.set(key, l);
+      continue;
+    }
+
+    if (Math.abs(nextAmt - prevAmt) <= 0.000001) {
+      const prevC = prev.confidence ?? 0;
+      const nextC = l.confidence ?? 0;
+      if (nextC > prevC) byName.set(key, l);
+    }
+  }
+
+  return Array.from(byName.values()).sort((x, y) => (x.sourcePage ?? 0) - (y.sourcePage ?? 0));
+}
+
 function heuristicLinesFromPages(pages: Page[]): ParsedLine[] {
   const agedPayables = parseAgedPayablesRowsFromPages(pages);
   if (agedPayables.length > 0) {
@@ -756,10 +792,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const tableLines = parseAgedPayablesSummaryTable(pages);
       const heuristicLines = parseAgedPayablesRowsFromPages(pages);
       const merged = mergeAgedPayablesLines(tableLines, heuristicLines).slice(0, 2000);
+      const consolidated = consolidateAgedPayablesByName(merged).slice(0, 2000);
 
-      if (merged.length > 0) {
+      if (consolidated.length > 0) {
         const reportedTotal = parseTotalAgedPayablesFromPages(pages);
-        const capturedSum = merged.reduce((acc, l) => {
+        const capturedSum = consolidated.reduce((acc, l) => {
           const n = l.netTotal ?? l.debitTotal ?? null;
           return acc + (typeof n === "number" && Number.isFinite(n) ? n : 0);
         }, 0);
@@ -782,7 +819,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           claimId,
           sourceFileId,
           result: {
-            lines: merged,
+            lines: consolidated,
             notes: [
               "Detected an Aged Payables Summary table. Parsed using Aged Payables table extractor (with merged-line recovery).",
               discrepancyNote
