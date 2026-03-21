@@ -115,6 +115,13 @@ export const claimApportionmentService = {
       updated_at: nowIso()
     }));
 
+    const { error: clearError } = await supabase
+      .from("claim_apportionment_lines")
+      .delete()
+      .eq("source_id", params.sourceId);
+
+    if (clearError) throw clearError;
+
     const { error } = await supabase
       .from("claim_apportionment_lines")
       .upsert(payload, { onConflict: "source_id,line_index" });
