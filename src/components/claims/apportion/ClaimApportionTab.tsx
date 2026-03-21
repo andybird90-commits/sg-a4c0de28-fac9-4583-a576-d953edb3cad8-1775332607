@@ -74,6 +74,10 @@ function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
+function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
 function formatMoney(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
   return new Intl.NumberFormat("en-GB", {
@@ -791,7 +795,7 @@ export function ClaimApportionTab(props: {
     const amtTouched = Object.prototype.hasOwnProperty.call(patch, "claimable_amount");
 
     if (amtTouched && !pctTouched) {
-      const nextAmt = clamp(existingAmt, 0, total);
+      const nextAmt = roundMoney(clamp(existingAmt, 0, total));
       claimableAmount = nextAmt;
       claimablePercent = total > 0 ? clamp(nextAmt / total, 0, 1) : 0;
     }
@@ -799,11 +803,11 @@ export function ClaimApportionTab(props: {
     if (pctTouched && !amtTouched) {
       const nextPct = clamp(existingPct, 0, 1);
       claimablePercent = nextPct;
-      claimableAmount = clamp(total * nextPct, 0, total);
+      claimableAmount = roundMoney(clamp(total * nextPct, 0, total));
     }
 
     if (pctTouched && amtTouched) {
-      claimableAmount = clamp(existingAmt, 0, total);
+      claimableAmount = roundMoney(clamp(existingAmt, 0, total));
       claimablePercent = total > 0 ? clamp(claimableAmount / total, 0, 1) : 0;
     }
 
@@ -921,7 +925,9 @@ export function ClaimApportionTab(props: {
         const link = await claimApportionmentService.getCostLinkByApportionment(row.id);
 
         const costType = (row.heading || "other") as any;
-        const amount = clamp(safeNumber(row.claimable_amount) ?? 0, 0, safeNumber(row.total_source_cost) ?? 0);
+        const amount = roundMoney(
+          clamp(safeNumber(row.claimable_amount) ?? 0, 0, safeNumber(row.total_source_cost) ?? 0)
+        );
 
         const sourceFile = sourceFiles.find((s) => s.id === row.source_id);
         const sourceRefParts = [sourceFile?.file_name ? `Source: ${sourceFile.file_name}` : null].filter(Boolean);
@@ -1292,8 +1298,8 @@ export function ClaimApportionTab(props: {
                     Adding...
                   </>
                 ) : (
-                  "Add included to working table"
-                )}
+                    "Add included to working table"
+                  )}
               </Button>
               <Button
                 type="button"
@@ -1603,7 +1609,7 @@ export function ClaimApportionTab(props: {
                   {apportionments.map((a) => {
                     const total = safeNumber(a.total_source_cost) ?? 0;
                     const pct = safeNumber(a.claimable_percent) ?? 0;
-                    const amt = safeNumber(a.claimable_amount) ?? 0;
+                    const amt = roundMoney(safeNumber(a.claimable_amount) ?? 0);
 
                     return (
                       <TableRow key={a.id}>
@@ -1650,7 +1656,6 @@ export function ClaimApportionTab(props: {
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell className="min-w-[140px] text-right">{formatMoney(total)}</TableCell>
                         <TableCell className="min-w-[140px] text-right">
                           <Input
                             type="number"
@@ -1660,7 +1665,15 @@ export function ClaimApportionTab(props: {
                             value={Math.round(pct * 100)}
                             onChange={(e) => {
                               const next = clamp(Number(e.target.value || 0), 0, 100);
-                              setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, claimable_percent: next / 100 } : x)));
+                              const nextPct = next / 100;
+                              const nextAmt = roundMoney(clamp(total * nextPct, 0, total));
+                              setApportionments((prev) =>
+                                prev.map((x) =>
+                                  x.id === a.id
+                                    ? { ...x, claimable_percent: nextPct, claimable_amount: nextAmt }
+                                    : x
+                                )
+                              );
                             }}
                             onBlur={() => void safeUpdateWorkingRow(a, { claimable_percent: safeNumber(a.claimable_percent) ?? 0 } as any)}
                           />
@@ -1671,15 +1684,22 @@ export function ClaimApportionTab(props: {
                             min={0}
                             max={total}
                             step={0.01}
-                            value={amt}
+                            value={amt.toFixed(2)}
                             onChange={(e) => {
-                              const next = safeNumber(e.target.value) ?? 0;
-                              setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, claimable_amount: next } : x)));
+                              const nextRaw = safeNumber(e.target.value) ?? 0;
+                              const next = roundMoney(clamp(nextRaw, 0, total));
+                              setApportionments((prev) =>
+                                prev.map((x) => (x.id === a.id ? { ...x, claimable_amount: next } : x))
+                              );
                             }}
-                            onBlur={() => void safeUpdateWorkingRow(a, { claimable_amount: safeNumber(a.claimable_amount) ?? 0 } as any)}
+                            onBlur={() =>
+                              void safeUpdateWorkingRow(a, {
+                                claimable_amount: roundMoney(clamp(safeNumber(a.claimable_amount) ?? 0, 0, total))
+                              } as any)
+                            }
                           />
                         </TableCell>
-                        <TableCell className="min-w-[260px]">
+                        <TableCell className="min-w-[220px]">
                           <Textarea
                             rows={2}
                             value={a.justification ?? ""}
