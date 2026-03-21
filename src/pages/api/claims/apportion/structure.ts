@@ -442,7 +442,7 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
         if (total + 0.01 < prevMax) continue;
       }
 
-      const dedupeKey = `${finalName.toLowerCase()}|${total.toFixed(2)}`;
+      const dedupeKey = `${normalizeAgedPayablesNameKey(finalName)}|${total.toFixed(2)}`;
       if (seen.has(dedupeKey)) continue;
       seen.add(dedupeKey);
 
@@ -636,7 +636,7 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
         if (total + 0.01 < prevMax) continue;
       }
 
-      const dedupeKey = `${contactName.toLowerCase()}|${total.toFixed(2)}`;
+      const dedupeKey = `${normalizeAgedPayablesNameKey(contactName)}|${total.toFixed(2)}`;
       if (seen.has(dedupeKey)) continue;
       seen.add(dedupeKey);
 
@@ -721,7 +721,7 @@ function consolidateAgedPayablesByName(lines: ParsedLine[]): ParsedLine[] {
   };
 
   for (const l of lines) {
-    const key = (l.normalisedName || l.rawName || "").toLowerCase().replace(/\s+/g, " ").trim();
+    const key = normalizeAgedPayablesNameKey(l.normalisedName || l.rawName || "").toLowerCase().replace(/\s+/g, " ").trim();
     if (!key) continue;
 
     const prev = byName.get(key);
