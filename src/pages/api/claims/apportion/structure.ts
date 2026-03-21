@@ -201,6 +201,18 @@ function cleanContactName(raw: string): string {
   return withoutDotFillers;
 }
 
+function normalizeAgedPayablesNameKey(name: string): string {
+  return (name || "")
+    .normalize("NFKD")
+    .replace(/[\u2010-\u2015\u2212]/g, "-")
+    .replace(/[’‘`]/g, "'")
+    .replace(/&/g, " and ")
+    .replace(/[^A-Za-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 function hasBusinessLikeName(name: string): boolean {
   const lower = (name || "")
     .toLowerCase()
