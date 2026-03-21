@@ -624,7 +624,6 @@ export default function StaffClaimProjectDetailPage() {
             <TabsTrigger value="apportion">Apportion</TabsTrigger>
           </TabsList>
 
-          {/* OVERVIEW TAB */}
           <TabsContent value="overview" className="space-y-6 mt-4">
             {/* Timestamps */}
             <Card>
@@ -633,17 +632,13 @@ export default function StaffClaimProjectDetailPage() {
                   <div>
                     <p className="font-medium text-foreground mb-1">Created</p>
                     <p>
-                      {project.created_at
-                        ? format(new Date(project.created_at), "PPP")
-                        : "N/A"}
+                      {project.created_at ? format(new Date(project.created_at), "PPP") : "N/A"}
                     </p>
                   </div>
                   <div>
                     <p className="font-medium text-foreground mb-1">Last Updated</p>
                     <p>
-                      {project.updated_at
-                        ? format(new Date(project.updated_at), "PPP")
-                        : "N/A"}
+                      {project.updated_at ? format(new Date(project.updated_at), "PPP") : "N/A"}
                     </p>
                   </div>
                 </div>
@@ -715,34 +710,28 @@ export default function StaffClaimProjectDetailPage() {
                 <ProjectGantt items={timelineItems} />
               </CardContent>
             </Card>
-
-            {/* Existing R&D details and workflow/collaboration sections can remain here,
-               but to keep changes minimal we leave them below this Tabs block as-is. */}
           </TabsContent>
 
-          {/* BULK TAB */}
           <TabsContent value="bulk" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
                 <CardTitle>Bulk</CardTitle>
                 <CardDescription>
-                  Workspace for bulk tools related to this claim project (e.g. bulk cost imports, bulk edits).
+                  Workspace for bulk tools related to this claim project.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  No bulk-specific tools have been configured yet. This tab is ready for your future bulk workflows.
+                  No bulk-specific tools have been configured yet.
                 </p>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* COSTS TAB */}
           <TabsContent value="costs" className="space-y-4 mt-4">
             <ProjectCostSummary items={costAdvice} schemeLabel={schemeLabel} />
           </TabsContent>
 
-          {/* APPORTION TAB */}
           <TabsContent value="apportion" className="space-y-4 mt-4">
             <Card>
               <CardHeader>
@@ -753,7 +742,7 @@ export default function StaffClaimProjectDetailPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Apportionment tools are not configured yet. Use this space for future allocation tables and calculators.
+                  Apportionment tools are not configured yet.
                 </p>
               </CardContent>
             </Card>
