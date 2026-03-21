@@ -339,7 +339,20 @@ export function ClaimApportionTab(props: {
 
   const refreshApportionments = async () => {
     const rows = (await claimApportionmentService.listApportionmentsForClaim(props.claimId)) as any[];
-    setApportionments(rows as ApportionmentRow[]);
+    const normalised = rows.map((r) => {
+      const total = safeNumber(r.total_source_cost);
+      const amt = safeNumber(r.claimable_amount);
+      const pct = safeNumber(r.claimable_percent);
+
+      return {
+        ...r,
+        total_source_cost: total,
+        claimable_amount: amt === null ? null : roundMoney(amt),
+        claimable_percent: pct
+      };
+    });
+
+    setApportionments(normalised as ApportionmentRow[]);
   };
 
   useEffect(() => {

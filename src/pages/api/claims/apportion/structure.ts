@@ -412,9 +412,61 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
 function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
   const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
   const monthTokenRegex = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/gi;
+  const monthTokenStrict = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/i;
 
   const out: ParsedLine[] = [];
   const seen = new Set<string>();
+
+  const splitCandidateLines = (rawText: string): string[] => {
+    const baseLines = (rawText || "")
+      .replace(/\r/g, "\n")
+      .split("\n")
+      .map((l) => l.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+
+    const contactStartRegex =
+      /(?:^|\s)([A-Z][A-Za-z0-9&()'.,/\\\- ]{2,120}?)\s+(?=(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2}))/g;
+
+    const expanded: string[] = [];
+    for (const line of baseLines) {
+      const normal = line.replace(/\s+/g, " ").trim();
+      if (normal.length < 240) {
+        expanded.push(normal);
+        continue;
+      }
+
+      amountRegex.lastIndex = 0;
+      const moneyHits = Array.from(normal.matchAll(amountRegex)).length;
+      if (moneyHits < 6) {
+        expanded.push(normal);
+        continue;
+      }
+
+      contactStartRegex.lastIndex = 0;
+      const starts: number[] = [];
+      let m: RegExpExecArray | null = null;
+      while ((m = contactStartRegex.exec(normal)) !== null) {
+        const idx = m.index + (m[0].startsWith(" ") ? 1 : 0);
+        starts.push(idx);
+        if (starts.length > 30) break;
+      }
+
+      const uniqueStarts = Array.from(new Set(starts)).sort((a, b) => a - b);
+      if (uniqueStarts.length < 2) {
+        expanded.push(normal);
+        continue;
+      }
+
+      for (let i = 0; i < uniqueStarts.length; i += 1) {
+        const start = uniqueStarts[i];
+        const end = i + 1 < uniqueStarts.length ? uniqueStarts[i + 1] : normal.length;
+        const seg = normal.slice(start, end).trim();
+        if (seg) expanded.push(seg);
+      }
+    }
+
+    return expanded;
+  };
 
   const skipLine = (line: string): boolean => {
     const lower = line.toLowerCase();
@@ -459,8 +511,7 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
     const words = lower.split(" ").filter(Boolean);
     if (words.length === 0) return false;
 
-    monthTokenRegex.lastIndex = 0;
-    const nonMonth = words.filter((w) => !monthTokenRegex.test(w));
+    const nonMonth = words.filter((w) => !monthTokenStrict.test(w));
     const lettersOnly = lower.replace(/[^a-z]/g, "");
     if (lettersOnly.length < 3) return false;
     if (nonMonth.length === 0) return false;
@@ -471,10 +522,7 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
   for (const p of pages) {
     const rawText = (p.text || "").replace(/\r/g, "\n");
 
-    const lines = rawText
-      .split("\n")
-      .map((l) => l.replace(/\s+/g, " ").trim())
-      .filter(Boolean);
+    const lines = splitCandidateLines(rawText);
 
     for (const line of lines) {
       if (skipLine(line)) continue;
@@ -524,6 +572,56 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
   }
 
   return out;
+}
+
+function parseTotalAgedPayablesFromPages(pages: Page[]): number | null {
+  const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
+  for (const p of pages) {
+    const rawText = (p.text || "").replace(/\r/g, "\n");
+    const lines = rawText
+      .split("\n")
+      .map((l) => l.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+    for (const line of lines) {
+      const lower = line.toLowerCase();
+      if (!lower.startsWith("total aged payables")) continue;
+      amountRegex.lastIndex = 0;
+      const matches = Array.from(line.matchAll(amountRegex));
+      const last = matches[matches.length - 1]?.[0];
+      if (!last) continue;
+      const n = parseMoneyAmount(last);
+      if (n !== null) return n;
+    }
+  }
+  return null;
+}
+
+function mergeAgedPayablesLines(a: ParsedLine[], b: ParsedLine[]): ParsedLine[] {
+  const bestByKey = new Map<string, ParsedLine>();
+  const keyFor = (l: ParsedLine): string => {
+    const name = (l.normalisedName || l.rawName || "").toLowerCase().trim();
+    const amt = l.netTotal ?? l.debitTotal ?? null;
+    const amtKey = typeof amt === "number" && Number.isFinite(amt) ? amt.toFixed(2) : "null";
+    const pageKey = l.sourcePage ? `p${l.sourcePage}` : "p?";
+    return `${name}|${amtKey}|${pageKey}`;
+  };
+
+  const take = (l: ParsedLine) => {
+    const key = keyFor(l);
+    const prev = bestByKey.get(key);
+    if (!prev) {
+      bestByKey.set(key, l);
+      return;
+    }
+    const prevC = prev.confidence ?? 0;
+    const nextC = l.confidence ?? 0;
+    if (nextC > prevC) bestByKey.set(key, l);
+  };
+
+  for (const l of a) take(l);
+  for (const l of b) take(l);
+
+  return Array.from(bestByKey.values()).sort((x, y) => (x.sourcePage ?? 0) - (y.sourcePage ?? 0));
 }
 
 function heuristicLinesFromPages(pages: Page[]): ParsedLine[] {
@@ -604,15 +702,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const allLower = pages.map((p) => p.text || "").join("\n").toLowerCase();
     if (allLower.includes("aged payables") && allLower.includes("summary")) {
       const tableLines = parseAgedPayablesSummaryTable(pages);
-      if (tableLines.length > 0) {
+      const heuristicLines = parseAgedPayablesRowsFromPages(pages);
+      const merged = mergeAgedPayablesLines(tableLines, heuristicLines).slice(0, 2000);
+
+      if (merged.length > 0) {
+        const reportedTotal = parseTotalAgedPayablesFromPages(pages);
+        const capturedSum = merged.reduce((acc, l) => {
+          const n = l.netTotal ?? l.debitTotal ?? null;
+          return acc + (typeof n === "number" && Number.isFinite(n) ? n : 0);
+        }, 0);
+
+        const discrepancy =
+          typeof reportedTotal === "number" && Number.isFinite(reportedTotal)
+            ? Math.abs(reportedTotal - capturedSum)
+            : null;
+
+        const discrepancyNote =
+          discrepancy !== null && discrepancy > 0.5
+            ? `Sanity check: Total Aged Payables=${reportedTotal.toFixed(
+                2
+              )} vs captured sum=${capturedSum.toFixed(2)} (diff=${discrepancy.toFixed(2)}).`
+            : undefined;
+
         return res.status(200).json({
           ok: true,
           degraded: true,
           claimId,
           sourceFileId,
           result: {
-            lines: tableLines.slice(0, 1200),
-            notes: "Detected an Aged Payables Summary table. Parsed using table extractor (contact + total column)."
+            lines: merged,
+            notes: [
+              "Detected an Aged Payables Summary table. Parsed using Aged Payables table extractor (with merged-line recovery).",
+              discrepancyNote
+            ]
+              .filter(Boolean)
+              .join(" ")
           }
         });
       }
