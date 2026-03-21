@@ -201,6 +201,23 @@ function cleanContactName(raw: string): string {
   return withoutDotFillers;
 }
 
+function hasBusinessLikeName(name: string): boolean {
+  const lower = (name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!lower) return false;
+
+  if (/\b(ltd|limited|plc|company|group|services|service|management|solutions|rentals|supplies)\b/.test(lower)) {
+    return true;
+  }
+
+  const tokens = lower.split(" ").filter(Boolean);
+  return tokens.some((t) => /^[a-z]{4,}$/.test(t));
+}
+
 function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
   const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
   const amountOnce = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/;
@@ -368,6 +385,11 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
         continue;
       }
 
+      if (matches.length < 2) {
+        pendingPrefix = null;
+        continue;
+      }
+
       const first = matches[0];
       const last = matches[matches.length - 1];
       const firstIdx = typeof first.index === "number" ? first.index : -1;
@@ -394,6 +416,7 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
       if (/^[\d£.,\-\s]+$/.test(finalName)) continue;
       if (finalName.replace(/[^A-Za-z]/g, "").length < 2) continue;
       if (!hasRealNameWords(finalName)) continue;
+      if (!hasBusinessLikeName(finalName)) continue;
 
       const total = parseMoneyAmount(lastAmountRaw);
       if (total === null) continue;
@@ -573,7 +596,7 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
 
       amountRegex.lastIndex = 0;
       const matches = Array.from(line.matchAll(amountRegex));
-      if (matches.length < 1) continue;
+      if (matches.length < 2) continue;
 
       const first = matches[0];
       const last = matches[matches.length - 1];
@@ -586,6 +609,7 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
 
       if (!/[a-z]/i.test(contactName)) continue;
       if (!hasRealName(contactName)) continue;
+      if (!hasBusinessLikeName(contactName)) continue;
 
       const totalRaw = last?.[0] ?? "";
       const total = parseMoneyAmount(totalRaw);
