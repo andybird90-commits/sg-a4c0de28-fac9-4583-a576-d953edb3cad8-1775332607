@@ -203,6 +203,7 @@ function cleanContactName(raw: string): string {
 
 function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
   const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
+  const amountOnce = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/;
   const out: ParsedLine[] = [];
   const monthTokenRegex =
     /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/gi;
@@ -292,9 +293,19 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
     if (!next) return next;
 
     const lower = next.toLowerCase();
-    const hasAmount = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/.test(next);
+    const hasAmount = amountOnce.test(next);
 
     if (hasAmount) {
+      const summaryIdx = lower.indexOf("aged payables summary");
+      if (summaryIdx > 0) {
+        next = next.slice(0, summaryIdx).trim();
+      }
+
+      next = next
+        .replace(/\s+page\s+\d+\s+of\s+\d+\s*$/i, "")
+        .replace(/\s+\d{1,2}\s+[A-Za-z]{3}\s+20\d{2}\s*$/i, "")
+        .trim();
+
       const hasHeaderTokens =
         lower.includes("contact current") ||
         lower.includes("ageing by due date") ||
@@ -332,9 +343,14 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
       }
 
       const lower = workingLine.toLowerCase();
+      const isFooterLike =
+        lower.startsWith("aged payables summary") ||
+        lower.startsWith("page ") ||
+        (/page\s+\d+\s+of\s+\d+/.test(lower) && !amountOnce.test(workingLine));
+
       if (
         lower.startsWith("as at ") ||
-        lower.includes("page ") ||
+        isFooterLike ||
         looksLikeTotalOrSummaryLine(workingLine) ||
         looksLikeMonthHeader(workingLine)
       ) {
@@ -411,17 +427,36 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
 
 function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
   const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
+  const amountOnce = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/;
   const monthTokenRegex = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/gi;
   const monthTokenStrict = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/i;
 
   const out: ParsedLine[] = [];
   const seen = new Set<string>();
 
+  const cleanMergedFooter = (line: string): string => {
+    const normal = (line || "").replace(/\s+/g, " ").trim();
+    if (!normal) return normal;
+
+    const lower = normal.toLowerCase();
+    if (amountOnce.test(normal)) {
+      const idx = lower.indexOf("aged payables summary");
+      if (idx > 0) {
+        return normal
+          .slice(0, idx)
+          .replace(/\s+page\s+\d+\s+of\s+\d+\s*$/i, "")
+          .trim();
+      }
+    }
+
+    return normal.replace(/\s+page\s+\d+\s+of\s+\d+\s*$/i, "").trim();
+  };
+
   const splitCandidateLines = (rawText: string): string[] => {
     const baseLines = (rawText || "")
       .replace(/\r/g, "\n")
       .split("\n")
-      .map((l) => l.replace(/\s+/g, " ").trim())
+      .map((l) => cleanMergedFooter(l))
       .filter(Boolean);
 
     const contactStartRegex =
@@ -479,7 +514,7 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
       lower.startsWith("as at ") ||
       lower.startsWith("ageing by due date") ||
       lower.startsWith("contact ") ||
-      lower.includes("page ") ||
+      (lower.includes("page ") && !amountOnce.test(line)) ||
       lower.startsWith("total aged payables") ||
       lower === "total" ||
       lower.startsWith("total ") ||
