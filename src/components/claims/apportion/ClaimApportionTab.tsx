@@ -100,9 +100,11 @@ function inferFileType(filename: string, mime: string | null | undefined): strin
 
 async function extractPdfTextAndMaybeOcr(blob: Blob): Promise<Array<{ pageNumber: number; text: string }>> {
   const pdfjs = await import("pdfjs-dist");
-  const workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
-  (pdfjs as any).GlobalWorkerOptions.workerSrc = workerSrc;
-
+  
+  if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+    pdfjs.GlobalWorkerOptions.workerSrc = "//cdnjs.cloudflare.com/ajax/libs/pdf.js/5.5.207/pdf.worker.min.mjs";
+  }
+  
   const data = await blob.arrayBuffer();
   const doc = await (pdfjs as any).getDocument({ data }).promise;
 
@@ -821,19 +823,21 @@ export function ClaimApportionTab(props: {
     const amtTouched = Object.prototype.hasOwnProperty.call(patch, "claimable_amount");
 
     if (amtTouched && !pctTouched) {
-      const nextAmt = roundMoney(clamp(existingAmt, 0, total));
-      claimableAmount = nextAmt;
-      claimablePercent = total > 0 ? clamp(nextAmt / total, 0, 1) : 0;
+      const nextRaw = safeNumber(patch.claimable_amount ?? row.claimable_amount) ?? 0;
+      const next = roundMoney(clamp(nextRaw, 0, total));
+      claimableAmount = next;
+      claimablePercent = total > 0 ? clamp(next / total, 0, 1) : 0;
     }
 
     if (pctTouched && !amtTouched) {
-      const nextPct = clamp(existingPct, 0, 1);
+      const nextPct = clamp(safeNumber(patch.claimable_percent ?? row.claimable_percent) ?? 0, 0, 1);
       claimablePercent = nextPct;
       claimableAmount = roundMoney(clamp(total * nextPct, 0, total));
     }
 
     if (pctTouched && amtTouched) {
-      claimableAmount = roundMoney(clamp(existingAmt, 0, total));
+      const nextRaw = safeNumber(patch.claimable_amount ?? row.claimable_amount) ?? 0;
+      claimableAmount = roundMoney(clamp(nextRaw, 0, total));
       claimablePercent = total > 0 ? clamp(claimableAmount / total, 0, 1) : 0;
     }
 
@@ -1167,7 +1171,7 @@ export function ClaimApportionTab(props: {
                   disabled={!selectedSourceId || clearingLines}
                   onClick={() => setShowClearLinesDialog(true)}
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="mr-2 h-4 w-4 text-destructive" />
                   Clear lines
                 </Button>
                 <Button type="button" variant="outline" disabled={uploading} onClick={() => void refreshSources()}>
