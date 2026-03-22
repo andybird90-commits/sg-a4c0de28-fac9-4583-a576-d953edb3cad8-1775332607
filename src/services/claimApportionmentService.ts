@@ -216,19 +216,25 @@ export const claimApportionmentService = {
 
     if (idsToDelete.length === 0) return 0;
 
-    const { error: linkDeleteError } = await supabase
-      .from("claim_apportionment_cost_links")
-      .delete()
-      .in("apportionment_id", idsToDelete);
+    // Batch delete to avoid URL length limits for huge documents
+    const CHUNK_SIZE = 150;
+    for (let i = 0; i < idsToDelete.length; i += CHUNK_SIZE) {
+      const chunk = idsToDelete.slice(i, i + CHUNK_SIZE);
+      
+      const { error: linkDeleteError } = await supabase
+        .from("claim_apportionment_cost_links")
+        .delete()
+        .in("apportionment_id", chunk);
 
-    if (linkDeleteError) throw linkDeleteError;
+      if (linkDeleteError) throw linkDeleteError;
 
-    const { error: deleteError } = await supabase
-      .from("claim_apportionments")
-      .delete()
-      .in("id", idsToDelete);
+      const { error: deleteError } = await supabase
+        .from("claim_apportionments")
+        .delete()
+        .in("id", chunk);
 
-    if (deleteError) throw deleteError;
+      if (deleteError) throw deleteError;
+    }
 
     return idsToDelete.length;
   }

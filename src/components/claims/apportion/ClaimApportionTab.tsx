@@ -268,6 +268,7 @@ export function ClaimApportionTab(props: {
   const [pushInProgress, setPushInProgress] = useState(false);
   const [pushMode, setPushMode] = useState<"create-only" | "update-existing">("create-only");
   const [showClearLinesDialog, setShowClearLinesDialog] = useState(false);
+  const [showClearWorkingDialog, setShowClearWorkingDialog] = useState(false);
   const [clearingLines, setClearingLines] = useState(false);
   const [addingIncludedToWorking, setAddingIncludedToWorking] = useState(false);
   const [clearAlsoWorking, setClearAlsoWorking] = useState(true);
@@ -609,6 +610,13 @@ export function ClaimApportionTab(props: {
         lines: parsedLines
       });
 
+      // Auto-cleanup unapproved working rows from previous parses of this file
+      await claimApportionmentService.clearWorkingApportionmentsForSource({
+        claimId: props.claimId,
+        sourceId: source.id,
+        keepApproved: true
+      });
+
       const supersededNote = `Superseded by re-parse on ${new Date().toISOString()}`;
       await supabase
         .from("claim_apportionment_lines")
@@ -776,11 +784,11 @@ export function ClaimApportionTab(props: {
         return;
       }
 
-      for (const line of toAdd) {
+      const payload = toAdd.map((line) => {
         const total = safeNumber(line.net_total) ?? safeNumber(line.gross_total) ?? safeNumber(line.debit_total) ?? 0;
         const itemName = (line.normalised_name || line.raw_name || "").toString();
 
-        await claimApportionmentService.upsertApportionment({
+        return {
           claim_id: props.claimId,
           org_id: props.orgId,
           source_line_id: line.id,
@@ -792,7 +800,14 @@ export function ClaimApportionTab(props: {
           claimable_percent: 0,
           claimable_amount: 0,
           status: "draft"
-        } as any);
+        };
+      });
+
+      // Bulk insert in chunks to handle thousands of rows instantly
+      for (let i = 0; i < payload.length; i += 150) {
+        const chunk = payload.slice(i, i + 150);
+        const { error } = await supabase.from("claim_apportionments").insert(chunk);
+        if (error) throw error;
       }
 
       toast({
@@ -1588,15 +1603,26 @@ export function ClaimApportionTab(props: {
             <div className="text-sm text-muted-foreground">
               Approved rows: <span className="font-semibold text-foreground">{approvedToPush.length}</span>
             </div>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setShowPushDialog(true)}
-              disabled={approvedToPush.length === 0 || (checkedInternalRole && !currentInternalRole)}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Push approved items to Costs tab
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowClearWorkingDialog(true)}
+                disabled={apportionments.length === 0}
+              >
+                <Trash2 className="mr-2 h-4 w-4 text-destructive" />
+                Clear unapproved
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowPushDialog(true)}
+                disabled={approvedToPush.length === 0 || (checkedInternalRole && !currentInternalRole)}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Push approved items to Costs tab
+              </Button>
+            </div>
           </div>
 
           <div className="text-xs text-muted-foreground">
@@ -1858,55 +1884,47 @@ export function ClaimApportionTab(props: {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showClearLinesDialog} onOpenChange={setShowClearLinesDialog}>
+      <Dialog open={showClearWorkingDialog} onOpenChange={setShowClearWorkingDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Clear extracted lines?</DialogTitle>
+            <DialogTitle>Clear all unapproved working rows?</DialogTitle>
             <DialogDescription>
-              This will exclude all extracted lines for the selected source file so you can re-parse from a clean slate. It will not delete the source file.
+              This will instantly delete all Draft, Reviewed, and Excluded rows from the working table for this claim. 
+              Approved rows will be kept safe.
             </DialogDescription>
           </DialogHeader>
-
-          <div className="rounded-md border bg-background/40 p-3 text-sm">
-            <p className="font-medium">What happens:</p>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-              <li>All extracted lines for this file are marked as excluded</li>
-              <li>The source status resets to “uploaded”</li>
-              <li>You can click “Parse selected” again to regenerate rows</li>
-            </ul>
-          </div>
-
-          <label className="flex items-start gap-3 rounded-md border bg-background/40 p-3 text-sm">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={clearAlsoWorking}
-              onChange={(e) => setClearAlsoWorking(e.target.checked)}
-            />
-            <div>
-              <p className="font-medium text-foreground">Also clear working table rows for this file</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                This removes Draft/Reviewed/Excluded working rows that were created from this source file. Approved rows are kept (to avoid disrupting already-pushed items).
-              </p>
-            </div>
-          </label>
-
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setShowClearLinesDialog(false)} disabled={clearingLines}>
+            <Button type="button" variant="outline" onClick={() => setShowClearWorkingDialog(false)}>
               Cancel
             </Button>
-            <Button type="button" variant="secondary" onClick={() => void handleClearExtractedLines()} disabled={clearingLines || !selectedSourceId}>
-              {clearingLines ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Clearing...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Clear lines
-                </>
-              )}
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={async () => {
+                try {
+                  const toDelete = apportionments.filter(a => a.status !== "approved");
+                  const ids = toDelete.map(a => a.id);
+                  if (ids.length === 0) {
+                    toast({ title: "Nothing to clear", description: "No unapproved rows found." });
+                    setShowClearWorkingDialog(false);
+                    return;
+                  }
+                  
+                  for (let i = 0; i < ids.length; i += 150) {
+                    const chunk = ids.slice(i, i + 150);
+                    await supabase.from("claim_apportionment_cost_links").delete().in("apportionment_id", chunk);
+                    await supabase.from("claim_apportionments").delete().in("id", chunk);
+                  }
+                  
+                  toast({ title: "Cleared", description: `Removed ${ids.length} unapproved rows.` });
+                  await refreshApportionments();
+                  setShowClearWorkingDialog(false);
+                } catch (error: any) {
+                  toast({ title: "Clear failed", description: error?.message || "Unexpected error", variant: "destructive" });
+                }
+              }}
+            >
+              Clear {apportionments.filter(a => a.status !== "approved").length} rows
             </Button>
           </DialogFooter>
         </DialogContent>
