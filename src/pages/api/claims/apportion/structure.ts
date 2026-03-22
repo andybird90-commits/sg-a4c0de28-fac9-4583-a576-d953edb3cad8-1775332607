@@ -152,6 +152,8 @@ function normalizeOpenAIError(err: unknown): { message: string; hint?: string } 
   return { message: msg };
 }
 
+const AMOUNT_REGEX_STR = "(?:£\\s*)?\\(?\\s*-?\\s*\\d{1,3}(?:,?\\d{3})*(?:\\.\\d{2})\\s*-?\\s*\\)?";
+
 function buildAmountSnippetsFromPages(
   pages: Page[],
   opts?: { maxSnippets?: number; windowChars?: number }
@@ -159,7 +161,7 @@ function buildAmountSnippetsFromPages(
   const maxSnippets = opts?.maxSnippets ?? 240;
   const windowChars = opts?.windowChars ?? 64;
 
-  const amountRegex = /(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/g;
+  const amountRegex = new RegExp(AMOUNT_REGEX_STR, "g");
 
   const snippets: string[] = [];
   const seen = new Set<string>();
@@ -227,13 +229,12 @@ function hasBusinessLikeName(name: string): boolean {
     return true;
   }
 
-  const tokens = lower.split(" ").filter(Boolean);
-  return tokens.some((t) => /^[a-z]{4,}$/.test(t));
+  return lower.replace(/[^a-z0-9]/g, "").length >= 2;
 }
 
 function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
-  const amountRegex = /(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/g;
-  const amountOnce = /(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/;
+  const amountRegex = new RegExp(AMOUNT_REGEX_STR, "g");
+  const amountOnce = new RegExp(AMOUNT_REGEX_STR);
   const out: ParsedLine[] = [];
   const monthTokenRegex =
     /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/gi;
@@ -291,12 +292,12 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
   }
 
   function hasRealNameWords(name: string): boolean {
-    const lower = name.toLowerCase().replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
+    const lower = name.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
     if (!lower) return false;
     const words = lower.split(" ").filter(Boolean);
     const nonMonthWords = words.filter((w) => !monthTokenStrict.test(w));
-    const lettersOnly = lower.replace(/[^a-z]/g, "");
-    if (lettersOnly.length < 3) return false;
+    const alphanum = lower.replace(/[^a-z0-9]/g, "");
+    if (alphanum.length < 2) return false;
     if (nonMonthWords.length === 0) return false;
     return true;
   }
@@ -398,11 +399,6 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
         continue;
       }
 
-      if (matches.length < 2) {
-        pendingPrefix = null;
-        continue;
-      }
-
       const first = matches[0];
       const last = matches[matches.length - 1];
       const firstIdx = typeof first.index === "number" ? first.index : -1;
@@ -413,7 +409,7 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
       const namePartRaw = workingLine.slice(0, firstIdx).trim();
       const contactName = cleanContactName(namePartRaw);
       let finalName = contactName;
-      if ((!finalName || finalName.length < 3 || !hasRealNameWords(finalName)) && pendingPrefix) {
+      if ((!finalName || finalName.length < 2 || !hasRealNameWords(finalName)) && pendingPrefix) {
         finalName = pendingPrefix;
       } else if (pendingPrefix) {
         const startsLower = /^[a-z]/.test(finalName);
@@ -424,24 +420,15 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
       }
       pendingPrefix = null;
 
-      if (!finalName || finalName.length < 3) continue;
+      if (!finalName || finalName.length < 2) continue;
 
       if (/^[\d£.,\-\s]+$/.test(finalName)) continue;
-      if (finalName.replace(/[^A-Za-z]/g, "").length < 2) continue;
+      if (finalName.replace(/[^A-Za-z0-9]/g, "").length < 2) continue;
       if (!hasRealNameWords(finalName)) continue;
       if (!hasBusinessLikeName(finalName)) continue;
 
       const total = parseMoneyAmount(lastAmountRaw);
       if (total === null) continue;
-      if (matches.length >= 2) {
-        const prevMax = matches
-          .slice(0, -1)
-          .reduce((acc, m) => {
-            const n = parseMoneyAmount(m[0]);
-            return typeof n === "number" && Number.isFinite(n) ? Math.max(acc, n) : acc;
-          }, 0);
-        if (total + 0.01 < prevMax) continue;
-      }
 
       const dedupeKey = `${normalizeAgedPayablesNameKey(finalName)}|${total.toFixed(2)}`;
       if (seen.has(dedupeKey)) continue;
@@ -471,8 +458,8 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
 }
 
 function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
-  const amountRegex = /(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/g;
-  const amountOnce = /(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/;
+  const amountRegex = new RegExp(AMOUNT_REGEX_STR, "g");
+  const amountOnce = new RegExp(AMOUNT_REGEX_STR);
   const monthTokenRegex = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/gi;
   const monthTokenStrict = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/i;
 
@@ -504,8 +491,7 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
       .map((l) => cleanMergedFooter(l))
       .filter(Boolean);
 
-    const contactStartRegex =
-      /(?:^|\s)([A-Z][A-Za-z0-9&()'.,/\\\- ]{2,120}?)\s+(?=(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?)/g;
+    const contactStartRegex = new RegExp(`(?:^|\\s)([A-Za-z][A-Za-z0-9&()'.,/\\\\\\- ]{2,120}?)\\s+(?=${AMOUNT_REGEX_STR})`, "g");
 
     const expanded: string[] = [];
     for (const line of baseLines) {
@@ -585,15 +571,15 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
   };
 
   const hasRealName = (name: string): boolean => {
-    const lower = name.toLowerCase().replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
+    const lower = name.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
     if (!lower) return false;
 
     const words = lower.split(" ").filter(Boolean);
     if (words.length === 0) return false;
 
     const nonMonth = words.filter((w) => !monthTokenStrict.test(w));
-    const lettersOnly = lower.replace(/[^a-z]/g, "");
-    if (lettersOnly.length < 3) return false;
+    const alphanum = lower.replace(/[^a-z0-9]/g, "");
+    if (alphanum.length < 2) return false;
     if (nonMonth.length === 0) return false;
 
     return true;
@@ -609,7 +595,7 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
 
       amountRegex.lastIndex = 0;
       const matches = Array.from(line.matchAll(amountRegex));
-      if (matches.length < 2) continue;
+      if (matches.length < 1) continue;
 
       const first = matches[0];
       const last = matches[matches.length - 1];
@@ -620,22 +606,13 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
       const contactName = cleanContactName(namePartRaw).replace(/\s*[-–—]+\s*$/g, "").trim();
       if (!contactName) continue;
 
-      if (!/[a-z]/i.test(contactName)) continue;
+      if (!/[a-z0-9]/i.test(contactName)) continue;
       if (!hasRealName(contactName)) continue;
       if (!hasBusinessLikeName(contactName)) continue;
 
       const totalRaw = last?.[0] ?? "";
       const total = parseMoneyAmount(totalRaw);
       if (total === null) continue;
-      if (matches.length >= 2) {
-        const prevMax = matches
-          .slice(0, -1)
-          .reduce((acc, m) => {
-            const n = parseMoneyAmount(m[0]);
-            return typeof n === "number" && Number.isFinite(n) ? Math.max(acc, n) : acc;
-          }, 0);
-        if (total + 0.01 < prevMax) continue;
-      }
 
       const dedupeKey = `${normalizeAgedPayablesNameKey(contactName)}|${total.toFixed(2)}`;
       if (seen.has(dedupeKey)) continue;
@@ -665,7 +642,7 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
 }
 
 function parseTotalAgedPayablesFromPages(pages: Page[]): number | null {
-  const amountRegex = /(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/g;
+  const amountRegex = new RegExp(AMOUNT_REGEX_STR, "g");
   for (const p of pages) {
     const rawText = (p.text || "").replace(/\r/g, "\n");
     const lines = rawText
@@ -760,7 +737,7 @@ function heuristicLinesFromPages(pages: Page[]): ParsedLine[] {
 
   for (let i = 0; i < snippets.length; i += 1) {
     const s = snippets[i];
-    const match = s.match(/(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/);
+    const match = s.match(new RegExp(AMOUNT_REGEX_STR));
     const amount = match ? parseMoneyAmount(match[0]) : null;
 
     const pageMatch = s.match(/^Page\s+(\d+):\s*/i);
