@@ -159,7 +159,7 @@ function buildAmountSnippetsFromPages(
   const maxSnippets = opts?.maxSnippets ?? 240;
   const windowChars = opts?.windowChars ?? 64;
 
-  const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
+  const amountRegex = /(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/g;
 
   const snippets: string[] = [];
   const seen = new Set<string>();
@@ -189,9 +189,10 @@ function buildAmountSnippetsFromPages(
 }
 
 function parseMoneyAmount(raw: string): number | null {
+  const isNegative = raw.includes("-") || (raw.includes("(") && raw.includes(")"));
   const cleaned = raw.replace(/[^0-9.,]/g, "").replace(/,/g, "");
   const n = Number(cleaned);
-  return Number.isFinite(n) ? n : null;
+  return Number.isFinite(n) ? (isNegative ? -n : n) : null;
 }
 
 function cleanContactName(raw: string): string {
@@ -231,8 +232,8 @@ function hasBusinessLikeName(name: string): boolean {
 }
 
 function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
-  const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
-  const amountOnce = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/;
+  const amountRegex = /(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/g;
+  const amountOnce = /(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/;
   const out: ParsedLine[] = [];
   const monthTokenRegex =
     /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/gi;
@@ -470,8 +471,8 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
 }
 
 function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
-  const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
-  const amountOnce = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/;
+  const amountRegex = /(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/g;
+  const amountOnce = /(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/;
   const monthTokenRegex = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/gi;
   const monthTokenStrict = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b/i;
 
@@ -504,7 +505,7 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
       .filter(Boolean);
 
     const contactStartRegex =
-      /(?:^|\s)([A-Z][A-Za-z0-9&()'.,/\\\- ]{2,120}?)\s+(?=(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2}))/g;
+      /(?:^|\s)([A-Z][A-Za-z0-9&()'.,/\\\- ]{2,120}?)\s+(?=(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?)/g;
 
     const expanded: string[] = [];
     for (const line of baseLines) {
@@ -664,7 +665,7 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
 }
 
 function parseTotalAgedPayablesFromPages(pages: Page[]): number | null {
-  const amountRegex = /(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/g;
+  const amountRegex = /(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/g;
   for (const p of pages) {
     const rawText = (p.text || "").replace(/\r/g, "\n");
     const lines = rawText
@@ -751,7 +752,7 @@ function consolidateAgedPayablesByName(lines: ParsedLine[]): ParsedLine[] {
 function heuristicLinesFromPages(pages: Page[]): ParsedLine[] {
   const agedPayables = parseAgedPayablesRowsFromPages(pages);
   if (agedPayables.length > 0) {
-    return agedPayables.slice(0, 120);
+    return agedPayables.slice(0, 1200);
   }
 
   const snippets = buildAmountSnippetsFromPages(pages, { maxSnippets: 120, windowChars: 80 });
@@ -759,7 +760,7 @@ function heuristicLinesFromPages(pages: Page[]): ParsedLine[] {
 
   for (let i = 0; i < snippets.length; i += 1) {
     const s = snippets[i];
-    const match = s.match(/(?:£\s*)?\d{1,3}(?:,\d{3})*(?:\.\d{2})/);
+    const match = s.match(/(?:£\s*)?\(?-?\d{1,3}(?:,\d{3})*(?:\.\d{2})\)?/);
     const amount = match ? parseMoneyAmount(match[0]) : null;
 
     const pageMatch = s.match(/^Page\s+(\d+):\s*/i);
