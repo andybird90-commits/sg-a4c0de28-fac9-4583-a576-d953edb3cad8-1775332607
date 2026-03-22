@@ -100,11 +100,8 @@ function inferFileType(filename: string, mime: string | null | undefined): strin
 
 async function extractPdfTextAndMaybeOcr(blob: Blob): Promise<Array<{ pageNumber: number; text: string }>> {
   const pdfjs = await import("pdfjs-dist");
-  
-  if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-    pdfjs.GlobalWorkerOptions.workerSrc = "//cdnjs.cloudflare.com/ajax/libs/pdf.js/5.5.207/pdf.worker.min.mjs";
-  }
-  
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+
   const data = await blob.arrayBuffer();
   const doc = await (pdfjs as any).getDocument({ data }).promise;
 
@@ -515,7 +512,11 @@ export function ClaimApportionTab(props: {
         pages = [{ pageNumber: 1, text: "" }];
       }
 
-      const { pages: trimmedPages, trimmed, totalChars, originalPages } = trimPagesForApi(pages);
+      const { pages: trimmedPages, trimmed, totalChars, originalPages } = trimPagesForApi(pages, {
+        maxPages: 250,
+        maxCharsPerPage: 15000,
+        maxTotalChars: 3000000
+      });
 
       if (trimmed) {
         toast({

@@ -890,7 +890,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .map((p) => `--- Page ${p.pageNumber} ---\n${p.text}`)
       .join("\n\n");
 
-    const maxCombinedChars = 20000;
+    const maxCombinedChars = 80000;
     const combinedTextForPrompt =
       combinedText.length > maxCombinedChars ? combinedText.slice(0, maxCombinedChars) : combinedText;
 
