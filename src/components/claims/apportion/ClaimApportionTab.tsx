@@ -1910,10 +1910,12 @@ export function ClaimApportionTab(props: {
                     return;
                   }
                   
-                  for (let i = 0; i < ids.length; i += 150) {
-                    const chunk = ids.slice(i, i + 150);
-                    await supabase.from("claim_apportionment_cost_links").delete().in("apportionment_id", chunk);
-                    await supabase.from("claim_apportionments").delete().in("id", chunk);
+                  for (let i = 0; i < ids.length; i += 50) {
+                    const chunk = ids.slice(i, i + 50);
+                    const { error: err1 } = await supabase.from("claim_apportionment_cost_links").delete().in("apportionment_id", chunk);
+                    if (err1) throw err1;
+                    const { error: err2 } = await supabase.from("claim_apportionments").delete().in("id", chunk);
+                    if (err2) throw err2;
                   }
                   
                   toast({ title: "Cleared", description: `Removed ${ids.length} unapproved rows.` });

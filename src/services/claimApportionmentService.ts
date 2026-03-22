@@ -217,7 +217,7 @@ export const claimApportionmentService = {
     if (idsToDelete.length === 0) return 0;
 
     // Batch delete to avoid URL length limits for huge documents
-    const CHUNK_SIZE = 150;
+    const CHUNK_SIZE = 50;
     for (let i = 0; i < idsToDelete.length; i += CHUNK_SIZE) {
       const chunk = idsToDelete.slice(i, i + CHUNK_SIZE);
       
