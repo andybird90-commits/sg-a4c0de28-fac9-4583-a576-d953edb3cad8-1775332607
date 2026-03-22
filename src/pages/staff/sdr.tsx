@@ -613,21 +613,31 @@ export default function StaffSDRPage(): JSX.Element {
   const handleGenerateEngagementStrategy = async (prospectId: string): Promise<void> => {
     try {
       setEngagementGeneratingId(prospectId);
-      const response = await fetch("/api/sdr/engagement-strategy", {
+      const response = await fetch("/api/sdr/engagement-strategy-refresh", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prospectId }),
+        body: JSON.stringify({ prospectId, mode: "full_live" }),
       });
-      if (!response.ok) {
+      const payload = (await response.json()) as
+        | { ok: true; prospect?: SdrProspect; strategyOutput?: unknown; warnings?: string[] }
+        | { ok: false; message?: string; detail?: unknown };
+
+      if (!response.ok || (payload as any)?.ok === false) {
+        console.error("Engagement strategy refresh failed", {
+          status: response.status,
+          payload,
+        });
         return;
       }
-      const payload = (await response.json()) as { prospect?: SdrProspect };
-      if (payload.prospect) {
-        handleProspectUpdated(payload.prospect);
+
+      const updatedProspect = (payload as any)?.prospect as SdrProspect | undefined;
+      if (updatedProspect) {
+        handleProspectUpdated(updatedProspect);
       }
-    } catch {
+    } catch (err) {
+      console.error("Unexpected error generating engagement strategy:", err);
     } finally {
       setEngagementGeneratingId(null);
     }

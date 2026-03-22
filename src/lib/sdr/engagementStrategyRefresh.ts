@@ -222,9 +222,12 @@ async function braveWebSearch(query: string): Promise<{ ok: true; items: BraveWe
   const apiKey =
     process.env.BRAVE_SEARCH_API_KEY ||
     process.env.BRAVE_API_KEY ||
-    process.env.BRAVE_SUBSCRIPTION_TOKEN;
+    process.env.BRAVE_SUBSCRIPTION_TOKEN ||
+    process.env.BRAVE_SEARCH_KEY ||
+    process.env.BRAVE_SEARCH_TOKEN ||
+    process.env.BRAVE_SEARCH;
 
-  if (!apiKey) return { ok: false, error: "Brave API key is not set" };
+  if (!apiKey) return { ok: false, error: "Brave API key is not set (expected BRAVE_SEARCH_API_KEY)" };
 
   const url = new URL("https://api.search.brave.com/res/v1/web/search");
   url.searchParams.set("q", query);
@@ -234,12 +237,21 @@ async function braveWebSearch(query: string): Promise<{ ok: true; items: BraveWe
     headers: {
       "X-Subscription-Token": apiKey,
       "Accept": "application/json",
+      "User-Agent": "RD-Companion/1.0 (SDR enrichment)",
     },
   });
 
-  if (!res.ok) return { ok: false, error: `Brave search failed (${res.status})` };
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.log("Brave search failed", {
+      status: res.status,
+      query,
+      bodyPreview: body.slice(0, 240),
+    });
+    return { ok: false, error: `Brave search failed (${res.status})` };
+  }
 
-  const json: any = await res.json();
+  const json: any = await res.json().catch(() => null);
   const results: any[] = Array.isArray(json?.web?.results) ? json.web.results : [];
 
   const items: BraveWebEvidenceItem[] = results
@@ -261,6 +273,12 @@ async function braveWebSearch(query: string): Promise<{ ok: true; items: BraveWe
     })
     .filter((i) => i.url && i.title)
     .slice(0, 20);
+
+  console.log("Brave search ok", {
+    query,
+    returned: items.length,
+    sample: items.slice(0, 2).map((i) => ({ title: i.title, url: i.url })),
+  });
 
   return { ok: true, items };
 }
