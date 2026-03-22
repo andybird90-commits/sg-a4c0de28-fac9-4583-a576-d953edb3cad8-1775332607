@@ -152,7 +152,7 @@ function normalizeOpenAIError(err: unknown): { message: string; hint?: string } 
   return { message: msg };
 }
 
-const AMOUNT_REGEX_STR = "(?:£\\s*)?\\(?\\s*-?\\s*\\d{1,3}(?:[,\\s]?\\d{3})*(?:\\.\\d{2})\\s*-?\\s*\\)?";
+const AMOUNT_REGEX_STR = "(?:£\\s*)?\\(?\\s*-?\\s*\\d{1,3}(?:[,\\s]?\\d{3})*(?:\\.\\d{2})?\\s*-?\\s*\\)?";
 
 function buildAmountSnippetsFromPages(
   pages: Page[],
@@ -224,12 +224,7 @@ function hasBusinessLikeName(name: string): boolean {
     .trim();
 
   if (!lower) return false;
-
-  if (/\b(ltd|limited|plc|company|group|services|service|management|solutions|rentals|supplies)\b/.test(lower)) {
-    return true;
-  }
-
-  return lower.replace(/[^a-z0-9]/g, "").length >= 2;
+  return lower.replace(/[^a-z0-9]/g, "").length >= 1; // Relaxed: accept almost anything
 }
 
 function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
@@ -297,8 +292,7 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
     const words = lower.split(" ").filter(Boolean);
     const nonMonthWords = words.filter((w) => !monthTokenStrict.test(w));
     const alphanum = lower.replace(/[^a-z0-9]/g, "");
-    if (alphanum.length < 2) return false;
-    if (nonMonthWords.length === 0) return false;
+    if (alphanum.length < 1) return false;
     return true;
   }
 
@@ -426,10 +420,8 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
       if (!finalName || finalName.length < 1) continue;
 
       if (/^[\d£.,\-\s]+$/.test(finalName)) continue;
-      if (finalName.replace(/[^A-Za-z0-9]/g, "").length < 2) continue;
-      if (!hasRealNameWords(finalName)) continue;
-      if (!hasBusinessLikeName(finalName)) continue;
-
+      if (finalName.replace(/[^A-Za-z0-9]/g, "").length < 1) continue;
+      
       const total = parseMoneyAmount(lastAmountRaw);
       if (total === null) continue;
 
@@ -580,10 +572,8 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
     const words = lower.split(" ").filter(Boolean);
     if (words.length === 0) return false;
 
-    const nonMonth = words.filter((w) => !monthTokenStrict.test(w));
     const alphanum = lower.replace(/[^a-z0-9]/g, "");
-    if (alphanum.length < 2) return false;
-    if (nonMonth.length === 0) return false;
+    if (alphanum.length < 1) return false;
 
     return true;
   };
@@ -613,8 +603,6 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
 
       if (!/[a-z0-9]/i.test(contactName)) continue;
       if (/^[\d£.,\-\s]+$/.test(contactName)) continue;
-      if (!hasRealName(contactName)) continue;
-      if (!hasBusinessLikeName(contactName)) continue;
 
       const totalRaw = last?.[0] ?? "";
       const total = parseMoneyAmount(totalRaw);
