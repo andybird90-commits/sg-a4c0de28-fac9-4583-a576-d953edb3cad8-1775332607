@@ -152,7 +152,7 @@ function normalizeOpenAIError(err: unknown): { message: string; hint?: string } 
   return { message: msg };
 }
 
-const AMOUNT_REGEX_STR = "(?:£\\s*)?\\(?\\s*-?\\s*\\d{1,3}(?:,?\\d{3})*(?:\\.\\d{2})\\s*-?\\s*\\)?";
+const AMOUNT_REGEX_STR = "(?:£\\s*)?\\(?\\s*-?\\s*\\d{1,3}(?:[,\\s]?\\d{3})*(?:\\.\\d{2})\\s*-?\\s*\\)?";
 
 function buildAmountSnippetsFromPages(
   pages: Page[],
@@ -406,7 +406,10 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
 
       if (firstIdx <= 0) continue;
 
-      const namePartRaw = workingLine.slice(0, firstIdx).trim();
+      let namePartRaw = workingLine.slice(0, firstIdx).trim();
+      // Sometimes the name part has trailing numbers that aren't money formats
+      namePartRaw = namePartRaw.replace(/[\d\s]+$/, "").trim();
+      
       const contactName = cleanContactName(namePartRaw);
       let finalName = contactName;
       if ((!finalName || finalName.length < 2 || !hasRealNameWords(finalName)) && pendingPrefix) {
@@ -420,7 +423,7 @@ function parseAgedPayablesRowsFromPages(pages: Page[]): ParsedLine[] {
       }
       pendingPrefix = null;
 
-      if (!finalName || finalName.length < 2) continue;
+      if (!finalName || finalName.length < 1) continue;
 
       if (/^[\d£.,\-\s]+$/.test(finalName)) continue;
       if (finalName.replace(/[^A-Za-z0-9]/g, "").length < 2) continue;
@@ -602,11 +605,14 @@ function parseAgedPayablesSummaryTable(pages: Page[]): ParsedLine[] {
       const firstIdx = typeof first.index === "number" ? first.index : -1;
       if (firstIdx <= 0) continue;
 
-      const namePartRaw = line.slice(0, firstIdx).trim();
+      let namePartRaw = line.slice(0, firstIdx).trim();
+      namePartRaw = namePartRaw.replace(/[\d\s]+$/, "").trim();
+      
       const contactName = cleanContactName(namePartRaw).replace(/\s*[-–—]+\s*$/g, "").trim();
       if (!contactName) continue;
 
       if (!/[a-z0-9]/i.test(contactName)) continue;
+      if (/^[\d£.,\-\s]+$/.test(contactName)) continue;
       if (!hasRealName(contactName)) continue;
       if (!hasBusinessLikeName(contactName)) continue;
 
@@ -805,8 +811,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (allLower.includes("aged payables") && allLower.includes("summary")) {
       const tableLines = parseAgedPayablesSummaryTable(pages);
       const heuristicLines = parseAgedPayablesRowsFromPages(pages);
-      const merged = mergeAgedPayablesLines(tableLines, heuristicLines).slice(0, 2000);
-      const consolidated = consolidateAgedPayablesByName(merged).slice(0, 2000);
+      // We rely on mergeAgedPayablesLines to dedupe by name AND exact amount.
+      // Dropping consolidateAgedPayablesByName so we don't accidentally delete distinct invoices for the same supplier.
+      const consolidated = mergeAgedPayablesLines(tableLines, heuristicLines).slice(0, 3000);
 
       if (consolidated.length > 0) {
         const reportedTotal = parseTotalAgedPayablesFromPages(pages);
@@ -822,9 +829,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         const discrepancyNote =
           discrepancy !== null && discrepancy > 0.5
-            ? `Sanity check: Total Aged Payables=${reportedTotal.toFixed(
+            ? `Sanity check: Reported total=${reportedTotal.toFixed(
                 2
-              )} vs captured sum=${capturedSum.toFixed(2)} (diff=${discrepancy.toFixed(2)}).`
+              )} vs extracted sum=${capturedSum.toFixed(2)} (diff=${discrepancy.toFixed(2)}).`
             : undefined;
 
         return res.status(200).json({
