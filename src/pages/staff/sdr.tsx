@@ -1259,6 +1259,19 @@ export default function StaffSDRPage(): JSX.Element {
                       ? (strategy.named_contact_found as boolean)
                       : false;
 
+                  const strategyCallOpener =
+                    (typeof (prospect.engagement_suggested_call_opener as any) === "string" &&
+                    String(prospect.engagement_suggested_call_opener).trim() !== ""
+                      ? String(prospect.engagement_suggested_call_opener)
+                      : null) ??
+                    (typeof strategy?.suggested_call_purpose === "string" && strategy.suggested_call_purpose.trim() !== ""
+                      ? strategy.suggested_call_purpose
+                      : null) ??
+                    (typeof strategy?.openai_strategy_output?.call_readiness === "string" &&
+                    strategy.openai_strategy_output.call_readiness.trim() !== ""
+                      ? strategy.openai_strategy_output.call_readiness
+                      : null);
+
                   return (
                     <div
                       key={prospect.id as string}
@@ -1314,8 +1327,34 @@ export default function StaffSDRPage(): JSX.Element {
                         </div>
 
                         <div className="flex-1 space-y-1">
-                          {prospectDossier?.call_script_intro ||
-                          prospectDossier?.call_script_main ? (
+                          {strategyCallOpener ? (
+                            <>
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Call script (from strategy)
+                              </p>
+                              <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
+                                {strategyCallOpener}
+                              </p>
+                              {prospectDossier?.call_script_intro || prospectDossier?.call_script_main ? (
+                                <div className="pt-2">
+                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                    Dossier script (previous)
+                                  </p>
+                                  {prospectDossier?.call_script_intro ? (
+                                    <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
+                                      {prospectDossier.call_script_intro}
+                                    </p>
+                                  ) : null}
+                                  {prospectDossier?.call_script_main ? (
+                                    <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
+                                      {prospectDossier.call_script_main}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              ) : null}
+                            </>
+                          ) : prospectDossier?.call_script_intro ||
+                            prospectDossier?.call_script_main ? (
                             <>
                               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 Call script
