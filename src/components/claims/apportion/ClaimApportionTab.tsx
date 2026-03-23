@@ -262,38 +262,15 @@ const WorkingTableRow = ({
   const [isSaving, setIsSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
 
-  const handleSaveRow = async () => {
-    setIsSaving(true);
-    setSavedOk(false);
-    try {
-      const rawPct = localPct === "" ? null : Number(localPct);
-      const nextPct = rawPct !== null ? Math.max(0, Math.min(100, rawPct)) / 100 : 0;
-      const rawAmt = localAmt === "" ? 0 : Number(localAmt);
-
-      onOptimisticUpdate({ claimable_percent: nextPct, claimable_amount: rawAmt });
-
-      await onSave({
-        item_name: a.item_name,
-        heading: a.heading,
-        category: a.category,
-        claimable_percent: nextPct,
-        claimable_amount: rawAmt,
-        justification: a.justification,
-        rd_activity_note: a.rd_activity_note,
-        reviewer_note: a.reviewer_note,
-        status: a.status
-      });
-      setSavedOk(true);
-      setTimeout(() => setSavedOk(false), 2000);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // Use a ref to hold the absolute latest calculated values so the Save button 
+  // doesn't capture stale state if clicked immediately after typing.
+  const latestValues = React.useRef({ pct, amt });
 
   // Sync from external state when it changes (e.g. from DB refresh)
   useEffect(() => {
     setLocalPct(pct === 0 ? "" : String(roundMoney(pct * 100)));
     setLocalAmt(amt === 0 ? "" : amt.toFixed(2));
+    latestValues.current = { pct, amt };
   }, [pct, amt]);
 
   const handlePctChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -304,8 +281,10 @@ const WorkingTableRow = ({
     const raw = localPct === "" ? null : Number(localPct);
     const nextPct = raw !== null ? Math.max(0, Math.min(100, raw)) / 100 : 0;
     const nextAmt = roundMoney(total * nextPct);
+    
     setLocalPct(nextPct === 0 ? "" : String(roundMoney(nextPct * 100)));
     setLocalAmt(nextAmt === 0 ? "" : nextAmt.toFixed(2));
+    latestValues.current = { pct: nextPct, amt: nextAmt };
     onOptimisticUpdate({ claimable_percent: nextPct, claimable_amount: nextAmt });
   };
 
@@ -322,9 +301,56 @@ const WorkingTableRow = ({
       nextAmt = Math.max(0, Math.min(total, nextAmt));
     }
     const nextPct = total !== 0 ? nextAmt / total : 0;
+    
     setLocalAmt(nextAmt === 0 ? "" : nextAmt.toFixed(2));
     setLocalPct(nextPct === 0 ? "" : String(roundMoney(nextPct * 100)));
+    latestValues.current = { pct: nextPct, amt: nextAmt };
     onOptimisticUpdate({ claimable_percent: nextPct, claimable_amount: nextAmt });
+  };
+
+  const handleSaveRow = async () => {
+    setIsSaving(true);
+    setSavedOk(false);
+    try {
+      let finalPct = latestValues.current.pct;
+      let finalAmt = latestValues.current.amt;
+
+      // Safety check: if localPct differs from ref, user might have clicked save without blurring
+      const rawPct = localPct === "" ? null : Number(localPct);
+      const rawAmt = localAmt === "" ? 0 : Number(localAmt);
+      
+      const parsedPctStr = finalPct === 0 ? "" : String(roundMoney(finalPct * 100));
+      const parsedAmtStr = finalAmt === 0 ? "" : finalAmt.toFixed(2);
+      
+      if (localPct !== parsedPctStr && localPct !== "") {
+        finalPct = rawPct !== null ? Math.max(0, Math.min(100, rawPct)) / 100 : 0;
+        finalAmt = roundMoney(total * finalPct);
+      } else if (localAmt !== parsedAmtStr && localAmt !== "") {
+        finalAmt = rawAmt;
+        if (total < 0) finalAmt = Math.min(0, Math.max(total, finalAmt));
+        else finalAmt = Math.max(0, Math.min(total, finalAmt));
+        finalPct = total !== 0 ? finalAmt / total : 0;
+      }
+
+      latestValues.current = { pct: finalPct, amt: finalAmt };
+      onOptimisticUpdate({ claimable_percent: finalPct, claimable_amount: finalAmt });
+
+      await onSave({
+        item_name: a.item_name,
+        heading: a.heading,
+        category: a.category,
+        claimable_percent: finalPct,
+        claimable_amount: finalAmt,
+        justification: a.justification,
+        rd_activity_note: a.rd_activity_note,
+        reviewer_note: a.reviewer_note,
+        status: a.status
+      });
+      setSavedOk(true);
+      setTimeout(() => setSavedOk(false), 2000);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
