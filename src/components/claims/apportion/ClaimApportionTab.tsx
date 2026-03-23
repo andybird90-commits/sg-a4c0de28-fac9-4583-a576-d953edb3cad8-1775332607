@@ -1710,6 +1710,19 @@ export function ClaimApportionTab(props: {
                     </TableRow>
                   ))}
                 </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-right font-bold">Totals:</TableCell>
+                    <TableCell className="text-right font-bold">
+                      {formatMoney(apportionments.reduce((sum, a) => sum + (safeNumber(a.total_source_cost) || 0), 0))}
+                    </TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className="text-right font-bold text-blue-600">
+                      {formatMoney(apportionments.reduce((sum, a) => sum + (safeNumber(a.claimable_amount) || 0), 0))}
+                    </TableCell>
+                    <TableCell colSpan={4}></TableCell>
+                  </TableRow>
+                </TableFooter>
               </Table>
             </div>
           )}
@@ -1799,6 +1812,19 @@ export function ClaimApportionTab(props: {
                     />
                   ))}
                 </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-right font-bold">Totals:</TableCell>
+                    <TableCell className="text-right font-bold">
+                      {formatMoney(apportionments.reduce((sum, a) => sum + (safeNumber(a.total_source_cost) || 0), 0))}
+                    </TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className="text-right font-bold text-blue-600">
+                      {formatMoney(apportionments.reduce((sum, a) => sum + (safeNumber(a.claimable_amount) || 0), 0))}
+                    </TableCell>
+                    <TableCell colSpan={4}></TableCell>
+                  </TableRow>
+                </TableFooter>
               </Table>
             </div>
           )}
