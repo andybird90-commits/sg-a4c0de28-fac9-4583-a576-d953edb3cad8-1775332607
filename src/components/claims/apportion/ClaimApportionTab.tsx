@@ -1713,27 +1713,34 @@ export function ClaimApportionTab(props: {
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell className="min-w-[140px] text-right">
-                          <Input
-                            type="number"
-                            min={0}
-                            max={100}
-                            step={1}
-                            value={Math.round(pct * 100)}
-                            onChange={(e) => {
-                              const next = clamp(Number(e.target.value || 0), 0, 100);
-                              const nextPct = next / 100;
-                              const nextAmt = roundMoney(clamp(total * nextPct, 0, total));
-                              setApportionments((prev) =>
-                                prev.map((x) =>
-                                  x.id === a.id
-                                    ? { ...x, claimable_percent: nextPct, claimable_amount: nextAmt }
-                                    : x
-                                )
-                              );
-                            }}
-                            onBlur={() => void safeUpdateWorkingRow(a, { claimable_percent: safeNumber(a.claimable_percent) ?? 0 } as any)}
-                          />
+                        <TableCell className="min-w-[120px] text-right font-medium pt-4">
+                          {formatMoney(total)}
+                        </TableCell>
+                        <TableCell className="min-w-[120px] text-right">
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={1}
+                              className="pr-6 text-right"
+                              value={Math.round(pct * 100)}
+                              onChange={(e) => {
+                                const next = clamp(Number(e.target.value || 0), 0, 100);
+                                const nextPct = next / 100;
+                                const nextAmt = roundMoney(clamp(total * nextPct, 0, total));
+                                setApportionments((prev) =>
+                                  prev.map((x) =>
+                                    x.id === a.id
+                                      ? { ...x, claimable_percent: nextPct, claimable_amount: nextAmt }
+                                      : x
+                                  )
+                                );
+                              }}
+                              onBlur={() => void safeUpdateWorkingRow(a, { claimable_percent: safeNumber(a.claimable_percent) ?? 0 } as any)}
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                          </div>
                         </TableCell>
                         <TableCell className="min-w-[160px] text-right">
                           <Input
@@ -1901,28 +1908,33 @@ export function ClaimApportionTab(props: {
               type="button"
               variant="destructive"
               onClick={async () => {
-                try {
-                  const toDelete = apportionments.filter(a => a.status !== "approved");
-                  const ids = toDelete.map(a => a.id);
-                  if (ids.length === 0) {
-                    toast({ title: "Nothing to clear", description: "No unapproved rows found." });
-                    setShowClearWorkingDialog(false);
-                    return;
-                  }
-                  
-                  for (let i = 0; i < ids.length; i += 50) {
-                    const chunk = ids.slice(i, i + 50);
-                    const { error: err1 } = await supabase.from("claim_apportionment_cost_links").delete().in("apportionment_id", chunk);
-                    if (err1) throw err1;
-                    const { error: err2 } = await supabase.from("claim_apportionments").delete().in("id", chunk);
-                    if (err2) throw err2;
-                  }
-                  
-                  toast({ title: "Cleared", description: `Removed ${ids.length} unapproved rows.` });
-                  await refreshApportionments();
+                const toDelete = apportionments.filter(a => a.status !== "approved");
+                const ids = toDelete.map(a => a.id);
+                if (ids.length === 0) {
+                  toast({ title: "Nothing to clear", description: "No unapproved rows found." });
                   setShowClearWorkingDialog(false);
+                  return;
+                }
+                
+                // 1. Optimistically clear the UI instantly
+                setApportionments(prev => prev.filter(a => a.status === "approved"));
+                setShowClearWorkingDialog(false);
+                toast({ title: "Clearing...", description: `Removing ${ids.length} rows in the background.` });
+                
+                try {
+                  // 2. Safely delete in small batches
+                  for (let i = 0; i < ids.length; i += 20) {
+                    const chunk = ids.slice(i, i + 20);
+                    await supabase.from("claim_apportionment_cost_links").delete().in("apportionment_id", chunk);
+                    const { error } = await supabase.from("claim_apportionments").delete().in("id", chunk);
+                    if (error) throw error;
+                  }
+                  toast({ title: "Cleared", description: `Successfully removed ${ids.length} rows.` });
                 } catch (error: any) {
-                  toast({ title: "Clear failed", description: error?.message || "Unexpected error", variant: "destructive" });
+                  console.error("Clear working rows failed", error);
+                  toast({ title: "Clear incomplete", description: error?.message || "Some rows may not have been removed", variant: "destructive" });
+                  // Rollback UI to actual DB state if it failed
+                  await refreshApportionments();
                 }
               }}
             >
