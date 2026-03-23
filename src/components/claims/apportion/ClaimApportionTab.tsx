@@ -243,6 +243,180 @@ const LineEditSchema = z.object({
   notes: z.string().nullable()
 });
 
+const WorkingTableRow = ({
+  a,
+  onOptimisticUpdate,
+  onSave
+}: {
+  a: ApportionmentRow;
+  onOptimisticUpdate: (patch: Partial<ApportionmentRow>) => void;
+  onSave: (patch: Partial<ApportionmentRow>) => void;
+}) => {
+  const total = safeNumber(a.total_source_cost) ?? 0;
+  const pct = safeNumber(a.claimable_percent) ?? 0;
+  const amt = roundMoney(safeNumber(a.claimable_amount) ?? 0);
+
+  const [localPct, setLocalPct] = useState<string>(pct === 0 ? "" : String(roundMoney(pct * 100)));
+  const [localAmt, setLocalAmt] = useState<string>(amt === 0 ? "" : amt.toFixed(2));
+
+  // Sync from external state when it changes (e.g. from DB refresh)
+  useEffect(() => {
+    setLocalPct(pct === 0 ? "" : String(roundMoney(pct * 100)));
+    setLocalAmt(amt === 0 ? "" : amt.toFixed(2));
+  }, [pct, amt]);
+
+  const handlePctChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalPct(e.target.value);
+  };
+
+  const handlePctBlur = () => {
+    const raw = localPct === "" ? null : Number(localPct);
+    const nextPct = raw !== null ? Math.max(0, Math.min(100, raw)) / 100 : 0;
+    const nextAmt = roundMoney(total * nextPct);
+    setLocalPct(nextPct === 0 ? "" : String(roundMoney(nextPct * 100)));
+    setLocalAmt(nextAmt === 0 ? "" : nextAmt.toFixed(2));
+    onOptimisticUpdate({ claimable_percent: nextPct, claimable_amount: nextAmt });
+    onSave({ claimable_percent: nextPct, claimable_amount: nextAmt });
+  };
+
+  const handleAmtChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalAmt(e.target.value);
+  };
+
+  const handleAmtBlur = () => {
+    const raw = localAmt === "" ? 0 : Number(localAmt);
+    let nextAmt = raw;
+    if (total < 0) {
+      nextAmt = Math.min(0, Math.max(total, nextAmt));
+    } else {
+      nextAmt = Math.max(0, Math.min(total, nextAmt));
+    }
+    const nextPct = total !== 0 ? nextAmt / total : 0;
+    setLocalAmt(nextAmt === 0 ? "" : nextAmt.toFixed(2));
+    setLocalPct(nextPct === 0 ? "" : String(roundMoney(nextPct * 100)));
+    onOptimisticUpdate({ claimable_percent: nextPct, claimable_amount: nextAmt });
+    onSave({ claimable_percent: nextPct, claimable_amount: nextAmt });
+  };
+
+  return (
+    <TableRow>
+      <TableCell className="min-w-[220px]">
+        <Input
+          value={a.item_name ?? ""}
+          onChange={(e) => onOptimisticUpdate({ item_name: e.target.value })}
+          onBlur={(e) => onSave({ item_name: e.target.value })}
+        />
+      </TableCell>
+      <TableCell className="min-w-[160px]">
+        <Select
+          value={(a.heading as any) ?? "other"}
+          onValueChange={(v) => {
+            onOptimisticUpdate({ heading: v });
+            onSave({ heading: v });
+          }}
+        >
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="staff">Staff</SelectItem>
+            <SelectItem value="subcontractor">Subcontractors</SelectItem>
+            <SelectItem value="consumables">Consumables</SelectItem>
+            <SelectItem value="software">Software</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+      </TableCell>
+      <TableCell className="min-w-[160px]">
+        <Select
+          value={(a.category as any) ?? "unknown"}
+          onValueChange={(v) => {
+            onOptimisticUpdate({ category: v as any });
+            onSave({ category: v as any });
+          }}
+        >
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="supplier">Supplier</SelectItem>
+            <SelectItem value="subcontractor">Subcontractor</SelectItem>
+            <SelectItem value="staff">Staff</SelectItem>
+            <SelectItem value="unknown">Unknown</SelectItem>
+          </SelectContent>
+        </Select>
+      </TableCell>
+      <TableCell className="min-w-[120px] text-right font-semibold pt-4 bg-muted/20">
+        {formatMoney(total)}
+      </TableCell>
+      <TableCell className="min-w-[120px] text-right">
+        <div className="relative">
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            step={0.01}
+            className="pr-6 text-right text-blue-600 font-medium"
+            value={localPct}
+            placeholder="0"
+            onChange={handlePctChange}
+            onBlur={handlePctBlur}
+          />
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+        </div>
+      </TableCell>
+      <TableCell className="min-w-[160px] text-right">
+        <Input
+          type="number"
+          step={0.01}
+          className="text-right font-medium"
+          value={localAmt}
+          placeholder="0.00"
+          onChange={handleAmtChange}
+          onBlur={handleAmtBlur}
+        />
+      </TableCell>
+      <TableCell className="min-w-[220px]">
+        <Textarea
+          rows={2}
+          value={a.justification ?? ""}
+          onChange={(e) => onOptimisticUpdate({ justification: e.target.value })}
+          onBlur={(e) => onSave({ justification: e.target.value })}
+        />
+      </TableCell>
+      <TableCell className="min-w-[260px]">
+        <Textarea
+          rows={2}
+          value={a.rd_activity_note ?? ""}
+          onChange={(e) => onOptimisticUpdate({ rd_activity_note: e.target.value })}
+          onBlur={(e) => onSave({ rd_activity_note: e.target.value })}
+        />
+      </TableCell>
+      <TableCell className="min-w-[260px]">
+        <Textarea
+          rows={2}
+          value={a.reviewer_note ?? ""}
+          onChange={(e) => onOptimisticUpdate({ reviewer_note: e.target.value })}
+          onBlur={(e) => onSave({ reviewer_note: e.target.value })}
+        />
+      </TableCell>
+      <TableCell className="min-w-[160px]">
+        <Select
+          value={(a.status as any) ?? "draft"}
+          onValueChange={(v) => {
+            onOptimisticUpdate({ status: v as any });
+            onSave({ status: v as any });
+          }}
+        >
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="reviewed">Reviewed</SelectItem>
+            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="excluded">Excluded</SelectItem>
+          </SelectContent>
+        </Select>
+      </TableCell>
+    </TableRow>
+  );
+};
+
 export function ClaimApportionTab(props: {
   claimId: string;
   orgId: string;
@@ -1596,7 +1770,7 @@ export function ClaimApportionTab(props: {
             </div>
           ) : (
             <div className="w-full overflow-x-auto rounded-md border pb-4">
-              <Table className="w-full">
+              <Table className="w-full min-w-[1600px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Item name</TableHead>
@@ -1612,176 +1786,18 @@ export function ClaimApportionTab(props: {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {apportionments.map((a) => {
-                    const total = safeNumber(a.total_source_cost) ?? 0;
-                    const pct = safeNumber(a.claimable_percent) ?? 0;
-                    const amt = roundMoney(safeNumber(a.claimable_amount) ?? 0);
-
-                    return (
-                      <TableRow key={a.id}>
-                        <TableCell className="min-w-[220px]">
-                          <Input
-                            value={a.item_name ?? ""}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, item_name: v } : x)));
-                            }}
-                            onBlur={(e) => void safeUpdateApportionment(a.id, { item_name: e.target.value } as any)}
-                          />
-                        </TableCell>
-                        <TableCell className="min-w-[160px]">
-                          <Select
-                            value={(a.heading as any) ?? "other"}
-                            onValueChange={(v) => void safeUpdateApportionment(a.id, { heading: v } as any)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="staff">Staff</SelectItem>
-                              <SelectItem value="subcontractor">Subcontractors</SelectItem>
-                              <SelectItem value="consumables">Consumables</SelectItem>
-                              <SelectItem value="software">Software</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="min-w-[160px]">
-                          <Select
-                            value={(a.category as any) ?? "unknown"}
-                            onValueChange={(v) => {
-                              setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, category: v as any } : x)));
-                              void safeUpdateApportionment(a.id, { category: v } as any);
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="supplier">Supplier</SelectItem>
-                              <SelectItem value="subcontractor">Subcontractor</SelectItem>
-                              <SelectItem value="staff">Staff</SelectItem>
-                              <SelectItem value="unknown">Unknown</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="min-w-[120px] text-right font-semibold pt-4 bg-muted/20">
-                          {formatMoney(total)}
-                        </TableCell>
-                        <TableCell className="min-w-[120px] text-right">
-                          <div className="relative">
-                            <Input
-                              type="number"
-                              min={0}
-                              max={100}
-                              step={1}
-                              className="pr-6 text-right text-blue-600 font-medium"
-                              value={pct === 0 ? "" : roundMoney(pct * 100)}
-                              placeholder="0"
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                const nextRaw = val === "" ? null : Number(val);
-                                const nextPct = nextRaw !== null ? Math.max(0, Math.min(100, nextRaw)) / 100 : 0;
-                                const nextAmt = roundMoney(total * nextPct);
-                                setApportionments((prev) =>
-                                  prev.map((x) =>
-                                    x.id === a.id
-                                      ? { ...x, claimable_percent: nextPct, claimable_amount: nextAmt }
-                                      : x
-                                  )
-                                );
-                              }}
-                              onBlur={(e) => {
-                                const val = e.target.value;
-                                const nextRaw = val === "" ? null : Number(val);
-                                const nextPct = nextRaw !== null ? Math.max(0, Math.min(100, nextRaw)) / 100 : 0;
-                                const nextAmt = roundMoney(total * nextPct);
-                                void safeUpdateApportionment(a.id, { claimable_percent: nextPct, claimable_amount: nextAmt });
-                              }}
-                            />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="min-w-[160px] text-right">
-                          <Input
-                            type="number"
-                            step={0.01}
-                            className="text-right font-medium"
-                            value={amt === 0 ? "" : amt.toFixed(2)}
-                            placeholder="0.00"
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              const nextRaw = val === "" ? 0 : Number(val);
-                              const nextAmt = roundMoney(total < 0 ? Math.min(0, Math.max(total, nextRaw)) : Math.max(0, Math.min(total, nextRaw)));
-                              const nextPct = total !== 0 ? nextAmt / total : 0;
-                              setApportionments((prev) =>
-                                prev.map((x) => (x.id === a.id ? { ...x, claimable_amount: nextAmt, claimable_percent: nextPct } : x))
-                              );
-                            }}
-                            onBlur={(e) => {
-                              const val = e.target.value;
-                              const nextRaw = val === "" ? 0 : Number(val);
-                              const nextAmt = roundMoney(total < 0 ? Math.min(0, Math.max(total, nextRaw)) : Math.max(0, Math.min(total, nextRaw)));
-                              const nextPct = total !== 0 ? nextAmt / total : 0;
-                              void safeUpdateApportionment(a.id, { claimable_amount: nextAmt, claimable_percent: nextPct });
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell className="min-w-[220px]">
-                          <Textarea
-                            rows={2}
-                            value={a.justification ?? ""}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, justification: v } : x)));
-                            }}
-                            onBlur={(e) => void safeUpdateApportionment(a.id, { justification: e.target.value })}
-                          />
-                        </TableCell>
-                        <TableCell className="min-w-[260px]">
-                          <Textarea
-                            rows={2}
-                            value={a.rd_activity_note ?? ""}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, rd_activity_note: v } : x)));
-                            }}
-                            onBlur={(e) => void safeUpdateApportionment(a.id, { rd_activity_note: e.target.value })}
-                          />
-                        </TableCell>
-                        <TableCell className="min-w-[260px]">
-                          <Textarea
-                            rows={2}
-                            value={a.reviewer_note ?? ""}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, reviewer_note: v } : x)));
-                            }}
-                            onBlur={(e) => void safeUpdateApportionment(a.id, { reviewer_note: e.target.value })}
-                          />
-                        </TableCell>
-                        <TableCell className="min-w-[160px]">
-                          <Select
-                            value={(a.status as any) ?? "draft"}
-                            onValueChange={(v) => {
-                              setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, status: v as any } : x)));
-                              void safeUpdateApportionment(a.id, { status: v } as any);
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="draft">Draft</SelectItem>
-                              <SelectItem value="reviewed">Reviewed</SelectItem>
-                              <SelectItem value="approved">Approved</SelectItem>
-                              <SelectItem value="excluded">Excluded</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {apportionments.map((a) => (
+                    <WorkingTableRow
+                      key={a.id}
+                      a={a}
+                      onOptimisticUpdate={(patch) => {
+                        setApportionments((prev) =>
+                          prev.map((x) => (x.id === a.id ? { ...x, ...patch } : x))
+                        );
+                      }}
+                      onSave={(patch) => void safeUpdateApportionment(a.id, patch)}
+                    />
+                  ))}
                 </TableBody>
               </Table>
             </div>
