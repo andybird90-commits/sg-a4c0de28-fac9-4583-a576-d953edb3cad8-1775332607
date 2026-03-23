@@ -792,11 +792,11 @@ export function ClaimApportionTab(props: {
       });
 
       // Force an immediate API-level wipe of unapproved working rows from any previous parses of this file
-      await supabase.from("claim_apportionments")
-        .delete()
-        .eq("claim_id", props.claimId)
-        .eq("source_id", source.id)
-        .neq("status", "approved");
+      await claimApportionmentService.clearWorkingApportionmentsForSource({
+        claimId: props.claimId,
+        sourceId: source.id,
+        keepApproved: true
+      });
 
       // Enforce an absolute wipe of unapproved working rows on the frontend state immediately
       setApportionments(prev => prev.filter(a => a.source_id !== source.id || String(a.status || "").trim().toLowerCase() === "approved"));
@@ -1144,28 +1144,6 @@ export function ClaimApportionTab(props: {
         if (link?.claim_cost_id) {
           if (pushMode !== "update-existing") continue;
 
-          const { error } = await supabase
-            .from("claim_costs")
-            .update({
-              cost_type: costType,
-              description,
-              amount,
-              updated_at: new Date().toISOString()
-            } as any)
-            .eq("id", link.claim_cost_id);
-
-          if (error) {
-            console.error("[ClaimApportionTab] claim_costs update error", { error, claimCostId: link.claim_cost_id, rowId: row.id });
-            throw error;
-          }
-
-          await claimApportionmentService.linkPushedCost({
-            apportionmentId: row.id,
-            claimCostId: link.claim_cost_id,
-            pushedBy: userId,
-            snapshot: { mode: "update", costType, amount, description }
-          });
-        } else {
           const { data: created, error } = await supabase
             .from("claim_costs")
             .insert({
