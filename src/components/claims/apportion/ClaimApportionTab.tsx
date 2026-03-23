@@ -1709,6 +1709,19 @@ export function ClaimApportionTab(props: {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {apportionments.length > 0 && (
+                    <TableRow className="bg-muted/50 hover:bg-muted/50 text-base font-semibold border-t-2 border-border">
+                      <TableCell colSpan={3} className="text-right py-4">Totals:</TableCell>
+                      <TableCell className="text-right py-4">
+                        {formatMoney(apportionments.reduce((s, a) => s + (safeNumber(a.total_source_cost) || 0), 0))}
+                      </TableCell>
+                      <TableCell></TableCell>
+                      <TableCell className="text-right py-4 text-blue-600">
+                        {formatMoney(apportionments.reduce((s, a) => s + (safeNumber(a.claimable_amount) || 0), 0))}
+                      </TableCell>
+                      <TableCell colSpan={4}></TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -1798,6 +1811,19 @@ export function ClaimApportionTab(props: {
                       onSave={(patch) => void safeUpdateApportionment(a.id, patch)}
                     />
                   ))}
+                  {apportionments.length > 0 && (
+                    <TableRow className="bg-muted/50 hover:bg-muted/50 text-base font-semibold border-t-2 border-border">
+                      <TableCell colSpan={3} className="text-right py-4">Totals:</TableCell>
+                      <TableCell className="text-right py-4">
+                        {formatMoney(apportionments.reduce((s, a) => s + (safeNumber(a.total_source_cost) || 0), 0))}
+                      </TableCell>
+                      <TableCell></TableCell>
+                      <TableCell className="text-right py-4 text-blue-600">
+                        {formatMoney(apportionments.reduce((s, a) => s + (safeNumber(a.claimable_amount) || 0), 0))}
+                      </TableCell>
+                      <TableCell colSpan={4}></TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
