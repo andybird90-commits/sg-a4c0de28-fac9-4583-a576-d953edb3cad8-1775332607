@@ -334,45 +334,47 @@ const WorkingTableRow = ({
 
   return (
     <TableRow>
-      <TableCell className="min-w-[200px] align-top">
+      <TableCell className="min-w-[250px] space-y-2 align-top pt-3">
         <Input
           value={a.item_name ?? ""}
+          placeholder="Item name..."
+          className="h-8 text-sm font-medium"
           onChange={(e) => onOptimisticUpdate({ item_name: e.target.value })}
           onBlur={(e) => onSave({ item_name: e.target.value })}
         />
-      </TableCell>
-      <TableCell className="min-w-[140px] space-y-2 align-top pt-3">
-        <Select
-          value={(a.heading as any) ?? "other"}
-          onValueChange={(v) => {
-            onOptimisticUpdate({ heading: v });
-            onSave({ heading: v });
-          }}
-        >
-          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Type..." /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="staff">Staff</SelectItem>
-            <SelectItem value="subcontractor">Subcontractors</SelectItem>
-            <SelectItem value="consumables">Consumables</SelectItem>
-            <SelectItem value="software">Software</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          value={(a.category as any) ?? "unknown"}
-          onValueChange={(v) => {
-            onOptimisticUpdate({ category: v as any });
-            onSave({ category: v as any });
-          }}
-        >
-          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Category..." /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="supplier">Supplier</SelectItem>
-            <SelectItem value="subcontractor">Subcontractor</SelectItem>
-            <SelectItem value="staff">Staff</SelectItem>
-            <SelectItem value="unknown">Unknown</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Select
+            value={(a.heading as any) ?? "other"}
+            onValueChange={(v) => {
+              onOptimisticUpdate({ heading: v });
+              onSave({ heading: v });
+            }}
+          >
+            <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Type..." /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="staff">Staff</SelectItem>
+              <SelectItem value="subcontractor">Subcontractors</SelectItem>
+              <SelectItem value="consumables">Consumables</SelectItem>
+              <SelectItem value="software">Software</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={(a.category as any) ?? "unknown"}
+            onValueChange={(v) => {
+              onOptimisticUpdate({ category: v as any });
+              onSave({ category: v as any });
+            }}
+          >
+            <SelectTrigger className="h-8 text-xs flex-1"><SelectValue placeholder="Category..." /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="supplier">Supplier</SelectItem>
+              <SelectItem value="subcontractor">Subcontractor</SelectItem>
+              <SelectItem value="staff">Staff</SelectItem>
+              <SelectItem value="unknown">Unknown</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </TableCell>
       <TableCell className="min-w-[110px] text-right font-semibold pt-4 bg-muted/20 align-top">
         {formatMoney(total)}
@@ -430,17 +432,7 @@ const WorkingTableRow = ({
           {isSaving ? "..." : savedOk ? "Saved!" : "Save"}
         </Button>
       </TableCell>
-      <TableCell className="w-full min-w-[220px] pr-4 align-top">
-        <Textarea
-          rows={3}
-          className="w-full resize-y min-h-[72px] text-sm"
-          placeholder="Rationale..."
-          value={a.justification ?? ""}
-          onChange={(e) => onOptimisticUpdate({ justification: e.target.value })}
-          onBlur={(e) => onSave({ justification: e.target.value })}
-        />
-      </TableCell>
-      <TableCell className="min-w-[140px] align-top pt-3">
+      <TableCell className="w-full min-w-[280px] space-y-2 pr-4 align-top pt-3">
         <Select
           value={(a.status as any) ?? "draft"}
           onValueChange={(v) => {
@@ -456,6 +448,14 @@ const WorkingTableRow = ({
             <SelectItem value="excluded">Excluded</SelectItem>
           </SelectContent>
         </Select>
+        <Textarea
+          rows={2}
+          className="w-full resize-y min-h-[50px] text-sm"
+          placeholder="Rationale..."
+          value={a.justification ?? ""}
+          onChange={(e) => onOptimisticUpdate({ justification: e.target.value })}
+          onBlur={(e) => onSave({ justification: e.target.value })}
+        />
       </TableCell>
     </TableRow>
   );
@@ -1869,13 +1869,11 @@ export function ClaimApportionTab(props: {
               <Table className="w-full min-w-[900px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Item name</TableHead>
-                    <TableHead>Type & Category</TableHead>
+                    <TableHead>Item details</TableHead>
                     <TableHead className="text-right">Total source</TableHead>
                     <TableHead className="text-right">Claimable % & £</TableHead>
                     <TableHead className="text-center w-[80px]">Action</TableHead>
-                    <TableHead>Justification</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Status & Justification</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1894,14 +1892,14 @@ export function ClaimApportionTab(props: {
                 </TableBody>
                 <TableFooter>
                   <TableRow>
-                    <TableCell colSpan={2} className="text-right font-bold">Totals (this file):</TableCell>
+                    <TableCell className="text-right font-bold">Totals (this file):</TableCell>
                     <TableCell className="text-right font-bold bg-muted/20 align-top">
                       {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.total_source_cost) || 0), 0))}
                     </TableCell>
                     <TableCell className="text-right font-bold text-blue-600 align-top">
                       {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.claimable_amount) || 0), 0))}
                     </TableCell>
-                    <TableCell colSpan={3}></TableCell>
+                    <TableCell colSpan={2}></TableCell>
                   </TableRow>
                 </TableFooter>
               </Table>
