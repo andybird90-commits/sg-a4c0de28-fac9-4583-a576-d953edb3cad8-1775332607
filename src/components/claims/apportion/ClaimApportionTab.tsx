@@ -1637,48 +1637,40 @@ export function ClaimApportionTab(props: {
             <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">No extracted lines yet. Click Parse on a source file.</div>
           ) : (
             <div className="overflow-x-auto rounded-md border">
-              <Table>
+              <Table className="min-w-[800px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Include</TableHead>
-                    <TableHead>Working</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Reference</TableHead>
-                    <TableHead className="text-right">Debit</TableHead>
-                    <TableHead className="text-right">Credit</TableHead>
-                    <TableHead className="text-right">Net</TableHead>
-                    <TableHead className="text-right">VAT</TableHead>
-                    <TableHead className="text-right">Gross</TableHead>
-                    <TableHead>Page</TableHead>
-                    <TableHead>Confidence</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    <TableHead className="w-[100px] text-center">Include</TableHead>
+                    <TableHead>Item Details</TableHead>
+                    <TableHead className="w-[200px]">Financials</TableHead>
+                    <TableHead className="w-[300px]">Notes & Source</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredLines.map((l) => (
                     <TableRow key={l.id}>
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          checked={l.include !== false}
-                          onChange={async (e) => {
-                            const include = e.target.checked;
-                            try {
-                              await saveLineEdit(l, { include } as any);
-                              if (selectedSourceId) await refreshLines(selectedSourceId);
-                            } catch (error: any) {
-                              toast({ title: "Update failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
-                            }
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
+                      <TableCell className="align-top pt-4 text-center space-y-3">
+                        <div className="flex justify-center">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            checked={l.include !== false}
+                            onChange={async (e) => {
+                              const include = e.target.checked;
+                              try {
+                                await saveLineEdit(l, { include } as any);
+                                if (selectedSourceId) await refreshLines(selectedSourceId);
+                              } catch (error: any) {
+                                toast({ title: "Update failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
+                              }
+                            }}
+                          />
+                        </div>
                         <Button
                           type="button"
                           size="sm"
                           variant="secondary"
+                          className="w-full text-xs h-7"
                           onClick={() => {
                             void ensureWorkingRowForLine(l);
                             if (typeof document !== "undefined") {
@@ -1691,8 +1683,11 @@ export function ClaimApportionTab(props: {
                           Add
                         </Button>
                       </TableCell>
-                      <TableCell className="min-w-[180px]">
+
+                      <TableCell className="align-top pt-3 space-y-2 min-w-[250px]">
                         <Input
+                          placeholder="Name..."
+                          className="h-8 text-sm font-medium"
                           value={l.raw_name ?? ""}
                           onChange={(e) => {
                             const v = e.target.value;
@@ -1721,57 +1716,71 @@ export function ClaimApportionTab(props: {
                             }
                           }}
                         />
+                        <div className="flex gap-2">
+                          <Select
+                            value={(l.category as any) || "unknown"}
+                            onValueChange={async (value) => {
+                              try {
+                                await saveLineEdit(l, { category: value as any });
+                                if (selectedSourceId) await refreshLines(selectedSourceId);
+                              } catch (error: any) {
+                                toast({ title: "Update failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-xs flex-1">
+                              <SelectValue placeholder="Category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="supplier">Supplier</SelectItem>
+                              <SelectItem value="subcontractor">Subcontractor</SelectItem>
+                              <SelectItem value="staff">Staff</SelectItem>
+                              <SelectItem value="unknown">Unknown</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            placeholder="Reference..."
+                            className="h-8 text-xs flex-1"
+                            value={l.reference_text ?? ""}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setLines((prev) => prev.map((x) => (x.id === l.id ? { ...x, reference_text: v } : x)));
+                            }}
+                            onBlur={async () => {
+                              try {
+                                await saveLineEdit(l, { reference_text: (l.reference_text ?? "") as any });
+                              } catch (error: any) {
+                                toast({ title: "Save failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
+                              }
+                            }}
+                          />
+                        </div>
                       </TableCell>
-                      <TableCell className="min-w-[140px]">
-                        <Select
-                          value={(l.category as any) || "unknown"}
-                          onValueChange={async (value) => {
-                            try {
-                              await saveLineEdit(l, { category: value as any });
-                              if (selectedSourceId) await refreshLines(selectedSourceId);
-                            } catch (error: any) {
-                              toast({ title: "Update failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
-                            }
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="supplier">Supplier</SelectItem>
-                            <SelectItem value="subcontractor">Subcontractor</SelectItem>
-                            <SelectItem value="staff">Staff</SelectItem>
-                            <SelectItem value="unknown">Unknown</SelectItem>
-                          </SelectContent>
-                        </Select>
+
+                      <TableCell className="align-top pt-3">
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+                          <div className="text-muted-foreground">Debit:</div>
+                          <div className="text-right">{formatMoney(safeNumber(l.debit_total))}</div>
+                          
+                          <div className="text-muted-foreground">Credit:</div>
+                          <div className="text-right">{formatMoney(safeNumber(l.credit_total))}</div>
+                          
+                          <div className="text-muted-foreground">VAT:</div>
+                          <div className="text-right">{formatMoney(safeNumber(l.vat_total))}</div>
+                          
+                          <div className="text-muted-foreground">Gross:</div>
+                          <div className="text-right">{formatMoney(safeNumber(l.gross_total))}</div>
+
+                          <div className="font-semibold pt-1 border-t mt-1">Net:</div>
+                          <div className="font-semibold text-right pt-1 border-t mt-1">{formatMoney(safeNumber(l.net_total))}</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="min-w-[140px]">
-                        <Input
-                          value={l.reference_text ?? ""}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setLines((prev) => prev.map((x) => (x.id === l.id ? { ...x, reference_text: v } : x)));
-                          }}
-                          onBlur={async () => {
-                            try {
-                              await saveLineEdit(l, { reference_text: (l.reference_text ?? "") as any });
-                            } catch (error: any) {
-                              toast({ title: "Save failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
-                            }
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="min-w-[120px] text-right">{formatMoney(safeNumber(l.debit_total))}</TableCell>
-                      <TableCell className="min-w-[120px] text-right">{formatMoney(safeNumber(l.credit_total))}</TableCell>
-                      <TableCell className="min-w-[120px] text-right">{formatMoney(safeNumber(l.net_total))}</TableCell>
-                      <TableCell className="min-w-[120px] text-right">{formatMoney(safeNumber(l.vat_total))}</TableCell>
-                      <TableCell className="min-w-[120px] text-right">{formatMoney(safeNumber(l.gross_total))}</TableCell>
-                      <TableCell className="min-w-[80px] text-xs text-muted-foreground">{l.source_page ?? "—"}</TableCell>
-                      <TableCell className="min-w-[100px] text-xs text-muted-foreground">
-                        {l.confidence !== null && l.confidence !== undefined ? `${Math.round(l.confidence * 100)}%` : "—"}
-                      </TableCell>
-                      <TableCell className="min-w-[220px]">
-                        <Input
+
+                      <TableCell className="align-top pt-3 space-y-2">
+                        <Textarea
+                          rows={2}
+                          className="w-full resize-y min-h-[44px] text-xs"
+                          placeholder="Notes..."
                           value={l.notes ?? ""}
                           onChange={(e) => {
                             const v = e.target.value;
@@ -1785,23 +1794,10 @@ export function ClaimApportionTab(props: {
                             }
                           }}
                         />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => {
-                            void ensureWorkingRowForLine(l);
-                            if (typeof document !== "undefined") {
-                              setTimeout(() => {
-                                document.getElementById("apportion-working-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                              }, 150);
-                            }
-                          }}
-                        >
-                          Add
-                        </Button>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
+                          <div>Page: {l.source_page ?? "—"}</div>
+                          <div>Confidence: {l.confidence !== null && l.confidence !== undefined ? `${Math.round(l.confidence * 100)}%` : "—"}</div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
