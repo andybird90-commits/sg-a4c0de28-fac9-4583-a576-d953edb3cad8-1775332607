@@ -1713,7 +1713,7 @@ export function ClaimApportionTab(props: {
                 <TableFooter>
                   <TableRow>
                     <TableCell colSpan={3} className="text-right font-bold">Totals:</TableCell>
-                    <TableCell className="text-right font-bold">
+                    <TableCell className="text-right font-bold bg-muted/20">
                       {formatMoney(apportionments.reduce((sum, a) => sum + (safeNumber(a.total_source_cost) || 0), 0))}
                     </TableCell>
                     <TableCell></TableCell>
@@ -1815,7 +1815,7 @@ export function ClaimApportionTab(props: {
                 <TableFooter>
                   <TableRow>
                     <TableCell colSpan={3} className="text-right font-bold">Totals:</TableCell>
-                    <TableCell className="text-right font-bold">
+                    <TableCell className="text-right font-bold bg-muted/20">
                       {formatMoney(apportionments.reduce((sum, a) => sum + (safeNumber(a.total_source_cost) || 0), 0))}
                     </TableCell>
                     <TableCell></TableCell>
