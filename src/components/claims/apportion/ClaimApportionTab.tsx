@@ -432,35 +432,13 @@ const WorkingTableRow = ({
         </Button>
       </TableCell>
       <TableCell className="pr-4">
-        <div className="w-[250px]">
+        <div className="w-full min-w-[300px] max-w-[450px]">
           <Textarea
             rows={2}
             className="w-full resize-y"
             value={a.justification ?? ""}
             onChange={(e) => onOptimisticUpdate({ justification: e.target.value })}
             onBlur={(e) => onSave({ justification: e.target.value })}
-          />
-        </div>
-      </TableCell>
-      <TableCell className="pr-4">
-        <div className="w-[250px]">
-          <Textarea
-            rows={2}
-            className="w-full resize-y"
-            value={a.rd_activity_note ?? ""}
-            onChange={(e) => onOptimisticUpdate({ rd_activity_note: e.target.value })}
-            onBlur={(e) => onSave({ rd_activity_note: e.target.value })}
-          />
-        </div>
-      </TableCell>
-      <TableCell className="pr-4">
-        <div className="w-[250px]">
-          <Textarea
-            rows={2}
-            className="w-full resize-y"
-            value={a.reviewer_note ?? ""}
-            onChange={(e) => onOptimisticUpdate({ reviewer_note: e.target.value })}
-            onBlur={(e) => onSave({ reviewer_note: e.target.value })}
           />
         </div>
       </TableCell>
@@ -1205,7 +1183,6 @@ export function ClaimApportionTab(props: {
           row.item_name ? `Item: ${row.item_name}` : null,
           `Claimable: ${formatMoney(amount)} (${Math.round((safeNumber(row.claimable_percent) ?? 0) * 100)}%)`,
           row.justification ? `Justification: ${row.justification}` : null,
-          row.rd_activity_note ? `R&D note: ${row.rd_activity_note}` : null,
           sourceRefParts.length ? sourceRefParts.join(" ") : null,
           `Apportionment ID: ${row.id}`
         ].filter(Boolean);
@@ -1866,7 +1843,7 @@ export function ClaimApportionTab(props: {
             </div>
           ) : (
             <div className="w-full overflow-x-auto rounded-md border pb-4">
-              <Table className="w-full min-w-[1600px]">
+              <Table className="w-full min-w-[1100px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Item name</TableHead>
@@ -1877,8 +1854,6 @@ export function ClaimApportionTab(props: {
                     <TableHead className="text-right">Claimable amount</TableHead>
                     <TableHead className="text-center w-[100px]">Save</TableHead>
                     <TableHead>Justification</TableHead>
-                    <TableHead>R&amp;D activity note</TableHead>
-                    <TableHead>Reviewer note</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1907,7 +1882,7 @@ export function ClaimApportionTab(props: {
                       {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.claimable_amount) || 0), 0))}
                     </TableCell>
                     <TableCell></TableCell>
-                    <TableCell colSpan={4}></TableCell>
+                    <TableCell colSpan={2}></TableCell>
                   </TableRow>
                 </TableFooter>
               </Table>
