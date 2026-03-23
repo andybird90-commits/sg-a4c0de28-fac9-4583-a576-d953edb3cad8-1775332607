@@ -266,21 +266,21 @@ const WorkingTableRow = ({
   
   const [localAmt, setLocalAmt] = useState<string>(() => {
     const am = safeNumber(a.claimable_amount);
-    return am !== null && am !== undefined ? am.toFixed(2) : "";
+    return am !== null && am !== undefined ? Math.abs(am).toFixed(2) : "";
   });
   
   const [isSaving, setIsSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
 
-  // Only update local state from props if we aren't actively typing
+  // Robust sync: only pull from props if we are not actively saving
   useEffect(() => {
-    if (document.activeElement?.tagName === 'INPUT') return;
-    
-    const p = safeNumber(a.claimable_percent);
-    const am = safeNumber(a.claimable_amount);
-    setLocalPct(p !== null && p !== undefined ? String(roundMoney(p * 100)) : "");
-    setLocalAmt(am !== null && am !== undefined ? am.toFixed(2) : "");
-  }, [a.claimable_percent, a.claimable_amount]);
+    if (!isSaving) {
+      const p = safeNumber(a.claimable_percent);
+      const am = safeNumber(a.claimable_amount);
+      setLocalPct(p !== null && p !== undefined ? String(roundMoney(p * 100)) : "");
+      setLocalAmt(am !== null && am !== undefined ? Math.abs(am).toFixed(2) : "");
+    }
+  }, [a.claimable_percent, a.claimable_amount, isSaving]);
 
   const handlePctChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -313,7 +313,7 @@ const WorkingTableRow = ({
     const finalPct = isNaN(parsedPct) ? 0 : parsedPct / 100;
     
     const parsedAmt = parseFloat(localAmt);
-    const finalAmt = isNaN(parsedAmt) ? 0 : parsedAmt;
+    const finalAmt = isNaN(parsedAmt) ? 0 : Math.abs(parsedAmt);
 
     setLocalPct(finalPct === 0 ? "0" : String(roundMoney(finalPct * 100)));
     setLocalAmt(finalAmt.toFixed(2));
@@ -587,8 +587,8 @@ export function ClaimApportionTab(props: {
 
       return {
         ...r,
-        total_source_cost: total,
-        claimable_amount: amt === null ? null : roundMoney(amt),
+        total_source_cost: total !== null ? Math.abs(total) : null,
+        claimable_amount: amt === null ? null : roundMoney(Math.abs(amt)),
         claimable_percent: pct
       };
     });
