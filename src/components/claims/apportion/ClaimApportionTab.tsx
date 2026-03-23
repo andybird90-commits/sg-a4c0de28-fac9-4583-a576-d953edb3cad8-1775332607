@@ -253,100 +253,99 @@ const WorkingTableRow = ({
   onSave: (patch: Partial<ApportionmentRow>) => Promise<void> | void;
 }) => {
   const total = safeNumber(a.total_source_cost) ?? 0;
-  const dbPct = safeNumber(a.claimable_percent) ?? 0;
-  const dbAmt = roundMoney(safeNumber(a.claimable_amount) ?? 0);
+  
+  const [localPct, setLocalPct] = useState(() => {
+    const p = safeNumber(a.claimable_percent);
+    return p ? String(roundMoney(p * 100)) : "";
+  });
+  
+  const [localAmt, setLocalAmt] = useState(() => {
+    const am = safeNumber(a.claimable_amount);
+    return am ? am.toFixed(2) : "";
+  });
 
-  const [localPct, setLocalPct] = useState<string>(dbPct === 0 ? "" : String(roundMoney(dbPct * 100)));
-  const [localAmt, setLocalAmt] = useState<string>(dbAmt === 0 ? "" : dbAmt.toFixed(2));
-
-  const pctRef = React.useRef(localPct);
-  const amtRef = React.useRef(localAmt);
+  const [lastDbPct, setLastDbPct] = useState(a.claimable_percent);
+  const [lastDbAmt, setLastDbAmt] = useState(a.claimable_amount);
 
   const [isSaving, setIsSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
 
-  const lastEdited = React.useRef<"pct"|"amt">("pct");
-
-  // Sync external changes ONLY IF they don't match what we just saved.
-  // This prevents the background DB refresh from wiping out what the user is currently typing.
-  useEffect(() => {
-    const extPctStr = dbPct === 0 ? "" : String(roundMoney(dbPct * 100));
-    const extAmtStr = dbAmt === 0 ? "" : dbAmt.toFixed(2);
+  // Sync external changes (or our own optimistic updates) gracefully
+  if (a.claimable_percent !== lastDbPct || a.claimable_amount !== lastDbAmt) {
+    setLastDbPct(a.claimable_percent);
+    setLastDbAmt(a.claimable_amount);
     
-    if (!isSaving && Math.abs(dbPct - (Number(pctRef.current || 0) / 100)) > 0.01) {
-      setLocalPct(extPctStr);
-      pctRef.current = extPctStr;
+    const p = safeNumber(a.claimable_percent);
+    const am = safeNumber(a.claimable_amount);
+    
+    const currentLocalPctNum = Number(localPct) || 0;
+    const incomingPctNum = p ? roundMoney(p * 100) : 0;
+    if (Math.abs(currentLocalPctNum - incomingPctNum) > 0.01) {
+      setLocalPct(p ? String(incomingPctNum) : "");
     }
-    if (!isSaving && Math.abs(dbAmt - Number(amtRef.current || 0)) > 0.01) {
-      setLocalAmt(extAmtStr);
-      amtRef.current = extAmtStr;
+
+    const currentLocalAmtNum = Number(localAmt) || 0;
+    const incomingAmtNum = am || 0;
+    if (Math.abs(currentLocalAmtNum - incomingAmtNum) > 0.01) {
+      setLocalAmt(am ? am.toFixed(2) : "");
     }
-  }, [dbPct, dbAmt]);
+  }
 
   const handlePctChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setLocalPct(val);
-    pctRef.current = val;
-    lastEdited.current = "pct";
-  };
-
-  const handlePctBlur = () => {
-    if (lastEdited.current !== "pct") return;
-    const raw = pctRef.current === "" ? null : Number(pctRef.current);
-    const nextPct = raw !== null ? Math.max(0, Math.min(100, raw)) / 100 : 0;
-    const nextAmt = roundMoney(total * nextPct);
     
-    const finalPctStr = nextPct === 0 ? "" : String(roundMoney(nextPct * 100));
-    const finalAmtStr = nextAmt === 0 ? "" : nextAmt.toFixed(2);
-
-    setLocalPct(finalPctStr);
-    pctRef.current = finalPctStr;
-    
-    setLocalAmt(finalAmtStr);
-    amtRef.current = finalAmtStr;
+    if (val === "") {
+      setLocalAmt("");
+    } else {
+      const p = Number(val);
+      if (!isNaN(p)) {
+        const nextPct = Math.max(0, Math.min(100, p)) / 100;
+        const nextAmt = roundMoney(total * nextPct);
+        setLocalAmt(nextAmt === 0 ? "" : nextAmt.toFixed(2));
+      }
+    }
   };
 
   const handleAmtChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setLocalAmt(val);
-    amtRef.current = val;
-    lastEdited.current = "amt";
-  };
-
-  const handleAmtBlur = () => {
-    if (lastEdited.current !== "amt") return;
-    const raw = amtRef.current === "" ? 0 : Number(amtRef.current);
-    let nextAmt = raw;
-    if (total < 0) {
-      nextAmt = Math.min(0, Math.max(total, nextAmt));
+    
+    if (val === "") {
+      setLocalPct("");
     } else {
-      nextAmt = Math.max(0, Math.min(total, nextAmt));
+      const am = Number(val);
+      if (!isNaN(am)) {
+        let nextAmt = am;
+        if (total < 0) {
+          nextAmt = Math.min(0, Math.max(total, nextAmt));
+        } else {
+          nextAmt = Math.max(0, Math.min(total, nextAmt));
+        }
+        const nextPct = total !== 0 ? nextAmt / total : 0;
+        setLocalPct(nextPct === 0 ? "" : String(roundMoney(nextPct * 100)));
+      }
     }
-    const nextPct = total !== 0 ? nextAmt / total : 0;
-    
-    const finalAmtStr = nextAmt === 0 ? "" : nextAmt.toFixed(2);
-    const finalPctStr = nextPct === 0 ? "" : String(roundMoney(nextPct * 100));
-
-    setLocalAmt(finalAmtStr);
-    amtRef.current = finalAmtStr;
-    
-    setLocalPct(finalPctStr);
-    pctRef.current = finalPctStr;
   };
 
   const handleSaveRow = async () => {
-    // Manually trigger the cross-calculation instantly before saving
-    if (lastEdited.current === "pct") {
-      handlePctBlur();
-    } else {
-      handleAmtBlur();
-    }
-
     setIsSaving(true);
     setSavedOk(false);
     try {
-      const finalPct = pctRef.current === "" ? 0 : Number(pctRef.current) / 100;
-      const finalAmt = amtRef.current === "" ? 0 : Number(amtRef.current);
+      const rawPct = Number(localPct);
+      const rawAmt = Number(localAmt);
+      
+      const finalPct = isNaN(rawPct) || localPct === "" ? 0 : Math.max(0, Math.min(100, rawPct)) / 100;
+      let finalAmt = isNaN(rawAmt) || localAmt === "" ? 0 : rawAmt;
+      
+      if (total < 0) {
+        finalAmt = Math.min(0, Math.max(total, finalAmt));
+      } else {
+        finalAmt = Math.max(0, Math.min(total, finalAmt));
+      }
+
+      setLocalPct(finalPct === 0 ? "" : String(roundMoney(finalPct * 100)));
+      setLocalAmt(finalAmt === 0 ? "" : finalAmt.toFixed(2));
 
       onOptimisticUpdate({ claimable_percent: finalPct, claimable_amount: finalAmt });
 
@@ -422,7 +421,6 @@ const WorkingTableRow = ({
             value={localPct}
             placeholder="0"
             onChange={handlePctChange}
-            onBlur={handlePctBlur}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -441,7 +439,6 @@ const WorkingTableRow = ({
           value={localAmt}
           placeholder="0.00"
           onChange={handleAmtChange}
-          onBlur={handleAmtBlur}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
