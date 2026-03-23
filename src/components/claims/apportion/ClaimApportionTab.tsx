@@ -253,47 +253,69 @@ const WorkingTableRow = ({
   onSave: (patch: Partial<ApportionmentRow>) => Promise<void> | void;
 }) => {
   const total = safeNumber(a.total_source_cost) ?? 0;
-  const pct = safeNumber(a.claimable_percent) ?? 0;
-  const amt = roundMoney(safeNumber(a.claimable_amount) ?? 0);
+  const dbPct = safeNumber(a.claimable_percent) ?? 0;
+  const dbAmt = roundMoney(safeNumber(a.claimable_amount) ?? 0);
 
-  const [localPct, setLocalPct] = useState<string>(pct === 0 ? "" : String(roundMoney(pct * 100)));
-  const [localAmt, setLocalAmt] = useState<string>(amt === 0 ? "" : amt.toFixed(2));
+  const [localPct, setLocalPct] = useState<string>(dbPct === 0 ? "" : String(roundMoney(dbPct * 100)));
+  const [localAmt, setLocalAmt] = useState<string>(dbAmt === 0 ? "" : dbAmt.toFixed(2));
+
+  const pctRef = React.useRef(localPct);
+  const amtRef = React.useRef(localAmt);
 
   const [isSaving, setIsSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
 
-  // Use a ref to hold the absolute latest calculated values so the Save button 
-  // doesn't capture stale state if clicked immediately after typing.
-  const latestValues = React.useRef({ pct, amt });
+  const lastEdited = React.useRef<"pct"|"amt">("pct");
 
-  // Sync from external state when it changes (e.g. from DB refresh)
+  // Sync external changes ONLY IF they don't match what we just saved.
+  // This prevents the background DB refresh from wiping out what the user is currently typing.
   useEffect(() => {
-    setLocalPct(pct === 0 ? "" : String(roundMoney(pct * 100)));
-    setLocalAmt(amt === 0 ? "" : amt.toFixed(2));
-    latestValues.current = { pct, amt };
-  }, [pct, amt]);
+    const extPctStr = dbPct === 0 ? "" : String(roundMoney(dbPct * 100));
+    const extAmtStr = dbAmt === 0 ? "" : dbAmt.toFixed(2);
+    
+    if (!isSaving && Math.abs(dbPct - (Number(pctRef.current || 0) / 100)) > 0.01) {
+      setLocalPct(extPctStr);
+      pctRef.current = extPctStr;
+    }
+    if (!isSaving && Math.abs(dbAmt - Number(amtRef.current || 0)) > 0.01) {
+      setLocalAmt(extAmtStr);
+      amtRef.current = extAmtStr;
+    }
+  }, [dbPct, dbAmt]);
 
   const handlePctChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalPct(e.target.value);
+    const val = e.target.value;
+    setLocalPct(val);
+    pctRef.current = val;
+    lastEdited.current = "pct";
   };
 
   const handlePctBlur = () => {
-    const raw = localPct === "" ? null : Number(localPct);
+    if (lastEdited.current !== "pct") return;
+    const raw = pctRef.current === "" ? null : Number(pctRef.current);
     const nextPct = raw !== null ? Math.max(0, Math.min(100, raw)) / 100 : 0;
     const nextAmt = roundMoney(total * nextPct);
     
-    setLocalPct(nextPct === 0 ? "" : String(roundMoney(nextPct * 100)));
-    setLocalAmt(nextAmt === 0 ? "" : nextAmt.toFixed(2));
-    latestValues.current = { pct: nextPct, amt: nextAmt };
-    onOptimisticUpdate({ claimable_percent: nextPct, claimable_amount: nextAmt });
+    const finalPctStr = nextPct === 0 ? "" : String(roundMoney(nextPct * 100));
+    const finalAmtStr = nextAmt === 0 ? "" : nextAmt.toFixed(2);
+
+    setLocalPct(finalPctStr);
+    pctRef.current = finalPctStr;
+    
+    setLocalAmt(finalAmtStr);
+    amtRef.current = finalAmtStr;
   };
 
   const handleAmtChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalAmt(e.target.value);
+    const val = e.target.value;
+    setLocalAmt(val);
+    amtRef.current = val;
+    lastEdited.current = "amt";
   };
 
   const handleAmtBlur = () => {
-    const raw = localAmt === "" ? 0 : Number(localAmt);
+    if (lastEdited.current !== "amt") return;
+    const raw = amtRef.current === "" ? 0 : Number(amtRef.current);
     let nextAmt = raw;
     if (total < 0) {
       nextAmt = Math.min(0, Math.max(total, nextAmt));
@@ -302,52 +324,41 @@ const WorkingTableRow = ({
     }
     const nextPct = total !== 0 ? nextAmt / total : 0;
     
-    setLocalAmt(nextAmt === 0 ? "" : nextAmt.toFixed(2));
-    setLocalPct(nextPct === 0 ? "" : String(roundMoney(nextPct * 100)));
-    latestValues.current = { pct: nextPct, amt: nextAmt };
-    onOptimisticUpdate({ claimable_percent: nextPct, claimable_amount: nextAmt });
+    const finalAmtStr = nextAmt === 0 ? "" : nextAmt.toFixed(2);
+    const finalPctStr = nextPct === 0 ? "" : String(roundMoney(nextPct * 100));
+
+    setLocalAmt(finalAmtStr);
+    amtRef.current = finalAmtStr;
+    
+    setLocalPct(finalPctStr);
+    pctRef.current = finalPctStr;
   };
 
   const handleSaveRow = async () => {
+    // Manually trigger the cross-calculation instantly before saving
+    if (lastEdited.current === "pct") {
+      handlePctBlur();
+    } else {
+      handleAmtBlur();
+    }
+
     setIsSaving(true);
     setSavedOk(false);
     try {
-      let finalPct = latestValues.current.pct;
-      let finalAmt = latestValues.current.amt;
+      const finalPct = pctRef.current === "" ? 0 : Number(pctRef.current) / 100;
+      const finalAmt = amtRef.current === "" ? 0 : Number(amtRef.current);
 
-      // Safety check: if localPct differs from ref, user might have clicked save without blurring
-      const rawPct = localPct === "" ? null : Number(localPct);
-      const rawAmt = localAmt === "" ? 0 : Number(localAmt);
-      
-      const parsedPctStr = finalPct === 0 ? "" : String(roundMoney(finalPct * 100));
-      const parsedAmtStr = finalAmt === 0 ? "" : finalAmt.toFixed(2);
-      
-      if (localPct !== parsedPctStr && localPct !== "") {
-        finalPct = rawPct !== null ? Math.max(0, Math.min(100, rawPct)) / 100 : 0;
-        finalAmt = roundMoney(total * finalPct);
-      } else if (localAmt !== parsedAmtStr && localAmt !== "") {
-        finalAmt = rawAmt;
-        if (total < 0) finalAmt = Math.min(0, Math.max(total, finalAmt));
-        else finalAmt = Math.max(0, Math.min(total, finalAmt));
-        finalPct = total !== 0 ? finalAmt / total : 0;
-      }
-
-      latestValues.current = { pct: finalPct, amt: finalAmt };
       onOptimisticUpdate({ claimable_percent: finalPct, claimable_amount: finalAmt });
 
       await onSave({
-        item_name: a.item_name,
-        heading: a.heading,
-        category: a.category,
         claimable_percent: finalPct,
-        claimable_amount: finalAmt,
-        justification: a.justification,
-        rd_activity_note: a.rd_activity_note,
-        reviewer_note: a.reviewer_note,
-        status: a.status
+        claimable_amount: finalAmt
       });
+      
       setSavedOk(true);
       setTimeout(() => setSavedOk(false), 2000);
+    } catch (e) {
+      console.error(e);
     } finally {
       setIsSaving(false);
     }
@@ -412,6 +423,12 @@ const WorkingTableRow = ({
             placeholder="0"
             onChange={handlePctChange}
             onBlur={handlePctBlur}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSaveRow();
+              }
+            }}
           />
           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
         </div>
@@ -425,6 +442,12 @@ const WorkingTableRow = ({
           placeholder="0.00"
           onChange={handleAmtChange}
           onBlur={handleAmtBlur}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleSaveRow();
+            }
+          }}
         />
       </TableCell>
       <TableCell className="text-center bg-muted/10">
@@ -434,7 +457,10 @@ const WorkingTableRow = ({
           variant={savedOk ? "default" : "secondary"}
           className={savedOk ? "bg-green-600 hover:bg-green-700 text-white w-full" : "w-full"}
           disabled={isSaving}
-          onClick={handleSaveRow}
+          onClick={(e) => {
+            e.preventDefault();
+            handleSaveRow();
+          }}
         >
           {isSaving ? "Saving..." : savedOk ? "Saved!" : "Save"}
         </Button>
@@ -1986,71 +2012,36 @@ export function ClaimApportionTab(props: {
               This will instantly remove rows from the working table for the currently selected file.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-3 py-4">
-             <Button 
-               variant="destructive" 
-               onClick={async () => {
-                 const toDelete = visibleApportionments.filter(a => a.status !== "approved");
-                 const ids = toDelete.map(a => a.id);
-                 if (ids.length === 0) {
-                   toast({ title: "Nothing to clear", description: "No unapproved rows found for this file." });
-                   setShowClearWorkingDialog(false);
-                   return;
-                 }
-                 
-                 setApportionments(prev => prev.filter(a => !ids.includes(a.id)));
-                 setShowClearWorkingDialog(false);
-                 toast({ title: "Clearing...", description: `Removing ${ids.length} rows.` });
-                 
-                 try {
-                   for (let i = 0; i < ids.length; i += 20) {
-                     const chunk = ids.slice(i, i + 20);
-                     await supabase.from("claim_apportionment_cost_links").delete().in("apportionment_id", chunk);
-                     const { error } = await supabase.from("claim_apportionments").delete().in("id", chunk);
-                     if (error) throw error;
-                   }
-                   toast({ title: "Cleared", description: `Successfully removed ${ids.length} rows.` });
-                 } catch (error: any) {
-                   console.error("Clear working rows failed", error);
-                   toast({ title: "Clear incomplete", description: error?.message || "Some rows may not have been removed", variant: "destructive" });
-                   await refreshApportionments();
-                 }
-               }}
-             >
-               Clear unapproved rows only
-             </Button>
-             <Button 
-               variant="outline" 
-               className="border-destructive text-destructive" 
-               onClick={async () => {
-                 const ids = visibleApportionments.map(a => a.id);
-                 if (ids.length === 0) return;
-                 
-                 setApportionments(prev => prev.filter(a => !ids.includes(a.id)));
-                 setShowClearWorkingDialog(false);
-                 toast({ title: "Clearing...", description: `Removing all ${ids.length} rows for this file.` });
-                 
-                 try {
-                   for (let i = 0; i < ids.length; i += 20) {
-                     const chunk = ids.slice(i, i + 20);
-                     await supabase.from("claim_apportionment_cost_links").delete().in("apportionment_id", chunk);
-                     const { error } = await supabase.from("claim_apportionments").delete().in("id", chunk);
-                     if (error) throw error;
-                   }
-                   toast({ title: "Cleared", description: `Successfully removed all working rows for this file.` });
-                 } catch (error: any) {
-                   console.error("Clear working rows failed", error);
-                   toast({ title: "Clear incomplete", description: error?.message || "Some rows may not have been removed", variant: "destructive" });
-                   await refreshApportionments();
-                 }
-               }}
-             >
-               Clear ALL rows (including approved)
-             </Button>
+          <div className="flex items-center space-x-2 py-4">
+            <input
+              type="checkbox"
+              id="clear-also-working"
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              checked={clearAlsoWorking}
+              onChange={(e) => setClearAlsoWorking(e.target.checked)}
+            />
+            <Label htmlFor="clear-also-working" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Also completely clear the Working Table for this file
+            </Label>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setShowClearWorkingDialog(false)} disabled={clearingLines}>
               Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void handleClearExtractedLines()}
+              disabled={clearingLines}
+            >
+              {clearingLines ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Clearing...
+                </>
+              ) : (
+                "Clear lines"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
