@@ -334,14 +334,14 @@ const WorkingTableRow = ({
 
   return (
     <TableRow>
-      <TableCell className="min-w-[250px]">
+      <TableCell className="min-w-[200px] align-top">
         <Input
           value={a.item_name ?? ""}
           onChange={(e) => onOptimisticUpdate({ item_name: e.target.value })}
           onBlur={(e) => onSave({ item_name: e.target.value })}
         />
       </TableCell>
-      <TableCell className="min-w-[160px]">
+      <TableCell className="min-w-[140px] space-y-2 align-top pt-3">
         <Select
           value={(a.heading as any) ?? "other"}
           onValueChange={(v) => {
@@ -349,7 +349,7 @@ const WorkingTableRow = ({
             onSave({ heading: v });
           }}
         >
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Type..." /></SelectTrigger>
           <SelectContent>
             <SelectItem value="staff">Staff</SelectItem>
             <SelectItem value="subcontractor">Subcontractors</SelectItem>
@@ -358,8 +358,6 @@ const WorkingTableRow = ({
             <SelectItem value="other">Other</SelectItem>
           </SelectContent>
         </Select>
-      </TableCell>
-      <TableCell className="min-w-[160px]">
         <Select
           value={(a.category as any) ?? "unknown"}
           onValueChange={(v) => {
@@ -367,7 +365,7 @@ const WorkingTableRow = ({
             onSave({ category: v as any });
           }}
         >
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Category..." /></SelectTrigger>
           <SelectContent>
             <SelectItem value="supplier">Supplier</SelectItem>
             <SelectItem value="subcontractor">Subcontractor</SelectItem>
@@ -376,15 +374,15 @@ const WorkingTableRow = ({
           </SelectContent>
         </Select>
       </TableCell>
-      <TableCell className="min-w-[130px] text-right font-semibold pt-4 bg-muted/20">
+      <TableCell className="min-w-[110px] text-right font-semibold pt-4 bg-muted/20 align-top">
         {formatMoney(total)}
       </TableCell>
-      <TableCell className="min-w-[140px] text-right">
+      <TableCell className="min-w-[140px] space-y-2 align-top pt-3 text-right">
         <div className="relative">
           <Input
             type="number"
             step={0.01}
-            className="pr-6 text-right text-blue-600 font-medium"
+            className="pr-6 h-8 text-right text-blue-600 font-medium text-xs"
             placeholder="0"
             value={localPct}
             onChange={handlePctChange}
@@ -396,51 +394,53 @@ const WorkingTableRow = ({
               }
             }}
           />
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">%</span>
+        </div>
+        <div className="relative">
+          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">£</span>
+          <Input
+            type="number"
+            step={0.01}
+            className="pl-6 h-8 text-right font-medium text-xs"
+            placeholder="0.00"
+            value={localAmt}
+            onChange={handleAmtChange}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.currentTarget.blur();
+                void handleSaveRow();
+              }
+            }}
+          />
         </div>
       </TableCell>
-      <TableCell className="min-w-[160px] text-right">
-        <Input
-          type="number"
-          step={0.01}
-          className="text-right font-medium"
-          placeholder="0.00"
-          value={localAmt}
-          onChange={handleAmtChange}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              e.currentTarget.blur();
-              void handleSaveRow();
-            }
-          }}
-        />
-      </TableCell>
-      <TableCell className="text-center bg-muted/10 w-[90px]">
+      <TableCell className="text-center bg-muted/10 w-[80px] align-top pt-3">
         <Button
           type="button"
           size="sm"
           variant={savedOk ? "default" : "secondary"}
-          className={savedOk ? "bg-green-600 hover:bg-green-700 text-white w-full" : "w-full"}
+          className={savedOk ? "bg-green-600 hover:bg-green-700 text-white w-full h-8 px-2" : "w-full h-8 px-2"}
           disabled={isSaving}
           onClick={(e) => {
             e.preventDefault();
             void handleSaveRow();
           }}
         >
-          {isSaving ? "Saving..." : savedOk ? "Saved!" : "Save"}
+          {isSaving ? "..." : savedOk ? "Saved!" : "Save"}
         </Button>
       </TableCell>
-      <TableCell className="w-full min-w-[280px] pr-4">
+      <TableCell className="w-full min-w-[220px] pr-4 align-top">
         <Textarea
-          rows={2}
-          className="w-full resize-y min-h-[60px]"
+          rows={3}
+          className="w-full resize-y min-h-[72px] text-sm"
+          placeholder="Rationale..."
           value={a.justification ?? ""}
           onChange={(e) => onOptimisticUpdate({ justification: e.target.value })}
           onBlur={(e) => onSave({ justification: e.target.value })}
         />
       </TableCell>
-      <TableCell className="min-w-[160px]">
+      <TableCell className="min-w-[140px] align-top pt-3">
         <Select
           value={(a.status as any) ?? "draft"}
           onValueChange={(v) => {
@@ -448,7 +448,7 @@ const WorkingTableRow = ({
             onSave({ status: v as any });
           }}
         >
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className={`h-8 font-medium ${a.status === 'approved' ? 'bg-green-50 text-green-700 border-green-200' : ''}`}><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="reviewed">Reviewed</SelectItem>
@@ -1246,8 +1246,12 @@ export function ClaimApportionTab(props: {
 
       setShowPushDialog(false);
       await refreshApportionments();
+      
+      // Do not await to prevent hanging if parent's refresh fails or hangs
       if (props.onCostsPushed) {
-        await props.onCostsPushed();
+        Promise.resolve(props.onCostsPushed()).catch((err) => {
+          console.error("Error refreshing parent claim costs", err);
+        });
       }
     } catch (error: any) {
       console.error("[ClaimApportionTab] push error", error);
@@ -1862,16 +1866,14 @@ export function ClaimApportionTab(props: {
             </div>
           ) : (
             <div className="w-full overflow-x-auto rounded-md border pb-4">
-              <Table className="w-full min-w-[1200px]">
+              <Table className="w-full min-w-[900px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Item name</TableHead>
-                    <TableHead>Heading</TableHead>
-                    <TableHead>Category</TableHead>
+                    <TableHead>Type & Category</TableHead>
                     <TableHead className="text-right">Total source</TableHead>
-                    <TableHead className="text-right">Claimable %</TableHead>
-                    <TableHead className="text-right">Claimable amount</TableHead>
-                    <TableHead className="text-center w-[80px]">Save</TableHead>
+                    <TableHead className="text-right">Claimable % & £</TableHead>
+                    <TableHead className="text-center w-[80px]">Action</TableHead>
                     <TableHead>Justification</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
@@ -1892,16 +1894,14 @@ export function ClaimApportionTab(props: {
                 </TableBody>
                 <TableFooter>
                   <TableRow>
-                    <TableCell colSpan={3} className="text-right font-bold">Totals (this file):</TableCell>
-                    <TableCell className="text-right font-bold bg-muted/20">
+                    <TableCell colSpan={2} className="text-right font-bold">Totals (this file):</TableCell>
+                    <TableCell className="text-right font-bold bg-muted/20 align-top">
                       {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.total_source_cost) || 0), 0))}
                     </TableCell>
-                    <TableCell></TableCell>
-                    <TableCell className="text-right font-bold text-blue-600">
+                    <TableCell className="text-right font-bold text-blue-600 align-top">
                       {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.claimable_amount) || 0), 0))}
                     </TableCell>
-                    <TableCell></TableCell>
-                    <TableCell colSpan={2}></TableCell>
+                    <TableCell colSpan={3}></TableCell>
                   </TableRow>
                 </TableFooter>
               </Table>
