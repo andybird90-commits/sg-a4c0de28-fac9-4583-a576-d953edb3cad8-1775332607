@@ -431,25 +431,28 @@ const WorkingTableRow = ({
           {isSaving ? "Saving..." : savedOk ? "Saved!" : "Save"}
         </Button>
       </TableCell>
-      <TableCell className="min-w-[220px]">
+      <TableCell className="w-[260px] min-w-[260px] max-w-[260px]">
         <Textarea
           rows={2}
+          className="w-full max-w-full resize-y"
           value={a.justification ?? ""}
           onChange={(e) => onOptimisticUpdate({ justification: e.target.value })}
           onBlur={(e) => onSave({ justification: e.target.value })}
         />
       </TableCell>
-      <TableCell className="min-w-[260px]">
+      <TableCell className="w-[260px] min-w-[260px] max-w-[260px]">
         <Textarea
           rows={2}
+          className="w-full max-w-full resize-y"
           value={a.rd_activity_note ?? ""}
           onChange={(e) => onOptimisticUpdate({ rd_activity_note: e.target.value })}
           onBlur={(e) => onSave({ rd_activity_note: e.target.value })}
         />
       </TableCell>
-      <TableCell className="min-w-[260px]">
+      <TableCell className="w-[260px] min-w-[260px] max-w-[260px]">
         <Textarea
           rows={2}
+          className="w-full max-w-full resize-y"
           value={a.reviewer_note ?? ""}
           onChange={(e) => onOptimisticUpdate({ reviewer_note: e.target.value })}
           onBlur={(e) => onSave({ reviewer_note: e.target.value })}
