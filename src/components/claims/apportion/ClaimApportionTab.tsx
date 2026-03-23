@@ -1190,6 +1190,27 @@ export function ClaimApportionTab(props: {
         if (link?.claim_cost_id) {
           if (pushMode !== "update-existing") continue;
 
+          const { error } = await supabase
+            .from("claim_costs")
+            .update({
+              cost_type: costType,
+              description,
+              amount
+            } as any)
+            .eq("id", link.claim_cost_id);
+
+          if (error) {
+            console.error("[ClaimApportionTab] claim_costs update error", { error, rowId: row.id, costType, amount });
+            throw error;
+          }
+
+          await claimApportionmentService.linkPushedCost({
+            apportionmentId: row.id,
+            claimCostId: link.claim_cost_id,
+            pushedBy: userId,
+            snapshot: { mode: "update", costType, amount, description }
+          });
+        } else {
           const { data: created, error } = await supabase
             .from("claim_costs")
             .insert({
