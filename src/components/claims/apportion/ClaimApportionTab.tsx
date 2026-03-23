@@ -1681,7 +1681,10 @@ export function ClaimApportionTab(props: {
                           />
                         </TableCell>
                         <TableCell className="min-w-[160px]">
-                          <Select value={a.heading ?? "other"} onValueChange={(v) => void safeUpdateWorkingRow(a, { heading: v } as any)}>
+                          <Select
+                            value={(a.heading as any) ?? "other"}
+                            onValueChange={(v) => void safeUpdateWorkingRow(a, { heading: v } as any)}
+                          >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
@@ -1713,7 +1716,7 @@ export function ClaimApportionTab(props: {
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell className="min-w-[120px] text-right font-medium pt-4">
+                        <TableCell className="min-w-[120px] text-right font-semibold pt-4 bg-muted/20">
                           {formatMoney(total)}
                         </TableCell>
                         <TableCell className="min-w-[120px] text-right">
@@ -1723,7 +1726,7 @@ export function ClaimApportionTab(props: {
                               min={0}
                               max={100}
                               step={1}
-                              className="pr-6 text-right"
+                              className="pr-6 text-right text-blue-600 font-medium"
                               value={Math.round(pct * 100)}
                               onChange={(e) => {
                                 const next = clamp(Number(e.target.value || 0), 0, 100);
@@ -1748,6 +1751,7 @@ export function ClaimApportionTab(props: {
                             min={0}
                             max={total}
                             step={0.01}
+                            className="text-right font-medium"
                             value={amt.toFixed(2)}
                             onChange={(e) => {
                               const nextRaw = safeNumber(e.target.value) ?? 0;
