@@ -1922,7 +1922,7 @@ export function ClaimApportionTab(props: {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setShowClearWorkingDialog(false)}>
+            <Button type="button" variant="outline" onClick={() => setShowClearWorkingDialog(false)} disabled={clearingLines}>
               Cancel
             </Button>
             <Button
@@ -1960,6 +1960,49 @@ export function ClaimApportionTab(props: {
               }}
             >
               Clear {apportionments.filter(a => a.status !== "approved").length} rows
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showClearLinesDialog} onOpenChange={setShowClearLinesDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clear extracted lines?</DialogTitle>
+            <DialogDescription>
+              This will clear all extracted lines for the currently selected file so you can parse it again.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2 py-4">
+            <input
+              type="checkbox"
+              id="clear-also-working"
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              checked={clearAlsoWorking}
+              onChange={(e) => setClearAlsoWorking(e.target.checked)}
+            />
+            <Label htmlFor="clear-also-working" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              Also remove any unapproved Working Table rows linked to this file
+            </Label>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowClearLinesDialog(false)} disabled={clearingLines}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void handleClearExtractedLines()}
+              disabled={clearingLines}
+            >
+              {clearingLines ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Clearing...
+                </>
+              ) : (
+                "Clear lines"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
