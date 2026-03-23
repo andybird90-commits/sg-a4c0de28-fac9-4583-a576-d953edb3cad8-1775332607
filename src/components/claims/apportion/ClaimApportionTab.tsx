@@ -250,7 +250,7 @@ const WorkingTableRow = ({
 }: {
   a: ApportionmentRow;
   onOptimisticUpdate: (patch: Partial<ApportionmentRow>) => void;
-  onSave: (patch: Partial<ApportionmentRow>) => void;
+  onSave: (patch: Partial<ApportionmentRow>) => Promise<void> | void;
 }) => {
   const total = safeNumber(a.total_source_cost) ?? 0;
   const pct = safeNumber(a.claimable_percent) ?? 0;
@@ -258,6 +258,37 @@ const WorkingTableRow = ({
 
   const [localPct, setLocalPct] = useState<string>(pct === 0 ? "" : String(roundMoney(pct * 100)));
   const [localAmt, setLocalAmt] = useState<string>(amt === 0 ? "" : amt.toFixed(2));
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedOk, setSavedOk] = useState(false);
+
+  const handleSaveRow = async () => {
+    setIsSaving(true);
+    setSavedOk(false);
+    try {
+      const rawPct = localPct === "" ? null : Number(localPct);
+      const nextPct = rawPct !== null ? Math.max(0, Math.min(100, rawPct)) / 100 : 0;
+      const rawAmt = localAmt === "" ? 0 : Number(localAmt);
+
+      onOptimisticUpdate({ claimable_percent: nextPct, claimable_amount: rawAmt });
+
+      await onSave({
+        item_name: a.item_name,
+        heading: a.heading,
+        category: a.category,
+        claimable_percent: nextPct,
+        claimable_amount: rawAmt,
+        justification: a.justification,
+        rd_activity_note: a.rd_activity_note,
+        reviewer_note: a.reviewer_note,
+        status: a.status
+      });
+      setSavedOk(true);
+      setTimeout(() => setSavedOk(false), 2000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   // Sync from external state when it changes (e.g. from DB refresh)
   useEffect(() => {
@@ -276,7 +307,6 @@ const WorkingTableRow = ({
     setLocalPct(nextPct === 0 ? "" : String(roundMoney(nextPct * 100)));
     setLocalAmt(nextAmt === 0 ? "" : nextAmt.toFixed(2));
     onOptimisticUpdate({ claimable_percent: nextPct, claimable_amount: nextAmt });
-    onSave({ claimable_percent: nextPct, claimable_amount: nextAmt });
   };
 
   const handleAmtChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,7 +325,6 @@ const WorkingTableRow = ({
     setLocalAmt(nextAmt === 0 ? "" : nextAmt.toFixed(2));
     setLocalPct(nextPct === 0 ? "" : String(roundMoney(nextPct * 100)));
     onOptimisticUpdate({ claimable_percent: nextPct, claimable_amount: nextAmt });
-    onSave({ claimable_percent: nextPct, claimable_amount: nextAmt });
   };
 
   return (
@@ -412,6 +441,18 @@ const WorkingTableRow = ({
             <SelectItem value="excluded">Excluded</SelectItem>
           </SelectContent>
         </Select>
+      </TableCell>
+      <TableCell className="text-right">
+        <Button
+          type="button"
+          size="sm"
+          variant={savedOk ? "default" : "secondary"}
+          className={savedOk ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+          disabled={isSaving}
+          onClick={handleSaveRow}
+        >
+          {isSaving ? "Saving..." : savedOk ? "Saved!" : "Save"}
+        </Button>
       </TableCell>
     </TableRow>
   );
@@ -1582,6 +1623,7 @@ export function ClaimApportionTab(props: {
                     <TableHead>Page</TableHead>
                     <TableHead>Confidence</TableHead>
                     <TableHead>Notes</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1714,6 +1756,23 @@ export function ClaimApportionTab(props: {
                           }}
                         />
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            void ensureWorkingRowForLine(l);
+                            if (typeof document !== "undefined") {
+                              setTimeout(() => {
+                                document.getElementById("apportion-working-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                              }, 150);
+                            }
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -1790,6 +1849,7 @@ export function ClaimApportionTab(props: {
                     <TableHead>R&amp;D activity note</TableHead>
                     <TableHead>Reviewer note</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1802,7 +1862,7 @@ export function ClaimApportionTab(props: {
                           prev.map((x) => (x.id === a.id ? { ...x, ...patch } : x))
                         );
                       }}
-                      onSave={(patch) => void safeUpdateApportionment(a.id, patch)}
+                      onSave={async (patch) => { await safeUpdateApportionment(a.id, patch); }}
                     />
                   ))}
                 </TableBody>
@@ -1816,7 +1876,7 @@ export function ClaimApportionTab(props: {
                     <TableCell className="text-right font-bold text-blue-600">
                       {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.claimable_amount) || 0), 0))}
                     </TableCell>
-                    <TableCell colSpan={4}></TableCell>
+                    <TableCell colSpan={5}></TableCell>
                   </TableRow>
                 </TableFooter>
               </Table>
