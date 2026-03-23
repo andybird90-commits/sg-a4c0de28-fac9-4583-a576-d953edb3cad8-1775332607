@@ -818,6 +818,7 @@ export function ClaimApportionTab(props: {
       if (selectedSourceId === source.id) {
         await refreshLines(source.id);
       }
+      await refreshApportionments();
     } catch (error: any) {
       console.error("[ClaimApportionTab] parse error", error);
       toast({
@@ -882,14 +883,14 @@ export function ClaimApportionTab(props: {
         clearedWorkingRows = await claimApportionmentService.clearWorkingApportionmentsForSource({
           claimId: props.claimId,
           sourceId: selectedSourceId,
-          keepApproved: true
+          keepApproved: false
         });
       }
 
       toast({
         title: "Cleared extracted lines",
         description: clearAlsoWorking
-          ? `Extracted lines cleared. Removed ${clearedWorkingRows} working row${clearedWorkingRows === 1 ? "" : "s"} for this file (approved rows kept). You can now click Parse selected to re-parse this file.`
+          ? `Extracted lines cleared. Removed ${clearedWorkingRows} working row(s) for this file. You can now click Parse selected to re-parse this file.`
           : "You can now click Parse selected to re-parse this file."
       });
 
@@ -948,7 +949,25 @@ export function ClaimApportionTab(props: {
         apportionments.map((a) => a.source_line_id).filter((v): v is string => typeof v === "string" && v.length > 0)
       );
 
-      const toAdd = lines.filter((l) => l.source_id === selectedSourceId && l.include !== false && !!l.id && !existingLineIds.has(l.id));
+      const existingSignatures = new Set(
+        apportionments
+          .filter((a) => a.source_id === selectedSourceId)
+          .map((a) => `${a.item_name}|${a.total_source_cost}`)
+      );
+
+      const toAdd = lines.filter((l) => {
+        if (l.source_id !== selectedSourceId || l.include === false || !l.id) return false;
+        if (existingLineIds.has(l.id)) return false;
+        
+        const total = safeNumber(l.net_total) ?? safeNumber(l.gross_total) ?? safeNumber(l.debit_total) ?? safeNumber(l.credit_total) ?? 0;
+        const itemName = (l.normalised_name || l.raw_name || "").toString();
+        
+        // Prevent adding duplicate rows if one already exists with the exact same name and cost for this file
+        const sig = `${itemName}|${total}`;
+        if (existingSignatures.has(sig)) return false;
+        
+        return true;
+      });
 
       if (toAdd.length === 0) {
         toast({
@@ -1736,10 +1755,10 @@ export function ClaimApportionTab(props: {
                 type="button"
                 variant="outline"
                 onClick={() => setShowClearWorkingDialog(true)}
-                disabled={apportionments.length === 0}
+                disabled={visibleApportionments.length === 0}
               >
                 <Trash2 className="mr-2 h-4 w-4 text-destructive" />
-                Clear unapproved
+                Clear rows
               </Button>
               <Button
                 type="button"
@@ -1892,51 +1911,76 @@ export function ClaimApportionTab(props: {
       <Dialog open={showClearWorkingDialog} onOpenChange={setShowClearWorkingDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Clear all unapproved working rows?</DialogTitle>
+            <DialogTitle>Clear working rows for this file?</DialogTitle>
             <DialogDescription>
-              This will instantly delete all Draft, Reviewed, and Excluded rows from the working table for this claim. 
-              Approved rows will be kept safe.
+              This will instantly remove rows from the working table for the currently selected file.
             </DialogDescription>
           </DialogHeader>
+          <div className="flex flex-col gap-3 py-4">
+             <Button 
+               variant="destructive" 
+               onClick={async () => {
+                 const toDelete = visibleApportionments.filter(a => a.status !== "approved");
+                 const ids = toDelete.map(a => a.id);
+                 if (ids.length === 0) {
+                   toast({ title: "Nothing to clear", description: "No unapproved rows found for this file." });
+                   setShowClearWorkingDialog(false);
+                   return;
+                 }
+                 
+                 setApportionments(prev => prev.filter(a => !ids.includes(a.id)));
+                 setShowClearWorkingDialog(false);
+                 toast({ title: "Clearing...", description: `Removing ${ids.length} rows.` });
+                 
+                 try {
+                   for (let i = 0; i < ids.length; i += 20) {
+                     const chunk = ids.slice(i, i + 20);
+                     await supabase.from("claim_apportionment_cost_links").delete().in("apportionment_id", chunk);
+                     const { error } = await supabase.from("claim_apportionments").delete().in("id", chunk);
+                     if (error) throw error;
+                   }
+                   toast({ title: "Cleared", description: `Successfully removed ${ids.length} rows.` });
+                 } catch (error: any) {
+                   console.error("Clear working rows failed", error);
+                   toast({ title: "Clear incomplete", description: error?.message || "Some rows may not have been removed", variant: "destructive" });
+                   await refreshApportionments();
+                 }
+               }}
+             >
+               Clear unapproved rows only
+             </Button>
+             <Button 
+               variant="outline" 
+               className="border-destructive text-destructive" 
+               onClick={async () => {
+                 const ids = visibleApportionments.map(a => a.id);
+                 if (ids.length === 0) return;
+                 
+                 setApportionments(prev => prev.filter(a => !ids.includes(a.id)));
+                 setShowClearWorkingDialog(false);
+                 toast({ title: "Clearing...", description: `Removing all ${ids.length} rows for this file.` });
+                 
+                 try {
+                   for (let i = 0; i < ids.length; i += 20) {
+                     const chunk = ids.slice(i, i + 20);
+                     await supabase.from("claim_apportionment_cost_links").delete().in("apportionment_id", chunk);
+                     const { error } = await supabase.from("claim_apportionments").delete().in("id", chunk);
+                     if (error) throw error;
+                   }
+                   toast({ title: "Cleared", description: `Successfully removed all working rows for this file.` });
+                 } catch (error: any) {
+                   console.error("Clear working rows failed", error);
+                   toast({ title: "Clear incomplete", description: error?.message || "Some rows may not have been removed", variant: "destructive" });
+                   await refreshApportionments();
+                 }
+               }}
+             >
+               Clear ALL rows (including approved)
+             </Button>
+          </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setShowClearWorkingDialog(false)} disabled={clearingLines}>
               Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={async () => {
-                const toDelete = apportionments.filter(a => a.status !== "approved");
-                const ids = toDelete.map(a => a.id);
-                if (ids.length === 0) {
-                  toast({ title: "Nothing to clear", description: "No unapproved rows found." });
-                  setShowClearWorkingDialog(false);
-                  return;
-                }
-                
-                // 1. Optimistically clear the UI instantly
-                setApportionments(prev => prev.filter(a => a.status === "approved"));
-                setShowClearWorkingDialog(false);
-                toast({ title: "Clearing...", description: `Removing ${ids.length} rows in the background.` });
-                
-                try {
-                  // 2. Safely delete in small batches
-                  for (let i = 0; i < ids.length; i += 20) {
-                    const chunk = ids.slice(i, i + 20);
-                    await supabase.from("claim_apportionment_cost_links").delete().in("apportionment_id", chunk);
-                    const { error } = await supabase.from("claim_apportionments").delete().in("id", chunk);
-                    if (error) throw error;
-                  }
-                  toast({ title: "Cleared", description: `Successfully removed ${ids.length} rows.` });
-                } catch (error: any) {
-                  console.error("Clear working rows failed", error);
-                  toast({ title: "Clear incomplete", description: error?.message || "Some rows may not have been removed", variant: "destructive" });
-                  // Rollback UI to actual DB state if it failed
-                  await refreshApportionments();
-                }
-              }}
-            >
-              Clear {apportionments.filter(a => a.status !== "approved").length} rows
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1959,7 +2003,7 @@ export function ClaimApportionTab(props: {
               onChange={(e) => setClearAlsoWorking(e.target.checked)}
             />
             <Label htmlFor="clear-also-working" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Also remove any unapproved Working Table rows linked to this file
+              Also completely clear the Working Table for this file
             </Label>
           </div>
           <DialogFooter>
