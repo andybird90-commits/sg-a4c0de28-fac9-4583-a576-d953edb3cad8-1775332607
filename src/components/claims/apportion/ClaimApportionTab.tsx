@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -1723,6 +1723,19 @@ export function ClaimApportionTab(props: {
                     </TableRow>
                   )}
                 </TableBody>
+                <TableFooter className="bg-muted/50 border-t-2 border-border">
+                  <TableRow className="hover:bg-muted/50 text-base font-semibold">
+                    <TableCell colSpan={3} className="text-right py-4">Totals:</TableCell>
+                    <TableCell className="text-right py-4">
+                      {formatMoney(apportionments.reduce((s, a) => s + (safeNumber(a.total_source_cost) || 0), 0))}
+                    </TableCell>
+                    <TableCell></TableCell>
+                    <TableCell className="text-right py-4 text-blue-600">
+                      {formatMoney(apportionments.reduce((s, a) => s + (safeNumber(a.claimable_amount) || 0), 0))}
+                    </TableCell>
+                    <TableCell colSpan={4}></TableCell>
+                  </TableRow>
+                </TableFooter>
               </Table>
             </div>
           )}
@@ -1811,8 +1824,10 @@ export function ClaimApportionTab(props: {
                       onSave={(patch) => void safeUpdateApportionment(a.id, patch)}
                     />
                   ))}
-                  {apportionments.length > 0 && (
-                    <TableRow className="bg-muted/50 hover:bg-muted/50 text-base font-semibold border-t-2 border-border">
+                </TableBody>
+                {apportionments.length > 0 && (
+                  <TableFooter className="bg-muted/50 border-t-2 border-border">
+                    <TableRow className="hover:bg-muted/50 text-base font-semibold">
                       <TableCell colSpan={3} className="text-right py-4">Totals:</TableCell>
                       <TableCell className="text-right py-4">
                         {formatMoney(apportionments.reduce((s, a) => s + (safeNumber(a.total_source_cost) || 0), 0))}
@@ -1823,8 +1838,8 @@ export function ClaimApportionTab(props: {
                       </TableCell>
                       <TableCell colSpan={4}></TableCell>
                     </TableRow>
-                  )}
-                </TableBody>
+                  </TableFooter>
+                )}
               </Table>
             </div>
           )}
