@@ -447,6 +447,13 @@ export function ClaimApportionTab(props: {
   const [addingIncludedToWorking, setAddingIncludedToWorking] = useState(false);
   const [clearAlsoWorking, setClearAlsoWorking] = useState(true);
 
+  // New strict filter logic: map working table exclusively to current selected source,
+  // and defensively clear it if source unselects or is reloading.
+  const visibleApportionments = useMemo(() => {
+    if (!selectedSourceId) return [];
+    return apportionments.filter((a) => a.source_id === selectedSourceId);
+  }, [apportionments, selectedSourceId]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
