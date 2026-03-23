@@ -791,15 +791,15 @@ export function ClaimApportionTab(props: {
         lines: parsedLines
       });
 
+      // Force an immediate API-level wipe of unapproved working rows from any previous parses of this file
+      await supabase.from("claim_apportionments")
+        .delete()
+        .eq("claim_id", props.claimId)
+        .eq("source_id", source.id)
+        .neq("status", "approved");
+
       // Enforce an absolute wipe of unapproved working rows on the frontend state immediately
       setApportionments(prev => prev.filter(a => a.source_id !== source.id || String(a.status || "").trim().toLowerCase() === "approved"));
-
-      // Auto-cleanup unapproved working rows from previous parses of this file
-      await claimApportionmentService.clearWorkingApportionmentsForSource({
-        claimId: props.claimId,
-        sourceId: source.id,
-        keepApproved: true
-      });
 
       const supersededNote = `Superseded by re-parse on ${new Date().toISOString()}`;
       await supabase
