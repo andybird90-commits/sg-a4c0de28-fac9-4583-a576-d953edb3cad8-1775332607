@@ -920,7 +920,7 @@ export function ClaimApportionTab(props: {
     const existing = apportionments.find((a) => a.source_line_id === line.id);
     if (existing) return;
 
-    const total = safeNumber(line.net_total) ?? safeNumber(line.gross_total) ?? safeNumber(line.debit_total) ?? 0;
+    const total = safeNumber(line.net_total) ?? safeNumber(line.gross_total) ?? safeNumber(line.debit_total) ?? safeNumber(line.credit_total) ?? 0;
     const itemName = (line.normalised_name || line.raw_name || "").toString();
 
     await claimApportionmentService.upsertApportionment({
@@ -959,7 +959,7 @@ export function ClaimApportionTab(props: {
       }
 
       const payload = toAdd.map((line) => {
-        const total = safeNumber(line.net_total) ?? safeNumber(line.gross_total) ?? safeNumber(line.debit_total) ?? 0;
+        const total = safeNumber(line.net_total) ?? safeNumber(line.gross_total) ?? safeNumber(line.debit_total) ?? safeNumber(line.credit_total) ?? 0;
         const itemName = (line.normalised_name || line.raw_name || "").toString();
 
         return {
