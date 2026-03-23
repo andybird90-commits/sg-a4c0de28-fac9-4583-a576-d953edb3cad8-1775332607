@@ -401,6 +401,18 @@ const WorkingTableRow = ({
           onBlur={handleAmtBlur}
         />
       </TableCell>
+      <TableCell className="text-center bg-muted/10">
+        <Button
+          type="button"
+          size="sm"
+          variant={savedOk ? "default" : "secondary"}
+          className={savedOk ? "bg-green-600 hover:bg-green-700 text-white w-full" : "w-full"}
+          disabled={isSaving}
+          onClick={handleSaveRow}
+        >
+          {isSaving ? "Saving..." : savedOk ? "Saved!" : "Save"}
+        </Button>
+      </TableCell>
       <TableCell className="min-w-[220px]">
         <Textarea
           rows={2}
@@ -441,18 +453,6 @@ const WorkingTableRow = ({
             <SelectItem value="excluded">Excluded</SelectItem>
           </SelectContent>
         </Select>
-      </TableCell>
-      <TableCell className="text-right">
-        <Button
-          type="button"
-          size="sm"
-          variant={savedOk ? "default" : "secondary"}
-          className={savedOk ? "bg-green-600 hover:bg-green-700 text-white" : ""}
-          disabled={isSaving}
-          onClick={handleSaveRow}
-        >
-          {isSaving ? "Saving..." : savedOk ? "Saved!" : "Save"}
-        </Button>
       </TableCell>
     </TableRow>
   );
@@ -1845,11 +1845,11 @@ export function ClaimApportionTab(props: {
                     <TableHead className="text-right">Total source</TableHead>
                     <TableHead className="text-right">Claimable %</TableHead>
                     <TableHead className="text-right">Claimable amount</TableHead>
+                    <TableHead className="text-center w-[100px]">Save</TableHead>
                     <TableHead>Justification</TableHead>
                     <TableHead>R&amp;D activity note</TableHead>
                     <TableHead>Reviewer note</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1876,7 +1876,8 @@ export function ClaimApportionTab(props: {
                     <TableCell className="text-right font-bold text-blue-600">
                       {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.claimable_amount) || 0), 0))}
                     </TableCell>
-                    <TableCell colSpan={5}></TableCell>
+                    <TableCell></TableCell>
+                    <TableCell colSpan={4}></TableCell>
                   </TableRow>
                 </TableFooter>
               </Table>
