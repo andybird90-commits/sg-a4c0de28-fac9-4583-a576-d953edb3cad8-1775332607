@@ -70,6 +70,11 @@ function safeNumber(value: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function safeAbs(value: unknown): number | null {
+  const n = safeNumber(value);
+  return n !== null ? Math.abs(n) : null;
+}
+
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
@@ -252,7 +257,7 @@ const WorkingTableRow = ({
   onOptimisticUpdate: (patch: Partial<ApportionmentRow>) => void;
   onSave: (patch: Partial<ApportionmentRow>) => Promise<void> | void;
 }) => {
-  const total = safeNumber(a.total_source_cost) ?? 0;
+  const total = Math.abs(safeNumber(a.total_source_cost) ?? 0);
   
   const [localPct, setLocalPct] = useState<string>(() => {
     const p = safeNumber(a.claimable_percent);
@@ -826,11 +831,11 @@ export function ClaimApportionTab(props: {
         normalisedName: typeof l.normalisedName === "string" ? l.normalisedName : null,
         category: l.category ?? "unknown",
         referenceText: typeof l.referenceText === "string" ? l.referenceText : null,
-        debitTotal: safeNumber(l.debitTotal),
-        creditTotal: safeNumber(l.creditTotal),
-        netTotal: safeNumber(l.netTotal),
-        vatTotal: safeNumber(l.vatTotal),
-        grossTotal: safeNumber(l.grossTotal),
+        debitTotal: safeAbs(l.debitTotal),
+        creditTotal: safeAbs(l.creditTotal),
+        netTotal: safeAbs(l.netTotal),
+        vatTotal: safeAbs(l.vatTotal),
+        grossTotal: safeAbs(l.grossTotal),
         sourcePage: safeNumber(l.sourcePage) as any,
         confidence: safeNumber(l.confidence),
         include: l.include !== false,
@@ -985,7 +990,8 @@ export function ClaimApportionTab(props: {
     const existing = apportionments.find((a) => a.source_line_id === line.id);
     if (existing) return;
 
-    const total = safeNumber(line.net_total) ?? safeNumber(line.gross_total) ?? safeNumber(line.debit_total) ?? safeNumber(line.credit_total) ?? 0;
+    const rawTotal = safeNumber(line.net_total) ?? safeNumber(line.gross_total) ?? safeNumber(line.debit_total) ?? safeNumber(line.credit_total) ?? 0;
+    const total = Math.abs(rawTotal);
     const itemName = (line.normalised_name || line.raw_name || "").toString();
 
     await claimApportionmentService.upsertApportionment({
@@ -1023,7 +1029,8 @@ export function ClaimApportionTab(props: {
         if (l.source_id !== selectedSourceId || l.include === false || !l.id) return false;
         if (existingLineIds.has(l.id)) return false;
         
-        const total = safeNumber(l.net_total) ?? safeNumber(l.gross_total) ?? safeNumber(l.debit_total) ?? safeNumber(l.credit_total) ?? 0;
+        const rawTotal = safeNumber(l.net_total) ?? safeNumber(l.gross_total) ?? safeNumber(l.debit_total) ?? safeNumber(l.credit_total) ?? 0;
+        const total = Math.abs(rawTotal);
         const itemName = (l.normalised_name || l.raw_name || "").toString();
         
         // Prevent adding duplicate rows if one already exists with the exact same name and cost for this file
@@ -1042,7 +1049,8 @@ export function ClaimApportionTab(props: {
       }
 
       const payload = toAdd.map((line) => {
-        const total = safeNumber(line.net_total) ?? safeNumber(line.gross_total) ?? safeNumber(line.debit_total) ?? safeNumber(line.credit_total) ?? 0;
+        const rawTotal = safeNumber(line.net_total) ?? safeNumber(line.gross_total) ?? safeNumber(line.debit_total) ?? safeNumber(line.credit_total) ?? 0;
+        const total = Math.abs(rawTotal);
         const itemName = (line.normalised_name || line.raw_name || "").toString();
 
         return {
