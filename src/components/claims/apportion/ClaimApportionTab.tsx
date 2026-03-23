@@ -334,14 +334,14 @@ const WorkingTableRow = ({
 
   return (
     <TableRow>
-      <TableCell className="min-w-[220px]">
+      <TableCell className="min-w-[180px]">
         <Input
           value={a.item_name ?? ""}
           onChange={(e) => onOptimisticUpdate({ item_name: e.target.value })}
           onBlur={(e) => onSave({ item_name: e.target.value })}
         />
       </TableCell>
-      <TableCell className="min-w-[160px]">
+      <TableCell className="min-w-[140px]">
         <Select
           value={(a.heading as any) ?? "other"}
           onValueChange={(v) => {
@@ -359,7 +359,7 @@ const WorkingTableRow = ({
           </SelectContent>
         </Select>
       </TableCell>
-      <TableCell className="min-w-[160px]">
+      <TableCell className="min-w-[140px]">
         <Select
           value={(a.category as any) ?? "unknown"}
           onValueChange={(v) => {
@@ -376,10 +376,10 @@ const WorkingTableRow = ({
           </SelectContent>
         </Select>
       </TableCell>
-      <TableCell className="min-w-[120px] text-right font-semibold pt-4 bg-muted/20">
+      <TableCell className="w-[110px] text-right font-semibold pt-4 bg-muted/20">
         {formatMoney(total)}
       </TableCell>
-      <TableCell className="min-w-[120px] text-right">
+      <TableCell className="w-[110px] text-right">
         <div className="relative">
           <Input
             type="number"
@@ -399,7 +399,7 @@ const WorkingTableRow = ({
           <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
         </div>
       </TableCell>
-      <TableCell className="min-w-[160px] text-right">
+      <TableCell className="w-[130px] text-right">
         <Input
           type="number"
           step={0.01}
@@ -416,7 +416,7 @@ const WorkingTableRow = ({
           }}
         />
       </TableCell>
-      <TableCell className="text-center bg-muted/10 w-[100px]">
+      <TableCell className="text-center bg-muted/10 w-[80px]">
         <Button
           type="button"
           size="sm"
@@ -431,16 +431,14 @@ const WorkingTableRow = ({
           {isSaving ? "Saving..." : savedOk ? "Saved!" : "Save"}
         </Button>
       </TableCell>
-      <TableCell className="pr-4">
-        <div className="w-full min-w-[300px] max-w-[450px]">
-          <Textarea
-            rows={2}
-            className="w-full resize-y"
-            value={a.justification ?? ""}
-            onChange={(e) => onOptimisticUpdate({ justification: e.target.value })}
-            onBlur={(e) => onSave({ justification: e.target.value })}
-          />
-        </div>
+      <TableCell className="w-full min-w-[200px] pr-4">
+        <Textarea
+          rows={2}
+          className="w-full resize-y min-h-[60px]"
+          value={a.justification ?? ""}
+          onChange={(e) => onOptimisticUpdate({ justification: e.target.value })}
+          onBlur={(e) => onSave({ justification: e.target.value })}
+        />
       </TableCell>
       <TableCell className="min-w-[160px]">
         <Select
@@ -1668,7 +1666,7 @@ export function ClaimApportionTab(props: {
                           Add
                         </Button>
                       </TableCell>
-                      <TableCell className="min-w-[220px]">
+                      <TableCell className="min-w-[180px]">
                         <Input
                           value={l.raw_name ?? ""}
                           onChange={(e) => {
@@ -1699,7 +1697,7 @@ export function ClaimApportionTab(props: {
                           }}
                         />
                       </TableCell>
-                      <TableCell className="min-w-[160px]">
+                      <TableCell className="min-w-[140px]">
                         <Select
                           value={(l.category as any) || "unknown"}
                           onValueChange={async (value) => {
@@ -1722,7 +1720,7 @@ export function ClaimApportionTab(props: {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="min-w-[220px]">
+                      <TableCell className="min-w-[140px]">
                         <Input
                           value={l.reference_text ?? ""}
                           onChange={(e) => {
@@ -1843,7 +1841,7 @@ export function ClaimApportionTab(props: {
             </div>
           ) : (
             <div className="w-full overflow-x-auto rounded-md border pb-4">
-              <Table className="w-full min-w-[1100px]">
+              <Table className="w-full min-w-[850px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Item name</TableHead>
@@ -1852,7 +1850,7 @@ export function ClaimApportionTab(props: {
                     <TableHead className="text-right">Total source</TableHead>
                     <TableHead className="text-right">Claimable %</TableHead>
                     <TableHead className="text-right">Claimable amount</TableHead>
-                    <TableHead className="text-center w-[100px]">Save</TableHead>
+                    <TableHead className="text-center w-[80px]">Save</TableHead>
                     <TableHead>Justification</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
