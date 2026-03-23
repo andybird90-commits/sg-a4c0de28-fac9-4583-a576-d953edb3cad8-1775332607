@@ -254,74 +254,56 @@ const WorkingTableRow = ({
 }) => {
   const total = safeNumber(a.total_source_cost) ?? 0;
   
-  const [localPct, setLocalPct] = useState(() => {
-    const p = safeNumber(a.claimable_percent);
-    return p ? String(roundMoney(p * 100)) : "";
-  });
-  
-  const [localAmt, setLocalAmt] = useState(() => {
-    const am = safeNumber(a.claimable_amount);
-    return am ? am.toFixed(2) : "";
-  });
+  const pctRef = React.useRef<HTMLInputElement>(null);
+  const amtRef = React.useRef<HTMLInputElement>(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
 
-  // Sync external changes (only if we aren't currently editing them / they differ significantly)
+  // Sync external changes ONLY if the user isn't currently typing in them
   useEffect(() => {
-    const p = safeNumber(a.claimable_percent);
-    const am = safeNumber(a.claimable_amount);
-    
-    if (p !== null && p !== undefined) {
-      const incomingPctNum = roundMoney(p * 100);
-      const currentLocalPctNum = Number(localPct) || 0;
-      if (Math.abs(currentLocalPctNum - incomingPctNum) > 0.01) {
-        setLocalPct(String(incomingPctNum));
-      }
+    if (pctRef.current && document.activeElement !== pctRef.current) {
+      const p = safeNumber(a.claimable_percent);
+      pctRef.current.value = p !== null && p !== undefined ? String(roundMoney(p * 100)) : "";
     }
-    
-    if (am !== null && am !== undefined) {
-      const currentLocalAmtNum = Number(localAmt) || 0;
-      if (Math.abs(currentLocalAmtNum - am) > 0.01) {
-        setLocalAmt(am.toFixed(2));
-      }
+    if (amtRef.current && document.activeElement !== amtRef.current) {
+      const am = safeNumber(a.claimable_amount);
+      amtRef.current.value = am !== null && am !== undefined ? am.toFixed(2) : "";
     }
-  }, [a.claimable_percent, a.claimable_amount]); // Only trigger when DB values explicitly change
+  }, [a.claimable_percent, a.claimable_amount]);
 
-  const handlePctChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setLocalPct(val);
-    
+  const handlePctChange = () => {
+    if (!pctRef.current || !amtRef.current) return;
+    const val = pctRef.current.value;
     if (val === "") {
-      setLocalAmt("");
-    } else {
-      const p = Number(val);
-      if (!isNaN(p)) {
-        const nextPct = Math.max(0, Math.min(100, p)) / 100;
-        const nextAmt = roundMoney(total * nextPct);
-        setLocalAmt(nextAmt === 0 ? "" : nextAmt.toFixed(2));
-      }
+      amtRef.current.value = "";
+      return;
+    }
+    const p = Number(val);
+    if (!isNaN(p)) {
+      const nextPct = Math.max(0, Math.min(100, p)) / 100;
+      const nextAmt = roundMoney(total * nextPct);
+      amtRef.current.value = nextAmt === 0 ? "" : nextAmt.toFixed(2);
     }
   };
 
-  const handleAmtChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setLocalAmt(val);
-    
+  const handleAmtChange = () => {
+    if (!pctRef.current || !amtRef.current) return;
+    const val = amtRef.current.value;
     if (val === "") {
-      setLocalPct("");
-    } else {
-      const am = Number(val);
-      if (!isNaN(am)) {
-        let nextAmt = am;
-        if (total < 0) {
-          nextAmt = Math.min(0, Math.max(total, nextAmt));
-        } else {
-          nextAmt = Math.max(0, Math.min(total, nextAmt));
-        }
-        const nextPct = total !== 0 ? nextAmt / total : 0;
-        setLocalPct(nextPct === 0 ? "" : String(roundMoney(nextPct * 100)));
+      pctRef.current.value = "";
+      return;
+    }
+    const am = Number(val);
+    if (!isNaN(am)) {
+      let nextAmt = am;
+      if (total < 0) {
+        nextAmt = Math.min(0, Math.max(total, nextAmt));
+      } else {
+        nextAmt = Math.max(0, Math.min(total, nextAmt));
       }
+      const nextPct = total !== 0 ? nextAmt / total : 0;
+      pctRef.current.value = nextPct === 0 ? "" : String(roundMoney(nextPct * 100));
     }
   };
 
@@ -329,11 +311,14 @@ const WorkingTableRow = ({
     setIsSaving(true);
     setSavedOk(false);
     try {
-      const rawPct = Number(localPct);
-      const rawAmt = Number(localAmt);
+      const pctVal = pctRef.current?.value || "";
+      const amtVal = amtRef.current?.value || "";
+
+      const rawPct = Number(pctVal);
+      const rawAmt = Number(amtVal);
       
-      const finalPct = isNaN(rawPct) || localPct === "" ? 0 : Math.max(0, Math.min(100, rawPct)) / 100;
-      let finalAmt = isNaN(rawAmt) || localAmt === "" ? 0 : rawAmt;
+      const finalPct = isNaN(rawPct) || pctVal === "" ? 0 : Math.max(0, Math.min(100, rawPct)) / 100;
+      let finalAmt = isNaN(rawAmt) || amtVal === "" ? 0 : rawAmt;
       
       if (total < 0) {
         finalAmt = Math.min(0, Math.max(total, finalAmt));
@@ -341,11 +326,11 @@ const WorkingTableRow = ({
         finalAmt = Math.max(0, Math.min(total, finalAmt));
       }
 
-      setLocalPct(finalPct === 0 ? "" : String(roundMoney(finalPct * 100)));
-      setLocalAmt(finalAmt === 0 ? "" : finalAmt.toFixed(2));
+      // Format them perfectly inside the inputs
+      if (pctRef.current) pctRef.current.value = finalPct === 0 ? "" : String(roundMoney(finalPct * 100));
+      if (amtRef.current) amtRef.current.value = finalAmt === 0 ? "" : finalAmt.toFixed(2);
 
       onOptimisticUpdate({ claimable_percent: finalPct, claimable_amount: finalAmt });
-
       await onSave({
         claimable_percent: finalPct,
         claimable_amount: finalAmt
@@ -415,7 +400,7 @@ const WorkingTableRow = ({
             max={100}
             step={0.01}
             className="pr-6 text-right text-blue-600 font-medium"
-            value={localPct}
+            ref={pctRef}
             placeholder="0"
             onChange={handlePctChange}
             onKeyDown={(e) => {
@@ -433,7 +418,7 @@ const WorkingTableRow = ({
           type="number"
           step={0.01}
           className="text-right font-medium"
-          value={localAmt}
+          ref={amtRef}
           placeholder="0.00"
           onChange={handleAmtChange}
           onKeyDown={(e) => {
@@ -444,7 +429,7 @@ const WorkingTableRow = ({
           }}
         />
       </TableCell>
-      <TableCell className="text-center bg-muted/10">
+      <TableCell className="text-center bg-muted/10 w-[100px]">
         <Button
           type="button"
           size="sm"
