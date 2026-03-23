@@ -791,6 +791,9 @@ export function ClaimApportionTab(props: {
         lines: parsedLines
       });
 
+      // Enforce an absolute wipe of unapproved working rows on the frontend state immediately
+      setApportionments(prev => prev.filter(a => a.source_id !== source.id || String(a.status || "").trim().toLowerCase() === "approved"));
+
       // Auto-cleanup unapproved working rows from previous parses of this file
       await claimApportionmentService.clearWorkingApportionmentsForSource({
         claimId: props.claimId,
