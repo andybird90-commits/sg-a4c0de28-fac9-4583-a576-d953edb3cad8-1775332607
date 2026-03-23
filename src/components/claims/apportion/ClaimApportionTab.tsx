@@ -431,32 +431,38 @@ const WorkingTableRow = ({
           {isSaving ? "Saving..." : savedOk ? "Saved!" : "Save"}
         </Button>
       </TableCell>
-      <TableCell className="w-[250px] min-w-[200px] max-w-[300px] pr-4">
-        <Textarea
-          rows={2}
-          className="w-full resize-y"
-          value={a.justification ?? ""}
-          onChange={(e) => onOptimisticUpdate({ justification: e.target.value })}
-          onBlur={(e) => onSave({ justification: e.target.value })}
-        />
+      <TableCell className="pr-4">
+        <div className="w-[250px]">
+          <Textarea
+            rows={2}
+            className="w-full resize-y"
+            value={a.justification ?? ""}
+            onChange={(e) => onOptimisticUpdate({ justification: e.target.value })}
+            onBlur={(e) => onSave({ justification: e.target.value })}
+          />
+        </div>
       </TableCell>
-      <TableCell className="w-[250px] min-w-[200px] max-w-[300px] pr-4">
-        <Textarea
-          rows={2}
-          className="w-full resize-y"
-          value={a.rd_activity_note ?? ""}
-          onChange={(e) => onOptimisticUpdate({ rd_activity_note: e.target.value })}
-          onBlur={(e) => onSave({ rd_activity_note: e.target.value })}
-        />
+      <TableCell className="pr-4">
+        <div className="w-[250px]">
+          <Textarea
+            rows={2}
+            className="w-full resize-y"
+            value={a.rd_activity_note ?? ""}
+            onChange={(e) => onOptimisticUpdate({ rd_activity_note: e.target.value })}
+            onBlur={(e) => onSave({ rd_activity_note: e.target.value })}
+          />
+        </div>
       </TableCell>
-      <TableCell className="w-[250px] min-w-[200px] max-w-[300px] pr-4">
-        <Textarea
-          rows={2}
-          className="w-full resize-y"
-          value={a.reviewer_note ?? ""}
-          onChange={(e) => onOptimisticUpdate({ reviewer_note: e.target.value })}
-          onBlur={(e) => onSave({ reviewer_note: e.target.value })}
-        />
+      <TableCell className="pr-4">
+        <div className="w-[250px]">
+          <Textarea
+            rows={2}
+            className="w-full resize-y"
+            value={a.reviewer_note ?? ""}
+            onChange={(e) => onOptimisticUpdate({ reviewer_note: e.target.value })}
+            onBlur={(e) => onSave({ reviewer_note: e.target.value })}
+          />
+        </div>
       </TableCell>
       <TableCell className="min-w-[160px]">
         <Select
