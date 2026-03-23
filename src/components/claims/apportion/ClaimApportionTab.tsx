@@ -254,81 +254,64 @@ const WorkingTableRow = ({
 }) => {
   const total = safeNumber(a.total_source_cost) ?? 0;
   
-  const pctRef = React.useRef<HTMLInputElement>(null);
-  const amtRef = React.useRef<HTMLInputElement>(null);
+  const [localPct, setLocalPct] = useState<string>(() => {
+    const p = safeNumber(a.claimable_percent);
+    return p !== null && p !== undefined ? String(roundMoney(p * 100)) : "";
+  });
+  
+  const [localAmt, setLocalAmt] = useState<string>(() => {
+    const am = safeNumber(a.claimable_amount);
+    return am !== null && am !== undefined ? am.toFixed(2) : "";
+  });
   
   const [isSaving, setIsSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
 
+  // Only update local state from props if we aren't actively typing
   useEffect(() => {
-    if (document.activeElement === pctRef.current || document.activeElement === amtRef.current) {
-      return;
-    }
+    if (document.activeElement?.tagName === 'INPUT') return;
+    
     const p = safeNumber(a.claimable_percent);
-    if (pctRef.current) {
-      pctRef.current.value = p !== null && p !== undefined ? String(roundMoney(p * 100)) : "";
-    }
     const am = safeNumber(a.claimable_amount);
-    if (amtRef.current) {
-      amtRef.current.value = am !== null && am !== undefined ? am.toFixed(2) : "";
-    }
+    setLocalPct(p !== null && p !== undefined ? String(roundMoney(p * 100)) : "");
+    setLocalAmt(am !== null && am !== undefined ? am.toFixed(2) : "");
   }, [a.claimable_percent, a.claimable_amount]);
 
-  const handlePctChange = () => {
-    if (!pctRef.current || !amtRef.current) return;
-    const val = pctRef.current.value;
-    if (val === "") {
-      amtRef.current.value = "";
-      return;
-    }
-    const p = Number(val);
+  const handlePctChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocalPct(val);
+    
+    const p = parseFloat(val);
     if (!isNaN(p)) {
-      const nextPct = Math.max(0, Math.min(100, p)) / 100;
-      const nextAmt = roundMoney(total * nextPct);
-      amtRef.current.value = nextAmt === 0 ? "" : nextAmt.toFixed(2);
+      const nextAmt = total * (p / 100);
+      setLocalAmt(nextAmt === 0 ? "0.00" : nextAmt.toFixed(2));
+    } else {
+      setLocalAmt("");
     }
   };
 
-  const handleAmtChange = () => {
-    if (!pctRef.current || !amtRef.current) return;
-    const val = amtRef.current.value;
-    if (val === "") {
-      pctRef.current.value = "";
-      return;
-    }
-    let am = Number(val);
-    if (!isNaN(am)) {
-      if (total < 0 && am > 0) am = -am;
-      
-      let nextAmt = am;
-      if (total < 0) {
-        nextAmt = Math.min(0, Math.max(total, nextAmt));
-      } else {
-        nextAmt = Math.max(0, Math.min(total, nextAmt));
-      }
-      const nextPct = total !== 0 ? nextAmt / total : 0;
-      pctRef.current.value = nextPct === 0 ? "" : String(roundMoney(nextPct * 100));
+  const handleAmtChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocalAmt(val);
+    
+    const am = parseFloat(val);
+    if (!isNaN(am) && total !== 0) {
+      const nextPct = (am / total) * 100;
+      setLocalPct(nextPct === 0 ? "0" : String(roundMoney(nextPct)));
+    } else {
+      setLocalPct("");
     }
   };
 
   const handleSaveRow = async () => {
-    if (!pctRef.current || !amtRef.current) return;
+    const parsedPct = parseFloat(localPct);
+    const finalPct = isNaN(parsedPct) ? 0 : parsedPct / 100;
     
-    const rawPct = Number(pctRef.current.value);
-    const finalPct = isNaN(rawPct) || pctRef.current.value === "" ? 0 : Math.max(0, Math.min(100, rawPct)) / 100;
-    
-    let am = Number(amtRef.current.value);
-    if (total < 0 && am > 0) am = -am;
-    let finalAmt = isNaN(am) || amtRef.current.value === "" ? 0 : am;
-    
-    if (total < 0) {
-      finalAmt = Math.min(0, Math.max(total, finalAmt));
-    } else {
-      finalAmt = Math.max(0, Math.min(total, finalAmt));
-    }
+    const parsedAmt = parseFloat(localAmt);
+    const finalAmt = isNaN(parsedAmt) ? 0 : parsedAmt;
 
-    pctRef.current.value = finalPct === 0 ? "0" : String(roundMoney(finalPct * 100));
-    amtRef.current.value = finalAmt.toFixed(2);
+    setLocalPct(finalPct === 0 ? "0" : String(roundMoney(finalPct * 100)));
+    setLocalAmt(finalAmt.toFixed(2));
 
     setIsSaving(true);
     setSavedOk(false);
@@ -394,19 +377,17 @@ const WorkingTableRow = ({
       <TableCell className="min-w-[120px] text-right">
         <div className="relative">
           <Input
-            ref={pctRef}
             type="number"
-            min={0}
-            max={100}
             step={0.01}
             className="pr-6 text-right text-blue-600 font-medium"
             placeholder="0"
+            value={localPct}
             onChange={handlePctChange}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
-                pctRef.current?.blur();
-                handleSaveRow();
+                e.currentTarget.blur();
+                void handleSaveRow();
               }
             }}
           />
@@ -415,17 +396,17 @@ const WorkingTableRow = ({
       </TableCell>
       <TableCell className="min-w-[160px] text-right">
         <Input
-          ref={amtRef}
           type="number"
           step={0.01}
           className="text-right font-medium"
           placeholder="0.00"
+          value={localAmt}
           onChange={handleAmtChange}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              amtRef.current?.blur();
-              handleSaveRow();
+              e.currentTarget.blur();
+              void handleSaveRow();
             }
           }}
         />
@@ -439,7 +420,7 @@ const WorkingTableRow = ({
           disabled={isSaving}
           onClick={(e) => {
             e.preventDefault();
-            handleSaveRow();
+            void handleSaveRow();
           }}
         >
           {isSaving ? "Saving..." : savedOk ? "Saved!" : "Save"}
