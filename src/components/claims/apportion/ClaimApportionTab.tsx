@@ -827,65 +827,14 @@ export function ClaimApportionTab(props: {
     }
   };
 
-  const updateWorkingRow = async (row: ApportionmentRow, patch: Partial<ApportionmentRow>) => {
-    const total = safeNumber(patch.total_source_cost ?? row.total_source_cost) ?? 0;
-    const existingPct = safeNumber(patch.claimable_percent ?? row.claimable_percent) ?? 0;
-    const existingAmt = safeNumber(patch.claimable_amount ?? row.claimable_amount) ?? 0;
-
-    let claimablePercent = existingPct;
-    let claimableAmount = existingAmt;
-
-    const pctTouched = Object.prototype.hasOwnProperty.call(patch, "claimable_percent");
-    const amtTouched = Object.prototype.hasOwnProperty.call(patch, "claimable_amount");
-
-    if (amtTouched && !pctTouched) {
-      const nextRaw = safeNumber(patch.claimable_amount ?? row.claimable_amount) ?? 0;
-      const next = roundMoney(total < 0 ? Math.min(0, Math.max(total, nextRaw)) : Math.max(0, Math.min(total, nextRaw)));
-      claimableAmount = next;
-      claimablePercent = total !== 0 ? claimableAmount / total : 0;
-    }
-
-    if (pctTouched && !amtTouched) {
-      const nextPct = Math.max(0, Math.min(1, safeNumber(patch.claimable_percent ?? row.claimable_percent) ?? 0));
-      claimablePercent = nextPct;
-      claimableAmount = roundMoney(total * nextPct);
-    }
-
-    if (pctTouched && amtTouched) {
-      const nextRaw = safeNumber(patch.claimable_amount ?? row.claimable_amount) ?? 0;
-      claimableAmount = roundMoney(total < 0 ? Math.min(0, Math.max(total, nextRaw)) : Math.max(0, Math.min(total, nextRaw)));
-      claimablePercent = total !== 0 ? claimableAmount / total : 0;
-    }
-
-    await claimApportionmentService.updateApportionment(row.id, {
-      ...(patch as any),
-      claimable_percent: claimablePercent,
-      claimable_amount: claimableAmount,
-      total_source_cost: total
-    } as any);
-
-    await refreshApportionments();
-  };
-
-  const safeUpdateWorkingRow = async (row: ApportionmentRow, patch: Partial<ApportionmentRow>) => {
+  const safeUpdateApportionment = async (id: string, patch: Partial<ApportionmentRow>) => {
     try {
-      await updateWorkingRow(row, patch);
+      await claimApportionmentService.updateApportionment(id, patch as any);
     } catch (error: any) {
-      console.error("[ClaimApportionTab] update working row failed", { error, rowId: row.id, patch });
-      const msg = String(error?.message ?? "Failed to save changes");
-      const code = typeof error?.code === "string" ? error.code : "";
-      const details = typeof error?.details === "string" ? error.details : "";
-      const hint = typeof error?.hint === "string" ? error.hint : "";
-
-      const diagnosticParts = [
-        code ? `Code: ${code}` : null,
-        details ? `Details: ${details}` : null,
-        hint ? `Hint: ${hint}` : null
-      ].filter(Boolean);
-
+      console.error("[ClaimApportionTab] update working row failed", { error, rowId: id, patch });
       toast({
         title: "Save failed",
-        description: `${msg}${diagnosticParts.length ? `\n${diagnosticParts.join("\n")}` : ""}`,
+        description: error?.message ?? "Failed to save changes",
         variant: "destructive"
       });
       await refreshApportionments();
@@ -1646,8 +1595,8 @@ export function ClaimApportionTab(props: {
               No working rows yet. To approve/push, first add items from Extracted Lines (use the per-row “Add” button, or “Add included to working table”), then set Status = Approved in the working table.
             </div>
           ) : (
-            <div className="w-full max-w-full overflow-x-auto rounded-md border pb-4">
-              <Table>
+            <div className="w-full overflow-x-auto rounded-md border pb-4">
+              <Table className="w-full">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Item name</TableHead>
@@ -1677,13 +1626,13 @@ export function ClaimApportionTab(props: {
                               const v = e.target.value;
                               setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, item_name: v } : x)));
                             }}
-                            onBlur={(e) => void safeUpdateWorkingRow(a, { item_name: e.target.value } as any)}
+                            onBlur={(e) => void safeUpdateApportionment(a.id, { item_name: e.target.value } as any)}
                           />
                         </TableCell>
                         <TableCell className="min-w-[160px]">
                           <Select
                             value={(a.heading as any) ?? "other"}
-                            onValueChange={(v) => void safeUpdateWorkingRow(a, { heading: v } as any)}
+                            onValueChange={(v) => void safeUpdateApportionment(a.id, { heading: v } as any)}
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -1702,7 +1651,7 @@ export function ClaimApportionTab(props: {
                             value={(a.category as any) ?? "unknown"}
                             onValueChange={(v) => {
                               setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, category: v as any } : x)));
-                              void safeUpdateWorkingRow(a, { category: v } as any);
+                              void safeUpdateApportionment(a.id, { category: v } as any);
                             }}
                           >
                             <SelectTrigger>
@@ -1727,10 +1676,12 @@ export function ClaimApportionTab(props: {
                               max={100}
                               step={1}
                               className="pr-6 text-right text-blue-600 font-medium"
-                              value={Math.round(pct * 100)}
+                              value={pct === 0 ? "" : roundMoney(pct * 100)}
+                              placeholder="0"
                               onChange={(e) => {
-                                const next = Math.max(0, Math.min(100, Number(e.target.value || 0)));
-                                const nextPct = next / 100;
+                                const val = e.target.value;
+                                const nextRaw = val === "" ? null : Number(val);
+                                const nextPct = nextRaw !== null ? Math.max(0, Math.min(100, nextRaw)) / 100 : 0;
                                 const nextAmt = roundMoney(total * nextPct);
                                 setApportionments((prev) =>
                                   prev.map((x) =>
@@ -1741,8 +1692,11 @@ export function ClaimApportionTab(props: {
                                 );
                               }}
                               onBlur={(e) => {
-                                const next = Math.max(0, Math.min(100, Number(e.target.value || 0)));
-                                void safeUpdateWorkingRow(a, { claimable_percent: next / 100 } as any);
+                                const val = e.target.value;
+                                const nextRaw = val === "" ? null : Number(val);
+                                const nextPct = nextRaw !== null ? Math.max(0, Math.min(100, nextRaw)) / 100 : 0;
+                                const nextAmt = roundMoney(total * nextPct);
+                                void safeUpdateApportionment(a.id, { claimable_percent: nextPct, claimable_amount: nextAmt });
                               }}
                             />
                             <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
@@ -1753,17 +1707,23 @@ export function ClaimApportionTab(props: {
                             type="number"
                             step={0.01}
                             className="text-right font-medium"
-                            value={amt.toFixed(2)}
+                            value={amt === 0 ? "" : amt.toFixed(2)}
+                            placeholder="0.00"
                             onChange={(e) => {
-                              const nextRaw = safeNumber(e.target.value) ?? 0;
-                              const next = roundMoney(total < 0 ? Math.min(0, Math.max(total, nextRaw)) : Math.max(0, Math.min(total, nextRaw)));
+                              const val = e.target.value;
+                              const nextRaw = val === "" ? 0 : Number(val);
+                              const nextAmt = roundMoney(total < 0 ? Math.min(0, Math.max(total, nextRaw)) : Math.max(0, Math.min(total, nextRaw)));
+                              const nextPct = total !== 0 ? nextAmt / total : 0;
                               setApportionments((prev) =>
-                                prev.map((x) => (x.id === a.id ? { ...x, claimable_amount: next } : x))
+                                prev.map((x) => (x.id === a.id ? { ...x, claimable_amount: nextAmt, claimable_percent: nextPct } : x))
                               );
                             }}
                             onBlur={(e) => {
-                              const nextRaw = safeNumber(e.target.value) ?? 0;
-                              void safeUpdateWorkingRow(a, { claimable_amount: nextRaw } as any);
+                              const val = e.target.value;
+                              const nextRaw = val === "" ? 0 : Number(val);
+                              const nextAmt = roundMoney(total < 0 ? Math.min(0, Math.max(total, nextRaw)) : Math.max(0, Math.min(total, nextRaw)));
+                              const nextPct = total !== 0 ? nextAmt / total : 0;
+                              void safeUpdateApportionment(a.id, { claimable_amount: nextAmt, claimable_percent: nextPct });
                             }}
                           />
                         </TableCell>
@@ -1775,7 +1735,7 @@ export function ClaimApportionTab(props: {
                               const v = e.target.value;
                               setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, justification: v } : x)));
                             }}
-                            onBlur={(e) => void safeUpdateWorkingRow(a, { justification: e.target.value } as any)}
+                            onBlur={(e) => void safeUpdateApportionment(a.id, { justification: e.target.value })}
                           />
                         </TableCell>
                         <TableCell className="min-w-[260px]">
@@ -1786,7 +1746,7 @@ export function ClaimApportionTab(props: {
                               const v = e.target.value;
                               setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, rd_activity_note: v } : x)));
                             }}
-                            onBlur={(e) => void safeUpdateWorkingRow(a, { rd_activity_note: e.target.value } as any)}
+                            onBlur={(e) => void safeUpdateApportionment(a.id, { rd_activity_note: e.target.value })}
                           />
                         </TableCell>
                         <TableCell className="min-w-[260px]">
@@ -1797,7 +1757,7 @@ export function ClaimApportionTab(props: {
                               const v = e.target.value;
                               setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, reviewer_note: v } : x)));
                             }}
-                            onBlur={(e) => void safeUpdateWorkingRow(a, { reviewer_note: e.target.value } as any)}
+                            onBlur={(e) => void safeUpdateApportionment(a.id, { reviewer_note: e.target.value })}
                           />
                         </TableCell>
                         <TableCell className="min-w-[160px]">
@@ -1805,7 +1765,7 @@ export function ClaimApportionTab(props: {
                             value={(a.status as any) ?? "draft"}
                             onValueChange={(v) => {
                               setApportionments((prev) => prev.map((x) => (x.id === a.id ? { ...x, status: v as any } : x)));
-                              void safeUpdateWorkingRow(a, { status: v } as any);
+                              void safeUpdateApportionment(a.id, { status: v } as any);
                             }}
                           >
                             <SelectTrigger>
