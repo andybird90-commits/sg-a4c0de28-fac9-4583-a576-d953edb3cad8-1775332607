@@ -749,7 +749,7 @@ export default function ClaimDetailPage() {
     }
   };
 
-  const loadClaim = async (claimId?: string) => {
+  const loadClaim = async (claimId?: string, isSilentRefresh = false) => {
     const effectiveClaimId =
       claimId ?? (typeof id === "string" ? id : null);
 
@@ -758,8 +758,10 @@ export default function ClaimDetailPage() {
     }
 
     try {
-      setLoading(true);
-      setLoadingProjects(true);
+      if (!isSilentRefresh) {
+        setLoading(true);
+        setLoadingProjects(true);
+      }
 
       if (!currentOrg) {
         setError("No organisation selected");
@@ -896,8 +898,10 @@ export default function ClaimDetailPage() {
             : "Something went wrong. Please try again.",
       });
     } finally {
-      setLoading(false);
-      setLoadingProjects(false);
+      if (!isSilentRefresh) {
+        setLoading(false);
+        setLoadingProjects(false);
+      }
     }
   };
 
@@ -3504,7 +3508,7 @@ export default function ClaimDetailPage() {
               orgId={claim.org_id}
               onCostsPushed={async () => {
                 if (id && typeof id === "string") {
-                  await loadClaim(id);
+                  await loadClaim(id, true);
                 }
               }}
             />
