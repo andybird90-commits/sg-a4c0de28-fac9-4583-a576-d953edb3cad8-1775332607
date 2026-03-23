@@ -264,32 +264,29 @@ const WorkingTableRow = ({
     return am ? am.toFixed(2) : "";
   });
 
-  const [lastDbPct, setLastDbPct] = useState(a.claimable_percent);
-  const [lastDbAmt, setLastDbAmt] = useState(a.claimable_amount);
-
   const [isSaving, setIsSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
 
-  // Sync external changes (or our own optimistic updates) gracefully
-  if (a.claimable_percent !== lastDbPct || a.claimable_amount !== lastDbAmt) {
-    setLastDbPct(a.claimable_percent);
-    setLastDbAmt(a.claimable_amount);
-    
+  // Sync external changes (only if we aren't currently editing them / they differ significantly)
+  useEffect(() => {
     const p = safeNumber(a.claimable_percent);
     const am = safeNumber(a.claimable_amount);
     
-    const currentLocalPctNum = Number(localPct) || 0;
-    const incomingPctNum = p ? roundMoney(p * 100) : 0;
-    if (Math.abs(currentLocalPctNum - incomingPctNum) > 0.01) {
-      setLocalPct(p ? String(incomingPctNum) : "");
+    if (p !== null && p !== undefined) {
+      const incomingPctNum = roundMoney(p * 100);
+      const currentLocalPctNum = Number(localPct) || 0;
+      if (Math.abs(currentLocalPctNum - incomingPctNum) > 0.01) {
+        setLocalPct(String(incomingPctNum));
+      }
     }
-
-    const currentLocalAmtNum = Number(localAmt) || 0;
-    const incomingAmtNum = am || 0;
-    if (Math.abs(currentLocalAmtNum - incomingAmtNum) > 0.01) {
-      setLocalAmt(am ? am.toFixed(2) : "");
+    
+    if (am !== null && am !== undefined) {
+      const currentLocalAmtNum = Number(localAmt) || 0;
+      if (Math.abs(currentLocalAmtNum - am) > 0.01) {
+        setLocalAmt(am.toFixed(2));
+      }
     }
-  }
+  }, [a.claimable_percent, a.claimable_amount]); // Only trigger when DB values explicitly change
 
   const handlePctChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
