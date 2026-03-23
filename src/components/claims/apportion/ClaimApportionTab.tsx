@@ -1019,6 +1019,11 @@ export function ClaimApportionTab(props: {
     return apportionments.filter((a) => String(a.status || "").trim().toLowerCase() === "approved");
   }, [apportionments]);
 
+  const visibleApportionments = useMemo(() => {
+    if (!selectedSourceId) return [];
+    return apportionments.filter((a) => a.source_id === selectedSourceId);
+  }, [apportionments, selectedSourceId]);
+
   const handlePushApproved = async () => {
     setPushInProgress(true);
 
@@ -1517,7 +1522,7 @@ export function ClaimApportionTab(props: {
             <span className="font-medium text-foreground">Status = Approved</span>, then push approved items to Costs.
           </div>
 
-          {selectedSource && filteredLines.length > 0 && apportionments.length === 0 ? (
+          {selectedSource && filteredLines.length > 0 && visibleApportionments.length === 0 ? (
             <div className="rounded-md border bg-background/40 p-3 text-sm">
               <p className="font-medium text-foreground">No working rows yet</p>
               <p className="mt-1 text-muted-foreground">
@@ -1764,9 +1769,9 @@ export function ClaimApportionTab(props: {
             </div>
           ) : null}
 
-          {apportionments.length === 0 ? (
+          {visibleApportionments.length === 0 ? (
             <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
-              No working rows yet. To approve/push, first add items from Extracted Lines (use the per-row “Add” button, or “Add included to working table”), then set Status = Approved in the working table.
+              No working rows for this file yet. To approve/push, first add items from Extracted Lines (use the per-row “Add” button, or “Add included to working table”), then set Status = Approved in the working table.
             </div>
           ) : (
             <div className="w-full overflow-x-auto rounded-md border pb-4">
@@ -1786,7 +1791,7 @@ export function ClaimApportionTab(props: {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {apportionments.map((a) => (
+                  {visibleApportionments.map((a) => (
                     <WorkingTableRow
                       key={a.id}
                       a={a}
@@ -1801,13 +1806,13 @@ export function ClaimApportionTab(props: {
                 </TableBody>
                 <TableFooter>
                   <TableRow>
-                    <TableCell colSpan={3} className="text-right font-bold">Totals:</TableCell>
+                    <TableCell colSpan={3} className="text-right font-bold">Totals (this file):</TableCell>
                     <TableCell className="text-right font-bold bg-muted/20">
-                      {formatMoney(apportionments.reduce((sum, a) => sum + (safeNumber(a.total_source_cost) || 0), 0))}
+                      {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.total_source_cost) || 0), 0))}
                     </TableCell>
                     <TableCell></TableCell>
                     <TableCell className="text-right font-bold text-blue-600">
-                      {formatMoney(apportionments.reduce((sum, a) => sum + (safeNumber(a.claimable_amount) || 0), 0))}
+                      {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.claimable_amount) || 0), 0))}
                     </TableCell>
                     <TableCell colSpan={4}></TableCell>
                   </TableRow>
