@@ -1045,11 +1045,6 @@ export function ClaimApportionTab(props: {
     return apportionments.filter((a) => String(a.status || "").trim().toLowerCase() === "approved");
   }, [apportionments]);
 
-  const visibleApportionments = useMemo(() => {
-    if (!selectedSourceId) return [];
-    return apportionments.filter((a) => a.source_id === selectedSourceId);
-  }, [apportionments, selectedSourceId]);
-
   const handlePushApproved = async () => {
     setPushInProgress(true);
 
