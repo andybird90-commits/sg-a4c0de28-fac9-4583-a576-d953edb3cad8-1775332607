@@ -90,7 +90,7 @@ import {
 import { CompletionStatusTab } from "@/components/claims/CompletionStatusTab";
 import { internalCommentService, type InternalCommentWithAuthor } from "@/services/internalCommentService";
 import { ClaimApportionTab } from "@/components/claims/apportion/ClaimApportionTab";
-// evidenceService is not used here; Sidekick evidence powers the client evidence panel
+import { claimCompletionStatusService } from "@/services/claimCompletionStatusService";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("en-GB", {
@@ -117,7 +117,7 @@ type HmrcResponseItem = {
 
 type HistoryItem = {
   id: string;
-  type: "message" | "manual";
+  type: "message" | "manual" | "status";
   sourceLabel: string;
   createdAt: string;
   authorName: string | null;
@@ -158,9 +158,10 @@ function useClaimHistory(
       try {
         setHistoryLoading(true);
 
-        const [entityMessages, manualComments] = await Promise.all([
+        const [entityMessages, manualComments, completionStatus] = await Promise.all([
           messageService.getMessagesForEntity("claim", claim.id),
-          internalCommentService.getCommentsForClaim(claim.id)
+          internalCommentService.getCommentsForClaim(claim.id),
+          claimCompletionStatusService.getForClaim(claim.id)
         ]);
 
         const messageItems: HistoryItem[] = (entityMessages || []).map((m) => ({
@@ -183,7 +184,32 @@ function useClaimHistory(
           body: c.body
         }));
 
-        const combined = [...messageItems, ...manualItems].sort((a, b) =>
+        const statusItems: HistoryItem[] = [];
+        if (completionStatus) {
+          const phases = [
+            { key: "technical", name: "Technical phase", date: completionStatus.technical_completed_at },
+            { key: "cost", name: "Cost phase", date: completionStatus.cost_completed_at },
+            { key: "qa", name: "QA phase", date: completionStatus.qa_completed_at },
+            { key: "draft", name: "Draft pack", date: completionStatus.draft_completed_at },
+            { key: "final", name: "Final pack", date: completionStatus.final_completed_at }
+          ];
+
+          phases.forEach((p) => {
+            if (p.date) {
+              statusItems.push({
+                id: `status-${p.key}-${p.date}`,
+                type: "status",
+                sourceLabel: "Workflow Status",
+                createdAt: p.date,
+                authorName: "System",
+                subject: `${p.name} completed`,
+                body: `The ${p.name.toLowerCase()} was marked as complete.`
+              });
+            }
+          });
+        }
+
+        const combined = [...messageItems, ...manualItems, ...statusItems].sort((a, b) =>
           // Newest first: later timestamps should come before earlier ones
           b.createdAt.localeCompare(a.createdAt)
         );
@@ -3816,7 +3842,7 @@ export default function ClaimDetailPage() {
                           className="flex gap-3 rounded-md border bg-card p-3 text-sm"
                         >
                           <div className="mt-1">
-                            <div className="h-2 w-2 rounded-full bg-primary" />
+                            <div className={`h-2 w-2 rounded-full ${item.type === 'status' ? 'bg-green-500' : 'bg-primary'}`} />
                           </div>
                           <div className="flex-1 space-y-1">
                             <div className="flex flex-wrap items-center gap-2">

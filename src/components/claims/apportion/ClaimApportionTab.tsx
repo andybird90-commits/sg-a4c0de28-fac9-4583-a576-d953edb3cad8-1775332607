@@ -1556,36 +1556,408 @@ export function ClaimApportionTab(props: {
           <CardDescription>Review and correct extracted rows before they affect any claim costs.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead>Heading</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Source Cost</TableHead>
-                <TableHead>Claimable %</TableHead>
-                <TableHead>Claimable £</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Rationale</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visibleApportionments.map((a) => (
-                <WorkingTableRow 
-                  key={a.id} 
-                  a={a} 
-                  onOptimisticUpdate={(patch) => {
-                    setApportionments((prev) => 
-                      prev.map((p) => (p.id === a.id ? { ...p, ...patch } : p))
-                    );
-                  }} 
-                  onSave={(patch) => safeUpdateApportionment(a.id, patch)} 
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-1 items-center gap-2">
+              <div className="w-[200px]">
+                <Input
+                  placeholder="Search / filter..."
+                  value={filterText}
+                  onChange={(e) => setFilterText(e.target.value)}
+                  className="h-9"
                 />
-              ))}
-            </TableBody>
-          </Table>
+              </div>
+              <Button
+                type="button"
+                variant="default"
+                disabled={!selectedSourceId || addingIncludedToWorking}
+                onClick={() => void handleAddIncludedToWorking()}
+              >
+                {addingIncludedToWorking ? "Adding..." : "Add included to working table"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (typeof document !== "undefined") {
+                    document.getElementById("apportion-working-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+              >
+                Jump to working table
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1.5 text-sm cursor-pointer border rounded-md px-3 h-9 hover:bg-muted/50">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  checked={showExcluded}
+                  onChange={(e) => setShowExcluded(e.target.checked)}
+                />
+                Show excluded
+              </label>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!selectedSourceId}
+                onClick={() => void handleMergeDuplicates()}
+              >
+                Merge duplicate names
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!selectedSourceId}
+                onClick={() => {
+                  if (selectedSourceId) void refreshLines(selectedSourceId);
+                }}
+              >
+                Refresh lines
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!selectedSourceId || clearingLines}
+                onClick={() => setShowClearLinesDialog(true)}
+              >
+                Clear extracted lines
+              </Button>
+            </div>
+          </div>
+          
+          <div className="text-xs text-muted-foreground pb-2">
+            To approve/push: add items to the <strong>Apportionment Working Table</strong>, set <strong>Status = Approved</strong>, then push approved items to Costs.
+          </div>
+
+          {!selectedSource ? (
+            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">Select a source file to view extracted lines.</div>
+          ) : filteredLines.length === 0 ? (
+            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">No extracted lines yet. Click Parse on a source file.</div>
+          ) : (
+            <div className="overflow-x-auto rounded-md border">
+              <Table className="min-w-[800px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px] text-center">Include</TableHead>
+                    <TableHead>Item Details</TableHead>
+                    <TableHead className="w-[200px]">Financials</TableHead>
+                    <TableHead className="w-[300px]">Notes & Source</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLines.map((l) => (
+                    <TableRow key={l.id} className={l.include === false ? "opacity-50 bg-muted/20" : ""}>
+                      <TableCell className="align-top pt-4 text-center space-y-3">
+                        <div className="flex justify-center">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            checked={l.include !== false}
+                            onChange={async (e) => {
+                              const include = e.target.checked;
+                              try {
+                                await saveLineEdit(l, { include } as any);
+                                if (selectedSourceId) await refreshLines(selectedSourceId);
+                              } catch (error: any) {
+                                toast({ title: "Update failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
+                              }
+                            }}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="w-full text-xs h-7"
+                          onClick={() => {
+                            void ensureWorkingRowForLine(l);
+                            if (typeof document !== "undefined") {
+                              setTimeout(() => {
+                                document.getElementById("apportion-working-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                              }, 150);
+                            }
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </TableCell>
+
+                      <TableCell className="align-top pt-3 space-y-2 min-w-[250px]">
+                        <Input
+                          placeholder="Name..."
+                          className="h-8 text-sm font-medium"
+                          value={l.raw_name ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setLines((prev) => prev.map((x) => (x.id === l.id ? { ...x, raw_name: v } : x)));
+                          }}
+                          onBlur={async () => {
+                            try {
+                              const validated = LineEditSchema.safeParse({
+                                raw_name: l.raw_name ?? "",
+                                category: (l.category as any) || "unknown",
+                                reference_text: l.reference_text ?? null,
+                                debit_total: safeNumber(l.debit_total),
+                                credit_total: safeNumber(l.credit_total),
+                                net_total: safeNumber(l.net_total),
+                                vat_total: safeNumber(l.vat_total),
+                                gross_total: safeNumber(l.gross_total),
+                                source_page: safeNumber(l.source_page) as any,
+                                confidence: safeNumber(l.confidence),
+                                include: l.include !== false,
+                                notes: l.notes ?? null
+                              });
+                              if (!validated.success) return;
+                              await saveLineEdit(l, { raw_name: (l.raw_name ?? "") as any });
+                            } catch (error: any) {
+                              toast({ title: "Save failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
+                            }
+                          }}
+                        />
+                        <div className="flex gap-2">
+                          <Select
+                            value={(l.category as any) || "unknown"}
+                            onValueChange={async (value) => {
+                              try {
+                                await saveLineEdit(l, { category: value as any });
+                                if (selectedSourceId) await refreshLines(selectedSourceId);
+                              } catch (error: any) {
+                                toast({ title: "Update failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-xs flex-1">
+                              <SelectValue placeholder="Category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="supplier">Supplier</SelectItem>
+                              <SelectItem value="subcontractor">Subcontractor</SelectItem>
+                              <SelectItem value="staff">Staff</SelectItem>
+                              <SelectItem value="unknown">Unknown</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            placeholder="Reference..."
+                            className="h-8 text-xs flex-1"
+                            value={l.reference_text ?? ""}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setLines((prev) => prev.map((x) => (x.id === l.id ? { ...x, reference_text: v } : x)));
+                            }}
+                            onBlur={async () => {
+                              try {
+                                await saveLineEdit(l, { reference_text: (l.reference_text ?? "") as any });
+                              } catch (error: any) {
+                                toast({ title: "Save failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
+                              }
+                            }}
+                          />
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="align-top pt-3">
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+                          <div className="text-muted-foreground">Debit:</div>
+                          <div className="text-right">{formatMoney(safeNumber(l.debit_total))}</div>
+                          
+                          <div className="text-muted-foreground">Credit:</div>
+                          <div className="text-right">{formatMoney(safeNumber(l.credit_total))}</div>
+                          
+                          <div className="text-muted-foreground">VAT:</div>
+                          <div className="text-right">{formatMoney(safeNumber(l.vat_total))}</div>
+                          
+                          <div className="text-muted-foreground">Gross:</div>
+                          <div className="text-right">{formatMoney(safeNumber(l.gross_total))}</div>
+
+                          <div className="font-semibold pt-1 border-t mt-1">Net:</div>
+                          <div className="font-semibold text-right pt-1 border-t mt-1">{formatMoney(safeNumber(l.net_total))}</div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="align-top pt-3 space-y-2">
+                        <Textarea
+                          rows={2}
+                          className="w-full resize-y min-h-[44px] text-xs"
+                          placeholder="Notes..."
+                          value={l.notes ?? ""}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setLines((prev) => prev.map((x) => (x.id === l.id ? { ...x, notes: v } : x)));
+                          }}
+                          onBlur={async () => {
+                            try {
+                              await saveLineEdit(l, { notes: (l.notes ?? "") as any });
+                            } catch (error: any) {
+                              toast({ title: "Save failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
+                            }
+                          }}
+                        />
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
+                          <div>Page: {l.source_page ?? "—"}</div>
+                          <div>Confidence: {l.confidence !== null && l.confidence !== undefined ? `${Math.round(l.confidence * 100)}%` : "—"}</div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      <Card id="apportion-working-table">
+        <CardHeader>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>Apportionment Working Table</CardTitle>
+              <CardDescription>
+                Determine claimable percentages for items from {selectedSource?.file_name ? `"${selectedSource.file_name}"` : "the selected file"}.
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="text-destructive border-destructive/20 hover:bg-destructive/10"
+                onClick={() => setShowClearWorkingDialog(true)}
+                disabled={visibleApportionments.length === 0}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear unapproved
+              </Button>
+              <Button
+                variant="default"
+                onClick={() => setShowPushDialog(true)}
+              >
+                Push Approved to Costs
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {visibleApportionments.length === 0 ? (
+            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
+              No working rows for this file yet. To approve/push, first add items from Extracted Lines (use the per-row “Add” button, or “Add included to working table”), then set Status = Approved in the working table.
+            </div>
+          ) : (
+            <div className="w-full overflow-x-auto rounded-md border pb-4">
+              <Table className="w-full min-w-[900px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item details</TableHead>
+                    <TableHead className="text-right">Total source</TableHead>
+                    <TableHead className="text-right">Claimable % & £</TableHead>
+                    <TableHead className="text-center w-[80px]">Action</TableHead>
+                    <TableHead>Status & Justification</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleApportionments.map((a) => (
+                    <WorkingTableRow
+                      key={a.id}
+                      a={a}
+                      onOptimisticUpdate={(patch) => {
+                        setApportionments((prev) =>
+                          prev.map((x) => (x.id === a.id ? { ...x, ...patch } : x))
+                        );
+                      }}
+                      onSave={async (patch) => { await safeUpdateApportionment(a.id, patch); }}
+                    />
+                  ))}
+                </TableBody>
+                <TableFooter>
+                  <TableRow>
+                    <TableCell className="text-right font-bold">Totals (this file):</TableCell>
+                    <TableCell className="text-right font-bold bg-muted/20 align-top">
+                      {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.total_source_cost) || 0), 0))}
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-blue-600 align-top">
+                      {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.claimable_amount) || 0), 0))}
+                    </TableCell>
+                    <TableCell colSpan={2}></TableCell>
+                  </TableRow>
+                </TableFooter>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Clear working rows dialog */}
+      <Dialog open={showClearWorkingDialog} onOpenChange={setShowClearWorkingDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clear Unapproved Rows</DialogTitle>
+            <DialogDescription>
+              This will remove all rows in the working table that are <strong>not</strong> set to "Approved".
+              Approved rows will remain intact.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowClearWorkingDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                setShowClearWorkingDialog(false);
+                if (!selectedSourceId) return;
+                try {
+                  const numCleared = await claimApportionmentService.clearWorkingApportionmentsForSource({
+                    claimId: props.claimId,
+                    sourceId: selectedSourceId,
+                    keepApproved: true
+                  });
+                  toast({
+                    title: "Cleared unapproved rows",
+                    description: `Removed ${numCleared} working row(s). Approved rows were kept.`
+                  });
+                  await refreshApportionments();
+                } catch (err: any) {
+                  toast({
+                    title: "Failed to clear",
+                    description: err?.message || "An error occurred",
+                    variant: "destructive"
+                  });
+                }
+              }}
+            >
+              Confirm Clear
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Clear lines dialog */}
+      <Dialog open={showClearLinesDialog} onOpenChange={setShowClearLinesDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clear Extracted Lines</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to clear the extracted lines for <strong>{selectedSource?.file_name}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-gray-300"
+                checked={clearAlsoWorking}
+                onChange={(e) => setClearAlsoWorking(e.target.checked)}
+              />
+              Also clear any unapproved working rows associated with this file
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowClearLinesDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleClearExtractedLines} disabled={clearingLines}>
+              {clearingLines ? "Clearing..." : "Clear Lines"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
