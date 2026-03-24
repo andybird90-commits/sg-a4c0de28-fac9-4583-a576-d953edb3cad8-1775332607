@@ -1417,14 +1417,20 @@ export function ClaimApportionTab(props: {
                     {sourceFiles.map((s) => (
                       <TableRow
                         key={s.id}
-                        className={s.id === selectedSourceId ? "bg-muted/40" : undefined}
+                        className={s.id === selectedSourceId ? "bg-muted/40 cursor-pointer" : "cursor-pointer"}
                         onClick={() => setSelectedSourceId(s.id)}
                       >
-                        <TableCell className="max-w-[220px] truncate font-medium">{s.file_name || "Untitled"}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{(s.file_type || "").includes("pdf") ? "PDF" : s.file_type || "file"}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{s.uploaded_at ? new Date(s.uploaded_at).toLocaleDateString("en-GB") : "—"}</TableCell>
+                        <TableCell className="max-w-[120px] sm:max-w-[160px] truncate font-medium" title={s.file_name || "Untitled"}>
+                          {s.file_name || "Untitled"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground truncate">
+                          {(s.file_type || "").includes("pdf") ? "PDF" : s.file_type || "file"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {s.uploaded_at ? new Date(s.uploaded_at).toLocaleDateString("en-GB", { day: '2-digit', month: '2-digit', year: '2-digit' }) : "—"}
+                        </TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-[10px] font-normal px-1.5 py-0 h-5">
                             {s.parse_status || "unknown"}
                           </Badge>
                         </TableCell>
@@ -1432,11 +1438,12 @@ export function ClaimApportionTab(props: {
                           {s.confidence !== null && s.confidence !== undefined ? `${Math.round(s.confidence * 100)}%` : "—"}
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
+                          <div className="flex justify-end gap-0.5">
                             <Button
                               type="button"
                               size="icon"
                               variant="ghost"
+                              className="h-7 w-7"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 void handleViewSource(s);
@@ -1449,6 +1456,7 @@ export function ClaimApportionTab(props: {
                               type="button"
                               size="icon"
                               variant="ghost"
+                              className="h-7 w-7"
                               disabled={parsing === s.id}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1456,19 +1464,20 @@ export function ClaimApportionTab(props: {
                               }}
                               title="Parse / Re-parse"
                             >
-                              {parsing === s.id ? <RefreshCw className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                              {parsing === s.id ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
                             </Button>
                             <Button
                               type="button"
                               size="icon"
                               variant="ghost"
+                              className="h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 void handleDeleteSource(s);
                               }}
                               title="Delete"
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         </TableCell>
@@ -1527,534 +1536,4 @@ export function ClaimApportionTab(props: {
           <CardDescription>Review and correct extracted rows before they affect any claim costs.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div className="flex-1">
-              <Label>Search / filter</Label>
-              <Input value={filterText} onChange={(e) => setFilterText(e.target.value)} placeholder="Search name, reference or notes..." />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={!selectedSourceId || addingIncludedToWorking}
-                onClick={() => void handleAddIncludedToWorking()}
-              >
-                {addingIncludedToWorking ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Adding...
-                  </>
-                ) : (
-                    "Add included to working table"
-                  )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  if (typeof document === "undefined") return;
-                  document.getElementById("apportion-working-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-              >
-                Jump to working table
-              </Button>
-              <label className="flex items-center gap-2 rounded-md border bg-background/40 px-3 py-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={showExcluded}
-                  onChange={(e) => setShowExcluded(e.target.checked)}
-                />
-                Show excluded
-              </label>
-              <Button type="button" variant="outline" disabled={!selectedSourceId} onClick={() => void handleMergeDuplicates()}>
-                Merge duplicate names
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!selectedSourceId}
-                onClick={() => {
-                  if (selectedSourceId) void refreshLines(selectedSourceId);
-                }}
-              >
-                Refresh lines
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!selectedSourceId || clearingLines}
-                onClick={() => setShowClearLinesDialog(true)}
-              >
-                Clear extracted lines
-              </Button>
-            </div>
-          </div>
-
-          <div className="text-xs text-muted-foreground">
-            To approve/push: add items to the <span className="font-medium text-foreground">Apportionment Working Table</span>, set{" "}
-            <span className="font-medium text-foreground">Status = Approved</span>, then push approved items to Costs.
-          </div>
-
-          {selectedSource && filteredLines.length > 0 && visibleApportionments.length === 0 ? (
-            <div className="rounded-md border bg-background/40 p-3 text-sm">
-              <p className="font-medium text-foreground">No working rows yet</p>
-              <p className="mt-1 text-muted-foreground">
-                Extracted lines can’t be approved directly. First add the relevant lines into the working table, then set Status = Approved there.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={!selectedSourceId || addingIncludedToWorking}
-                  onClick={() => void handleAddIncludedToWorking()}
-                >
-                  {addingIncludedToWorking ? (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      Adding...
-                    </>
-                  ) : (
-                    "Add included to working table"
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    if (typeof document === "undefined") return;
-                    document.getElementById("apportion-working-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }}
-                >
-                  Jump to working table
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
-          {!selectedSource ? (
-            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">Select a source file to view extracted lines.</div>
-          ) : filteredLines.length === 0 ? (
-            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">No extracted lines yet. Click Parse on a source file.</div>
-          ) : (
-            <div className="overflow-x-auto rounded-md border">
-              <Table className="min-w-[800px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px] text-center">Include</TableHead>
-                    <TableHead>Item Details</TableHead>
-                    <TableHead className="w-[200px]">Financials</TableHead>
-                    <TableHead className="w-[300px]">Notes & Source</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLines.map((l) => (
-                    <TableRow key={l.id}>
-                      <TableCell className="align-top pt-4 text-center space-y-3">
-                        <div className="flex justify-center">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            checked={l.include !== false}
-                            onChange={async (e) => {
-                              const include = e.target.checked;
-                              try {
-                                await saveLineEdit(l, { include } as any);
-                                if (selectedSourceId) await refreshLines(selectedSourceId);
-                              } catch (error: any) {
-                                toast({ title: "Update failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
-                              }
-                            }}
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          className="w-full text-xs h-7"
-                          onClick={() => {
-                            void ensureWorkingRowForLine(l);
-                            if (typeof document !== "undefined") {
-                              setTimeout(() => {
-                                document.getElementById("apportion-working-table")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                              }, 150);
-                            }
-                          }}
-                        >
-                          Add
-                        </Button>
-                      </TableCell>
-
-                      <TableCell className="align-top pt-3 space-y-2 min-w-[250px]">
-                        <Input
-                          placeholder="Name..."
-                          className="h-8 text-sm font-medium"
-                          value={l.raw_name ?? ""}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setLines((prev) => prev.map((x) => (x.id === l.id ? { ...x, raw_name: v } : x)));
-                          }}
-                          onBlur={async () => {
-                            try {
-                              const validated = LineEditSchema.safeParse({
-                                raw_name: l.raw_name ?? "",
-                                category: (l.category as any) || "unknown",
-                                reference_text: l.reference_text ?? null,
-                                debit_total: safeNumber(l.debit_total),
-                                credit_total: safeNumber(l.credit_total),
-                                net_total: safeNumber(l.net_total),
-                                vat_total: safeNumber(l.vat_total),
-                                gross_total: safeNumber(l.gross_total),
-                                source_page: safeNumber(l.source_page) as any,
-                                confidence: safeNumber(l.confidence),
-                                include: l.include !== false,
-                                notes: l.notes ?? null
-                              });
-                              if (!validated.success) return;
-                              await saveLineEdit(l, { raw_name: (l.raw_name ?? "") as any });
-                            } catch (error: any) {
-                              toast({ title: "Save failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
-                            }
-                          }}
-                        />
-                        <div className="flex gap-2">
-                          <Select
-                            value={(l.category as any) || "unknown"}
-                            onValueChange={async (value) => {
-                              try {
-                                await saveLineEdit(l, { category: value as any });
-                                if (selectedSourceId) await refreshLines(selectedSourceId);
-                              } catch (error: any) {
-                                toast({ title: "Update failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="h-8 text-xs flex-1">
-                              <SelectValue placeholder="Category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="supplier">Supplier</SelectItem>
-                              <SelectItem value="subcontractor">Subcontractor</SelectItem>
-                              <SelectItem value="staff">Staff</SelectItem>
-                              <SelectItem value="unknown">Unknown</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            placeholder="Reference..."
-                            className="h-8 text-xs flex-1"
-                            value={l.reference_text ?? ""}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setLines((prev) => prev.map((x) => (x.id === l.id ? { ...x, reference_text: v } : x)));
-                            }}
-                            onBlur={async () => {
-                              try {
-                                await saveLineEdit(l, { reference_text: (l.reference_text ?? "") as any });
-                              } catch (error: any) {
-                                toast({ title: "Save failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
-                              }
-                            }}
-                          />
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="align-top pt-3">
-                        <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
-                          <div className="text-muted-foreground">Debit:</div>
-                          <div className="text-right">{formatMoney(safeNumber(l.debit_total))}</div>
-                          
-                          <div className="text-muted-foreground">Credit:</div>
-                          <div className="text-right">{formatMoney(safeNumber(l.credit_total))}</div>
-                          
-                          <div className="text-muted-foreground">VAT:</div>
-                          <div className="text-right">{formatMoney(safeNumber(l.vat_total))}</div>
-                          
-                          <div className="text-muted-foreground">Gross:</div>
-                          <div className="text-right">{formatMoney(safeNumber(l.gross_total))}</div>
-
-                          <div className="font-semibold pt-1 border-t mt-1">Net:</div>
-                          <div className="font-semibold text-right pt-1 border-t mt-1">{formatMoney(safeNumber(l.net_total))}</div>
-                        </div>
-                      </TableCell>
-
-                      <TableCell className="align-top pt-3 space-y-2">
-                        <Textarea
-                          rows={2}
-                          className="w-full resize-y min-h-[44px] text-xs"
-                          placeholder="Notes..."
-                          value={l.notes ?? ""}
-                          onChange={(e) => {
-                            const v = e.target.value;
-                            setLines((prev) => prev.map((x) => (x.id === l.id ? { ...x, notes: v } : x)));
-                          }}
-                          onBlur={async () => {
-                            try {
-                              await saveLineEdit(l, { notes: (l.notes ?? "") as any });
-                            } catch (error: any) {
-                              toast({ title: "Save failed", description: error?.message ?? "Unexpected error", variant: "destructive" });
-                            }
-                          }}
-                        />
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
-                          <div>Page: {l.source_page ?? "—"}</div>
-                          <div>Confidence: {l.confidence !== null && l.confidence !== undefined ? `${Math.round(l.confidence * 100)}%` : "—"}</div>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card id="apportion-working-table">
-        <CardHeader>
-          <CardTitle>Apportionment Working Table</CardTitle>
-          <CardDescription>Set claimable % and rationale. Only approved items can be pushed to Costs.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div className="text-sm text-muted-foreground">
-              Approved rows: <span className="font-semibold text-foreground">{approvedToPush.length}</span>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowClearWorkingDialog(true)}
-                disabled={visibleApportionments.length === 0}
-              >
-                <Trash2 className="mr-2 h-4 w-4 text-destructive" />
-                Clear rows
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setShowPushDialog(true)}
-                disabled={approvedToPush.length === 0 || (checkedInternalRole && !currentInternalRole)}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Push approved items to Costs tab
-              </Button>
-            </div>
-          </div>
-
-          <div className="text-xs text-muted-foreground">
-            To approve/push: add items to the <span className="font-medium text-foreground">Apportionment Working Table</span>, set{" "}
-            <span className="font-medium text-foreground">Status = Approved</span>, then push approved items to Costs.
-          </div>
-
-          {approvedToPush.length === 0 ? (
-            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
-              To enable push: set at least one working row’s <span className="font-medium text-foreground">Status</span> to{" "}
-              <span className="font-medium text-foreground">Approved</span>.
-            </div>
-          ) : checkedInternalRole && !currentInternalRole ? (
-            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
-              Pushing to Costs is restricted to internal staff accounts. Your user isn’t marked as internal staff (profiles.internal_role is empty).
-            </div>
-          ) : null}
-
-          {visibleApportionments.length === 0 ? (
-            <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
-              No working rows for this file yet. To approve/push, first add items from Extracted Lines (use the per-row “Add” button, or “Add included to working table”), then set Status = Approved in the working table.
-            </div>
-          ) : (
-            <div className="w-full overflow-x-auto rounded-md border pb-4">
-              <Table className="w-full min-w-[900px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item details</TableHead>
-                    <TableHead className="text-right">Total source</TableHead>
-                    <TableHead className="text-right">Claimable % & £</TableHead>
-                    <TableHead className="text-center w-[80px]">Action</TableHead>
-                    <TableHead>Status & Justification</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visibleApportionments.map((a) => (
-                    <WorkingTableRow
-                      key={a.id}
-                      a={a}
-                      onOptimisticUpdate={(patch) => {
-                        setApportionments((prev) =>
-                          prev.map((x) => (x.id === a.id ? { ...x, ...patch } : x))
-                        );
-                      }}
-                      onSave={async (patch) => { await safeUpdateApportionment(a.id, patch); }}
-                    />
-                  ))}
-                </TableBody>
-                <TableFooter>
-                  <TableRow>
-                    <TableCell className="text-right font-bold">Totals (this file):</TableCell>
-                    <TableCell className="text-right font-bold bg-muted/20 align-top">
-                      {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.total_source_cost) || 0), 0))}
-                    </TableCell>
-                    <TableCell className="text-right font-bold text-blue-600 align-top">
-                      {formatMoney(visibleApportionments.reduce((sum, a) => sum + (safeNumber(a.claimable_amount) || 0), 0))}
-                    </TableCell>
-                    <TableCell colSpan={2}></TableCell>
-                  </TableRow>
-                </TableFooter>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Dialog open={showPushDialog} onOpenChange={setShowPushDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Push approved items to Costs</DialogTitle>
-            <DialogDescription>
-              This will create cost entries for approved rows (or update existing pushed costs if you choose). It will not overwrite user-entered costs without your confirmation here.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3">
-            <div className="rounded-md border bg-background/40 p-3 text-sm">
-              <p>
-                Approved rows: <span className="font-semibold">{approvedToPush.length}</span>
-              </p>
-              <p className="text-xs text-muted-foreground">You can run this multiple times. Each apportionment row keeps an audit link to the cost item that was created.</p>
-            </div>
-
-            {checkedInternalRole && !currentInternalRole ? (
-              <div className="rounded-md border bg-background/40 p-3 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground">Blocked</p>
-                <p className="mt-1">
-                  Your account isn’t marked as internal staff (profiles.internal_role is empty), so Supabase will block writing to claim_costs.
-                </p>
-              </div>
-            ) : null}
-
-            <div>
-              <Label>Mode</Label>
-              <Select value={pushMode} onValueChange={(v) => setPushMode(v as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="create-only">Create new costs only (recommended)</SelectItem>
-                  <SelectItem value="update-existing">Update previously pushed costs too</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setShowPushDialog(false)} disabled={pushInProgress}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => void handlePushApproved()}
-              disabled={pushInProgress || (checkedInternalRole && !currentInternalRole) || approvedToPush.length === 0}
-            >
-              {pushInProgress ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Pushing...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-4 w-4" />
-                  Confirm push to Costs
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showClearWorkingDialog} onOpenChange={setShowClearWorkingDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Clear working rows for this file?</DialogTitle>
-            <DialogDescription>
-              This will instantly remove rows from the working table for the currently selected file.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center space-x-2 py-4">
-            <input
-              type="checkbox"
-              id="clear-also-working"
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              checked={clearAlsoWorking}
-              onChange={(e) => setClearAlsoWorking(e.target.checked)}
-            />
-            <Label htmlFor="clear-also-working" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Also completely clear the Working Table for this file
-            </Label>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setShowClearWorkingDialog(false)} disabled={clearingLines}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => void handleClearExtractedLines()}
-              disabled={clearingLines}
-            >
-              {clearingLines ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Clearing...
-                </>
-              ) : (
-                "Clear lines"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showClearLinesDialog} onOpenChange={setShowClearLinesDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Clear extracted lines?</DialogTitle>
-            <DialogDescription>
-              This will clear all extracted lines for the currently selected file so you can parse it again.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center space-x-2 py-4">
-            <input
-              type="checkbox"
-              id="clear-also-working"
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              checked={clearAlsoWorking}
-              onChange={(e) => setClearAlsoWorking(e.target.checked)}
-            />
-            <Label htmlFor="clear-also-working" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              Also completely clear the Working Table for this file
-            </Label>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setShowClearLinesDialog(false)} disabled={clearingLines}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => void handleClearExtractedLines()}
-              disabled={clearingLines}
-            >
-              {clearingLines ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Clearing...
-                </>
-              ) : (
-                "Clear lines"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+          <
