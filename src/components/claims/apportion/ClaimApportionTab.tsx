@@ -1571,7 +1571,16 @@ export function ClaimApportionTab(props: {
             </TableHeader>
             <TableBody>
               {visibleApportionments.map((a) => (
-                <WorkingTableRow key={a.id} a={a} onOptimisticUpdate={safeUpdateApportionment} onSave={handleSaveRow} />
+                <WorkingTableRow 
+                  key={a.id} 
+                  a={a} 
+                  onOptimisticUpdate={(patch) => {
+                    setApportionments((prev) => 
+                      prev.map((p) => (p.id === a.id ? { ...p, ...patch } : p))
+                    );
+                  }} 
+                  onSave={(patch) => safeUpdateApportionment(a.id, patch)} 
+                />
               ))}
             </TableBody>
           </Table>
