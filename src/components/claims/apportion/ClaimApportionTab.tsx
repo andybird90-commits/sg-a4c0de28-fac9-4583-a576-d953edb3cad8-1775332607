@@ -1530,10 +1530,53 @@ export function ClaimApportionTab(props: {
         </Card>
       </div>
 
+      {/* Push Dialog */}
+      <Dialog open={showPushDialog} onOpenChange={setShowPushDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Push to Costs</DialogTitle>
+            <DialogDescription>
+              Move approved apportionment rows to the Costs tab.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPushDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handlePushApproved} disabled={pushInProgress}>
+              {pushInProgress ? "Pushing..." : "Push"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <CardHeader>
           <CardTitle>Extracted Lines (editable)</CardTitle>
           <CardDescription>Review and correct extracted rows before they affect any claim costs.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Item</TableHead>
+                <TableHead>Heading</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Source Cost</TableHead>
+                <TableHead>Claimable %</TableHead>
+                <TableHead>Claimable £</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Rationale</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visibleApportionments.map((a) => (
+                <WorkingTableRow key={a.id} a={a} onOptimisticUpdate={safeUpdateApportionment} onSave={handleSaveRow} />
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
