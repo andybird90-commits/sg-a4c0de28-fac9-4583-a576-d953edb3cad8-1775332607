@@ -565,11 +565,18 @@ export default function StaffSDRPage(): JSX.Element {
     
     // Check engagement strategy tier for enterprise classification
     const tier = p.engagement_account_tier || p.engagement_strategy_json?.account_tier;
-    if (tier === 'enterprise_complex') return true;
+    if (tier === 'enterprise_complex' || tier === 'enterprise') return true;
 
     // Hard fallback for massively obvious ones
     const nameLower = (p.company_name || '').toLowerCase();
-    if (nameLower.includes('university') || nameLower.includes('nhs ') || nameLower.includes('council')) {
+    const largeKeywords = [
+      'university', 'nhs ', 'council', 'bae systems', 'airbus', 'siemens', 
+      'schneider', 'boeing', 'rolls-royce', 'rolls royce', 'thales', 'ibm', 
+      'microsoft', 'google', 'amazon', 'apple', 'sony', 'panasonic', 
+      'philips', 'samsung', 'lg electric', 'general electric', 'lockheed', 
+      'northrop', 'babcock', 'qinetiq', 'leonardo'
+    ];
+    if (largeKeywords.some(kw => nameLower.includes(kw))) {
       return true;
     }
 
@@ -587,6 +594,22 @@ export default function StaffSDRPage(): JSX.Element {
     if (typeof employees === 'string') {
         const empNum = parseInt(employees.replace(/[^0-9]/g, ''), 10);
         if (!isNaN(empNum) && empNum > 500) return true;
+    }
+
+    // Fallback regex search on the dossier text for previously enriched records missing structured data
+    if (dossier) {
+      const dossierText = JSON.stringify(dossier).toLowerCase();
+      if (
+        dossierText.includes('billion') || 
+        dossierText.includes('multinational') || 
+        dossierText.includes('global enterprise') ||
+        dossierText.includes('ftse') ||
+        dossierText.includes('fortune 500') ||
+        dossierText.includes('1000+ employees') ||
+        dossierText.includes('thousands of employees')
+      ) {
+        return true;
+      }
     }
 
     return false;
