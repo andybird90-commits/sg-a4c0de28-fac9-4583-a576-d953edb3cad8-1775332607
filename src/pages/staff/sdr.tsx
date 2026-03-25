@@ -1326,65 +1326,56 @@ export default function StaffSDRPage(): JSX.Element {
                           </p>
                         </div>
 
-                        <div className="flex-1 space-y-1">
-                          {strategyCallOpener ? (
-                            <>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Call script (from strategy)
-                              </p>
-                              <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
-                                {strategyCallOpener}
-                              </p>
-                              {prospectDossier?.call_script_intro || prospectDossier?.call_script_main ? (
-                                <div className="pt-2">
-                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                                    Dossier script (previous)
-                                  </p>
-                                  {prospectDossier?.call_script_intro ? (
-                                    <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
-                                      {prospectDossier.call_script_intro}
-                                    </p>
-                                  ) : null}
-                                  {prospectDossier?.call_script_main ? (
-                                    <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
-                                      {prospectDossier.call_script_main}
-                                    </p>
-                                  ) : null}
-                                </div>
-                              ) : null}
-                            </>
-                          ) : prospectDossier?.call_script_intro ||
-                            prospectDossier?.call_script_main ? (
-                            <>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Call script
-                              </p>
-                              {prospectDossier?.call_script_intro ? (
-                                <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
-                                  {prospectDossier.call_script_intro}
-                                </p>
-                              ) : null}
-                              {prospectDossier?.call_script_main ? (
-                                <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
-                                  {prospectDossier.call_script_main}
-                                </p>
-                              ) : null}
-                            </>
-                          ) : prospectDossier?.rd_summary ? (
-                            <>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                R&amp;D summary
-                              </p>
-                              <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
-                                {prospectDossier.rd_summary}
-                              </p>
-                            </>
-                          ) : (
-                            <p className="text-xs text-slate-500">
-                              No script available yet. Enrich the dossier to
-                              generate one.
+                        <div className="flex-1 space-y-4">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+                              Key Call Prompts
                             </p>
-                          )}
+
+                            {strategyCallOpener ? (
+                                <div className="mb-3">
+                                  <span className="text-[11px] font-semibold text-slate-400 uppercase">Call Objective / Angle</span>
+                                  <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
+                                    {strategyCallOpener}
+                                  </p>
+                                </div>
+                            ) : prospectDossier?.rd_summary ? (
+                                <div className="mb-3">
+                                  <span className="text-[11px] font-semibold text-slate-400 uppercase">Context</span>
+                                  <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
+                                    {prospectDossier.rd_summary}
+                                  </p>
+                                </div>
+                            ) : null}
+
+                            {Array.isArray(prospectDossier?.key_signals) && prospectDossier.key_signals.length > 0 && (
+                              <div className="mb-3">
+                                <span className="text-[11px] font-semibold text-slate-400 uppercase">Signals to Mention</span>
+                                <ul className="mt-1 list-disc pl-4 text-sm text-slate-700 space-y-1">
+                                  {prospectDossier.key_signals.slice(0, 3).map((sig: string, i: number) => (
+                                    <li key={i}>{sig}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {Array.isArray(prospectDossier?.questions_to_validate) && prospectDossier.questions_to_validate.length > 0 && (
+                              <div className="mb-3">
+                                <span className="text-[11px] font-semibold text-slate-400 uppercase">Questions to Ask</span>
+                                <ul className="mt-1 list-disc pl-4 text-sm text-slate-700 space-y-1">
+                                  {prospectDossier.questions_to_validate.slice(0, 3).map((q: string, i: number) => (
+                                    <li key={i}>{q}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {!strategyCallOpener && !prospectDossier?.key_signals && !prospectDossier?.questions_to_validate && !prospectDossier?.rd_summary && (
+                              <p className="text-xs text-slate-500">
+                                No prompts available yet. Enrich the dossier to generate them.
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
 
