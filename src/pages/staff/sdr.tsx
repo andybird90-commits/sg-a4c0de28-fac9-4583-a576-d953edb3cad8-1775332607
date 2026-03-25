@@ -561,13 +561,23 @@ export default function StaffSDRPage(): JSX.Element {
   };
 
   const isLargeCompany = (prospect: SdrProspect): boolean => {
-    if ((prospect.number_of_employees ?? 0) > 500) return true;
-    const research = prospect.ai_research_data as any;
+    const p = prospect as any;
+    if ((p.number_of_employees ?? 0) > 500) return true;
+    const research = p.ai_research_data as any;
     const t1 = parseTurnover(research?.turnover ?? research?.financials?.turnover);
     if (t1 > 50000000) return true;
+    
     const dossier = prospect.ai_dossier_json as any;
     const t2 = parseTurnover(dossier?.turnover ?? dossier?.financials?.turnover ?? dossier?.financial_summary?.turnover);
     if (t2 > 50000000) return true;
+
+    const employees = dossier?.employees ?? dossier?.employee_count ?? dossier?.number_of_employees;
+    if (typeof employees === 'number' && employees > 500) return true;
+    if (typeof employees === 'string') {
+        const empNum = parseInt(employees.replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(empNum) && empNum > 500) return true;
+    }
+
     return false;
   };
 
@@ -1161,71 +1171,11 @@ export default function StaffSDRPage(): JSX.Element {
                             </div>
                           )}
 
-                          {Array.isArray(dossier.questions_to_validate) &&
-                            dossier.questions_to_validate.length > 0 && (
-                              <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                  Questions to validate
-                                </p>
-                                <ul className="mt-1 list-disc space-y-1 pl-5">
-                                  {dossier.questions_to_validate.map(
-                                    (item: string, idx: number) => (
-                                      <li key={idx}>{item}</li>
-                                    )
-                                  )}
-                                </ul>
-                              </div>
-                            )}
-
-                          {Array.isArray(dossier.key_signals) &&
-                            dossier.key_signals.length > 0 && (
-                              <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                  Key signals
-                                </p>
-                                <ul className="mt-1 list-disc space-y-1 pl-5">
-                                  {dossier.key_signals.map(
-                                    (item: string, idx: number) => (
-                                      <li key={idx}>{item}</li>
-                                    )
-                                  )}
-                                </ul>
-                              </div>
-                            )}
-
-                          {dossier.risks && (
-                            <div>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Risks / caveats
-                              </p>
-                              <p className="mt-1 whitespace-pre-line">
-                                {dossier.risks}
-                              </p>
-                            </div>
-                          )}
-
-                          {dossier.confidence_note && (
-                            <div>
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Confidence note
-                              </p>
-                              <p className="mt-1 whitespace-pre-line">
-                                {dossier.confidence_note}
-                              </p>
-                            </div>
-                          )}
-
                           {!dossier.rd_summary &&
                             !dossier.what_they_do &&
                             !dossier.technical_focus &&
                             !dossier.where_rd_is_happening &&
-                            !dossier.rd_tax_fit &&
-                            (!Array.isArray(dossier.questions_to_validate) ||
-                              dossier.questions_to_validate.length === 0) &&
-                            (!Array.isArray(dossier.key_signals) ||
-                              dossier.key_signals.length === 0) &&
-                            !dossier.risks &&
-                            !dossier.confidence_note && (
+                            !dossier.rd_tax_fit && (
                               <p className="text-xs text-slate-500">
                                 This prospect is enriched, but detailed dossier
                                 text is not available.
