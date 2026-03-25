@@ -13,8 +13,8 @@ import {
   TableRow,
   TableHead,
   TableBody,
-  TableCell,
-} from "@/components/ui/table";
+  TableCell } from
+"@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Upload, PhoneCall, RefreshCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { AiEngagementStrategyPanel } from "@/components/sdr/AiEngagementStrategyPanel";
@@ -65,7 +65,7 @@ export default function StaffSDRPage(): JSX.Element {
   }, [user, appLoading, enrichedPage]);
 
   const getProspectStatus = (prospect: SdrProspect): string => {
-    const raw = (prospect.status as string | null) ?? "new";
+    const raw = prospect.status as string | null ?? "new";
     return raw.toLowerCase();
   };
 
@@ -88,7 +88,7 @@ export default function StaffSDRPage(): JSX.Element {
 
     // If it has a viability score, treat as enriched enough to appear in middle column
     const score =
-      (prospect.rd_viability_score as number | null | undefined) ?? null;
+    prospect.rd_viability_score as number | null | undefined ?? null;
     if (score !== null) {
       return true;
     }
@@ -107,16 +107,16 @@ export default function StaffSDRPage(): JSX.Element {
       const {
         data: enrichedData,
         error: enrichedError,
-        count: enrichedCount,
-      } = await supabase
-        .from("sdr_prospects")
-        .select("*", { count: "exact" })
-        .or(
-          "status.eq.enriched,ai_dossier_json.not.is.null,last_enriched_at.not.is.null,rd_viability_score.not.is.null"
-        )
-        .order("rd_viability_score", { ascending: false })
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        count: enrichedCount
+      } = await supabase.
+      from("sdr_prospects").
+      select("*", { count: "exact" }).
+      or(
+        "status.eq.enriched,ai_dossier_json.not.is.null,last_enriched_at.not.is.null,rd_viability_score.not.is.null"
+      ).
+      order("rd_viability_score", { ascending: false }).
+      order("created_at", { ascending: false }).
+      range(from, to);
 
       if (enrichedError) {
         console.error("Error loading enriched SDR prospects:", enrichedError);
@@ -126,20 +126,20 @@ export default function StaffSDRPage(): JSX.Element {
         setEnrichedTotal(enrichedCount);
       }
 
-      const { data: newData, error: newError } = await supabase
-        .from("sdr_prospects")
-        .select("*")
-        .eq("status", "new")
-        .order("created_at", { ascending: false })
-        .limit(1000);
+      const { data: newData, error: newError } = await supabase.
+      from("sdr_prospects").
+      select("*").
+      eq("status", "new").
+      order("created_at", { ascending: false }).
+      limit(1000);
 
       if (newError) {
         console.error("Error loading new SDR prospects:", newError);
       }
 
       const enrichedList: SdrProspect[] =
-        (enrichedData as SdrProspect[]) || [];
-      const newList: SdrProspect[] = (newData as SdrProspect[]) || [];
+      enrichedData as SdrProspect[] || [];
+      const newList: SdrProspect[] = newData as SdrProspect[] || [];
 
       const map = new Map<string, SdrProspect>();
       for (const p of enrichedList) {
@@ -170,7 +170,7 @@ export default function StaffSDRPage(): JSX.Element {
       ).length;
       const withScore = list.filter(
         (p) =>
-          ((p.rd_viability_score as number | null | undefined) ?? null) !== null
+        (p.rd_viability_score as number | null | undefined ?? null) !== null
       ).length;
 
       console.log("SDR prospects loaded (merged)", {
@@ -182,18 +182,18 @@ export default function StaffSDRPage(): JSX.Element {
         withStatusEnriched,
         withAiJson,
         withLastEnriched,
-        withScore,
+        withScore
       });
 
       console.log(
         "SDR sample",
         list.slice(0, 10).map((p) => ({
           id: p.id,
-          status: (p.status as string | null) ?? null,
+          status: p.status as string | null ?? null,
           hasAiDossier:
-            p.ai_dossier_json !== null && p.ai_dossier_json !== undefined,
+          p.ai_dossier_json !== null && p.ai_dossier_json !== undefined,
           lastEnrichedAt: (p as any).last_enriched_at ?? null,
-          score: (p.rd_viability_score as number | null) ?? null,
+          score: p.rd_viability_score as number | null ?? null
         }))
       );
 
@@ -203,11 +203,11 @@ export default function StaffSDRPage(): JSX.Element {
         enrichedCandidates.length,
         enrichedCandidates.slice(0, 10).map((p) => ({
           id: p.id,
-          status: (p.status as string | null) ?? null,
+          status: p.status as string | null ?? null,
           hasAiDossier:
-            p.ai_dossier_json !== null && p.ai_dossier_json !== undefined,
+          p.ai_dossier_json !== null && p.ai_dossier_json !== undefined,
           lastEnrichedAt: (p as any).last_enriched_at ?? null,
-          score: (p.rd_viability_score as number | null) ?? null,
+          score: p.rd_viability_score as number | null ?? null
         }))
       );
 
@@ -216,9 +216,9 @@ export default function StaffSDRPage(): JSX.Element {
       if (!selectedProspect && list.length > 0) {
         setSelectedProspect(list[0]);
       } else if (
-        selectedProspect &&
-        !list.some((p) => p.id === selectedProspect.id)
-      ) {
+      selectedProspect &&
+      !list.some((p) => p.id === selectedProspect.id))
+      {
         setSelectedProspect(list[0] ?? null);
       }
     } finally {
@@ -228,11 +228,11 @@ export default function StaffSDRPage(): JSX.Element {
 
   const loadBdmUsers = async (): Promise<void> => {
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, role, internal_role")
-        .or("role.in.(bdm,admin),internal_role.in.(bdm,admin)")
-        .order("full_name", { ascending: true });
+      const { data, error } = await supabase.
+      from("profiles").
+      select("id, full_name, email, role, internal_role").
+      or("role.in.(bdm,admin),internal_role.in.(bdm,admin)").
+      order("full_name", { ascending: true });
 
       if (error) {
         console.error("Error loading BDM users:", error);
@@ -241,8 +241,8 @@ export default function StaffSDRPage(): JSX.Element {
 
       const mapped: BdmUser[] = (data || []).map((p: any) => ({
         id: p.id as string,
-        full_name: (p.full_name as string) || (p.email as string | null),
-        email: p.email as string | null,
+        full_name: p.full_name as string || p.email as string | null,
+        email: p.email as string | null
       }));
       setBdmUsers(mapped);
       if (mapped.length > 0 && !bookingBdmId) {
@@ -254,8 +254,8 @@ export default function StaffSDRPage(): JSX.Element {
   };
 
   const handleCsvUpload = async (
-    event: ChangeEvent<HTMLInputElement>
-  ): Promise<void> => {
+  event: ChangeEvent<HTMLInputElement>)
+  : Promise<void> => {
     if (!user) return;
     const file = event.target.files?.[0];
     if (!file) return;
@@ -263,10 +263,10 @@ export default function StaffSDRPage(): JSX.Element {
     setUploading(true);
     try {
       const text = await file.text();
-      const lines = text
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter((l) => l.length > 0);
+      const lines = text.
+      split(/\r?\n/).
+      map((l) => l.trim()).
+      filter((l) => l.length > 0);
 
       if (lines.length === 0) {
         setUploading(false);
@@ -280,7 +280,7 @@ export default function StaffSDRPage(): JSX.Element {
         return {
           created_by: user.id as string,
           company_name: companyName,
-          company_number: companyNumber,
+          company_number: companyNumber
         };
       });
 
@@ -307,11 +307,11 @@ export default function StaffSDRPage(): JSX.Element {
       const response = await fetch("/api/sdr/enrich", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          prospectId: prospect.id,
-        }),
+          prospectId: prospect.id
+        })
       });
 
       if (!response.ok) {
@@ -321,7 +321,7 @@ export default function StaffSDRPage(): JSX.Element {
 
       const updated = (await response.json()) as SdrProspect;
       setProspects((prev) =>
-        prev.map((p) => (p.id === prospect.id ? updated : p))
+      prev.map((p) => p.id === prospect.id ? updated : p)
       );
       if (selectedProspect?.id === prospect.id) {
         setSelectedProspect(updated);
@@ -414,19 +414,19 @@ export default function StaffSDRPage(): JSX.Element {
   };
 
   const handleMarkOutcome = async (
-    prospect: SdrProspect,
-    status: "not_interested" | "contacted"
-  ): Promise<void> => {
+  prospect: SdrProspect,
+  status: "not_interested" | "contacted")
+  : Promise<void> => {
     try {
-      const { data, error } = await supabase
-        .from("sdr_prospects")
-        .update({
-          status,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", prospect.id)
-        .select()
-        .maybeSingle();
+      const { data, error } = await supabase.
+      from("sdr_prospects").
+      update({
+        status,
+        updated_at: new Date().toISOString()
+      }).
+      eq("id", prospect.id).
+      select().
+      maybeSingle();
 
       if (error) {
         console.error("Error updating SDR prospect outcome:", error);
@@ -437,7 +437,7 @@ export default function StaffSDRPage(): JSX.Element {
       if (!updated) return;
 
       setProspects((prev) =>
-        prev.map((p) => (p.id === prospect.id ? updated : p))
+      prev.map((p) => p.id === prospect.id ? updated : p)
       );
       if (selectedProspect?.id === prospect.id) {
         setSelectedProspect(updated);
@@ -457,14 +457,14 @@ export default function StaffSDRPage(): JSX.Element {
       const response = await fetch("/api/sdr/book-bdm-call", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           prospectId: selectedProspect.id,
           bdmUserId: bookingBdmId,
           startIso: bookingStart,
-          durationMinutes: bookingDuration,
-        }),
+          durationMinutes: bookingDuration
+        })
       });
 
       const result = await response.json();
@@ -477,7 +477,7 @@ export default function StaffSDRPage(): JSX.Element {
       if (result.updatedProspect) {
         const updated = result.updatedProspect as SdrProspect;
         setProspects((prev) =>
-          prev.map((p) => (p.id === updated.id ? updated : p))
+        prev.map((p) => p.id === updated.id ? updated : p)
         );
         setSelectedProspect(updated);
       }
@@ -501,15 +501,15 @@ export default function StaffSDRPage(): JSX.Element {
     return (
       <Badge variant={variant}>
         R&amp;D score: {score.toFixed(1)} / 100
-      </Badge>
-    );
+      </Badge>);
+
   };
 
   type EngagementChannel = "email" | "call" | "face_to_face" | "linkedin" | "research";
 
   const formatQueueChannelLabel = (
-    value: string | null | undefined
-  ): string => {
+  value: string | null | undefined)
+  : string => {
     if (!value) return "";
     const v = value as EngagementChannel;
     if (v === "email") return "Email first";
@@ -521,8 +521,8 @@ export default function StaffSDRPage(): JSX.Element {
   };
 
   const formatQueueAccessStrategyLabel = (
-    value: string | null | undefined
-  ): string => {
+  value: string | null | undefined)
+  : string => {
     if (!value) return "";
     const map: Record<string, string> = {
       direct_call: "Direct call",
@@ -534,7 +534,7 @@ export default function StaffSDRPage(): JSX.Element {
       event_or_network_route: "Event or network-based route",
       local_meeting_pursuit: "Local meeting pursuit",
       direct_email_to_decision_maker: "Direct email to decision maker",
-      nurture_before_outreach: "Nurture before outreach",
+      nurture_before_outreach: "Nurture before outreach"
     };
     return map[value] || value;
   };
@@ -551,9 +551,9 @@ export default function StaffSDRPage(): JSX.Element {
     if (typeof val === 'string') {
       const lower = val.toLowerCase();
       let mult = 1;
-      if (lower.includes('m') || lower.includes('million')) mult = 1000000;
-      else if (lower.includes('b') || lower.includes('billion')) mult = 1000000000;
-      else if (lower.includes('k') || lower.includes('thousand')) mult = 1000;
+      if (lower.includes('m') || lower.includes('million')) mult = 1000000;else
+      if (lower.includes('b') || lower.includes('billion')) mult = 1000000000;else
+      if (lower.includes('k') || lower.includes('thousand')) mult = 1000;
       const num = parseFloat(lower.replace(/[^0-9.]/g, ''));
       if (!isNaN(num)) return num * mult;
     }
@@ -562,7 +562,7 @@ export default function StaffSDRPage(): JSX.Element {
 
   const isLargeCompany = (prospect: SdrProspect): boolean => {
     const p = prospect as any;
-    
+
     // Check engagement strategy tier for enterprise classification
     const tier = p.engagement_account_tier || p.engagement_strategy_json?.account_tier;
     if (tier === 'enterprise_complex' || tier === 'enterprise') return true;
@@ -570,13 +570,13 @@ export default function StaffSDRPage(): JSX.Element {
     // Hard fallback for massively obvious ones
     const nameLower = (p.company_name || '').toLowerCase();
     const largeKeywords = [
-      'university', 'nhs ', 'council', 'bae systems', 'airbus', 'siemens', 
-      'schneider', 'boeing', 'rolls-royce', 'rolls royce', 'thales', 'ibm', 
-      'microsoft', 'google', 'amazon', 'apple', 'sony', 'panasonic', 
-      'philips', 'samsung', 'lg electric', 'general electric', 'lockheed', 
-      'northrop', 'babcock', 'qinetiq', 'leonardo'
-    ];
-    if (largeKeywords.some(kw => nameLower.includes(kw))) {
+    'university', 'nhs ', 'council', 'bae systems', 'airbus', 'siemens',
+    'schneider', 'boeing', 'rolls-royce', 'rolls royce', 'thales', 'ibm',
+    'microsoft', 'google', 'amazon', 'apple', 'sony', 'panasonic',
+    'philips', 'samsung', 'lg electric', 'general electric', 'lockheed',
+    'northrop', 'babcock', 'qinetiq', 'leonardo'];
+
+    if (largeKeywords.some((kw) => nameLower.includes(kw))) {
       return true;
     }
 
@@ -584,7 +584,7 @@ export default function StaffSDRPage(): JSX.Element {
     const research = p.ai_research_data as any;
     const t1 = parseTurnover(research?.turnover ?? research?.financials?.turnover);
     if (t1 > 50000000) return true;
-    
+
     const dossier = prospect.ai_dossier_json as any;
     const t2 = parseTurnover(dossier?.turnover ?? dossier?.financials?.turnover ?? dossier?.financial_summary?.turnover);
     if (t2 > 50000000) return true;
@@ -592,22 +592,22 @@ export default function StaffSDRPage(): JSX.Element {
     const employees = dossier?.employees ?? dossier?.employee_count ?? dossier?.number_of_employees;
     if (typeof employees === 'number' && employees > 500) return true;
     if (typeof employees === 'string') {
-        const empNum = parseInt(employees.replace(/[^0-9]/g, ''), 10);
-        if (!isNaN(empNum) && empNum > 500) return true;
+      const empNum = parseInt(employees.replace(/[^0-9]/g, ''), 10);
+      if (!isNaN(empNum) && empNum > 500) return true;
     }
 
     // Fallback regex search on the dossier text for previously enriched records missing structured data
     if (dossier) {
       const dossierText = JSON.stringify(dossier).toLowerCase();
       if (
-        dossierText.includes('billion') || 
-        dossierText.includes('multinational') || 
-        dossierText.includes('global enterprise') ||
-        dossierText.includes('ftse') ||
-        dossierText.includes('fortune 500') ||
-        dossierText.includes('1000+ employees') ||
-        dossierText.includes('thousands of employees')
-      ) {
+      dossierText.includes('billion') ||
+      dossierText.includes('multinational') ||
+      dossierText.includes('global enterprise') ||
+      dossierText.includes('ftse') ||
+      dossierText.includes('fortune 500') ||
+      dossierText.includes('1000+ employees') ||
+      dossierText.includes('thousands of employees'))
+      {
         return true;
       }
     }
@@ -633,23 +633,23 @@ export default function StaffSDRPage(): JSX.Element {
   });
 
   const minScoreValue =
-    minScoreFilter.trim() === ""
-      ? null
-      : Number.parseFloat(minScoreFilter.trim());
+  minScoreFilter.trim() === "" ?
+  null :
+  Number.parseFloat(minScoreFilter.trim());
 
   const filteredEnrichedProspects = enrichedProspects.filter((prospect) => {
     if (minScoreValue == null || Number.isNaN(minScoreValue)) {
       return true;
     }
-    const score = (prospect.rd_viability_score as number | null) ?? null;
+    const score = prospect.rd_viability_score as number | null ?? null;
     if (score == null) return false;
     return score >= minScoreValue;
   });
 
   const sortedEnrichedProspects = [...filteredEnrichedProspects].sort(
     (a, b) => {
-      const aScore = (a.rd_viability_score as number | null) ?? 0;
-      const bScore = (b.rd_viability_score as number | null) ?? 0;
+      const aScore = a.rd_viability_score as number | null ?? 0;
+      const bScore = b.rd_viability_score as number | null ?? 0;
       return sortDirection === "desc" ? bScore - aScore : aScore - bScore;
     }
   );
@@ -658,8 +658,8 @@ export default function StaffSDRPage(): JSX.Element {
 
   // Ranked list for the left column: show all prospects, ordered by score then recency
   const rankedProspects = [...targetProspects].sort((a, b) => {
-    const aScore = (a.rd_viability_score as number | null) ?? -1;
-    const bScore = (b.rd_viability_score as number | null) ?? -1;
+    const aScore = a.rd_viability_score as number | null ?? -1;
+    const bScore = b.rd_viability_score as number | null ?? -1;
 
     if (aScore !== bScore) {
       // Higher scores first; -1 means "no score" so they fall to the bottom
@@ -671,19 +671,19 @@ export default function StaffSDRPage(): JSX.Element {
     return bCreated - aCreated;
   });
 
-  const callQueue = sortedEnrichedProspects
-    .filter((prospect) => {
-      const status = (prospect.status as string | null) ?? "";
-      const blockedStatuses = ["not_interested", "contacted"];
-      return (
-        !prospect.bdm_call_scheduled_at && !blockedStatuses.includes(status)
-      );
-    })
-    .slice(0, 10);
+  const callQueue = sortedEnrichedProspects.
+  filter((prospect) => {
+    const status = prospect.status as string | null ?? "";
+    const blockedStatuses = ["not_interested", "contacted"];
+    return (
+      !prospect.bdm_call_scheduled_at && !blockedStatuses.includes(status));
+
+  }).
+  slice(0, 10);
 
   const handleProspectUpdated = (updated: SdrProspect): void => {
-    setProspects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-    setSelectedProspect((prev) => (prev && prev.id === updated.id ? updated : prev));
+    setProspects((prev) => prev.map((p) => p.id === updated.id ? updated : p));
+    setSelectedProspect((prev) => prev && prev.id === updated.id ? updated : prev);
   };
 
   const handleGenerateEngagementStrategy = async (prospectId: string): Promise<void> => {
@@ -692,18 +692,18 @@ export default function StaffSDRPage(): JSX.Element {
       const response = await fetch("/api/sdr/engagement-strategy-refresh", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ prospectId, mode: "full_live" }),
+        body: JSON.stringify({ prospectId, mode: "full_live" })
       });
       const payload = (await response.json()) as
-        | { ok: true; prospect?: SdrProspect; strategyOutput?: unknown; warnings?: string[] }
-        | { ok: false; message?: string; detail?: unknown };
+      {ok: true;prospect?: SdrProspect;strategyOutput?: unknown;warnings?: string[];} |
+      {ok: false;message?: string;detail?: unknown;};
 
       if (!response.ok || (payload as any)?.ok === false) {
         console.error("Engagement strategy refresh failed", {
           status: response.status,
-          payload,
+          payload
         });
         return;
       }
@@ -720,7 +720,7 @@ export default function StaffSDRPage(): JSX.Element {
   };
 
   const isGeneratingEngagement =
-    engagementGeneratingId !== null && selectedProspect && selectedProspect.id === engagementGeneratingId;
+  engagementGeneratingId !== null && selectedProspect && selectedProspect.id === engagementGeneratingId;
 
   return (
     <StaffLayout title="SDR" fullWidth>
@@ -741,8 +741,8 @@ export default function StaffSDRPage(): JSX.Element {
             setEnrichedPage(1);
           }} className="w-full">
             <TabsList>
-              <TabsTrigger value="SME">SME Target List</TabsTrigger>
-              <TabsTrigger value="LARGE">Large Companies (RDEC)</TabsTrigger>
+              <TabsTrigger value="SME">Target List</TabsTrigger>
+              <TabsTrigger value="LARGE">Large Companies</TabsTrigger>
             </TabsList>
           </Tabs>
         </header>
@@ -769,8 +769,8 @@ export default function StaffSDRPage(): JSX.Element {
                     accept=".csv,text/csv"
                     className="hidden"
                     onChange={handleCsvUpload}
-                    disabled={uploading}
-                  />
+                    disabled={uploading} />
+                  
                 </label>
               </CardHeader>
             </Card>
@@ -790,23 +790,23 @@ export default function StaffSDRPage(): JSX.Element {
                     variant="outline"
                     size="sm"
                     onClick={handleBulkEnrich}
-                    disabled={bulkEnriching || unenrichedCount === 0}
-                  >
-                    {bulkEnriching ? (
-                      <>
+                    disabled={bulkEnriching || unenrichedCount === 0}>
+                    
+                    {bulkEnriching ?
+                    <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {bulkEnrichTotal > 0
-                          ? `Bulk enriching ${bulkEnrichedCount}/${bulkEnrichTotal}`
-                          : "Bulk enriching"}
-                      </>
-                    ) : (
-                      <>
+                        {bulkEnrichTotal > 0 ?
+                      `Bulk enriching ${bulkEnrichedCount}/${bulkEnrichTotal}` :
+                      "Bulk enriching"}
+                      </> :
+
+                    <>
                         <RefreshCcw className="mr-2 h-4 w-4" />
-                        {unenrichedCount > 0
-                          ? `Bulk enrich ${unenrichedCount}`
-                          : "Bulk enrich"}
+                        {unenrichedCount > 0 ?
+                      `Bulk enrich ${unenrichedCount}` :
+                      "Bulk enrich"}
                       </>
-                    )}
+                    }
                   </Button>
                   <Button
                     variant="ghost"
@@ -814,52 +814,52 @@ export default function StaffSDRPage(): JSX.Element {
                     className="h-8 w-8"
                     onClick={loadProspects}
                     disabled={loadingProspects}
-                    aria-label="Refresh prospects"
-                  >
-                    {loadingProspects ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCcw className="h-4 w-4" />
-                    )}
+                    aria-label="Refresh prospects">
+                    
+                    {loadingProspects ?
+                    <Loader2 className="h-4 w-4 animate-spin" /> :
+
+                    <RefreshCcw className="h-4 w-4" />
+                    }
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="flex-1 space-y-2 overflow-y-auto">
-                {loadingProspects && unenrichedProspects.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                {loadingProspects && unenrichedProspects.length === 0 ?
+                <div className="flex h-full items-center justify-center text-sm text-slate-500">
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Loading prospects…
-                  </div>
-                ) : unenrichedProspects.length === 0 ? (
-                  <p className="text-sm text-slate-500">
+                  </div> :
+                unenrichedProspects.length === 0 ?
+                <p className="text-sm text-slate-500">
                     There are no unenriched SDR prospects. Upload a CSV to add new
                     prospects, or review enriched dossiers in the middle column.
-                  </p>
-                ) : (
-                  unenrichedProspects.map((prospect) => (
-                    <button
-                      key={prospect.id as string}
-                      type="button"
-                      onClick={() => setSelectedProspect(prospect)}
-                      className={`w-full rounded-xl border px-3 py-3 text-left text-sm transition hover:bg-slate-50 ${
-                        selectedProspect?.id === prospect.id
-                          ? "border-slate-900 bg-slate-900/5"
-                          : "border-slate-200 bg-white"
-                      }`}
-                    >
+                  </p> :
+
+                unenrichedProspects.map((prospect) =>
+                <button
+                  key={prospect.id as string}
+                  type="button"
+                  onClick={() => setSelectedProspect(prospect)}
+                  className={`w-full rounded-xl border px-3 py-3 text-left text-sm transition hover:bg-slate-50 ${
+                  selectedProspect?.id === prospect.id ?
+                  "border-slate-900 bg-slate-900/5" :
+                  "border-slate-200 bg-white"}`
+                  }>
+                  
                       <div className="flex flex-col">
                         <span className="font-medium text-slate-900">
                           {prospect.company_name}
                         </span>
-                        {prospect.company_number ? (
-                          <span className="text-xs text-slate-500">
+                        {prospect.company_number ?
+                    <span className="text-xs text-slate-500">
                             Company no: {prospect.company_number}
-                          </span>
-                        ) : null}
+                          </span> :
+                    null}
                       </div>
                     </button>
-                  ))
-                )}
+                )
+                }
               </CardContent>
             </Card>
           </div>
@@ -870,88 +870,88 @@ export default function StaffSDRPage(): JSX.Element {
               <CardTitle className="text-base font-semibold text-slate-900">
                 Enriched dossiers
               </CardTitle>
-              {enrichedTotal !== null && enrichedTotal > 0 && (
-                <div className="flex items-center gap-3">
+              {enrichedTotal !== null && enrichedTotal > 0 &&
+              <div className="flex items-center gap-3">
                   <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleBulkReEnrich}
-                    disabled={
-                      bulkReEnriching ||
-                      sortedEnrichedProspects.length === 0 ||
-                      loadingProspects
-                    }
-                  >
-                    {bulkReEnriching ? (
-                      <>
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkReEnrich}
+                  disabled={
+                  bulkReEnriching ||
+                  sortedEnrichedProspects.length === 0 ||
+                  loadingProspects
+                  }>
+                  
+                    {bulkReEnriching ?
+                  <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {bulkReEnrichTotal > 0
-                          ? `Re-enriching ${bulkReEnrichedCount}/${bulkReEnrichTotal}`
-                          : "Re-enriching"}
-                      </>
-                    ) : (
-                      <>
+                        {bulkReEnrichTotal > 0 ?
+                    `Re-enriching ${bulkReEnrichedCount}/${bulkReEnrichTotal}` :
+                    "Re-enriching"}
+                      </> :
+
+                  <>
                         <RefreshCcw className="mr-2 h-4 w-4" />
-                        {sortedEnrichedProspects.length > 0
-                          ? `Re-enrich page (${sortedEnrichedProspects.length})`
-                          : "Re-enrich page"}
+                        {sortedEnrichedProspects.length > 0 ?
+                    `Re-enrich page (${sortedEnrichedProspects.length})` :
+                    "Re-enrich page"}
                       </>
-                    )}
+                  }
                   </Button>
                   <div className="flex items-center gap-2 text-xs text-slate-500">
                     <span>
                       Page {enrichedPage} of{" "}
                       {Math.max(
-                        1,
-                        Math.ceil(enrichedTotal / ENRICHED_PAGE_SIZE)
-                      )}
+                      1,
+                      Math.ceil(enrichedTotal / ENRICHED_PAGE_SIZE)
+                    )}
                     </span>
                     <div className="flex items-center gap-1">
                       <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        disabled={enrichedPage === 1 || loadingProspects}
-                        onClick={() =>
-                          setEnrichedPage((page) => Math.max(1, page - 1))
-                        }
-                        aria-label="Previous enriched page"
-                      >
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      disabled={enrichedPage === 1 || loadingProspects}
+                      onClick={() =>
+                      setEnrichedPage((page) => Math.max(1, page - 1))
+                      }
+                      aria-label="Previous enriched page">
+                      
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
                       <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        disabled={
-                          loadingProspects ||
-                          (enrichedTotal !== null &&
-                            enrichedPage >=
-                              Math.ceil(enrichedTotal / ENRICHED_PAGE_SIZE))
-                        }
-                        onClick={() =>
-                          setEnrichedPage((page) => page + 1)
-                        }
-                        aria-label="Next enriched page"
-                      >
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      disabled={
+                      loadingProspects ||
+                      enrichedTotal !== null &&
+                      enrichedPage >=
+                      Math.ceil(enrichedTotal / ENRICHED_PAGE_SIZE)
+                      }
+                      onClick={() =>
+                      setEnrichedPage((page) => page + 1)
+                      }
+                      aria-label="Next enriched page">
+                      
                         <ChevronRight className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                 </div>
-              )}
+              }
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto">
-              {sortedEnrichedProspects.length === 0 ? (
-                <p className="text-sm text-slate-500">
+              {sortedEnrichedProspects.length === 0 ?
+              <p className="text-sm text-slate-500">
                   No enriched dossiers yet. Use the Enrich button on a prospect
                   or run a bulk enrich.
-                </p>
-              ) : (
-                <div className="w-full max-w-full overflow-x-auto">
+                </p> :
+
+              <div className="w-full max-w-full overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -961,75 +961,75 @@ export default function StaffSDRPage(): JSX.Element {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sortedEnrichedProspects.map((prospect) => (
-                        <TableRow
-                          key={prospect.id as string}
-                          className="cursor-pointer"
-                          onClick={() => setSelectedProspect(prospect)}
-                        >
+                      {sortedEnrichedProspects.map((prospect) =>
+                    <TableRow
+                      key={prospect.id as string}
+                      className="cursor-pointer"
+                      onClick={() => setSelectedProspect(prospect)}>
+                      
                           <TableCell>
                             <div className="flex flex-col">
                               <span className="font-medium text-slate-900">
                                 {prospect.company_name}
                               </span>
-                              {prospect.company_number ? (
-                                <span className="text-xs text-slate-500">
+                              {prospect.company_number ?
+                          <span className="text-xs text-slate-500">
                                   Company no: {prospect.company_number}
-                                </span>
-                              ) : null}
+                                </span> :
+                          null}
                             </div>
                           </TableCell>
                           <TableCell>
-                            {prospect.rd_viability_score != null ? (
-                              <span>
+                            {prospect.rd_viability_score != null ?
+                        <span>
                                 {(
-                                  prospect.rd_viability_score as number
-                                ).toFixed(1)}{" "}
+                          prospect.rd_viability_score as number).
+                          toFixed(1)}{" "}
                                 / 100
-                              </span>
-                            ) : (
-                              <span className="text-xs text-slate-500">
+                              </span> :
+
+                        <span className="text-xs text-slate-500">
                                 Not scored
                               </span>
-                            )}
-                            {prospect.engagement_recommended_first_touch && (
-                              <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
+                        }
+                            {prospect.engagement_recommended_first_touch &&
+                        <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
                                 <span className="rounded-full border border-slate-200 px-2 py-0.5">
-                                  {(prospect.engagement_recommended_first_touch as string) === "email"
-                                    ? "Email first"
-                                    : (prospect.engagement_recommended_first_touch as string) === "call"
-                                    ? "Call first"
-                                    : "Face to face"}
+                                  {prospect.engagement_recommended_first_touch as string === "email" ?
+                            "Email first" :
+                            prospect.engagement_recommended_first_touch as string === "call" ?
+                            "Call first" :
+                            "Face to face"}
                                 </span>
-                                {prospect.engagement_confidence && (
-                                  <span className="rounded-full border border-slate-200 px-2 py-0.5">
-                                    {(prospect.engagement_confidence as string)
-                                      .replace("_", " ")
-                                      .replace(/\b\w/g, (c) => c.toUpperCase())}
+                                {prospect.engagement_confidence &&
+                          <span className="rounded-full border border-slate-200 px-2 py-0.5">
+                                    {(prospect.engagement_confidence as string).
+                            replace("_", " ").
+                            replace(/\b\w/g, (c) => c.toUpperCase())}
                                   </span>
-                                )}
+                          }
                               </div>
-                            )}
+                        }
                           </TableCell>
                           <TableCell>
-                            {prospect.bdm_call_scheduled_at ? (
-                              <span className="text-xs text-slate-500">
+                            {prospect.bdm_call_scheduled_at ?
+                        <span className="text-xs text-slate-500">
                                 {new Date(
-                                  prospect.bdm_call_scheduled_at as string
-                                ).toLocaleString()}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-slate-500">
+                            prospect.bdm_call_scheduled_at as string
+                          ).toLocaleString()}
+                              </span> :
+
+                        <span className="text-xs text-slate-500">
                                 Not booked
                               </span>
-                            )}
+                        }
                           </TableCell>
                         </TableRow>
-                      ))}
+                    )}
                     </TableBody>
                   </Table>
                 </div>
-              )}
+              }
             </CardContent>
           </Card>
 
@@ -1042,33 +1042,33 @@ export default function StaffSDRPage(): JSX.Element {
             </CardHeader>
             <CardContent className="flex-1 w-full max-w-full overflow-y-auto overflow-x-hidden">
               <div className="flex w-full max-w-full flex-col gap-4">
-                {!selectedProspect ? (
-                  <p className="text-sm text-slate-500">
+                {!selectedProspect ?
+                <p className="text-sm text-slate-500">
                     Select a prospect on the left to view its dossier.
-                  </p>
-                ) : (
-                  <>
+                  </p> :
+
+                <>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <h2 className="text-lg font-semibold text-slate-900">
                           {selectedProspect.company_name}
                         </h2>
-                        {selectedProspect.company_number ? (
-                          <p className="text-xs text-slate-500">
+                        {selectedProspect.company_number ?
+                      <p className="text-xs text-slate-500">
                             Company no: {selectedProspect.company_number}
-                          </p>
-                        ) : null}
+                          </p> :
+                      null}
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         {renderScoreBadge(
-                          (selectedProspect.rd_viability_score as number | null) ??
-                            null
-                        )}
-                        {selectedProspect.estimated_claim_band ? (
-                          <Badge variant="outline">
+                        selectedProspect.rd_viability_score as number | null ??
+                        null
+                      )}
+                        {selectedProspect.estimated_claim_band ?
+                      <Badge variant="outline">
                             Band: {selectedProspect.estimated_claim_band}
-                          </Badge>
-                        ) : null}
+                          </Badge> :
+                      null}
                       </div>
                     </div>
 
@@ -1082,15 +1082,15 @@ export default function StaffSDRPage(): JSX.Element {
                             BDM
                           </label>
                           <select
-                            className="block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
-                            value={bookingBdmId}
-                            onChange={(e) => setBookingBdmId(e.target.value)}
-                          >
-                            {bdmUsers.map((bdm) => (
-                              <option key={bdm.id} value={bdm.id}>
+                          className="block w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+                          value={bookingBdmId}
+                          onChange={(e) => setBookingBdmId(e.target.value)}>
+                          
+                            {bdmUsers.map((bdm) =>
+                          <option key={bdm.id} value={bdm.id}>
                                 {bdm.full_name || bdm.email || "Unnamed user"}
                               </option>
-                            ))}
+                          )}
                           </select>
                         </div>
                         <div className="w-full space-y-1 md:min-w-[11rem] md:flex-[1.2]">
@@ -1098,47 +1098,47 @@ export default function StaffSDRPage(): JSX.Element {
                             Start (your local time)
                           </label>
                           <Input
-                            type="datetime-local"
-                            value={bookingStart}
-                            onChange={(e) => setBookingStart(e.target.value)}
-                          />
+                          type="datetime-local"
+                          value={bookingStart}
+                          onChange={(e) => setBookingStart(e.target.value)} />
+                        
                         </div>
                         <div className="w-full space-y-1 md:w-28">
                           <label className="block text-xs font-medium text-slate-600">
                             Duration (min)
                           </label>
                           <Input
-                            type="number"
-                            min={15}
-                            max={180}
-                            value={bookingDuration}
-                            onChange={(e) =>
-                              setBookingDuration(
-                                Number.isNaN(parseInt(e.target.value, 10))
-                                  ? 30
-                                  : parseInt(e.target.value, 10)
-                              )
-                            }
-                          />
+                          type="number"
+                          min={15}
+                          max={180}
+                          value={bookingDuration}
+                          onChange={(e) =>
+                          setBookingDuration(
+                            Number.isNaN(parseInt(e.target.value, 10)) ?
+                            30 :
+                            parseInt(e.target.value, 10)
+                          )
+                          } />
+                        
                         </div>
                         <div className="flex w-full items-end md:w-auto">
                           <Button
-                            size="sm"
-                            className="w-full sm:w-auto sm:ml-1"
-                            disabled={booking || !bookingBdmId || !bookingStart}
-                            onClick={handleBookCall}
-                          >
-                            {booking ? (
-                              <>
+                          size="sm"
+                          className="w-full sm:w-auto sm:ml-1"
+                          disabled={booking || !bookingBdmId || !bookingStart}
+                          onClick={handleBookCall}>
+                          
+                            {booking ?
+                          <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 Booking…
-                              </>
-                            ) : (
-                              <>
+                              </> :
+
+                          <>
                                 <PhoneCall className="mr-2 h-4 w-4" />
                                 Book BDM call
                               </>
-                            )}
+                          }
                           </Button>
                         </div>
                       </div>
@@ -1148,10 +1148,10 @@ export default function StaffSDRPage(): JSX.Element {
                       <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Dossier details
                       </h3>
-                      {dossier ? (
-                        <div className="space-y-4 text-sm text-slate-700">
-                          {dossier.rd_summary && (
-                            <div>
+                      {dossier ?
+                    <div className="space-y-4 text-sm text-slate-700">
+                          {dossier.rd_summary &&
+                      <div>
                               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 R&amp;D summary
                               </p>
@@ -1159,10 +1159,10 @@ export default function StaffSDRPage(): JSX.Element {
                                 {dossier.rd_summary}
                               </p>
                             </div>
-                          )}
+                      }
 
-                          {dossier.what_they_do && (
-                            <div>
+                          {dossier.what_they_do &&
+                      <div>
                               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 What they do
                               </p>
@@ -1170,10 +1170,10 @@ export default function StaffSDRPage(): JSX.Element {
                                 {dossier.what_they_do}
                               </p>
                             </div>
-                          )}
+                      }
 
-                          {dossier.technical_focus && (
-                            <div>
+                          {dossier.technical_focus &&
+                      <div>
                               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 Technical focus
                               </p>
@@ -1181,10 +1181,10 @@ export default function StaffSDRPage(): JSX.Element {
                                 {dossier.technical_focus}
                               </p>
                             </div>
-                          )}
+                      }
 
-                          {dossier.where_rd_is_happening && (
-                            <div>
+                          {dossier.where_rd_is_happening &&
+                      <div>
                               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 Where R&amp;D is happening
                               </p>
@@ -1192,10 +1192,10 @@ export default function StaffSDRPage(): JSX.Element {
                                 {dossier.where_rd_is_happening}
                               </p>
                             </div>
-                          )}
+                      }
 
-                          {dossier.rd_tax_fit && (
-                            <div>
+                          {dossier.rd_tax_fit &&
+                      <div>
                               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 R&amp;D tax fit
                               </p>
@@ -1203,34 +1203,34 @@ export default function StaffSDRPage(): JSX.Element {
                                 {dossier.rd_tax_fit}
                               </p>
                             </div>
-                          )}
+                      }
 
                           {!dossier.rd_summary &&
-                            !dossier.what_they_do &&
-                            !dossier.technical_focus &&
-                            !dossier.where_rd_is_happening &&
-                            !dossier.rd_tax_fit && (
-                              <p className="text-xs text-slate-500">
+                      !dossier.what_they_do &&
+                      !dossier.technical_focus &&
+                      !dossier.where_rd_is_happening &&
+                      !dossier.rd_tax_fit &&
+                      <p className="text-xs text-slate-500">
                                 This prospect is enriched, but detailed dossier
                                 text is not available.
                               </p>
-                            )}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-slate-500">
+                      }
+                        </div> :
+
+                    <p className="text-xs text-slate-500">
                           No dossier details available yet for this prospect.
                         </p>
-                      )}
+                    }
                     </div>
 
                     <AiEngagementStrategyPanel
-                      prospect={selectedProspect}
-                      onProspectUpdated={handleProspectUpdated}
-                      onGenerateStrategy={handleGenerateEngagementStrategy}
-                      generating={isGeneratingEngagement}
-                    />
+                    prospect={selectedProspect}
+                    onProspectUpdated={handleProspectUpdated}
+                    onGenerateStrategy={handleGenerateEngagementStrategy}
+                    generating={isGeneratingEngagement} />
+                  
                   </>
-                )}
+                }
               </div>
             </CardContent>
           </Card>
@@ -1255,56 +1255,56 @@ export default function StaffSDRPage(): JSX.Element {
             </p>
           </CardHeader>
           <CardContent>
-            {callQueue.length === 0 ? (
-              <p className="text-sm text-slate-500">
+            {callQueue.length === 0 ?
+            <p className="text-sm text-slate-500">
                 There are no enriched prospects waiting for outreach. Enrich more
                 prospects or update outcomes to see new contacts here.
-              </p>
-            ) : (
-              <div className="space-y-3">
+              </p> :
+
+            <div className="space-y-3">
                 {callQueue.map((prospect, index) => {
-                  const prospectDossier = getDossier(prospect);
-                  const score =
-                    (prospect.rd_viability_score as number | null) ?? null;
+                const prospectDossier = getDossier(prospect);
+                const score =
+                prospect.rd_viability_score as number | null ?? null;
 
-                  const strategy = (prospect.engagement_strategy_json as any) ?? null;
-                  const firstChannel =
-                    (strategy?.recommended_first_channel as string | null) ??
-                    ((prospect.engagement_recommended_first_touch as string | null) ??
-                      null);
-                  const accessStrategy =
-                    (strategy?.recommended_access_strategy as string | null) ??
-                    null;
-                  const humanPreference =
-                    (prospect.engagement_observed_real_preference as string | null) ??
-                    null;
-                  const namedContactRequired =
-                    strategy && typeof strategy.named_contact_required === "boolean"
-                      ? (strategy.named_contact_required as boolean)
-                      : false;
-                  const namedContactFound =
-                    strategy && typeof strategy.named_contact_found === "boolean"
-                      ? (strategy.named_contact_found as boolean)
-                      : false;
+                const strategy = prospect.engagement_strategy_json as any ?? null;
+                const firstChannel =
+                strategy?.recommended_first_channel as string | null ??
+                prospect.engagement_recommended_first_touch as string | null ??
+                null;
+                const accessStrategy =
+                strategy?.recommended_access_strategy as string | null ??
+                null;
+                const humanPreference =
+                prospect.engagement_observed_real_preference as string | null ??
+                null;
+                const namedContactRequired =
+                strategy && typeof strategy.named_contact_required === "boolean" ?
+                strategy.named_contact_required as boolean :
+                false;
+                const namedContactFound =
+                strategy && typeof strategy.named_contact_found === "boolean" ?
+                strategy.named_contact_found as boolean :
+                false;
 
-                  const strategyCallOpener =
-                    (typeof (prospect.engagement_suggested_call_opener as any) === "string" &&
-                    String(prospect.engagement_suggested_call_opener).trim() !== ""
-                      ? String(prospect.engagement_suggested_call_opener)
-                      : null) ??
-                    (typeof strategy?.suggested_call_purpose === "string" && strategy.suggested_call_purpose.trim() !== ""
-                      ? strategy.suggested_call_purpose
-                      : null) ??
-                    (typeof strategy?.openai_strategy_output?.call_readiness === "string" &&
-                    strategy.openai_strategy_output.call_readiness.trim() !== ""
-                      ? strategy.openai_strategy_output.call_readiness
-                      : null);
+                const strategyCallOpener =
+                (typeof (prospect.engagement_suggested_call_opener as any) === "string" &&
+                String(prospect.engagement_suggested_call_opener).trim() !== "" ?
+                String(prospect.engagement_suggested_call_opener) :
+                null) ?? (
+                typeof strategy?.suggested_call_purpose === "string" && strategy.suggested_call_purpose.trim() !== "" ?
+                strategy.suggested_call_purpose :
+                null) ?? (
+                typeof strategy?.openai_strategy_output?.call_readiness === "string" &&
+                strategy.openai_strategy_output.call_readiness.trim() !== "" ?
+                strategy.openai_strategy_output.call_readiness :
+                null);
 
-                  return (
-                    <div
-                      key={prospect.id as string}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm"
-                    >
+                return (
+                  <div
+                    key={prospect.id as string}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+                    
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
@@ -1316,40 +1316,40 @@ export default function StaffSDRPage(): JSX.Element {
                           <p className="mt-1 truncate text-sm font-semibold text-slate-900">
                             {prospect.company_name}
                           </p>
-                          {prospect.company_number ? (
-                            <p className="text-xs text-slate-500">
+                          {prospect.company_number ?
+                        <p className="text-xs text-slate-500">
                               Company no: {prospect.company_number}
-                            </p>
-                          ) : null}
+                            </p> :
+                        null}
                           <div className="mt-1 flex flex-wrap items-center gap-1">
-                            {firstChannel && (
-                              <Badge variant="outline" className="text-[11px]">
+                            {firstChannel &&
+                          <Badge variant="outline" className="text-[11px]">
                                 AI: {formatQueueChannelLabel(firstChannel)}
                               </Badge>
-                            )}
-                            {accessStrategy && (
-                              <Badge variant="outline" className="text-[11px]">
+                          }
+                            {accessStrategy &&
+                          <Badge variant="outline" className="text-[11px]">
                                 {formatQueueAccessStrategyLabel(accessStrategy)}
                               </Badge>
-                            )}
-                            {humanPreference && (
-                              <Badge variant="secondary" className="text-[11px]">
+                          }
+                            {humanPreference &&
+                          <Badge variant="secondary" className="text-[11px]">
                                 Human: {formatQueueChannelLabel(humanPreference)}
                               </Badge>
-                            )}
-                            {namedContactRequired && (
-                              <Badge variant="outline" className="text-[10px]">
+                          }
+                            {namedContactRequired &&
+                          <Badge variant="outline" className="text-[10px]">
                                 Named contact required
                                 {namedContactFound ? " · Found" : ""}
                               </Badge>
-                            )}
+                          }
                           </div>
                           <p className="mt-1 text-xs text-slate-500">
                             Status:{" "}
                             <span className="font-medium">
                               {(
-                                (prospect.status as string | null) ?? "new"
-                              ).replace(/_/g, " ")}
+                            prospect.status as string | null ?? "new").
+                            replace(/_/g, " ")}
                             </span>
                           </p>
                         </div>
@@ -1360,86 +1360,86 @@ export default function StaffSDRPage(): JSX.Element {
                               Key Call Prompts
                             </p>
 
-                            {strategyCallOpener ? (
-                                <div className="mb-3">
+                            {strategyCallOpener ?
+                          <div className="mb-3">
                                   <span className="text-[11px] font-semibold text-slate-400 uppercase">Call Objective / Angle</span>
                                   <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
                                     {strategyCallOpener}
                                   </p>
-                                </div>
-                            ) : prospectDossier?.rd_summary ? (
-                                <div className="mb-3">
+                                </div> :
+                          prospectDossier?.rd_summary ?
+                          <div className="mb-3">
                                   <span className="text-[11px] font-semibold text-slate-400 uppercase">Context</span>
                                   <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
                                     {prospectDossier.rd_summary}
                                   </p>
-                                </div>
-                            ) : null}
+                                </div> :
+                          null}
 
-                            {Array.isArray(prospectDossier?.key_signals) && prospectDossier.key_signals.length > 0 && (
-                              <div className="mb-3">
+                            {Array.isArray(prospectDossier?.key_signals) && prospectDossier.key_signals.length > 0 &&
+                          <div className="mb-3">
                                 <span className="text-[11px] font-semibold text-slate-400 uppercase">Signals to Mention</span>
                                 <ul className="mt-1 list-disc pl-4 text-sm text-slate-700 space-y-1">
-                                  {prospectDossier.key_signals.slice(0, 3).map((sig: string, i: number) => (
-                                    <li key={i}>{sig}</li>
-                                  ))}
+                                  {prospectDossier.key_signals.slice(0, 3).map((sig: string, i: number) =>
+                              <li key={i}>{sig}</li>
+                              )}
                                 </ul>
                               </div>
-                            )}
+                          }
 
-                            {Array.isArray(prospectDossier?.questions_to_validate) && prospectDossier.questions_to_validate.length > 0 && (
-                              <div className="mb-3">
+                            {Array.isArray(prospectDossier?.questions_to_validate) && prospectDossier.questions_to_validate.length > 0 &&
+                          <div className="mb-3">
                                 <span className="text-[11px] font-semibold text-slate-400 uppercase">Questions to Ask</span>
                                 <ul className="mt-1 list-disc pl-4 text-sm text-slate-700 space-y-1">
-                                  {prospectDossier.questions_to_validate.slice(0, 3).map((q: string, i: number) => (
-                                    <li key={i}>{q}</li>
-                                  ))}
+                                  {prospectDossier.questions_to_validate.slice(0, 3).map((q: string, i: number) =>
+                              <li key={i}>{q}</li>
+                              )}
                                 </ul>
                               </div>
-                            )}
+                          }
 
-                            {!strategyCallOpener && !prospectDossier?.key_signals && !prospectDossier?.questions_to_validate && !prospectDossier?.rd_summary && (
-                              <p className="text-xs text-slate-500">
+                            {!strategyCallOpener && !prospectDossier?.key_signals && !prospectDossier?.questions_to_validate && !prospectDossier?.rd_summary &&
+                          <p className="text-xs text-slate-500">
                                 No prompts available yet. Enrich the dossier to generate them.
                               </p>
-                            )}
+                          }
                           </div>
                         </div>
                       </div>
 
                       <div className="mt-3 flex flex-wrap items-center gap-2">
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-3 text-xs"
-                          onClick={() => {
-                            setSelectedProspect(prospect);
-                            if (typeof window !== "undefined") {
-                              window.scrollTo({ top: 0, behavior: "smooth" });
-                            }
-                          }}
-                        >
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-3 text-xs"
+                        onClick={() => {
+                          setSelectedProspect(prospect);
+                          if (typeof window !== "undefined") {
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }
+                        }}>
+                        
                           View in dossier panel
                         </Button>
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-3 text-xs"
-                          onClick={() =>
-                            void handleMarkOutcome(prospect, "contacted")
-                          }
-                        >
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-3 text-xs"
+                        onClick={() =>
+                        void handleMarkOutcome(prospect, "contacted")
+                        }>
+                        
                           Mark contact done
                         </Button>
                       </div>
-                    </div>
-                  );
-                })}
+                    </div>);
+
+              })}
               </div>
-            )}
+            }
           </CardContent>
         </Card>
       </div>
-    </StaffLayout>
-  );
+    </StaffLayout>);
+
 }
