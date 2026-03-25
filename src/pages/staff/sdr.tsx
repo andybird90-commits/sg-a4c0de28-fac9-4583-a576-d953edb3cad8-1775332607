@@ -327,7 +327,7 @@ export default function StaffSDRPage(): JSX.Element {
         setSelectedProspect(updated);
       }
     } catch (err) {
-      console.error("Unexpected error enriching prospect:", err);
+      console.error("Unexpected error enrichinging prospect:", err);
     } finally {
       setEnrichingId(null);
     }
@@ -562,6 +562,17 @@ export default function StaffSDRPage(): JSX.Element {
 
   const isLargeCompany = (prospect: SdrProspect): boolean => {
     const p = prospect as any;
+    
+    // Check engagement strategy tier for enterprise classification
+    const tier = p.engagement_account_tier || p.engagement_strategy_json?.account_tier;
+    if (tier === 'enterprise_complex') return true;
+
+    // Hard fallback for massively obvious ones
+    const nameLower = (p.company_name || '').toLowerCase();
+    if (nameLower.includes('university') || nameLower.includes('nhs ') || nameLower.includes('council')) {
+      return true;
+    }
+
     if ((p.number_of_employees ?? 0) > 500) return true;
     const research = p.ai_research_data as any;
     const t1 = parseTurnover(research?.turnover ?? research?.financials?.turnover);

@@ -87,6 +87,8 @@ Produce a concise JSON dossier with the following shape:
 
 {
   "website": "https://example.com or null",
+  "employee_count": "estimated number of employees as an integer (e.g. 1500) or null",
+  "turnover": "estimated turnover in GBP as a plain number (e.g. 50000000) or null",
   "rd_viability_score": 0-100 number,
   "estimated_claim_band": "0-25k" | "25k-50k" | "50k-100k" | "100k-250k" | "250k+",
   "rd_summary": "2-4 sentence overview of R&D potential in plain English",
@@ -98,8 +100,6 @@ Produce a concise JSON dossier with the following shape:
     "3-6 very specific questions an SDR should ask",
     "Each question should reference concrete systems, products, or technical themes you described"
   ],
-  "call_script_intro": "Short opening script personalised to this company and sector",
-  "call_script_main": "Follow-up lines and prompts to explore R&D in more depth",
   "confidence_note": "Short note on how confident this is and what needs validating"
 }
 
