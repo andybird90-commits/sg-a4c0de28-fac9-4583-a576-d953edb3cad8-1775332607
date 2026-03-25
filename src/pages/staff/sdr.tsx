@@ -15,6 +15,7 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Upload, PhoneCall, RefreshCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { AiEngagementStrategyPanel } from "@/components/sdr/AiEngagementStrategyPanel";
 
@@ -53,6 +54,7 @@ export default function StaffSDRPage(): JSX.Element {
   const [enrichedPage, setEnrichedPage] = useState(1);
   const [enrichedTotal, setEnrichedTotal] = useState<number | null>(null);
   const [engagementGeneratingId, setEngagementGeneratingId] = useState<string | null>(null);
+  const [targetView, setTargetView] = useState<"SME" | "LARGE">("SME");
 
   useEffect(() => {
     if (!user || appLoading) {
@@ -544,13 +546,43 @@ export default function StaffSDRPage(): JSX.Element {
 
   const dossier = getDossier(selectedProspect);
 
-  const unenrichedProspects = prospects.filter((prospect) => {
+  const parseTurnover = (val: any): number => {
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+      const lower = val.toLowerCase();
+      let mult = 1;
+      if (lower.includes('m') || lower.includes('million')) mult = 1000000;
+      else if (lower.includes('b') || lower.includes('billion')) mult = 1000000000;
+      else if (lower.includes('k') || lower.includes('thousand')) mult = 1000;
+      const num = parseFloat(lower.replace(/[^0-9.]/g, ''));
+      if (!isNaN(num)) return num * mult;
+    }
+    return 0;
+  };
+
+  const isLargeCompany = (prospect: SdrProspect): boolean => {
+    if ((prospect.number_of_employees ?? 0) > 500) return true;
+    const research = prospect.ai_research_data as any;
+    const t1 = parseTurnover(research?.turnover ?? research?.financials?.turnover);
+    if (t1 > 50000000) return true;
+    const dossier = prospect.ai_dossier_json as any;
+    const t2 = parseTurnover(dossier?.turnover ?? dossier?.financials?.turnover ?? dossier?.financial_summary?.turnover);
+    if (t2 > 50000000) return true;
+    return false;
+  };
+
+  const targetProspects = prospects.filter((p) => {
+    const large = isLargeCompany(p);
+    return targetView === "LARGE" ? large : !large;
+  });
+
+  const unenrichedProspects = targetProspects.filter((prospect) => {
     const hasDossier = hasDossierFlag(prospect);
     const status = getProspectStatus(prospect);
     return !hasDossier && status === "new";
   });
 
-  const enrichedProspects = prospects.filter((prospect) => {
+  const enrichedProspects = targetProspects.filter((prospect) => {
     const hasDossier = hasDossierFlag(prospect);
     const status = getProspectStatus(prospect);
     return hasDossier || status !== "new";
@@ -581,7 +613,7 @@ export default function StaffSDRPage(): JSX.Element {
   const unenrichedCount = unenrichedProspects.length;
 
   // Ranked list for the left column: show all prospects, ordered by score then recency
-  const rankedProspects = [...prospects].sort((a, b) => {
+  const rankedProspects = [...targetProspects].sort((a, b) => {
     const aScore = (a.rd_viability_score as number | null) ?? -1;
     const bScore = (b.rd_viability_score as number | null) ?? -1;
 
@@ -649,14 +681,26 @@ export default function StaffSDRPage(): JSX.Element {
   return (
     <StaffLayout title="SDR" fullWidth>
       <div className="mx-auto flex w-full max-w-none flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:px-8">
-        <header className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-            SDR Radar
-          </h1>
-          <p className="max-w-2xl text-sm text-slate-600 sm:text-base">
-            Upload prospect companies, let the assistant build R&amp;D dossiers,
-            then rank and book BDM discovery calls from a single workspace.
-          </p>
+        <header className="space-y-4">
+          <div className="space-y-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+              SDR Radar
+            </h1>
+            <p className="max-w-2xl text-sm text-slate-600 sm:text-base">
+              Upload prospect companies, let the assistant build R&amp;D dossiers,
+              then rank and book BDM discovery calls from a single workspace.
+            </p>
+          </div>
+          <Tabs value={targetView} onValueChange={(v) => {
+            setTargetView(v as "SME" | "LARGE");
+            setSelectedProspect(null);
+            setEnrichedPage(1);
+          }} className="w-full">
+            <TabsList>
+              <TabsTrigger value="SME">SME Target List</TabsTrigger>
+              <TabsTrigger value="LARGE">Large Companies (RDEC)</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </header>
 
         <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-[0.8fr_1.7fr_1.9fr]">
