@@ -166,7 +166,7 @@ export default function StaffCIFPage() {
         </div>
 
         <Tabs defaultValue="board-a" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="board-a" className="relative">
               BDM
               {jobBoardA.length > 0 && (
@@ -180,6 +180,14 @@ export default function StaffCIFPage() {
               {jobBoardB.length > 0 && (
                 <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
                   {jobBoardB.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="board-c" className="relative">
+              Commercial
+              {jobBoardC.length > 0 && (
+                <Badge className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+                  {jobBoardC.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -229,7 +237,7 @@ export default function StaffCIFPage() {
           <TabsContent value="board-b" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Feasibility – R&D Assessment</CardTitle>
+                <CardTitle>Feasibility – R&amp;D Assessment</CardTitle>
                 <CardDescription>
                   CIFs that have passed feasibility assessment and need financial details
                 </CardDescription>
@@ -245,6 +253,31 @@ export default function StaffCIFPage() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {jobBoardB.map(renderCIFCard)}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="board-c" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Commercial – Financial &amp; Admin Prep</CardTitle>
+                <CardDescription>
+                  CIFs that are ready for commercial review / completion before admin approval
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                ) : jobBoardC.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    No CIFs awaiting commercial section
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {jobBoardC.map(renderCIFCard)}
                   </div>
                 )}
               </CardContent>
