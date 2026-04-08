@@ -4,7 +4,7 @@ import { StaffLayout } from "@/components/staff/StaffLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, TrendingUp, RefreshCw, Filter, Pencil, Save, X } from "lucide-react";
+import { Calendar, TrendingUp, RefreshCw, Filter, Pencil, Save, X, Download } from "lucide-react";
 import { pipelineService } from "@/services/pipelineService";
 import type { PipelineWithDetails, MissingCompanyNumberClient } from "@/services/pipelineService";
 import { useToast } from "@/hooks/use-toast";
@@ -122,6 +122,16 @@ export default function PipelinePage() {
     } finally {
       setRefreshing(false);
     }
+  }
+
+  function handleDownloadCsv() {
+    const params = new URLSearchParams();
+    params.set("startDate", filterStartDate);
+    params.set("endDate", filterEndDate);
+    params.set("minConfidence", String(minConfidence));
+
+    const url = `/api/pipeline/predicted-revenue-by-client?${params.toString()}`;
+    window.location.href = url;
   }
 
   async function handleApplyAverageFees() {
@@ -404,6 +414,10 @@ export default function PipelinePage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleDownloadCsv}>
+              <Download className="w-4 h-4 mr-2" />
+              Download CSV
+            </Button>
             <Button onClick={handleRefreshAll} disabled={refreshing}>
               <RefreshCw
                 className={`w-4 h-4 mr-2 ${
