@@ -1,6 +1,6 @@
 ---
 title: Add CSV download for client predicted revenue (grouped by client)
-status: in_progress
+status: done
 priority: high
 type: feature
 tags:
@@ -19,5 +19,5 @@ Add a CSV download that exports predicted revenue aggregated by client (one row 
 - [x] Find where “predicted revenue” per client is computed/stored (UI + service + DB tables)
 - [x] Implement an API route that returns `text/csv` with `Content-Disposition: attachment`
 - [x] Add a button/link in the relevant client list/dashboard page to download the CSV
-- [ ] Validate export matches on-screen values for at least a few clients
-- [ ] Run check_for_errors and mark task done
+- [x] Validate export matches on-screen values for at least a few clients
+- [x] Run check_for_errors and mark task done
